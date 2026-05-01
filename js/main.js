@@ -1,6 +1,6 @@
 /* ============================================
    THE CIVIL ENGINEER'S GUIDE TO AI
-   Main JavaScript — All Interactive Systems
+   Main JavaScript - All Interactive Systems
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,7 +63,7 @@ function initScrollObserver() {
 }
 
 /* ============================
-   HERO CANVAS — Topographic → Neural Network
+   HERO CANVAS - Topographic → Neural Network
    ============================ */
 function initHeroCanvas() {
     const canvas = document.getElementById('hero-canvas');
@@ -236,7 +236,7 @@ function initChapter1() {
             bCtx.beginPath(); bCtx.moveTo(0, y); bCtx.lineTo(w, y); bCtx.stroke();
         }
 
-        // Dam structure (static — doesn't change with time)
+        // Dam structure (static - doesn't change with time)
         const damX = w * 0.3;
         const damW = w * 0.1;
         const damTop = h * 0.2;
@@ -319,7 +319,7 @@ function initChapter1() {
         bCtx.restore();
     }
 
-    // River Drawing (Dynamic — changes with time slider)
+    // River Drawing (Dynamic - changes with time slider)
     function drawRiver(time) {
         const w = riverCanvas.width;
         const h = riverCanvas.height;
@@ -435,7 +435,7 @@ function initChapter1() {
 }
 
 /* ============================
-   CHAPTER 2: Supervised Learning — Soil Simulator
+   CHAPTER 2: Supervised Learning - Soil Simulator
    ============================ */
 function initChapter2() {
     const soilCanvas = document.getElementById('soil-canvas');
@@ -619,7 +619,7 @@ function initChapter2() {
                 wCtx.beginPath(); wCtx.moveTo(0, y); wCtx.lineTo(w, y); wCtx.stroke();
             }
 
-            // Bedrock wave (input — small)
+            // Bedrock wave (input - small)
             wCtx.beginPath();
             for (let x = 0; x < w; x += 2) {
                 const y = h * 0.75 + Math.sin(x * freq * 0.05 + t) * 12;
@@ -715,7 +715,7 @@ function initChapter2() {
 }
 
 /* ============================
-   CHAPTER 3: Unsupervised Learning — GIS Clustering
+   CHAPTER 3: Unsupervised Learning - GIS Clustering
    ============================ */
 function initChapter3() {
     const canvas = document.getElementById('cluster-canvas');
@@ -728,10 +728,10 @@ function initChapter3() {
     let animFrame;
 
     const clusterColors = [
-        { r: 14, g: 165, b: 233 },   // Water — blue
-        { r: 34, g: 197, b: 94 },    // Vegetation — green
-        { r: 245, g: 158, b: 11 },   // Urban — amber
-        { r: 239, g: 68, b: 68 }     // Landslide — red
+        { r: 14, g: 165, b: 233 },   // Water - blue
+        { r: 34, g: 197, b: 94 },    // Vegetation - green
+        { r: 245, g: 158, b: 11 },   // Urban - amber
+        { r: 239, g: 68, b: 68 }     // Landslide - red
     ];
 
     // Define cluster centers
@@ -787,7 +787,7 @@ function initChapter3() {
         const h = canvas.height;
         ctx.clearRect(0, 0, w, h);
 
-        // Background — map-like
+        // Background - map-like
         ctx.fillStyle = '#0d0d14';
         ctx.fillRect(0, 0, w, h);
 

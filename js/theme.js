@@ -1,5 +1,5 @@
 /* ============================================
-   THEME.JS — Dark/Light Mode Toggle
+   THEME.JS - Dark/Light Mode Toggle
    Persists via localStorage
    ============================================ */
 
