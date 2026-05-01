@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.3 Activation Functions | A Civil Engineer's Guide to AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &times; AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html" class="nav-link">Home</a></li>
+      <li><a href="../chapter6.html" class="nav-link">Chapter 6</a></li>
+      <li><a href="sub2.html" class="nav-link">Prev</a></li>
+      <li><a href="sub4.html" class="nav-link">Next</a></li>
+    </ul>
+    <button class="theme-toggle" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-wave-square"></i>
+      <span>Section 6.3</span>
+    </div>
+    <h1 class="chapter-hero__title">Activation Functions</h1>
+    <p class="chapter-hero__subtitle">
+      The non-linear "kink" that lets neural networks bend, fold and curve through data &mdash;
+      without it, a 100-layer network is just one matrix multiplication.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-regular fa-clock"></i> 18 min read</span>
+      <span><i class="fa-solid fa-signal"></i> Intermediate</span>
+      <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+  <!-- ============ SECTION 1: WHY NON-LINEARITY ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-bolt"></i> Why Non-Linearity Is Everything</h2>
+      <p>
+        Imagine you stack 100 linear elastic springs end-to-end. The combined response is still
+        a single straight line &mdash; just with a different slope. No matter how many you add,
+        you can never reproduce the curved load&ndash;deformation behavior of a real bolted
+        connection or a yielding rebar.
+      </p>
+      <p>
+        The exact same thing happens with neural networks. A linear layer computes
+        $z = Wx + b$. If you stack two linear layers, you get
+        $W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)$ &mdash; still linear.
+        Without something nonlinear in between, depth gives you <em>zero</em> extra capacity.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-lightbulb"></i> The core insight</h3>
+        <p>
+          An <strong>activation function</strong> is a small, fixed, nonlinear function applied
+          element-wise after every linear layer. It is what allows a deep network to approximate
+          curves, bends, thresholds, oscillations &mdash; anything but a hyperplane.
+        </p>
+      </div>
+
+      <div class="analogy-block">
+        <h3><i class="fa-solid fa-link"></i> Civil engineering analogy</h3>
+        <p>
+          An activation function is the <strong>load&ndash;deformation curve of a structural
+          connector</strong>. A linear-elastic spring (no activation) only scales force.
+          A bolt with a yield plateau behaves like ReLU. A rubber bushing with smooth
+          stiffening behaves like tanh. A friction damper with a dead-zone resembles a
+          rectified function. Different connectors suit different load conditions &mdash; and
+          different activations suit different problems.
+        </p>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <strong>Rule of thumb:</strong> every hidden layer in a modern neural network has
+          an activation function. The only layer that <em>often</em> has none is the very
+          last one (for regression).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2: SIGMOID ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-s"></i> Sigmoid &mdash; The Original</h2>
+      <p>
+        The <strong>sigmoid</strong> (also called the logistic function) was the dominant
+        activation in the 1980s and 90s. It squashes any real number into the open interval
+        $(0, 1)$, which makes it look like a smoothed step function.
+      </p>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span><i class="fa-solid fa-code"></i> sigmoid</span>
+        </div>
+<pre><code>sigma(x) = 1 / (1 + exp(-x))
+
+sigma'(x) = sigma(x) * (1 - sigma(x))     # max value is 0.25 at x=0</code></pre>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-circle-check"></i> What sigmoid is good for</h3>
+        <ul>
+          <li>The <strong>final layer</strong> of a binary classifier &mdash; the output is naturally a probability.</li>
+          <li>Gates inside LSTM / GRU recurrent cells, where you need a value between 0 and 1.</li>
+          <li>Any place you need a smooth, differentiable on/off switch.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> What sigmoid is bad at</h3>
+        <ul>
+          <li><strong>Vanishing gradients.</strong> The maximum slope is $0.25$. Multiply that through 10 layers and you get $0.25^{10} \approx 10^{-6}$. Early layers stop learning.</li>
+          <li><strong>Not zero-centered.</strong> All outputs are positive, which biases gradient updates and slows training.</li>
+          <li><strong>Saturates</strong> for $|x| &gt; 5$ &mdash; gradient is essentially zero there.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3: TANH ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-t"></i> Tanh &mdash; Sigmoid's Better Sibling</h2>
+      <p>
+        The hyperbolic tangent has the same S-shape as sigmoid but is rescaled to the
+        range $(-1, 1)$ and is symmetric about the origin.
+      </p>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span><i class="fa-solid fa-code"></i> tanh</span>
+        </div>
+<pre><code>tanh(x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+        = 2 * sigma(2x) - 1
+
+tanh'(x) = 1 - tanh(x)^2     # max value is 1.0 at x=0</code></pre>
+      </div>
+
+      <p>
+        Because tanh is <strong>zero-centered</strong>, gradient flow through it is more
+        balanced &mdash; updates can push weights either up or down naturally. Its peak
+        derivative of $1.0$ is also four times larger than sigmoid's, which mitigates
+        (but does not eliminate) the vanishing gradient problem.
+      </p>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          Tanh is still the default activation inside <strong>recurrent cells</strong>
+          (vanilla RNNs, parts of LSTMs and GRUs) because the bounded output keeps the
+          recurrent state from exploding.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 4: RELU ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-r"></i> ReLU &mdash; The Workhorse</h2>
+      <p>
+        The <strong>Rectified Linear Unit</strong> is almost embarrassingly simple, and yet
+        it is the activation function that made modern deep learning practical.
+      </p>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span><i class="fa-solid fa-code"></i> relu</span>
+        </div>
+<pre><code>relu(x) = max(0, x)
+
+relu'(x) = 1  if x &gt; 0
+         = 0  if x &lt; 0
+         = undefined at x = 0   (use 0 in practice)</code></pre>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-rocket"></i> Why ReLU dominated 2012&ndash;2018</h3>
+        <ul>
+          <li><strong>No vanishing gradient on the positive side.</strong> The derivative is exactly $1$, so signal flows unattenuated through deep stacks.</li>
+          <li><strong>Sparsity.</strong> Roughly half the neurons output exactly zero, which is computationally cheap and acts as implicit regularization.</li>
+          <li><strong>Trivially cheap.</strong> A single comparison &mdash; no exponentials, no divisions.</li>
+        </ul>
+      </div>
+
+      <div class="analogy-block">
+        <h3><i class="fa-solid fa-link"></i> CE analogy: a one-way damper</h3>
+        <p>
+          ReLU is the activation equivalent of a <strong>tension-only brace</strong>: in
+          tension it transmits load linearly, in compression it does nothing. Sparse, simple,
+          and effective &mdash; exactly the properties you want from a deep-stack building
+          block.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-skull"></i> The dying ReLU problem</h3>
+        <p>
+          If a neuron's pre-activation is consistently negative, its gradient is exactly
+          zero, so its weights never update again. The neuron is permanently stuck at zero
+          output &mdash; "dead". A bad weight initialization or too high a learning rate can
+          kill 30&ndash;40% of neurons in a layer in the first few epochs.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 5: LEAKY RELU & VARIANTS ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-droplet"></i> Leaky ReLU &amp; Friends</h2>
+      <p>
+        The fix for dying ReLU is obvious: don't let the negative side be exactly flat.
+      </p>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span><i class="fa-solid fa-code"></i> leaky_relu</span>
+        </div>
+<pre><code>leaky_relu(x) = x        if x &gt;= 0
+              = 0.01 * x if x &lt; 0
+
+# Parametric ReLU (PReLU): the slope alpha is learned
+# Randomized ReLU (RReLU):  alpha sampled randomly during training</code></pre>
+      </div>
+
+      <p>
+        With a small negative slope (typically $0.01$), gradients can still flow when the
+        input is negative, so neurons can recover from bad initializations.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-list"></i> The modern smooth family</h3>
+        <ul>
+          <li><strong>ELU</strong> (Exponential Linear Unit): $x$ for $x \ge 0$, $\alpha(e^x - 1)$ for $x &lt; 0$. Smooth, mean-centered.</li>
+          <li><strong>SELU</strong>: a self-normalizing variant that keeps activations zero-mean and unit-variance.</li>
+          <li><strong>Swish / SiLU</strong>: $x \cdot \sigma(x)$. Smooth, non-monotonic, used in EfficientNet and many modern CNNs.</li>
+          <li><strong>GELU</strong>: $x \cdot \Phi(x)$ where $\Phi$ is the Gaussian CDF. A "soft" ReLU that lets small negative values through probabilistically.</li>
+          <li><strong>Mish</strong>: $x \cdot \tanh(\text{softplus}(x))$. Empirically strong on vision tasks.</li>
+        </ul>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <strong>GELU dominates Transformers.</strong> Every major large language model
+          &mdash; GPT, BERT, T5, LLaMA &mdash; uses GELU (or its smooth cousin SwiGLU) as
+          the feed-forward activation.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 6: SOFTMAX ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-percent"></i> Softmax &mdash; The Output for Many Choices</h2>
+      <p>
+        Softmax is special: it acts on a <em>vector</em>, not on individual scalars. It is
+        used as the final activation of a multi-class classifier to convert raw scores
+        ("logits") into a proper probability distribution.
+      </p>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span><i class="fa-solid fa-code"></i> softmax</span>
+        </div>
+<pre><code>softmax(z)_i = exp(z_i) / sum_j exp(z_j)
+
+# Properties:
+#   - every output is in (0, 1)
+#   - all outputs sum to exactly 1
+#   - the largest logit gets the largest probability
+#   - "soft" because it's a smooth approximation of argmax</code></pre>
+      </div>
+
+      <p>
+        For example, for a soil classifier outputting logits
+        $z = [2.0,\; 1.0,\; 0.1]$ for {clay, silt, sand}, softmax gives roughly
+        $[0.66,\; 0.24,\; 0.10]$ &mdash; a 66% probability the sample is clay.
+      </p>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Numerical stability:</strong> always subtract $\max(z)$ from every logit
+          before exponentiating. Mathematically identical, but prevents $e^{1000}$ overflow.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DEMO 1: ACTIVATION EXPLORER ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-flask"></i> Demo 1 &mdash; Activation Function Explorer</h2>
+      <p>
+        Toggle activation functions on and off and overlay them on a single set of axes.
+        Hover the canvas to read off exact $f(x)$ and $f'(x)$ values at any point. Toggle
+        the dashed derivative overlay to see <em>why</em> some activations vanish in deep
+        networks.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__controls" id="ae-controls">
+          <button class="demo-btn active" data-fn="sigmoid"><span class="swatch" style="background:#60a5fa"></span>Sigmoid</button>
+          <button class="demo-btn active" data-fn="tanh"><span class="swatch" style="background:#34d399"></span>Tanh</button>
+          <button class="demo-btn active" data-fn="relu"><span class="swatch" style="background:#f59e0b"></span>ReLU</button>
+          <button class="demo-btn" data-fn="leaky"><span class="swatch" style="background:#f472b6"></span>Leaky ReLU</button>
+          <button class="demo-btn" data-fn="gelu"><span class="swatch" style="background:#a78bfa"></span>GELU</button>
+          <button class="demo-btn" id="ae-deriv-toggle"><i class="fa-solid fa-wave-square"></i> Show derivatives</button>
+        </div>
+        <canvas id="ae-canvas" style="width:100%;height:460px;display:block"></canvas>
+        <div class="demo-panel__readout" id="ae-readout">
+          Hover the plot to read values&hellip;
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 7: VANISHING GRADIENT ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-arrow-down-wide-short"></i> The Vanishing Gradient Problem</h2>
+      <p>
+        Backpropagation works by multiplying derivatives along the chain rule. If every
+        layer's local gradient is less than $1$, the product shrinks exponentially with
+        depth.
+      </p>
+      <p>
+        Sigmoid's maximum derivative is $0.25$. Through 10 layers:
+        $0.25^{10} \approx 9.5 \times 10^{-7}$. The first layer receives a gradient
+        signal a million times weaker than the last layer. <strong>It barely learns.</strong>
+      </p>
+      <p>
+        ReLU's derivative is exactly $1$ on the positive side. Through 10 layers:
+        $1^{10} = 1$. The first layer learns at the same rate as the last.
+        <strong>This is, in a single sentence, why deep learning works.</strong>
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-flask"></i> See it for yourself</h3>
+        <p>
+          The demo below pushes a unit gradient backward through 10 layers and shows the
+          surviving magnitude per layer. Switch the activation and watch the bars collapse
+          (sigmoid) or stay healthy (ReLU).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DEMO 2: VANISHING GRADIENT ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-flask"></i> Demo 2 &mdash; Vanishing Gradient Through 10 Layers</h2>
+      <p>
+        Each bar is the gradient magnitude reaching that layer during backprop, starting
+        from a unit gradient at the output. Press <em>Run backprop</em> to animate the
+        signal collapsing (or surviving) through the depth of the network.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__controls">
+          <button class="demo-btn active" id="vg-sigmoid"><span class="swatch" style="background:#60a5fa"></span>Sigmoid</button>
+          <button class="demo-btn" id="vg-tanh"><span class="swatch" style="background:#34d399"></span>Tanh</button>
+          <button class="demo-btn" id="vg-relu"><span class="swatch" style="background:#f59e0b"></span>ReLU</button>
+          <button class="demo-btn" id="vg-run"><i class="fa-solid fa-play"></i> Run backprop</button>
+        </div>
+        <canvas id="vg-canvas" style="width:100%;height:420px;display:block"></canvas>
+        <div class="demo-panel__readout" id="vg-readout">
+          Pick an activation and press <em>Run backprop</em>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 8: SELECTION GUIDE ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-clipboard-check"></i> Selection Guide</h2>
+      <p>
+        After all the math, the practical decision is usually one of four options.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-layer-group"></i> Hidden layers</h3>
+        <p>
+          Default to <strong>ReLU</strong> for CNNs and most MLPs.
+          Use <strong>GELU</strong> for Transformers and modern language models.
+          Try <strong>Leaky ReLU</strong> if you suspect dying neurons.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-square-check"></i> Output layer &mdash; binary classification</h3>
+        <p>
+          Use <strong>sigmoid</strong> with a single output unit. Combine with binary
+          cross-entropy loss. Output is interpreted as $P(\text{class} = 1)$.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-list-ol"></i> Output layer &mdash; multi-class classification</h3>
+        <p>
+          Use <strong>softmax</strong> with one unit per class. Combine with categorical
+          cross-entropy loss. Output is a full probability distribution.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-ruler-horizontal"></i> Output layer &mdash; regression</h3>
+        <p>
+          Use <strong>no activation</strong> (i.e. linear output). The network must be
+          able to predict any real number &mdash; a positive bound from sigmoid or a
+          floor from ReLU would distort the prediction.
+        </p>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-helmet-safety"></i>
+        <div>
+          <strong>Civil example.</strong> Predicting concrete compressive strength
+          (regression) &rarr; linear output. Classifying soil into clay/silt/sand
+          (multi-class) &rarr; softmax. Detecting whether a beam will fail under load
+          (binary) &rarr; sigmoid. All hidden layers in between &rarr; ReLU.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-circle-question"></i> Knowledge Check</h2>
+
+      <div class="quiz-block" data-answer="b">
+        <h3>1. Why do neural networks need a non-linear activation function?</h3>
+        <ul>
+          <li data-opt="a">To make computation faster.</li>
+          <li data-opt="b">Without it, stacking many linear layers collapses to a single linear transformation.</li>
+          <li data-opt="c">To convert outputs into probabilities.</li>
+          <li data-opt="d">To reduce overfitting.</li>
+        </ul>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="c">
+        <h3>2. Why does sigmoid cause vanishing gradients in deep networks?</h3>
+        <ul>
+          <li data-opt="a">Its output is bounded between 0 and 1.</li>
+          <li data-opt="b">It is not differentiable at zero.</li>
+          <li data-opt="c">Its maximum derivative is 0.25, so the gradient shrinks geometrically through layers.</li>
+          <li data-opt="d">It uses an exponential, which is computationally expensive.</li>
+        </ul>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="b">
+        <h3>3. What is the "dying ReLU" problem?</h3>
+        <ul>
+          <li data-opt="a">ReLU produces NaN values during training.</li>
+          <li data-opt="b">A neuron stuck with negative pre-activations has zero gradient and never updates again.</li>
+          <li data-opt="c">ReLU saturates for large positive inputs.</li>
+          <li data-opt="d">ReLU outputs are not zero-centered.</li>
+        </ul>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="d">
+        <h3>4. You are building a network to classify a soil sample as clay, silt, or sand. Which activation should the output layer use?</h3>
+        <ul>
+          <li data-opt="a">ReLU</li>
+          <li data-opt="b">Sigmoid</li>
+          <li data-opt="c">Linear (no activation)</li>
+          <li data-opt="d">Softmax</li>
+        </ul>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SUMMARY ============ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-flag-checkered"></i> Summary</h2>
+      <div class="info-card">
+        <ul>
+          <li>An activation function injects non-linearity. Without it, depth is meaningless.</li>
+          <li>Sigmoid and tanh saturate and cause vanishing gradients in deep stacks.</li>
+          <li>ReLU's derivative of $1$ on the positive side is what unlocked deep learning.</li>
+          <li>Leaky ReLU, ELU, GELU, Swish, Mish are smoother modern variants &mdash; GELU dominates Transformers.</li>
+          <li>Softmax produces a probability distribution and is the standard multi-class output.</li>
+          <li>Hidden &rarr; ReLU/GELU. Binary out &rarr; sigmoid. Multi-class out &rarr; softmax. Regression out &rarr; linear.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<nav class="chapter-nav-footer">
+  <a href="sub2.html" class="chapter-nav__link prev">
+    <i class="fa-solid fa-arrow-left"></i>
+    <div>
+      <small>Previous</small>
+      <strong>6.2 Multi-Layer Networks</strong>
+    </div>
+  </a>
+  <a href="sub4.html" class="chapter-nav__link next">
+    <div>
+      <small>Next</small>
+      <strong>6.4 Loss Functions</strong>
+    </div>
+    <i class="fa-solid fa-arrow-right"></i>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <p>
+      <i class="fa-solid fa-helmet-safety"></i>
+      A Civil Engineer's Guide to AI &mdash; Chapter 6, Section 3
+    </p>
+    <p><small>Built for engineers who like their math with rebar.</small></p>
+  </div>
+</footer>
+
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+<script>
+/* ============================================================
+   DPI-aware canvas helper
+   ============================================================ */
+function initCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width  = r.width  * dpr;
+  c.height = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height, dpr };
+}
+
+/* ============================================================
+   Activation function library
+   ============================================================ */
+const ACT = {
+  sigmoid: {
+    color: '#60a5fa', name: 'Sigmoid',
+    f:  x => 1 / (1 + Math.exp(-x)),
+    df: x => { const s = 1 / (1 + Math.exp(-x)); return s * (1 - s); }
+  },
+  tanh: {
+    color: '#34d399', name: 'Tanh',
+    f:  x => Math.tanh(x),
+    df: x => { const t = Math.tanh(x); return 1 - t * t; }
+  },
+  relu: {
+    color: '#f59e0b', name: 'ReLU',
+    f:  x => Math.max(0, x),
+    df: x => x > 0 ? 1 : 0
+  },
+  leaky: {
+    color: '#f472b6', name: 'Leaky ReLU',
+    f:  x => x >= 0 ? x : 0.1 * x,
+    df: x => x >= 0 ? 1 : 0.1
+  },
+  gelu: {
+    color: '#a78bfa', name: 'GELU',
+    f:  x => 0.5 * x * (1 + Math.tanh(Math.sqrt(2/Math.PI) * (x + 0.044715 * x * x * x))),
+    df: x => {
+      const h = 1e-4;
+      const f = ACT.gelu.f;
+      return (f(x + h) - f(x - h)) / (2 * h);
+    }
+  }
+};
+
+/* ============================================================
+   HERO CANVAS — morphing activation waveforms
+   ============================================================ */
+(function heroAnim(){
+  const c = document.getElementById('hero-canvas');
+  if (!c) return;
+  let { ctx, w, h } = initCanvas(c);
+  window.addEventListener('resize', () => ({ ctx, w, h } = initCanvas(c)));
+
+  const fns = ['sigmoid', 'tanh', 'relu', 'gelu'];
+  let t = 0;
+
+  function draw(){
+    ctx.clearRect(0, 0, w, h);
+    // soft background gradient
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, 'rgba(99, 102, 241, 0.06)');
+    g.addColorStop(1, 'rgba(14, 165, 233, 0.02)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+
+    const cy = h / 2;
+    const xMin = -6, xMax = 6;
+
+    for (let i = 0; i < fns.length; i++){
+      const a = ACT[fns[i]];
+      const phase = (t / 600 + i * 0.25) % 1;
+      // morph weight: each function fades in/out
+      const alpha = 0.15 + 0.45 * (0.5 + 0.5 * Math.sin(t / 800 + i * 1.7));
+
+      ctx.beginPath();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = a.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+
+      const N = 220;
+      for (let k = 0; k <= N; k++){
+        const x = xMin + (xMax - xMin) * k / N;
+        // gentle vertical wobble
+        const wobble = Math.sin(x * 0.6 + t / 500 + i) * 0.15;
+        const y = a.f(x) + wobble;
+        const px = (k / N) * w;
+        const py = cy - y * (h * 0.18);
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    t += 16;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ============================================================
+   DEMO 1 — Activation Explorer
+   ============================================================ */
+(function activationExplorer(){
+  const c = document.getElementById('ae-canvas');
+  if (!c) return;
+  let { ctx, w, h } = initCanvas(c);
+  window.addEventListener('resize', () => { ({ ctx, w, h } = initCanvas(c)); render(); });
+
+  const controls = document.getElementById('ae-controls');
+  const readout  = document.getElementById('ae-readout');
+  const derivBtn = document.getElementById('ae-deriv-toggle');
+
+  const enabled = { sigmoid: true, tanh: true, relu: true, leaky: false, gelu: false };
+  let showDeriv = false;
+  let hoverX = null;
+
+  const xMin = -6, xMax = 6;
+  const yMin = -1.5, yMax = 2.5;
+
+  function xToPx(x){ return (x - xMin) / (xMax - xMin) * w; }
+  function pxToX(px){ return xMin + (px / w) * (xMax - xMin); }
+  function yToPx(y){ return h - (y - yMin) / (yMax - yMin) * h; }
+
+  function drawAxes(){
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+    ctx.lineWidth = 1;
+    // grid
+    for (let gx = Math.ceil(xMin); gx <= xMax; gx++){
+      const px = xToPx(gx);
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+    }
+    for (let gy = Math.ceil(yMin); gy <= yMax; gy++){
+      const py = yToPx(gy);
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke();
+    }
+    // axes
+    ctx.strokeStyle = 'rgba(226, 232, 240, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, yToPx(0)); ctx.lineTo(w, yToPx(0));
+    ctx.moveTo(xToPx(0), 0); ctx.lineTo(xToPx(0), h);
+    ctx.stroke();
+
+    // labels
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('x', w - 14, yToPx(0) - 6);
+    ctx.fillText('f(x)', xToPx(0) + 6, 14);
+  }
+
+  function drawCurve(fn, dashed){
+    const a = ACT[fn];
+    ctx.beginPath();
+    ctx.lineWidth = dashed ? 1.6 : 2.4;
+    ctx.strokeStyle = a.color;
+    if (dashed) ctx.setLineDash([6, 5]); else ctx.setLineDash([]);
+    const N = 600;
+    for (let k = 0; k <= N; k++){
+      const x  = xMin + (xMax - xMin) * k / N;
+      const y  = dashed ? a.df(x) : a.f(x);
+      const px = xToPx(x), py = yToPx(y);
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function render(){
+    ctx.clearRect(0, 0, w, h);
+    drawAxes();
+    Object.keys(enabled).forEach(fn => {
+      if (!enabled[fn]) return;
+      drawCurve(fn, false);
+      if (showDeriv) drawCurve(fn, true);
+    });
+
+    if (hoverX !== null){
+      const px = xToPx(hoverX);
+      ctx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // dots at each enabled curve
+      Object.keys(enabled).forEach(fn => {
+        if (!enabled[fn]) return;
+        const y = ACT[fn].f(hoverX);
+        ctx.fillStyle = ACT[fn].color;
+        ctx.beginPath();
+        ctx.arc(px, yToPx(y), 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  }
+
+  function updateReadout(){
+    if (hoverX === null){
+      readout.innerHTML = 'Hover the plot to read values&hellip;';
+      return;
+    }
+    const lines = Object.keys(enabled).filter(k => enabled[k]).map(fn => {
+      const a = ACT[fn];
+      const fx  = a.f(hoverX);
+      const dfx = a.df(hoverX);
+      return `<span style="color:${a.color}"><strong>${a.name}</strong></span>: ` +
+             `f(${hoverX.toFixed(2)}) = ${fx.toFixed(4)}, ` +
+             `f'(${hoverX.toFixed(2)}) = ${dfx.toFixed(4)}`;
+    });
+    readout.innerHTML = lines.join('<br>') || 'No activation selected.';
+  }
+
+  controls.querySelectorAll('button[data-fn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fn = btn.dataset.fn;
+      enabled[fn] = !enabled[fn];
+      btn.classList.toggle('active', enabled[fn]);
+      render(); updateReadout();
+    });
+  });
+  derivBtn.addEventListener('click', () => {
+    showDeriv = !showDeriv;
+    derivBtn.classList.toggle('active', showDeriv);
+    derivBtn.innerHTML = showDeriv
+      ? '<i class="fa-solid fa-wave-square"></i> Hide derivatives'
+      : '<i class="fa-solid fa-wave-square"></i> Show derivatives';
+    render();
+  });
+
+  c.addEventListener('mousemove', e => {
+    const r = c.getBoundingClientRect();
+    hoverX = pxToX(e.clientX - r.left);
+    render(); updateReadout();
+  });
+  c.addEventListener('mouseleave', () => { hoverX = null; render(); updateReadout(); });
+
+  render();
+})();
+
+/* ============================================================
+   DEMO 2 — Vanishing Gradient Through 10 Layers
+   ============================================================ */
+(function vanishingDemo(){
+  const c = document.getElementById('vg-canvas');
+  if (!c) return;
+  let { ctx, w, h } = initCanvas(c);
+  window.addEventListener('resize', () => { ({ ctx, w, h } = initCanvas(c)); render(); });
+
+  const readout = document.getElementById('vg-readout');
+  const btnSig  = document.getElementById('vg-sigmoid');
+  const btnTan  = document.getElementById('vg-tanh');
+  const btnRel  = document.getElementById('vg-relu');
+  const btnRun  = document.getElementById('vg-run');
+
+  // representative local gradient per layer for each activation
+  // (typical maximum derivative around random initialization)
+  const localGrad = {
+    sigmoid: 0.25,
+    tanh:    0.55,
+    relu:    1.00
+  };
+  const colorOf = {
+    sigmoid: '#60a5fa',
+    tanh:    '#34d399',
+    relu:    '#f59e0b'
+  };
+
+  const N = 10;
+  let activation = 'sigmoid';
+  let bars = new Array(N).fill(0);   // visible value
+  let target = new Array(N).fill(0); // target after backprop
+  let animating = false;
+  let animStart = 0;
+
+  function computeTarget(){
+    const lg = localGrad[activation];
+    let g = 1.0;
+    target = [];
+    for (let i = 0; i < N; i++){
+      g *= lg;
+      target.push(g);
+    }
+    target.reverse(); // layer 1 = deepest decay (input side)
+  }
+
+  function render(){
+    ctx.clearRect(0, 0, w, h);
+
+    // Title strip
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.fillText('Gradient magnitude reaching each layer (output -> input)', 12, 22);
+
+    const padL = 50, padR = 20, padT = 40, padB = 60;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    // y axis (log-ish but linear here for clarity, capped at 1)
+    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++){
+      const y = padT + plotH * (i / 5);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+      ctx.fillStyle = 'rgba(148,163,184,0.7)';
+      ctx.fillText((1 - i / 5).toFixed(2), 8, y + 4);
+    }
+
+    // bars
+    const slot = plotW / N;
+    const barW = slot * 0.62;
+    for (let i = 0; i < N; i++){
+      const v = Math.max(0, Math.min(1, bars[i]));
+      const bh = v * plotH;
+      const bx = padL + i * slot + (slot - barW) / 2;
+      const by = padT + plotH - bh;
+
+      // bar
+      const grad = ctx.createLinearGradient(0, by, 0, by + bh);
+      grad.addColorStop(0, colorOf[activation]);
+      grad.addColorStop(1, colorOf[activation] + '55');
+      ctx.fillStyle = grad;
+      ctx.fillRect(bx, by, barW, bh);
+
+      // outline
+      ctx.strokeStyle = 'rgba(226,232,240,0.25)';
+      ctx.strokeRect(bx, by, barW, bh);
+
+      // label
+      ctx.fillStyle = 'rgba(226,232,240,0.85)';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('L' + (i + 1), bx + barW / 2, padT + plotH + 16);
+      ctx.fillText(v.toExponential(1), bx + barW / 2, padT + plotH + 32);
+      ctx.textAlign = 'left';
+    }
+
+    // arrow indicator
+    ctx.fillStyle = 'rgba(148,163,184,0.7)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('input layer', padL, h - 8);
+    ctx.fillText('output layer', padL + plotW - 70, h - 8);
+  }
+
+  function step(ts){
+    if (!animating) return;
+    if (!animStart) animStart = ts;
+    const t = Math.min(1, (ts - animStart) / 1800);
+
+    // sweep from output layer (last) toward input layer (first)
+    for (let i = 0; i < N; i++){
+      const layerIdx = N - 1 - i;
+      const localT = Math.max(0, Math.min(1, t * N - i));
+      bars[layerIdx] = target[layerIdx] * localT;
+    }
+    render();
+
+    if (t < 1){
+      requestAnimationFrame(step);
+    } else {
+      animating = false;
+      const minVal = Math.min(...target);
+      const maxVal = Math.max(...target);
+      const ratio = (minVal / maxVal).toExponential(2);
+      readout.innerHTML =
+        `<strong style="color:${colorOf[activation]}">${activation.toUpperCase()}</strong> ` +
+        `&middot; deepest layer gradient: <code>${minVal.toExponential(2)}</code> ` +
+        `&middot; output layer gradient: <code>${maxVal.toFixed(3)}</code> ` +
+        `&middot; ratio: <code>${ratio}</code>`;
+    }
+  }
+
+  function setActivation(a){
+    activation = a;
+    [btnSig, btnTan, btnRel].forEach(b => b.classList.remove('active'));
+    if (a === 'sigmoid') btnSig.classList.add('active');
+    if (a === 'tanh')    btnTan.classList.add('active');
+    if (a === 'relu')    btnRel.classList.add('active');
+    bars = new Array(N).fill(0);
+    computeTarget();
+    render();
+    readout.innerHTML = `Selected <strong style="color:${colorOf[a]}">${a.toUpperCase()}</strong>. Press <em>Run backprop</em>.`;
+  }
+
+  btnSig.addEventListener('click', () => setActivation('sigmoid'));
+  btnTan.addEventListener('click', () => setActivation('tanh'));
+  btnRel.addEventListener('click', () => setActivation('relu'));
+  btnRun.addEventListener('click', () => {
+    if (animating) return;
+    bars = new Array(N).fill(0);
+    computeTarget();
+    animating = true;
+    animStart = 0;
+    requestAnimationFrame(step);
+  });
+
+  setActivation('sigmoid');
+})();
+
+/* ============================================================
+   QUIZ — basic correctness highlighter
+   ============================================================ */
+(function quiz(){
+  document.querySelectorAll('.quiz-block').forEach(block => {
+    const ans = block.dataset.answer;
+    const fb  = block.querySelector('.quiz-feedback');
+    block.querySelectorAll('li[data-opt]').forEach(li => {
+      li.addEventListener('click', () => {
+        block.querySelectorAll('li').forEach(x => x.classList.remove('correct','wrong'));
+        if (li.dataset.opt === ans){
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'quiz-feedback correct';
+        } else {
+          li.classList.add('wrong');
+          fb.textContent = 'Not quite — try again.';
+          fb.className = 'quiz-feedback wrong';
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

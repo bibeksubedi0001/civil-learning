@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.7 Training, Epochs &amp; Mini-Batches | Civil Engineer's Guide to AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE&nbsp;&middot;&nbsp;AI&nbsp;Guide</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i><span>Home</span></a>
+      <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i><span>Chapter 6</span></a>
+      <a href="sub6.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i><span>6.6</span></a>
+      <a href="sub8.html" class="nav-link"><i class="fa-solid fa-arrow-right"></i><span>6.8</span></a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <i class="fa-solid fa-sun"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ====================== HERO ====================== -->
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-rotate"></i>
+      <span>Sub-Chapter 6.7</span>
+    </div>
+    <h1 class="chapter-hero__title">Training, Epochs &amp; Mini-Batches</h1>
+    <p class="chapter-hero__subtitle">
+      The choreography of learning &mdash; how networks see data, update weights,
+      and converge over time. From a single iteration to a full training run.
+    </p>
+    <div class="chapter-hero__meta">
+      <span class="chapter-hero__meta-item"><i class="fa-solid fa-clock"></i> 22 min read</span>
+      <span class="chapter-hero__meta-item"><i class="fa-solid fa-layer-group"></i> Core mechanics</span>
+      <span class="chapter-hero__meta-item"><i class="fa-solid fa-chart-line"></i> 2 demos</span>
+      <span class="chapter-hero__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+    <span>Scroll</span>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+<!-- ====================== SECTION 1 : OVERVIEW ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-flag"></i> Orientation</span>
+      <h2 class="section-title">Why &ldquo;training&rdquo; needs vocabulary</h2>
+      <p class="section-lede">
+        In the last sub-chapter we walked through a single backprop step. Real models
+        take <em>millions</em> of those steps. To talk about that process precisely,
+        engineers use three words constantly: <strong>iteration</strong>, <strong>epoch</strong>,
+        and <strong>batch size</strong>. Get these straight and the rest of training is mostly bookkeeping.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-diagram-project"></i></div>
+      <div class="info-card__body">
+        <h3>The training loop &mdash; one beat at a time</h3>
+        <p>Every modern deep-learning trainer, whether 50 lines of NumPy or a 100k-line PyTorch project, executes this same five-step rhythm:</p>
+        <ol class="numbered-list">
+          <li><strong>Load a batch</strong> &mdash; pull <code>B</code> examples from the training set.</li>
+          <li><strong>Forward pass</strong> &mdash; compute predictions for those <code>B</code> examples.</li>
+          <li><strong>Compute loss</strong> &mdash; compare predictions to ground truth.</li>
+          <li><strong>Backward pass</strong> &mdash; compute gradients of loss w.r.t. every weight.</li>
+          <li><strong>Update weights</strong> &mdash; nudge weights in the direction that reduces loss.</li>
+        </ol>
+        <p>That five-step cycle is one <em>iteration</em>. Repeat it until you&rsquo;ve seen every training example once &mdash; that&rsquo;s one <em>epoch</em>. Repeat <em>epochs</em> until the validation loss stops improving.</p>
+      </div>
+    </div>
+
+    <div class="analogy-block">
+      <div class="analogy-block__header">
+        <i class="fa-solid fa-helmet-safety"></i>
+        <h4>Civil-engineering analogy</h4>
+      </div>
+      <p>
+        Training a network is like calibrating a draft structural-design code from historical project data:
+      </p>
+      <ul class="bullet-list">
+        <li><strong>One mini-batch</strong> = updating provisions after reviewing a small handful of past projects.</li>
+        <li><strong>One epoch</strong> = re-reading the <em>entire</em> case database front to back.</li>
+        <li><strong>Validation set</strong> = a separate set of independent bridges held aside to test whether the code generalizes.</li>
+        <li><strong>Test set</strong> = a sealed envelope of cases opened only once at the very end &mdash; the final, unbiased report card.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 2 : VOCABULARY ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-book"></i> Vocabulary</span>
+      <h2 class="section-title">Iteration, epoch, batch size</h2>
+      <p class="section-lede">
+        These three numbers are tied by a simple equation. Memorize it.
+      </p>
+    </div>
+
+    <div class="info-card info-card--accent">
+      <div class="info-card__icon"><i class="fa-solid fa-square-root-variable"></i></div>
+      <div class="info-card__body">
+        <h3>The fundamental relation</h3>
+        <p class="formula-line">
+          iterations per epoch &nbsp;=&nbsp; <code>ceil( N<sub>train</sub> / batch_size )</code>
+        </p>
+        <p>If you have 50,000 training examples and a batch size of 64, one epoch is <code>ceil(50000 / 64) = 782</code> iterations. Train for 30 epochs and the optimizer takes <code>782 &times; 30 = 23,460</code> weight updates.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-shoe-prints"></i></div>
+        <div class="info-card__body">
+          <h3>Iteration (a.k.a. <em>step</em>)</h3>
+          <p>One forward + backward + update on a single mini-batch. The smallest atomic unit of training.</p>
+          <p class="muted-note"><i class="fa-solid fa-circle-info"></i> When you read &ldquo;loss at step 5,000,&rdquo; this is what is meant.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-rotate-right"></i></div>
+        <div class="info-card__body">
+          <h3>Epoch</h3>
+          <p>One complete pass through the entire training dataset. The model has now &ldquo;seen&rdquo; every example exactly once (assuming no oversampling).</p>
+          <p class="muted-note"><i class="fa-solid fa-circle-info"></i> Most papers report results &ldquo;after N epochs.&rdquo;</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <div class="info-card__body">
+          <h3>Batch size <code>B</code></h3>
+          <p>Number of examples processed together in a single iteration. The gradient is averaged across these <code>B</code> examples before the update.</p>
+          <p class="muted-note"><i class="fa-solid fa-circle-info"></i> Common values: 8, 16, 32, 64, 128, 256, 512, 1024.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-database"></i></div>
+        <div class="info-card__body">
+          <h3>Dataset size <code>N</code></h3>
+          <p>The total number of training examples. Distinct from the validation and test counts, which are held out.</p>
+          <p class="muted-note"><i class="fa-solid fa-circle-info"></i> Modern image datasets: 10<sup>4</sup>&ndash;10<sup>9</sup> examples.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-box__icon"><i class="fa-solid fa-lightbulb"></i></div>
+      <div class="tip-box__body">
+        <strong>Quick sanity check.</strong> If someone says &ldquo;we trained for 100k steps&rdquo; without telling you the batch size or dataset size, you cannot convert that to epochs. Always ask for all three.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 3 : SPLITS ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-scissors"></i> Data splits</span>
+      <h2 class="section-title">Train / Validation / Test</h2>
+      <p class="section-lede">
+        You never train on all your data. A portion is sacrificed for honest evaluation &mdash; otherwise you cannot tell whether your model has actually learned something or simply memorized the answers.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-chart-pie"></i></div>
+      <div class="info-card__body">
+        <h3>The three-way split</h3>
+        <p>Typical ratios: <strong>70/15/15</strong> or <strong>80/10/10</strong> for medium datasets, and as little as <strong>98/1/1</strong> when you have millions of examples (1% of 10M is still 100k &mdash; plenty for evaluation).</p>
+        <ul class="bullet-list">
+          <li><strong>Training set:</strong> the model learns from these. Weights are updated using their gradients.</li>
+          <li><strong>Validation set:</strong> the model is <em>evaluated</em> on these every epoch. Used to pick the best epoch, tune learning rate, decide when to stop. The model never trains on them, but you (the engineer) <em>do</em> use them to make decisions &mdash; so they become contaminated over time.</li>
+          <li><strong>Test set:</strong> opened exactly once, at the end, to report the final number. Never used for any tuning.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+        <div class="info-card__body">
+          <h3>Why a separate validation set?</h3>
+          <p>Because <em>any</em> decision you make using the test set turns it into a validation set. You only get one truly clean estimate of generalization &mdash; protect it.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-shuffle"></i></div>
+        <div class="info-card__body">
+          <h3>Stratified sampling</h3>
+          <p>For imbalanced datasets (95% safe / 5% defective), random splitting can leave the rare class missing from validation. Stratified sampling preserves the class ratio inside each split.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div class="info-card__body">
+          <h3>Time-based splits</h3>
+          <p>For time-series (e.g., concrete-curing sensor data), random splitting <em>leaks the future into the past</em>. Always split chronologically: train on weeks 1&ndash;30, validate on 31&ndash;33, test on 34&ndash;36.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-fingerprint"></i></div>
+        <div class="info-card__body">
+          <h3>Group-aware splits</h3>
+          <p>If multiple photos of the <em>same</em> bridge appear in your dataset, all of them must go to the <em>same</em> split. Otherwise the model sees the same bridge in training and validation &mdash; an instant leak.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box tip-box--warn">
+      <div class="tip-box__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="tip-box__body">
+        <strong>Data leakage</strong> is the #1 cause of &ldquo;impossibly good&rdquo; results that fail in production. Whenever your validation accuracy looks too good, suspect a leak first.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 4 : LEARNING CURVES ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-chart-line"></i> Diagnostics</span>
+      <h2 class="section-title">Reading learning curves</h2>
+      <p class="section-lede">
+        Plot training loss and validation loss against epochs. The shape of those two lines tells you everything you need to know about the health of your training run.
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-arrow-down-short-wide"></i></div>
+        <div class="info-card__body">
+          <h3>Underfitting</h3>
+          <p>Both train and validation loss are high and barely decreasing. The model lacks the capacity (or hasn&rsquo;t trained long enough) to fit the data.</p>
+          <p class="muted-note"><strong>Fix:</strong> bigger model, longer training, better features, lower regularization.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-bullseye"></i></div>
+        <div class="info-card__body">
+          <h3>Just right</h3>
+          <p>Both losses decrease together and plateau close to each other. The small gap between them is normal and represents the model&rsquo;s honest generalization error.</p>
+          <p class="muted-note"><strong>Action:</strong> stop training, save model.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></div>
+        <div class="info-card__body">
+          <h3>Overfitting</h3>
+          <p>Train loss keeps falling but validation loss bottoms out and starts <em>rising</em>. The model is memorizing training noise.</p>
+          <p class="muted-note"><strong>Fix:</strong> more data, regularization, dropout, early stopping (we cover these in 6.8).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-stopwatch"></i></div>
+      <div class="info-card__body">
+        <h3>Early stopping &mdash; the simplest regularizer</h3>
+        <p>Watch the validation loss every epoch. The moment it stops improving for, say, 5 epochs in a row (the &ldquo;patience&rdquo;), kill the run and load the weights from the best epoch. That&rsquo;s it. Free regularization.</p>
+      </div>
+    </div>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <i class="fa-brands fa-python"></i>
+        <span>training_loop.py</span>
+      </div>
+<pre><code>best_val = float("inf")
+patience, bad = 5, 0
+
+for epoch in range(max_epochs):
+    model.train()
+    for xb, yb in train_loader:        # one iteration each
+        pred = model(xb)
+        loss = loss_fn(pred, yb)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+    model.eval()
+    val_loss = evaluate(model, val_loader)
+
+    if val_loss &lt; best_val:
+        best_val = val_loss
+        save_checkpoint(model)
+        bad = 0
+    else:
+        bad += 1
+        if bad &gt;= patience:
+            print(f"Early stop at epoch {epoch}")
+            break</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 5 : DEMO 1 ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-flask"></i> Interactive demo 1</span>
+      <h2 class="section-title">Training Loop Visualizer</h2>
+      <p class="section-lede">
+        Watch a small synthetic regression model train in real time. Pick a model
+        complexity and see whether the curves stay flat (underfit), converge nicely (just right),
+        or diverge (overfit).
+      </p>
+    </div>
+
+    <div class="demo-panel">
+      <div class="demo-panel__controls">
+        <div class="control-group">
+          <label class="control-label">Model complexity</label>
+          <div class="btn-row" id="complexity-row">
+            <button class="btn btn--toggle" data-cx="low"><i class="fa-solid fa-minus"></i> Low</button>
+            <button class="btn btn--toggle is-active" data-cx="medium"><i class="fa-solid fa-equals"></i> Medium</button>
+            <button class="btn btn--toggle" data-cx="high"><i class="fa-solid fa-plus"></i> High</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Run</label>
+          <div class="btn-row">
+            <button class="btn btn--primary" id="d1-start"><i class="fa-solid fa-play"></i> Start</button>
+            <button class="btn" id="d1-pause"><i class="fa-solid fa-pause"></i> Pause</button>
+            <button class="btn" id="d1-reset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-panel__canvas-wrap">
+        <canvas id="d1-canvas"></canvas>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric"><span class="metric__label">Epoch</span><span class="metric__value" id="d1-epoch">0</span></div>
+        <div class="metric"><span class="metric__label">Train loss</span><span class="metric__value" id="d1-tloss">&mdash;</span></div>
+        <div class="metric"><span class="metric__label">Val loss</span><span class="metric__value" id="d1-vloss">&mdash;</span></div>
+        <div class="metric"><span class="metric__label">Val accuracy</span><span class="metric__value" id="d1-acc">&mdash;</span></div>
+        <div class="metric"><span class="metric__label">Status</span><span class="metric__value" id="d1-status">idle</span></div>
+      </div>
+
+      <p class="demo-panel__caption">
+        <i class="fa-solid fa-circle-info"></i>
+        The blue curve is training loss; the orange curve is validation loss. Try <em>High</em>
+        complexity and watch the orange curve eventually rise &mdash; classic overfitting.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 6 : BATCH SIZE ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-balance-scale"></i> Tradeoffs</span>
+      <h2 class="section-title">Batch size: small vs. large</h2>
+      <p class="section-lede">
+        Batch size is one of the few hyperparameters that touches everything: speed, memory,
+        gradient quality, generalization, and required learning rate. Here&rsquo;s the cheat sheet.
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-feather"></i></div>
+        <div class="info-card__body">
+          <h3>Small batches (8 &ndash; 32)</h3>
+          <ul class="bullet-list">
+            <li><strong>Noisy gradients</strong> &mdash; each step jitters around the &ldquo;true&rdquo; gradient.</li>
+            <li>Often <strong>better generalization</strong> &mdash; the noise acts like a regularizer.</li>
+            <li><strong>Slower per-epoch</strong> wall-clock time on GPU (under-utilized hardware).</li>
+            <li>Lower memory footprint.</li>
+            <li>Can use a higher learning rate without diverging.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-anchor"></i></div>
+        <div class="info-card__body">
+          <h3>Large batches (256 &ndash; 1024+)</h3>
+          <ul class="bullet-list">
+            <li><strong>Smooth gradients</strong> &mdash; closer to the true full-dataset gradient.</li>
+            <li><strong>Faster per-epoch</strong> on modern GPUs (better parallelism).</li>
+            <li>Often <em>worse</em> final generalization without careful tuning.</li>
+            <li>Higher memory footprint &mdash; can blow up VRAM.</li>
+            <li>Usually need to <em>scale the learning rate up</em> proportionally (linear-scaling rule).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-box__icon"><i class="fa-solid fa-bolt"></i></div>
+      <div class="tip-box__body">
+        <strong>Linear-scaling rule (Goyal et&nbsp;al. 2017).</strong> If you double the batch size, double the learning rate (up to a limit). Roughly preserves training dynamics.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 7 : DEMO 2 ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-flask"></i> Interactive demo 2</span>
+      <h2 class="section-title">Batch Size Effect</h2>
+      <p class="section-lede">
+        Three identical models trained on the same data with three different batch sizes.
+        Watch the texture of each loss curve &mdash; B=8 jitters wildly, B=256 glides.
+      </p>
+    </div>
+
+    <div class="demo-panel">
+      <div class="demo-panel__controls">
+        <div class="control-group">
+          <label class="control-label">Run all three</label>
+          <div class="btn-row">
+            <button class="btn btn--primary" id="d2-start"><i class="fa-solid fa-play"></i> Start</button>
+            <button class="btn" id="d2-pause"><i class="fa-solid fa-pause"></i> Pause</button>
+            <button class="btn" id="d2-reset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Legend</label>
+          <div class="legend-row">
+            <span class="legend"><span class="swatch" style="background:#60a5fa"></span> B = 8 (noisy)</span>
+            <span class="legend"><span class="swatch" style="background:#34d399"></span> B = 64</span>
+            <span class="legend"><span class="swatch" style="background:#f59e0b"></span> B = 256 (smooth)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-panel__canvas-wrap">
+        <canvas id="d2-canvas"></canvas>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric"><span class="metric__label">Iter</span><span class="metric__value" id="d2-iter">0</span></div>
+        <div class="metric"><span class="metric__label">B=8 loss</span><span class="metric__value" id="d2-l8">&mdash;</span></div>
+        <div class="metric"><span class="metric__label">B=64 loss</span><span class="metric__value" id="d2-l64">&mdash;</span></div>
+        <div class="metric"><span class="metric__label">B=256 loss</span><span class="metric__value" id="d2-l256">&mdash;</span></div>
+      </div>
+
+      <p class="demo-panel__caption">
+        <i class="fa-solid fa-circle-info"></i>
+        All three runs use the same learning rate and dataset. Notice how B=8 takes more iterations
+        but its noisy descent often reaches a better final loss.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 8 : SHUFFLING & AUG ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-shuffle"></i> Pipeline hygiene</span>
+      <h2 class="section-title">Shuffling, stratification, augmentation</h2>
+      <p class="section-lede">
+        Three habits that separate a working training pipeline from a broken one.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-shuffle"></i></div>
+      <div class="info-card__body">
+        <h3>Shuffle every epoch</h3>
+        <p>If your dataset is sorted by class (all cracks first, then all spalls, then all corrosion), an unshuffled iterator hands the model an entire epoch of one class before showing any of the next. The result is wild oscillation in the loss and unstable training. Shuffling at the start of every epoch fixes this.</p>
+        <p class="muted-note"><i class="fa-solid fa-circle-info"></i> The validation and test sets are <em>not</em> shuffled &mdash; consistency matters more than order there.</p>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-scale-unbalanced"></i></div>
+      <div class="info-card__body">
+        <h3>Stratified sampling for imbalanced data</h3>
+        <p>If 95% of your bridge inspections are &ldquo;safe&rdquo; and 5% are &ldquo;defective,&rdquo; a random batch of 32 will sometimes contain <em>zero</em> defective examples &mdash; the loss on that step says nothing about the rare class. Stratified samplers ensure each batch contains a controlled mix.</p>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+      <div class="info-card__body">
+        <h3>Data augmentation in the pipeline</h3>
+        <p>For images, the same example is <em>resampled</em> with random crop, flip, brightness, and rotation each time it&rsquo;s loaded. The model effectively sees a different version every epoch, multiplying the apparent dataset size. This is the single most effective regularizer for vision models &mdash; we explore it in detail in 6.8.</p>
+      </div>
+    </div>
+
+    <div class="tip-box tip-box--warn">
+      <div class="tip-box__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="tip-box__body">
+        <strong>Augment training only.</strong> Validation and test data must remain untouched, otherwise your evaluation numbers are meaningless.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 9 : QUIZ ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-circle-question"></i> Check your understanding</span>
+      <h2 class="section-title">Quiz</h2>
+      <p class="section-lede">Four short questions. Click any option to reveal the explanation.</p>
+    </div>
+
+    <div class="quiz-block" data-quiz>
+      <h3 class="quiz-block__q"><span class="quiz-block__num">1</span> You have 80,000 training examples and a batch size of 32. How many iterations is one epoch?</h3>
+      <ul class="quiz-options">
+        <li data-correct="false">32</li>
+        <li data-correct="false">800</li>
+        <li data-correct="true">2,500</li>
+        <li data-correct="false">80,000</li>
+      </ul>
+      <div class="quiz-block__explain">80,000 / 32 = 2,500 iterations per epoch.</div>
+    </div>
+
+    <div class="quiz-block" data-quiz>
+      <h3 class="quiz-block__q"><span class="quiz-block__num">2</span> Training loss keeps falling but validation loss is rising. What is happening?</h3>
+      <ul class="quiz-options">
+        <li data-correct="false">Underfitting &mdash; the model needs more capacity</li>
+        <li data-correct="true">Overfitting &mdash; the model is memorizing training noise</li>
+        <li data-correct="false">The optimizer is broken</li>
+        <li data-correct="false">The learning rate is too low</li>
+      </ul>
+      <div class="quiz-block__explain">A growing gap between falling train loss and rising val loss is the textbook signature of overfitting. Time for early stopping or regularization.</div>
+    </div>
+
+    <div class="quiz-block" data-quiz>
+      <h3 class="quiz-block__q"><span class="quiz-block__num">3</span> Why hold out a separate test set in addition to a validation set?</h3>
+      <ul class="quiz-options">
+        <li data-correct="false">Because the GPU needs more data to warm up</li>
+        <li data-correct="true">Because every decision made using the validation set contaminates it; the test set is opened only once for an unbiased final estimate</li>
+        <li data-correct="false">To double the size of the training set</li>
+        <li data-correct="false">It is a backup in case the validation set is lost</li>
+      </ul>
+      <div class="quiz-block__explain">You tune learning rate, architecture, and stopping epoch using validation feedback. That gradually overfits the validation set. The test set is kept sealed to give one honest final number.</div>
+    </div>
+
+    <div class="quiz-block" data-quiz>
+      <h3 class="quiz-block__q"><span class="quiz-block__num">4</span> A colleague switches from batch size 32 to 256 with no other changes and the model now diverges. What is the most likely fix?</h3>
+      <ul class="quiz-options">
+        <li data-correct="false">Reduce the dataset size</li>
+        <li data-correct="false">Disable shuffling</li>
+        <li data-correct="true">Increase the learning rate (roughly proportionally)</li>
+        <li data-correct="false">Train for fewer epochs</li>
+      </ul>
+      <div class="quiz-block__explain">Larger batches give smaller-magnitude weight updates per epoch. The linear-scaling rule says: scale the learning rate up roughly in proportion to the batch-size increase.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== SECTION 10 : RECAP ====================== -->
+<section class="ch-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow"><i class="fa-solid fa-flag-checkered"></i> Recap</span>
+      <h2 class="section-title">What you should walk away with</h2>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-list-check"></i></div>
+      <div class="info-card__body">
+        <ul class="bullet-list">
+          <li>Training is a tight five-step loop: <em>load &rarr; forward &rarr; loss &rarr; backward &rarr; update</em>.</li>
+          <li>One iteration = one mini-batch. One epoch = one pass over the whole training set.</li>
+          <li><code>iterations_per_epoch = ceil(N / batch_size)</code>.</li>
+          <li>Always split data into train, validation, and test &mdash; and respect the boundaries.</li>
+          <li>Diagnose runs by reading the train/val loss curves: flat = underfit, diverging = overfit, parallel = healthy.</li>
+          <li>Small batches generalize better but train slower; large batches need scaled-up learning rates.</li>
+          <li>Shuffle every epoch, stratify when classes are imbalanced, and augment only the training set.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-box__icon"><i class="fa-solid fa-arrow-right"></i></div>
+      <div class="tip-box__body">
+        <strong>Up next &mdash; 6.8 Regularization &amp; Generalization.</strong> We&rsquo;ve seen overfitting; now we fight it with weight decay, dropout, early stopping, and data augmentation.
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ====================== FOOTER NAV ====================== -->
+<nav class="chapter-nav-footer">
+  <a href="sub6.html" class="chapter-nav__link prev">
+    <i class="fa-solid fa-arrow-left"></i>
+    <div>
+      <span class="chapter-nav__label">Previous</span>
+      <span class="chapter-nav__title">6.6 Backpropagation Demystified</span>
+    </div>
+  </a>
+  <a href="sub8.html" class="chapter-nav__link next">
+    <div>
+      <span class="chapter-nav__label">Next</span>
+      <span class="chapter-nav__title">6.8 Regularization &amp; Generalization</span>
+    </div>
+    <i class="fa-solid fa-arrow-right"></i>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-col">
+      <h4><i class="fa-solid fa-helmet-safety"></i> CE&nbsp;&middot;&nbsp;AI&nbsp;Guide</h4>
+      <p>A civil engineer&rsquo;s walk-through of artificial intelligence &mdash; from first principles to deployable models.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Chapter 6</h4>
+      <ul>
+        <li><a href="index.html">Chapter overview</a></li>
+        <li><a href="sub6.html">6.6 Backpropagation</a></li>
+        <li><a href="sub7.html">6.7 Training &amp; Epochs</a></li>
+        <li><a href="sub8.html">6.8 Regularization</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="../index.html">All chapters</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; Civil Engineer&rsquo;s Guide to AI</span>
+  </div>
+</footer>
+
+<!-- ====================== SCRIPTS ====================== -->
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+
+<script>
+/* ============================================================
+   DPI-aware canvas helper
+============================================================ */
+function initCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  const r   = c.getBoundingClientRect();
+  c.width   = r.width  * dpr;
+  c.height  = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* ============================================================
+   HERO CANVAS  -  animated dual loss curve
+============================================================ */
+(function heroAnim(){
+  const c = document.getElementById('hero-canvas');
+  if (!c) return;
+  let { ctx, w, h } = initCanvas(c);
+
+  window.addEventListener('resize', () => {
+    ({ ctx, w, h } = initCanvas(c));
+  });
+
+  let t = 0;
+  function trainCurve(x){ return 0.95 * Math.exp(-2.6 * x) + 0.05; }
+  function valCurve(x){
+    const base = 0.95 * Math.exp(-2.2 * x) + 0.12;
+    const overfit = 0.18 * Math.max(0, x - 0.55) ** 2;
+    return base + overfit;
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, w, h);
+
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 8; i++){
+      const y = (i / 8) * h;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    for (let i = 0; i <= 12; i++){
+      const x = (i / 12) * w;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+
+    const phase = (t % 600) / 600;       // 0..1 looping
+    const reveal = Math.min(1, phase * 1.4);
+
+    function plot(fn, color, glow){
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.4;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      const N = 180;
+      for (let i = 0; i <= N; i++){
+        const x = i / N;
+        if (x > reveal) break;
+        const y = fn(x);
+        const px = x * w;
+        const py = (0.15 + y * 0.7) * h;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    plot(trainCurve, 'rgba(96,165,250,0.95)', 'rgba(96,165,250,0.5)');
+    plot(valCurve,   'rgba(245,158,11,0.95)', 'rgba(245,158,11,0.5)');
+
+    t++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ============================================================
+   DEMO 1  -  Training Loop Visualizer
+============================================================ */
+(function demo1(){
+  const c = document.getElementById('d1-canvas');
+  if (!c) return;
+  let cv = initCanvas(c);
+  window.addEventListener('resize', () => { cv = initCanvas(c); redraw(); });
+
+  const epochEl  = document.getElementById('d1-epoch');
+  const tlEl     = document.getElementById('d1-tloss');
+  const vlEl     = document.getElementById('d1-vloss');
+  const accEl    = document.getElementById('d1-acc');
+  const stEl     = document.getElementById('d1-status');
+
+  const startBtn = document.getElementById('d1-start');
+  const pauseBtn = document.getElementById('d1-pause');
+  const resetBtn = document.getElementById('d1-reset');
+  const cxRow    = document.getElementById('complexity-row');
+
+  const MAX_EPOCH = 80;
+  let trainHist = [];
+  let valHist   = [];
+  let epoch = 0;
+  let running = false;
+  let complexity = 'medium';
+  let timer = null;
+
+  cxRow.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      cxRow.querySelectorAll('button').forEach(x => x.classList.remove('is-active'));
+      b.classList.add('is-active');
+      complexity = b.dataset.cx;
+    });
+  });
+
+  function rand(){ return Math.random() * 2 - 1; }
+
+  function step(){
+    epoch++;
+    const x = epoch / MAX_EPOCH;
+
+    let train, val;
+    if (complexity === 'low'){
+      // underfit - stays flat-ish
+      train = 0.55 + 0.10 * Math.exp(-3 * x) + 0.015 * rand();
+      val   = 0.62 + 0.10 * Math.exp(-3 * x) + 0.020 * rand();
+    } else if (complexity === 'medium'){
+      // healthy
+      train = 0.05 + 0.85 * Math.exp(-3.0 * x) + 0.012 * rand();
+      val   = 0.10 + 0.80 * Math.exp(-2.6 * x) + 0.020 * rand();
+    } else {
+      // overfit - val rises after a while
+      train = 0.02 + 0.90 * Math.exp(-4.0 * x) + 0.010 * rand();
+      const overfit = 0.55 * Math.max(0, x - 0.40) ** 2;
+      val = 0.10 + 0.78 * Math.exp(-3.0 * x) + overfit + 0.022 * rand();
+    }
+    train = Math.max(0.001, train);
+    val   = Math.max(0.001, val);
+
+    trainHist.push(train);
+    valHist.push(val);
+
+    epochEl.textContent = epoch;
+    tlEl.textContent = train.toFixed(3);
+    vlEl.textContent = val.toFixed(3);
+
+    // fake accuracy from val loss
+    const acc = Math.max(0, Math.min(0.99, 1 - val * 1.05));
+    accEl.textContent = (acc * 100).toFixed(1) + '%';
+
+    if (complexity === 'low') stEl.textContent = 'underfitting';
+    else if (complexity === 'high' && epoch > MAX_EPOCH * 0.5) stEl.textContent = 'overfitting';
+    else stEl.textContent = 'training';
+
+    redraw();
+
+    if (epoch >= MAX_EPOCH){
+      stop(); stEl.textContent = 'done';
+    }
+  }
+
+  function start(){
+    if (running) return;
+    running = true;
+    stEl.textContent = 'training';
+    timer = setInterval(step, 80);
+  }
+  function stop(){
+    running = false;
+    if (timer){ clearInterval(timer); timer = null; }
+    if (epoch < MAX_EPOCH) stEl.textContent = 'paused';
+  }
+  function reset(){
+    stop();
+    epoch = 0; trainHist = []; valHist = [];
+    epochEl.textContent = '0';
+    tlEl.textContent = '—'; vlEl.textContent = '—'; accEl.textContent = '—';
+    stEl.textContent = 'idle';
+    redraw();
+  }
+
+  startBtn.addEventListener('click', start);
+  pauseBtn.addEventListener('click', stop);
+  resetBtn.addEventListener('click', reset);
+
+  function redraw(){
+    const { ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+
+    const padL = 50, padR = 20, padT = 24, padB = 36;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    // background
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.fillRect(padL, padT, plotW, plotH);
+
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++){
+      const y = padT + (i / 5) * plotH;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+    }
+    for (let i = 0; i <= 8; i++){
+      const x = padL + (i / 8) * plotW;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+    }
+
+    // axes labels
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++){
+      const y = padT + (i / 5) * plotH;
+      const v = (1 - i / 5).toFixed(1);
+      ctx.fillText(v, padL - 6, y + 3);
+    }
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 8; i++){
+      const x = padL + (i / 8) * plotW;
+      const ep = Math.round((i / 8) * MAX_EPOCH);
+      ctx.fillText(ep, x, padT + plotH + 16);
+    }
+    ctx.fillText('epoch', padL + plotW / 2, padT + plotH + 30);
+    ctx.save();
+    ctx.translate(14, padT + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('loss', 0, 0);
+    ctx.restore();
+
+    function plotSeries(arr, color, glow){
+      if (arr.length < 2) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      for (let i = 0; i < arr.length; i++){
+        const x = padL + (i / MAX_EPOCH) * plotW;
+        const y = padT + (1 - Math.min(1, arr[i])) * plotH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    plotSeries(trainHist, '#60a5fa', 'rgba(96,165,250,0.5)');
+    plotSeries(valHist,   '#f59e0b', 'rgba(245,158,11,0.5)');
+
+    // legend
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#60a5fa';
+    ctx.fillRect(padL + 8, padT + 8, 14, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText('train loss', padL + 28, padT + 12);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(padL + 100, padT + 8, 14, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText('val loss', padL + 120, padT + 12);
+  }
+
+  reset();
+})();
+
+/* ============================================================
+   DEMO 2  -  Batch size effect (3 concurrent runs)
+============================================================ */
+(function demo2(){
+  const c = document.getElementById('d2-canvas');
+  if (!c) return;
+  let cv = initCanvas(c);
+  window.addEventListener('resize', () => { cv = initCanvas(c); redraw(); });
+
+  const iterEl = document.getElementById('d2-iter');
+  const l8El   = document.getElementById('d2-l8');
+  const l64El  = document.getElementById('d2-l64');
+  const l256El = document.getElementById('d2-l256');
+
+  const startBtn = document.getElementById('d2-start');
+  const pauseBtn = document.getElementById('d2-pause');
+  const resetBtn = document.getElementById('d2-reset');
+
+  const MAX_ITER = 240;
+  // each run has its own noise level + decay rate
+  const runs = [
+    { B:   8, color: '#60a5fa', glow: 'rgba(96,165,250,0.5)', noise: 0.090, decay: 3.0, hist: [], el: l8El   },
+    { B:  64, color: '#34d399', glow: 'rgba(52,211,153,0.5)', noise: 0.030, decay: 2.6, hist: [], el: l64El  },
+    { B: 256, color: '#f59e0b', glow: 'rgba(245,158,11,0.5)', noise: 0.010, decay: 2.0, hist: [], el: l256El }
+  ];
+  let iter = 0;
+  let running = false;
+  let timer = null;
+
+  function step(){
+    iter++;
+    const x = iter / MAX_ITER;
+    runs.forEach(r => {
+      const base = 0.05 + 0.85 * Math.exp(-r.decay * x);
+      const noisy = base + (Math.random() * 2 - 1) * r.noise;
+      const v = Math.max(0.005, noisy);
+      r.hist.push(v);
+      r.el.textContent = v.toFixed(3);
+    });
+    iterEl.textContent = iter;
+    redraw();
+    if (iter >= MAX_ITER) stop();
+  }
+  function start(){
+    if (running) return;
+    running = true;
+    timer = setInterval(step, 35);
+  }
+  function stop(){
+    running = false;
+    if (timer){ clearInterval(timer); timer = null; }
+  }
+  function reset(){
+    stop();
+    iter = 0;
+    runs.forEach(r => { r.hist = []; r.el.textContent = '—'; });
+    iterEl.textContent = '0';
+    redraw();
+  }
+
+  startBtn.addEventListener('click', start);
+  pauseBtn.addEventListener('click', stop);
+  resetBtn.addEventListener('click', reset);
+
+  function redraw(){
+    const { ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+
+    const padL = 50, padR = 20, padT = 24, padB = 36;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.fillRect(padL, padT, plotW, plotH);
+
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++){
+      const y = padT + (i / 5) * plotH;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+    }
+    for (let i = 0; i <= 8; i++){
+      const x = padL + (i / 8) * plotW;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+    }
+
+    // labels
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++){
+      const y = padT + (i / 5) * plotH;
+      const v = (1 - i / 5).toFixed(1);
+      ctx.fillText(v, padL - 6, y + 3);
+    }
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 8; i++){
+      const x = padL + (i / 8) * plotW;
+      const it = Math.round((i / 8) * MAX_ITER);
+      ctx.fillText(it, x, padT + plotH + 16);
+    }
+    ctx.fillText('iteration', padL + plotW / 2, padT + plotH + 30);
+    ctx.save();
+    ctx.translate(14, padT + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('loss', 0, 0);
+    ctx.restore();
+
+    runs.forEach(r => {
+      if (r.hist.length < 2) return;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 1.6;
+      ctx.shadowColor = r.glow;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      for (let i = 0; i < r.hist.length; i++){
+        const x = padL + (i / MAX_ITER) * plotW;
+        const y = padT + (1 - Math.min(1, r.hist[i])) * plotH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+
+    // annotations
+    ctx.textAlign = 'left';
+    ctx.font = '11px Inter, sans-serif';
+    if (runs[0].hist.length > 30){
+      ctx.fillStyle = 'rgba(96,165,250,0.85)';
+      ctx.fillText('noisy descent (B=8)', padL + plotW * 0.32, padT + plotH * 0.30);
+    }
+    if (runs[2].hist.length > 30){
+      ctx.fillStyle = 'rgba(245,158,11,0.85)';
+      ctx.fillText('smooth descent (B=256)', padL + plotW * 0.42, padT + plotH * 0.78);
+    }
+  }
+
+  reset();
+})();
+</script>
+
+</body>
+</html>

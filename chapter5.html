@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 05 — LLMs | CE Guide to AI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="chapter-page">
+
+    <nav id="main-nav">
+        <div class="nav-brand">
+            <a href="index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-helmet-safety"></i><span>CE × AI</span>
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="chapter1.html" class="nav-link"><i class="fa-solid fa-code-branch"></i> Ch 01</a>
+            <a href="chapter2.html" class="nav-link"><i class="fa-solid fa-wave-square"></i> Ch 02</a>
+            <a href="chapter3.html" class="nav-link"><i class="fa-solid fa-map-location-dot"></i> Ch 03</a>
+            <a href="chapter4.html" class="nav-link"><i class="fa-solid fa-satellite"></i> Ch 04</a>
+            <a href="chapter5.html" class="nav-link active"><i class="fa-solid fa-brain"></i> Ch 05</a>
+        </div>
+        <div class="nav-progress"><div class="nav-progress-bar" id="scroll-progress"></div></div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="chapter-hero" id="ch-hero">
+        <canvas id="hero-bg-canvas"></canvas>
+        <div class="chapter-hero-content">
+            <div class="chapter-number-large">05</div>
+            <div class="ch-tag"><i class="fa-solid fa-brain"></i> The Scriptwriter</div>
+            <h1>Large Language Models <span class="gradient-text">—</span> Understanding Language</h1>
+            <p class="ch-lead">
+                📝 A senior engineer writes specifications, reviews reports, and explains complex 
+                designs in plain language — drawing on decades of experience reading thousands of documents. 
+                LLMs do the same: trained on billions of words, they generate, summarize, translate, and 
+                reason about text with remarkable fluency, becoming AI assistants for documentation, 
+                code generation, and knowledge retrieval.
+            </p>
+            <div class="ch-stats">
+                <div class="ch-stat"><i class="fa-solid fa-bookmark"></i> <strong>10</strong> Sections</div>
+                <div class="ch-stat"><i class="fa-solid fa-hand-pointer"></i> <strong>5</strong> Interactive Demos</div>
+                <div class="ch-stat"><i class="fa-solid fa-clock"></i> ~<strong>30</strong> min read</div>
+                <div class="ch-stat"><i class="fa-solid fa-brain"></i> <strong>3</strong> Knowledge Checks</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOC -->
+    <div class="chapter-toc" id="ch-toc">
+        <div class="toc-inner">
+            <span class="toc-label"><i class="fa-solid fa-list"></i> Sections</span>
+            <a href="#what-lm" class="toc-link">Language Models</a>
+            <a href="#embeddings" class="toc-link">Embeddings</a>
+            <a href="#rnns" class="toc-link">RNNs</a>
+            <a href="#transformers" class="toc-link">Transformers</a>
+            <a href="#attention" class="toc-link">Attention</a>
+            <a href="#architectures" class="toc-link">GPT / BERT</a>
+            <a href="#training" class="toc-link">Training</a>
+            <a href="#civil-apps" class="toc-link">CE Applications</a>
+            <a href="#code-peek" class="toc-link">Code Peek</a>
+            <a href="#quiz" class="toc-link">Quiz</a>
+        </div>
+    </div>
+
+    <!-- SECTION 1: WHAT ARE LANGUAGE MODELS -->
+    <div id="what-lm" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-language"></i> Foundations</div>
+        <h2>What is a Language Model? <span class="gradient-text">📖</span></h2>
+        <p>
+            A <strong>language model</strong> is a system that predicts the next word (or token) given 
+            the previous words. That's it — at its core, it's an advanced autocomplete engine.
+        </p>
+        <p>
+            Given "The concrete strength test showed a value of 42" — what comes next? 
+            A language model trained on engineering texts might predict <strong>"MPa"</strong> with 
+            high probability, followed by "," or "which".
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">📋</div>
+            <div>
+                <h4>CE Analogy: The Experienced Specification Writer</h4>
+                <p>
+                    An engineer who has written 10,000 specifications can finish your sentences. You start 
+                    typing "The minimum cover to reinforcement shall be..." and they know the next words 
+                    because they've seen this pattern thousands of times. LLMs are like this, but trained 
+                    on <strong>trillions</strong> of words from the entire internet — they've "read" every 
+                    specification, textbook, and technical report ever published online.
+                </p>
+            </div>
+        </div>
+
+        <h3>Evolution of Language Models</h3>
+        <div class="process-steps">
+            <div class="process-step">
+                <div class="step-marker">1</div>
+                <h4>N-grams (1990s)</h4>
+                <p>Count word pair/triple frequencies. "New" → "York" is common. Simple but can only look back 2-3 words. No understanding of meaning.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">2</div>
+                <h4>Word2Vec / Embeddings (2013)</h4>
+                <p>Words as vectors in a space. Similar words are close together. "Concrete" is near "cement." Captured meaning for the first time.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">3</div>
+                <h4>RNNs / LSTMs (2015)</h4>
+                <p>Process sequences word by word, maintaining memory. Could handle longer context but struggled with very long documents.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">4</div>
+                <h4>Transformers (2017)</h4>
+                <p>"Attention Is All You Need." Process all words simultaneously. Enabled massive scaling. The breakthrough behind GPT, BERT, and all modern LLMs.</p>
+            </div>
+        </div>
+
+        <!-- Token Predictor Demo -->
+        <div class="demo-panel" id="token-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Token Predictor — Next Word Probabilities</span>
+                <span class="demo-tag">See how a language model predicts</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:260px;">
+                    <canvas id="token-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <label><i class="fa-solid fa-keyboard"></i> Context</label>
+                    <select id="token-context" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-family:var(--font-mono);font-size:0.85rem;min-width:260px;">
+                        <option value="0">The concrete compressive strength is</option>
+                        <option value="1">The bridge structural analysis shows</option>
+                        <option value="2">The soil bearing capacity was found to be</option>
+                        <option value="3">Machine learning can help civil engineers</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: WORD EMBEDDINGS -->
+    <div id="embeddings" class="ch-section">
+        <div class="section-badge blue"><i class="fa-solid fa-vector-square"></i> Representation</div>
+        <h2>Word Embeddings — Words as Numbers <span class="gradient-text">🧮</span></h2>
+        <p>
+            Computers don't understand words — they need numbers. <strong>Word embeddings</strong> convert 
+            each word into a vector (list of numbers) in a high-dimensional space (typically 300-1024 dimensions). 
+            Similar words get similar vectors.
+        </p>
+
+        <div class="analogy-block">
+            <div class="analogy-icon">🗺️</div>
+            <div>
+                <h4>CE Analogy: GIS Coordinates for Words</h4>
+                <p>
+                    Just like every location on Earth has coordinates (latitude, longitude, elevation), every 
+                    word gets coordinates in "meaning space." <strong>"Concrete"</strong> might be at 
+                    (0.8, 0.3, -0.1, ...) and <strong>"Cement"</strong> at (0.75, 0.35, -0.05, ...) — 
+                    close together because they're related. <strong>"Butterfly"</strong> would be far away 
+                    at (-0.2, 0.9, 0.6, ...). The distance between word vectors reflects semantic similarity.
+                </p>
+            </div>
+        </div>
+
+        <!-- Embedding Space Demo -->
+        <div class="demo-panel" id="embed-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-vector-square"></i>
+                <span>Word Embedding Space — 2D Projection</span>
+                <span class="demo-tag">Hover to see word relationships</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:320px;">
+                    <canvas id="embed-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tip-box info">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+                <strong>Famous example:</strong> king − man + woman ≈ queen. Word embeddings capture 
+                relationships: the vector from "man" to "king" is similar to the vector from "woman" to "queen." 
+                In CE terms: reinforcement − tension + compression ≈ column.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: RNNs -->
+    <div id="rnns" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-rotate-right"></i> Sequential</div>
+        <h2>Recurrent Neural Networks — Reading Word by Word <span class="gradient-text">🔄</span></h2>
+        <p>
+            Before Transformers, <strong>RNNs</strong> were the standard for processing sequences. They 
+            read one word at a time, maintaining a hidden state (memory) that accumulates information 
+            from previous words.
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">📖</div>
+            <div>
+                <h4>CE Analogy: Reading a Specification Sequentially</h4>
+                <p>
+                    Imagine reading a 200-page specification from start to finish, remembering everything 
+                    as you go. By page 150, your memory of page 3 is fuzzy. That's the RNN problem — 
+                    <strong>vanishing gradients</strong> mean it forgets early information. LSTM (Long 
+                    Short-Term Memory) was invented to fix this by adding explicit memory gates — like 
+                    bookmarking important pages.
+                </p>
+            </div>
+        </div>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-plus"></i></div>
+                <h4>RNN Strengths</h4>
+                <p>Handles variable-length sequences. Captures temporal/sequential patterns. Good for small-scale text and time series.</p>
+            </div>
+            <div class="info-card warm-accent">
+                <div class="card-icon amber"><i class="fa-solid fa-minus"></i></div>
+                <h4>RNN Weaknesses</h4>
+                <p>Slow (sequential, can't parallelize). Struggles with long-range dependencies. Vanishing/exploding gradients. Replaced by Transformers for most tasks.</p>
+            </div>
+        </div>
+
+        <!-- Quiz 1 -->
+        <div class="quiz-block" id="quiz-1">
+            <h4><i class="fa-solid fa-circle-question"></i> Knowledge Check #1</h4>
+            <div class="quiz-question">
+                What is the fundamental limitation of RNNs that Transformers were designed to solve?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">A</span>
+                    <span>RNNs can only process images, not text</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">B</span>
+                    <span>RNNs process words sequentially and struggle with long-range dependencies</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">C</span>
+                    <span>RNNs require too much training data</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-1-correct">
+                <i class="fa-solid fa-check-circle"></i> Correct! RNNs process one word at a time (slow, can't 
+                parallelize) and their memory degrades over long sequences (vanishing gradients). Transformers 
+                process all words simultaneously using attention.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-1-wrong">
+                <i class="fa-solid fa-times-circle"></i> RNNs work fine with text (that's their purpose). 
+                The key issue is sequential processing (slow) and difficulty remembering information from 
+                far back in the sequence.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: TRANSFORMERS -->
+    <div id="transformers" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-bolt"></i> Breakthrough</div>
+        <h2>The Transformer — "Attention Is All You Need" <span class="gradient-text">⚡</span></h2>
+        <p>
+            The 2017 paper "Attention Is All You Need" by Vaswani et al. revolutionized NLP. The Transformer 
+            architecture processes all words in a sequence <strong>simultaneously</strong> (not one by one 
+            like RNNs) using a mechanism called <strong>self-attention</strong>.
+        </p>
+
+        <div class="analogy-block">
+            <div class="analogy-icon">🏗️</div>
+            <div>
+                <h4>CE Analogy: The Project Meeting vs The Memo Chain</h4>
+                <p>
+                    <strong>RNN = Memo chain:</strong> Information passes person to person. By the time it 
+                    reaches the 20th person, details are lost or distorted.<br>
+                    <strong>Transformer = Project meeting:</strong> Everyone sits around a table and can 
+                    directly hear and respond to everyone else simultaneously. Each person 
+                    <strong>attends</strong> to the most relevant speakers for their task. No information 
+                    loss, massive parallelism.
+                </p>
+            </div>
+        </div>
+
+        <h3>Key Components</h3>
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-eye"></i></div>
+                <span class="card-tag">Core Innovation</span>
+                <h4>Self-Attention</h4>
+                <p>Each word looks at every other word to determine which are most relevant. "The bank of the river" — "bank" attends to "river" to know it means riverbank, not financial bank.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-code-merge"></i></div>
+                <span class="card-tag">Multiple Views</span>
+                <h4>Multi-Head Attention</h4>
+                <p>Multiple attention "heads" look at different aspects simultaneously — syntax, semantics, references. Like having multiple specialists review the same document.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-hashtag"></i></div>
+                <span class="card-tag">Order Matters</span>
+                <h4>Positional Encoding</h4>
+                <p>Since all words are processed simultaneously, we need to tell the model their order. Sinusoidal or learned position encodings are added to the word embeddings.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-forward"></i></div>
+                <span class="card-tag">Processing</span>
+                <h4>Feed-Forward Network</h4>
+                <p>After attention, each position passes through a small neural network independently. This adds nonlinear transformation power to the model.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 5: ATTENTION MECHANISM -->
+    <div id="attention" class="ch-section">
+        <div class="section-badge blue"><i class="fa-solid fa-eye"></i> Deep Dive</div>
+        <h2>Self-Attention — How Words "Look At" Each Other <span class="gradient-text">👁️</span></h2>
+        <p>
+            Self-attention is computed using three matrices: <strong>Query (Q)</strong>, <strong>Key (K)</strong>, 
+            and <strong>Value (V)</strong>. Each word generates all three. The attention score between two 
+            words is the dot product of one word's Query with the other word's Key.
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">🔍</div>
+            <div>
+                <h4>CE Analogy: The Document Search System</h4>
+                <p>
+                    <strong>Query:</strong> "What information do I need?" (like a search query)<br>
+                    <strong>Key:</strong> "What information do I contain?" (like document tags/metadata)<br>
+                    <strong>Value:</strong> "Here is my actual content" (like the document text)<br>
+                    Each word queries all other words, finds the most relevant ones (high Q·K score), 
+                    and takes a weighted sum of their Values. It's a soft database lookup.
+                </p>
+            </div>
+        </div>
+
+        <!-- Attention Visualizer -->
+        <div class="demo-panel" id="attn-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-eye"></i>
+                <span>Self-Attention Visualizer</span>
+                <span class="demo-tag">Click a word to see its attention distribution</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:320px;">
+                    <canvas id="attn-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <label><i class="fa-solid fa-message"></i> Sentence</label>
+                    <select id="attn-sentence" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-family:var(--font-mono);font-size:0.85rem;min-width:260px;">
+                        <option value="0">The bridge over the river collapsed</option>
+                        <option value="1">Concrete strength depends on water cement ratio</option>
+                        <option value="2">The foundation was designed for heavy loads</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz 2 -->
+        <div class="quiz-block" id="quiz-2">
+            <h4><i class="fa-solid fa-circle-question"></i> Knowledge Check #2</h4>
+            <div class="quiz-question">
+                In the sentence "The retaining wall failed because the soil pressure exceeded the design capacity," 
+                which word should "failed" attend to most strongly?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">A</span>
+                    <span>"The" — because it's the first word</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">B</span>
+                    <span>"wall" and "pressure" — the subject that failed and the reason why</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">C</span>
+                    <span>"the" (second occurrence) — because it's nearest</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-2-correct">
+                <i class="fa-solid fa-check-circle"></i> Correct! Self-attention learns to focus on semantically 
+                important words. "Failed" should attend to "wall" (what failed) and "pressure"/"exceeded" 
+                (why it failed), regardless of distance in the sentence.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-2-wrong">
+                <i class="fa-solid fa-times-circle"></i> Attention is not about proximity — it's about 
+                <em>relevance</em>. "Failed" cares about what failed ("wall") and why ("pressure exceeded 
+                capacity"), even if they're far apart.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 6: GPT, BERT, AND FRIENDS -->
+    <div id="architectures" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-trophy"></i> Architectures</div>
+        <h2>GPT, BERT, and LLM Families <span class="gradient-text">🏆</span></h2>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-pen"></i></div>
+                <span class="card-tag">Decoder Only</span>
+                <h4>GPT (Generative Pre-trained Transformer)</h4>
+                <p>OpenAI's series (GPT-2 → GPT-3 → GPT-4). Predicts the next token. Generates text, code, answers questions. "Autoregressive" — generates one word at a time, left to right.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-arrows-left-right"></i></div>
+                <span class="card-tag">Encoder Only</span>
+                <h4>BERT (Bidirectional Encoder Representations)</h4>
+                <p>Google's model. Reads text in both directions simultaneously. Excels at understanding (classification, NER, Q&A) rather than generation. "Masked language model" training.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-arrows-to-dot"></i></div>
+                <span class="card-tag">Encoder-Decoder</span>
+                <h4>T5 / BART</h4>
+                <p>Full encoder-decoder architecture. Text-to-text framework: every task (translation, summarization, Q&A) is framed as converting input text to output text.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-unlock"></i></div>
+                <span class="card-tag">Open Source</span>
+                <h4>LLaMA / Mistral</h4>
+                <p>Meta's LLaMA and Mistral AI's models. Open-weight alternatives to GPT. Enable local deployment, fine-tuning on domain data (e.g., civil engineering corpora).</p>
+            </div>
+        </div>
+
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr><th>Model</th><th>Architecture</th><th>Strength</th><th>Parameters</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>GPT-4</td><td>Decoder only</td><td>Generation, reasoning, code</td><td>~1.8 Trillion (est.)</td></tr>
+                    <tr><td>BERT-Large</td><td>Encoder only</td><td>Understanding, classification</td><td>340 Million</td></tr>
+                    <tr><td>T5-XXL</td><td>Enc-Dec</td><td>Translation, summarization</td><td>11 Billion</td></tr>
+                    <tr><td>LLaMA-3 70B</td><td>Decoder only</td><td>Open, fine-tunable</td><td>70 Billion</td></tr>
+                    <tr><td>Mistral-7B</td><td>Decoder only</td><td>Efficient, fast</td><td>7 Billion</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECTION 7: TRAINING LLMs -->
+    <div id="training" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-graduation-cap"></i> Training</div>
+        <h2>How LLMs Are Trained <span class="gradient-text">🎓</span></h2>
+
+        <div class="process-steps">
+            <div class="process-step">
+                <div class="step-marker">1</div>
+                <h4>Pre-training (Unsupervised)</h4>
+                <p>Train on trillions of words from the internet. The model learns language patterns, facts, reasoning. Like reading every textbook ever written. Costs $millions in compute.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">2</div>
+                <h4>Supervised Fine-Tuning (SFT)</h4>
+                <p>Train on high-quality (prompt, response) pairs written by humans. Teaches the model to follow instructions and give helpful answers.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">3</div>
+                <h4>RLHF (Reinforcement Learning from Human Feedback)</h4>
+                <p>Humans rank multiple model outputs. A reward model learns these preferences. The LLM is then optimized to produce outputs that humans prefer.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">4</div>
+                <h4>Domain Fine-Tuning (Optional)</h4>
+                <p>Fine-tune on domain-specific data (e.g., building codes, geotechnical reports). Creates a specialized model that understands civil engineering terminology and conventions.</p>
+            </div>
+        </div>
+
+        <div class="tip-box warning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+                <strong>Hallucination Warning:</strong> LLMs can confidently generate plausible-sounding but 
+                incorrect information. In civil engineering, this is dangerous — a hallucinated design value 
+                could lead to structural failure. Always verify LLM outputs against authoritative sources 
+                (codes, standards, calculations).
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 8: CE APPLICATIONS -->
+    <div id="civil-apps" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-helmet-safety"></i> Applications</div>
+        <h2>LLMs in Civil Engineering <span class="gradient-text">🏗️</span></h2>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-file-lines"></i></div>
+                <span class="card-tag">Documentation</span>
+                <h4>Specification Writing</h4>
+                <p>Generate draft specifications, method statements, and risk assessments. LLMs can follow templates and adapt to project-specific requirements.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-search"></i></div>
+                <span class="card-tag">Knowledge</span>
+                <h4>Code Compliance Checking</h4>
+                <p>Query building codes in natural language: "What is the minimum concrete cover for exposure class XC4 in Eurocode 2?" Retrieval-Augmented Generation (RAG) improves accuracy.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-code"></i></div>
+                <span class="card-tag">Automation</span>
+                <h4>Script & Code Generation</h4>
+                <p>Generate Python scripts for structural analysis, AutoLISP for CAD automation, or VBA macros for quantity surveying spreadsheets.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-language"></i></div>
+                <span class="card-tag">Communication</span>
+                <h4>Report Summarization</h4>
+                <p>Summarize 100-page geotechnical investigation reports into executive summaries. Extract key parameters (bearing capacity, water table, soil layers) automatically.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon red"><i class="fa-solid fa-comments"></i></div>
+                <span class="card-tag">Collaboration</span>
+                <h4>AI Design Assistants</h4>
+                <p>Interactive assistants that discuss design options: "Compare steel vs. concrete for a 30m span bridge considering cost, durability, and construction speed."</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-graduation-cap"></i></div>
+                <span class="card-tag">Education</span>
+                <h4>Learning & Training</h4>
+                <p>Personalized tutoring for engineering students. Explain complex concepts with analogies (exactly like this guide!). Generate practice problems.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 9: CODE PEEK -->
+    <div id="code-peek" class="ch-section">
+        <div class="section-badge red"><i class="fa-solid fa-code"></i> Code Peek</div>
+        <h2>Using LLMs in Code <span class="gradient-text">👀</span></h2>
+
+        <h3>RAG: Retrieval-Augmented Generation for Building Codes</h3>
+        <div class="code-peek">
+            <div class="code-peek-header">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <span>code_assistant.py</span>
+            </div>
+            <pre><span class="comment"># RAG: Answer questions about building codes using LLM + retrieval</span>
+
+<span class="keyword">from</span> langchain <span class="keyword">import</span> OpenAI, VectorStore
+<span class="keyword">from</span> langchain.embeddings <span class="keyword">import</span> OpenAIEmbeddings
+
+<span class="comment"># Step 1: Load and index building code documents</span>
+<span class="type">docs</span> = load_pdf(<span class="string">"eurocode_2.pdf"</span>)
+<span class="type">chunks</span> = split_into_chunks(docs, chunk_size=<span class="number">500</span>)  <span class="comment"># 500 words each</span>
+<span class="type">embeddings</span> = OpenAIEmbeddings()
+<span class="type">vectordb</span> = VectorStore.from_documents(chunks, embeddings)
+
+<span class="comment"># Step 2: User asks a question</span>
+<span class="type">question</span> = <span class="string">"What is the minimum cover for XC4 exposure class?"</span>
+
+<span class="comment"># Step 3: Retrieve relevant chunks from the code</span>
+<span class="type">relevant_chunks</span> = vectordb.similarity_search(question, k=<span class="number">3</span>)
+<span class="comment"># → Returns 3 most relevant paragraphs from Eurocode 2</span>
+
+<span class="comment"># Step 4: Feed context + question to LLM</span>
+<span class="type">prompt</span> = <span class="string">f"""Based on the following building code excerpts:
+{relevant_chunks}
+
+Answer this question: {question}
+Cite the specific clause number."""</span>
+
+<span class="type">answer</span> = OpenAI().generate(prompt)
+<span class="comment"># → "According to EC2 Table 4.4N, the minimum cover for XC4 is</span>
+<span class="comment">#    40mm for structural class S4, with Δcdev = 10mm, giving</span>
+<span class="comment">#    cnom = 50mm. (Clause 4.4.1.2)"</span></pre>
+            <div class="code-explanation">
+                <i class="fa-solid fa-info-circle"></i>
+                <strong>RAG</strong> is the gold standard for domain-specific LLM applications. Instead of 
+                relying on the LLM's training data (which might be outdated or incorrect), we retrieve the 
+                actual document content and provide it as context. This dramatically reduces hallucinations 
+                because the model answers from the source material.
+            </div>
+        </div>
+
+        <h3>Fine-tuning for CE Domain</h3>
+        <div class="code-peek">
+            <div class="code-peek-header">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <span>finetune_ce.py</span>
+            </div>
+            <pre><span class="comment"># Fine-tune a small LLM on civil engineering data</span>
+
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, Trainer
+
+<span class="comment"># Load base model (open source, 7B parameters)</span>
+<span class="type">model</span> = AutoModelForCausalLM.from_pretrained(<span class="string">"mistralai/Mistral-7B"</span>)
+
+<span class="comment"># CE-specific training data</span>
+<span class="type">training_data</span> = [
+    {<span class="string">"prompt"</span>: <span class="string">"Calculate the bending moment for a simply supported beam"</span>,
+     <span class="string">"response"</span>: <span class="string">"M = wL²/8 where w = UDL (kN/m), L = span (m)..."</span>},
+    {<span class="string">"prompt"</span>: <span class="string">"What is the design compressive strength of C30/37?"</span>,
+     <span class="string">"response"</span>: <span class="string">"fcd = αcc × fck / γc = 0.85 × 30 / 1.5 = 17 MPa..."</span>},
+    <span class="comment"># ... 10,000+ CE Q&A pairs</span>
+]
+
+<span class="comment"># Fine-tune with LoRA (Low-Rank Adaptation) — efficient</span>
+<span class="type">trainer</span> = Trainer(model=model, train_dataset=training_data,
+                 peft_config=LoRAConfig(r=<span class="number">16</span>, alpha=<span class="number">32</span>))
+trainer.train()
+
+<span class="comment"># Result: A model that speaks civil engineering fluently</span>
+<span class="comment"># while retaining general language understanding</span></pre>
+            <div class="code-explanation">
+                <i class="fa-solid fa-info-circle"></i>
+                <strong>LoRA</strong> fine-tunes only a small fraction of the model's parameters (often 
+                < 1%), making it feasible to customize large models on a single GPU. You get a 
+                domain-specialized model without the cost of training from scratch.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 10: FINAL QUIZ -->
+    <div id="quiz" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-trophy"></i> Assessment</div>
+        <h2>Chapter Summary & Final Quiz <span class="gradient-text">🎯</span></h2>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Language Models</h4>
+                <p>Predict the next word given context. Evolved from N-grams → Word2Vec → RNNs → Transformers.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Transformers</h4>
+                <p>Self-attention enables parallel processing of all words. Q·K attention scores determine which words are relevant to each other.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Model Families</h4>
+                <p>GPT (generation), BERT (understanding), T5 (text-to-text). LLaMA/Mistral for open-source domain fine-tuning.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>CE Applications</h4>
+                <p>RAG for code compliance, specification drafting, report summarization, code generation, and AI design assistants.</p>
+            </div>
+        </div>
+
+        <div class="quiz-block" id="quiz-3">
+            <h4><i class="fa-solid fa-trophy"></i> Final Challenge</h4>
+            <div class="quiz-question">
+                You want to build an AI assistant that accurately answers questions about Eurocode standards. 
+                The model must cite specific clause numbers and never hallucinate values. What's the best approach?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">A</span>
+                    <span>Use GPT-4 directly — it knows everything from training</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">B</span>
+                    <span>Train a CNN on images of Eurocode pages</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">C</span>
+                    <span>RAG: Index the Eurocode PDFs, retrieve relevant sections, and feed them to an LLM as context</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">D</span>
+                    <span>Use K-Means clustering on the document text</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-3-correct">
+                <i class="fa-solid fa-check-circle"></i> <strong>Excellent!</strong> RAG (Retrieval-Augmented 
+                Generation) is the gold standard for accurate, citation-backed responses. The LLM answers 
+                from the actual document content rather than its potentially outdated training data, 
+                dramatically reducing hallucinations.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-3-wrong">
+                <i class="fa-solid fa-times-circle"></i> Direct GPT use risks hallucination — it might cite 
+                wrong clause numbers. CNNs are for images, not text Q&A. K-Means is unsupervised clustering, 
+                not Q&A. <strong>RAG</strong> grounds the LLM's response in actual document content.
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAPTER NAV -->
+    <div class="chapter-nav-footer">
+        <a href="chapter4.html" class="ch-nav-link">
+            <span class="ch-nav-label"><i class="fa-solid fa-arrow-left"></i> Previous</span>
+            <span class="ch-nav-title">Ch 04 — CNNs</span>
+            <span class="ch-nav-desc">The Surveyor: Remote Sensing Vision</span>
+        </a>
+        <a href="index.html" class="ch-nav-link next">
+            <span class="ch-nav-label">Back to Home <i class="fa-solid fa-house"></i></span>
+            <span class="ch-nav-title">Main Landing Page</span>
+            <span class="ch-nav-desc">The Civil Engineer's Guide to AI</span>
+        </a>
+    </div>
+
+    <footer class="footer-section">
+        <div class="footer-bottom">
+            <span>&copy; 2026 The Civil Engineer's Guide to AI — Chapter 05: LLMs</span>
+        </div>
+    </footer>
+
+    <a href="index.html" class="back-home" title="Back to Home"><i class="fa-solid fa-house"></i></a>
+    <script src="js/chapter5.js"></script>
+</body>
+</html>

@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.7 Fine-Tuning &amp; Prompt Engineering | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master the two main strategies for adapting large language models to civil engineering tasks: fine-tuning model weights on domain data and crafting effective prompts. Covers LoRA, QLoRA, adapters, RLHF, zero-shot, few-shot, chain-of-thought prompting, and CE-specific applications.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-sliders"></i> Chapter 5 &mdash; Sub-chapter 5.7
+            </div>
+            <h1 class="chapter-hero__title">Fine-Tuning &amp; Prompt Engineering</h1>
+            <p class="chapter-hero__subtitle">
+                A pre-trained language model is a general-purpose engine. To make it
+                useful for civil engineering, you have two levers:
+                <strong>fine-tuning</strong> &mdash; adjusting the model's internal
+                weights on domain-specific data &mdash; and
+                <strong>prompt engineering</strong> &mdash; carefully structuring your
+                input so the unchanged model produces expert-quality output. Knowing
+                when to pull each lever is the difference between a prototype and a
+                production tool.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: TRANSFER LEARNING OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="transfer-learning">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-turn-to-dots"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Transfer Learning Paradigm</h2>
+                        <p>
+                            Training a large language model from scratch requires millions
+                            of GPU-hours, terabytes of text, and budgets measured in
+                            millions of dollars. Fortunately, the knowledge a model acquires
+                            during pre-training &mdash; grammar, facts, reasoning patterns
+                            &mdash; is <strong>transferable</strong>. Instead of starting
+                            from zero, you take a pre-trained model and adapt it to your
+                            specific task. This is <em>transfer learning</em>, and it is the
+                            foundation of every practical LLM deployment in engineering
+                            today.
+                        </p>
+                        <p>
+                            Transfer learning works because the lower layers of a neural
+                            network learn general features (syntax, common word
+                            associations), while the higher layers learn increasingly
+                            abstract and task-specific representations. By keeping the
+                            general knowledge intact and only adjusting the top layers
+                            &mdash; or by guiding the model through prompts &mdash; you can
+                            achieve expert-level performance on domain tasks with a fraction
+                            of the original training cost.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The modern LLM workflow follows a two-stage (sometimes three-stage)
+                    pipeline. <strong>Stage 1:</strong> Pre-train on a massive, general
+                    corpus (books, web pages, code). <strong>Stage 2:</strong> Fine-tune
+                    on a curated, task-specific dataset (building code Q&amp;A,
+                    inspection reports, structural analysis queries). An optional
+                    <strong>Stage 3</strong> uses reinforcement learning from human
+                    feedback (RLHF) to align the model with human preferences for
+                    safety, helpfulness, and factual accuracy.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with the Transformer
+                        architecture (Sub-chapter 5.3), encoder models like BERT
+                        (Sub-chapter 5.4), decoder models like GPT (Sub-chapter 5.5),
+                        and tokenization/embeddings (Sub-chapter 5.6). We will
+                        reference attention mechanisms, model parameters, and training
+                        loss concepts throughout.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: CE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Civil Engineering Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Fine-tuning is like retrofitting an existing
+                            structure.</strong> Imagine a general-purpose office building
+                            (the pre-trained model). It has a solid foundation, structural
+                            frame, and building services. To convert it into a structural
+                            testing laboratory, you do not demolish and rebuild from
+                            scratch. Instead, you reinforce specific floors for heavy
+                            equipment loads, install crane rails, add vibration isolation
+                            pads, and upgrade the electrical capacity. The core structure
+                            remains, but targeted modifications make it fit for the new
+                            purpose. That is fine-tuning: targeted weight adjustments that
+                            specialise a general model.
+                        </p>
+                        <p>
+                            <strong>Prompt engineering is like writing a detailed work
+                            order for an experienced contractor.</strong> The contractor
+                            (model) already has the skills and knowledge. The quality of
+                            the output depends entirely on how clearly you specify the
+                            scope, standards, tolerances, and deliverables. A vague
+                            instruction like "fix the crack" gets a different (worse)
+                            result than "Repair the 2mm-wide flexural crack at mid-span
+                            of beam B3-2 using epoxy injection per ACI 224.1R, document
+                            before/after with photographs, and reference clause 4.3.2 of
+                            the repair specification."
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: PRE-TRAINING VS FINE-TUNING
+             ========================================== -->
+        <section class="ch-section" id="pretrain-vs-finetune">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Pre-Training vs Fine-Tuning
+                </h2>
+
+                <p>
+                    Pre-training and fine-tuning differ in scale, data, objective, and
+                    cost. Understanding these differences is essential for making
+                    practical decisions about how to deploy LLMs in engineering
+                    workflows.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pre-Training vs Fine-Tuning Comparison</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-active);">
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Dimension</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Pre-Training</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Fine-Tuning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Data</td>
+                                    <td style="padding:8px 12px;">Terabytes of general text</td>
+                                    <td style="padding:8px 12px;">Megabytes of task-specific data</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Objective</td>
+                                    <td style="padding:8px 12px;">Next-token prediction / masked language modelling</td>
+                                    <td style="padding:8px 12px;">Task-specific (classification, Q&amp;A, generation)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Parameters</td>
+                                    <td style="padding:8px 12px;">All weights trained from random init</td>
+                                    <td style="padding:8px 12px;">All or a subset of weights updated</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Cost</td>
+                                    <td style="padding:8px 12px;">$1M&ndash;$100M+ (GPU clusters, months)</td>
+                                    <td style="padding:8px 12px;">$10&ndash;$10,000 (single GPU, hours to days)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 12px; font-weight:600;">Who does it</td>
+                                    <td style="padding:8px 12px;">Large AI labs (OpenAI, Google, Meta)</td>
+                                    <td style="padding:8px 12px;">Any team with a GPU and domain data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    The key insight is that pre-training captures <em>general
+                    knowledge</em>, while fine-tuning injects <em>domain
+                    expertise</em>. A model that has been pre-trained on the internet
+                    knows what concrete is; a model fine-tuned on ACI 318 knows the
+                    exact provisions for minimum reinforcement ratios in flexural
+                    members. The pre-trained knowledge provides the reasoning
+                    scaffolding; fine-tuning fills in the specialised details.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: FULL FINE-TUNING
+             ========================================== -->
+        <section class="ch-section" id="full-fine-tuning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    Full Fine-Tuning
+                </h2>
+
+                <p>
+                    In full fine-tuning, every parameter of the pre-trained model is
+                    updated during training on the downstream dataset. For a 7-billion
+                    parameter model, this means computing gradients for all 7 billion
+                    weights at every training step. The model is initialised with the
+                    pre-trained weights rather than random values, so it starts from a
+                    strong baseline and converges rapidly.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Full Fine-Tuning Requirements</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Memory:</strong> ~4x model size in FP32 (weights + gradients + optimizer states). A 7B model needs ~112 GB of GPU memory</li>
+                            <li><strong>Hardware:</strong> Multiple high-end GPUs (A100/H100) or cloud instances</li>
+                            <li><strong>Data:</strong> Typically 10,000&ndash;100,000+ curated examples for robust specialisation</li>
+                            <li><strong>Risk:</strong> <em>Catastrophic forgetting</em> &mdash; the model may lose general capabilities as it over-specialises on the fine-tuning data</li>
+                            <li><strong>Output:</strong> A complete new copy of the model (same size as original)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    Full fine-tuning delivers the highest potential performance because
+                    every weight can shift to accommodate the new domain. However, the
+                    resource requirements are prohibitive for most civil engineering
+                    teams. Storing, serving, and versioning multiple fully fine-tuned
+                    copies of a large model is expensive. This is what motivated the
+                    development of parameter-efficient methods.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: PARAMETER-EFFICIENT FINE-TUNING
+             ========================================== -->
+        <section class="ch-section" id="peft">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compress"></i>
+                    Parameter-Efficient Fine-Tuning (PEFT)
+                </h2>
+
+                <p>
+                    Parameter-efficient fine-tuning (PEFT) methods freeze most of the
+                    pre-trained weights and train only a small set of additional or
+                    selected parameters. This reduces memory requirements by 10x or
+                    more, enables fine-tuning on a single consumer GPU, and avoids
+                    catastrophic forgetting because the original weights remain intact.
+                </p>
+
+                <h3>LoRA (Low-Rank Adaptation)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How LoRA Works</h3>
+                        <p>
+                            LoRA (Hu et al., 2021) is the most popular PEFT method. The
+                            core idea: instead of updating a full weight matrix
+                            W (d &times; d), LoRA freezes W and adds a parallel low-rank
+                            decomposition: &Delta;W = B &times; A, where A is (d &times; r) and
+                            B is (r &times; d), with rank r &lt;&lt; d (typically r = 4, 8,
+                            or 16).
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Trainable parameters:</strong> Only A and B matrices (~0.1&ndash;1% of total parameters)</li>
+                            <li><strong>Memory:</strong> ~1.2x model size (frozen weights + small adapters)</li>
+                            <li><strong>Inference:</strong> Merge &Delta;W into W after training &mdash; zero latency overhead</li>
+                            <li><strong>Swappable:</strong> Multiple LoRA adapters can share one base model (one for building codes, one for geotechnical reports, one for cost estimation)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>QLoRA (Quantized LoRA)</h3>
+
+                <p>
+                    QLoRA (Dettmers et al., 2023) pushes efficiency further by
+                    quantizing the frozen base model to 4-bit precision while keeping
+                    the LoRA adapters in higher precision (BF16/FP16). This reduces the
+                    memory footprint to roughly 6 GB for a 7B model &mdash; feasible on
+                    a single consumer GPU with 8 GB of VRAM. The quality loss from
+                    quantization is surprisingly small, typically within 1&ndash;2% of
+                    full fine-tuning performance on benchmarks.
+                </p>
+
+                <h3>Adapter Layers</h3>
+
+                <p>
+                    Before LoRA, adapter-based methods (Houlsby et al., 2019) were the
+                    standard PEFT approach. Adapters insert small trainable bottleneck
+                    layers between existing Transformer blocks. Each adapter consists of
+                    a down-projection, a nonlinearity, and an up-projection. Only the
+                    adapter parameters are trained; the original Transformer weights are
+                    frozen.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-plug"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Adapters vs LoRA</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Adapters</strong> add sequential bottleneck layers &mdash; they introduce latency at inference because the extra layers must be computed</li>
+                            <li><strong>LoRA</strong> adds parallel low-rank matrices &mdash; they can be merged into the original weights, adding zero inference cost</li>
+                            <li>Both achieve similar quality, but LoRA's merge-ability gives it a practical advantage for deployment</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>PEFT is like installing modular attachments on
+                            heavy equipment.</strong> A general-purpose excavator (the
+                            pre-trained model) can accept different attachments: a bucket
+                            for earthmoving, a breaker for demolition, a grapple for
+                            sorting debris. The base machine stays unchanged. Swapping
+                            an attachment (LoRA adapter) takes minutes, not weeks, and
+                            you do not need to buy a separate excavator for each task.
+                            Full fine-tuning, by contrast, is like permanently welding a
+                            breaker onto the boom &mdash; great for demolition, useless
+                            for anything else.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: INSTRUCTION TUNING
+             ========================================== -->
+        <section class="ch-section" id="instruction-tuning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Instruction Tuning
+                </h2>
+
+                <p>
+                    A base pre-trained model predicts the next token but does not follow
+                    instructions. If you write "Summarise the following inspection
+                    report:", the base model might continue with more report text rather
+                    than producing a summary. <strong>Instruction tuning</strong> fine-tunes
+                    the model on thousands of (instruction, response) pairs so it learns
+                    to follow directives.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Instruction Tuning Dataset Example (CE Domain)</h3>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8; overflow-x:auto;">
+                            <span style="color:var(--accent-warm);">Instruction:</span> "Calculate the factored moment capacity of a rectangular beam with b=300mm, d=500mm, As=1500mm2, fy=415MPa, f'c=28MPa per ACI 318-19."<br><br>
+                            <span style="color:var(--accent-primary);">Response:</span> "Step 1: Compute the depth of the stress block...<br>
+                            a = As * fy / (0.85 * f'c * b)<br>
+                            a = 1500 * 415 / (0.85 * 28 * 300) = 87.2 mm<br>
+                            Step 2: Compute phi*Mn...<br>
+                            Mn = As * fy * (d - a/2) = 1500 * 415 * (500 - 43.6) = 284.1 kN-m<br>
+                            phi*Mn = 0.9 * 284.1 = 255.7 kN-m"
+                        </div>
+                    </div>
+                </div>
+
+                <p>
+                    The most impactful instruction-tuned models &mdash; ChatGPT,
+                    Claude, Gemini &mdash; were trained on hundreds of thousands of
+                    such pairs covering diverse tasks. For civil engineering
+                    specialisation, you can create a smaller instruction dataset
+                    (1,000&ndash;10,000 pairs) focused on code compliance checks,
+                    structural calculations, material specifications, and report
+                    generation.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: RLHF OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="rlhf">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-comments"></i>
+                    RLHF: Reinforcement Learning from Human Feedback
+                </h2>
+
+                <p>
+                    Instruction tuning teaches a model <em>what</em> to say; RLHF
+                    teaches it <em>how</em> to say it in a way humans prefer. The
+                    three-step RLHF pipeline is used by ChatGPT, Claude, and most
+                    modern assistant models:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ranking-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The RLHF Pipeline</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li><strong>Supervised Fine-Tuning (SFT):</strong> Fine-tune the base model on high-quality (prompt, response) pairs written by human experts</li>
+                            <li><strong>Reward Model Training:</strong> Generate multiple responses to each prompt, have human labellers rank them by quality, and train a reward model to predict human preference scores</li>
+                            <li><strong>RL Optimisation (PPO):</strong> Use the reward model as a scoring function and optimise the SFT model via Proximal Policy Optimisation to maximise the predicted reward while staying close to the SFT baseline (KL penalty)</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    RLHF is why ChatGPT feels helpful, polite, and structured compared
+                    to a raw GPT-3 completion. For civil engineering, RLHF could
+                    theoretically train a model to prefer responses that cite specific
+                    code clauses, show calculation steps, and flag safety-critical
+                    assumptions &mdash; but the cost and complexity of RLHF mean it is
+                    currently practical only for large AI labs. Most engineering teams
+                    will use SFT (instruction tuning) combined with prompt engineering
+                    as their primary adaptation strategies.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: PROMPT ENGINEERING FUNDAMENTALS
+             ========================================== -->
+        <section class="ch-section" id="prompt-fundamentals">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-pen-ruler"></i>
+                    Prompt Engineering Fundamentals
+                </h2>
+
+                <p>
+                    Prompt engineering is the art and science of designing input text
+                    that guides a language model to produce the desired output
+                    <em>without</em> modifying the model's weights. It is the
+                    lowest-cost, fastest-to-iterate adaptation strategy, and it is
+                    often sufficient for many civil engineering tasks when using a
+                    capable base model like GPT-4 or Claude.
+                </p>
+
+                <h3>Zero-Shot Prompting</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Zero-Shot: No Examples Needed</h3>
+                        <p>
+                            In zero-shot prompting, you describe the task directly without
+                            providing any examples. The model relies entirely on its
+                            pre-trained knowledge.
+                        </p>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            <span style="color:var(--accent-warm);">Prompt:</span> "Classify the following defect as structural or cosmetic: 'Horizontal crack along mortar joints at third-floor level, width 3mm, visible on exterior facade.'"
+                        </div>
+                        <p>
+                            Zero-shot works well for tasks the model encountered
+                            frequently during pre-training. It struggles with
+                            domain-specific formats, niche terminology, or tasks
+                            requiring a specific output structure.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Few-Shot Prompting</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Few-Shot: Learning from Examples</h3>
+                        <p>
+                            Few-shot prompting includes 2&ndash;5 worked examples before
+                            the actual query. The model uses in-context learning to mimic
+                            the pattern established by the examples.
+                        </p>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            <span style="color:var(--accent-secondary);">Example 1:</span><br>
+                            Defect: "Hairline crack in plaster, &lt;0.1mm" &rarr; Cosmetic<br>
+                            <span style="color:var(--accent-secondary);">Example 2:</span><br>
+                            Defect: "Diagonal crack at beam-column joint, 5mm" &rarr; Structural<br>
+                            <span style="color:var(--accent-secondary);">Example 3:</span><br>
+                            Defect: "Paint peeling on ceiling" &rarr; Cosmetic<br><br>
+                            <span style="color:var(--accent-warm);">Query:</span><br>
+                            Defect: "Horizontal crack along mortar joints, 3mm" &rarr; ?
+                        </div>
+                        <p>
+                            Few-shot prompting dramatically improves output consistency
+                            and format compliance. It is especially powerful for
+                            classification, data extraction, and structured output
+                            generation.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Chain-of-Thought (CoT) Prompting</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Chain-of-Thought: Step-by-Step Reasoning</h3>
+                        <p>
+                            CoT prompting (Wei et al., 2022) instructs the model to show
+                            its reasoning before providing the final answer. This
+                            dramatically improves performance on multi-step calculations,
+                            logical reasoning, and engineering analysis tasks.
+                        </p>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            <span style="color:var(--accent-warm);">Prompt:</span> "A simply supported beam spans 6m with a UDL of 20 kN/m. Calculate the maximum bending moment. <strong>Think step by step.</strong>"<br><br>
+                            <span style="color:var(--accent-primary);">Response:</span><br>
+                            Step 1: For a simply supported beam with UDL, M_max = wL^2/8<br>
+                            Step 2: w = 20 kN/m, L = 6 m<br>
+                            Step 3: M_max = 20 * 6^2 / 8 = 20 * 36 / 8 = 90 kN-m<br>
+                            The maximum bending moment is 90 kN-m at mid-span.
+                        </div>
+                    </div>
+                </div>
+
+                <h3>System Prompts</h3>
+
+                <p>
+                    A system prompt sets the model's persona, constraints, and output
+                    conventions before the user's query. It persists across the entire
+                    conversation and is invisible to the end user in most deployments.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>System Prompt Example for CE Applications</h3>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            "You are a senior structural engineer with 20 years of
+                            experience. When answering questions:<br>
+                            1. Always cite the relevant design code clause (ACI, Eurocode, IS)<br>
+                            2. Show all calculation steps with units<br>
+                            3. State assumptions explicitly<br>
+                            4. Flag any safety-critical limitations<br>
+                            5. Use SI units unless the user specifies otherwise<br>
+                            6. Format output in markdown with section headers"
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Output Formatting</h3>
+
+                <p>
+                    Specifying the desired output format in the prompt is one of the
+                    most effective prompt engineering techniques. Instead of hoping the
+                    model guesses your format, explicitly request it:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Output Formatting Strategies</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>JSON output:</strong> "Return a JSON object with keys: member_id, load_kN, moment_kNm, status"</li>
+                            <li><strong>Tabular:</strong> "Present results in a markdown table with columns: Element, Demand, Capacity, DCR, Pass/Fail"</li>
+                            <li><strong>Report format:</strong> "Structure your response as: Executive Summary, Findings, Recommendations, Code References"</li>
+                            <li><strong>Constrained vocabulary:</strong> "Classify as exactly one of: PASS, FAIL, REQUIRES_REVIEW"</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: PROMPT TEMPLATES FOR CE TASKS
+             ========================================== -->
+        <section class="ch-section" id="ce-prompt-templates">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-file-lines"></i>
+                    Prompt Templates for CE Tasks
+                </h2>
+
+                <p>
+                    Effective prompts for civil engineering tasks follow a consistent
+                    structure: <strong>role</strong> (who the model should be),
+                    <strong>context</strong> (relevant background data),
+                    <strong>task</strong> (what to do), <strong>format</strong> (how
+                    to present the output), and <strong>constraints</strong>
+                    (limitations and standards to respect). Below are templates for
+                    three common CE applications.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Template 1: Structural Analysis Query</h3>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            <span style="color:var(--text-muted);"># Role</span><br>
+                            You are a structural analysis assistant.<br><br>
+                            <span style="color:var(--text-muted);"># Context</span><br>
+                            Member: {member_type}, Span: {span}m, Section: {section}<br>
+                            Loading: {dead_load} kN/m (DL), {live_load} kN/m (LL)<br>
+                            Code: {design_code}<br><br>
+                            <span style="color:var(--text-muted);"># Task</span><br>
+                            Check flexural adequacy. Show factored load combinations,<br>
+                            demand calculation, capacity calculation, and DCR.<br><br>
+                            <span style="color:var(--text-muted);"># Format</span><br>
+                            Return a JSON object with fields: factored_load_kNm,<br>
+                            demand_kNm, capacity_kNm, dcr, status ("PASS"/"FAIL")<br>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Template 2: Inspection Report Generator</h3>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            <span style="color:var(--text-muted);"># Role</span><br>
+                            You are a certified building inspector.<br><br>
+                            <span style="color:var(--text-muted);"># Observations</span><br>
+                            {list_of_field_observations}<br><br>
+                            <span style="color:var(--text-muted);"># Task</span><br>
+                            Generate a standardised inspection report with:<br>
+                            1. Executive Summary (2&ndash;3 sentences)<br>
+                            2. Defect Table (ID, Location, Type, Severity, Photo Ref)<br>
+                            3. Recommended Actions (prioritised by severity)<br>
+                            4. Code References for each defect<br><br>
+                            <span style="color:var(--text-muted);"># Constraints</span><br>
+                            Severity levels: Critical / Major / Minor / Cosmetic.<br>
+                            Reference only {applicable_code} provisions.<br>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Template 3: Material Specification Lookup</h3>
+                        <div style="background:var(--bg-code); padding:16px; border-radius:8px; margin:12px 0; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8;">
+                            <span style="color:var(--text-muted);"># Role</span><br>
+                            You are a materials engineer.<br><br>
+                            <span style="color:var(--text-muted);"># Query</span><br>
+                            Material: {material_name}<br>
+                            Application: {intended_use}<br>
+                            Environment: {exposure_class}<br><br>
+                            <span style="color:var(--text-muted);"># Task</span><br>
+                            Provide the specification including: grade, min strength,<br>
+                            chemical composition limits, applicable ASTM/EN standard,<br>
+                            and any special requirements for the given exposure class.<br>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: FINE-TUNING ON BUILDING CODES
+             ========================================== -->
+        <section class="ch-section" id="ft-building-codes">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-book-open"></i>
+                    Fine-Tuning on Building Codes
+                </h2>
+
+                <p>
+                    Building codes are the most natural fine-tuning target for civil
+                    engineering LLMs. Codes like ACI 318, Eurocode 2, IS 456, and
+                    AS 3600 contain thousands of prescriptive rules, equations, tables,
+                    and commentary that a general-purpose model may not reliably recall.
+                    Fine-tuning on structured code-clause data teaches the model to
+                    cite specific provisions accurately.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Building a Code Compliance Dataset</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li><strong>Extract clauses:</strong> Parse code documents into individual clause-level records with metadata (clause number, section, topic)</li>
+                            <li><strong>Generate Q&amp;A pairs:</strong> For each clause, create 3&ndash;5 natural-language questions whose answers require that clause. Example: "What is the minimum concrete cover for a beam in moderate exposure?" &rarr; clause 4.4.1.2</li>
+                            <li><strong>Add calculation examples:</strong> For clauses containing equations, generate worked examples with numerical inputs and step-by-step solutions</li>
+                            <li><strong>Include edge cases:</strong> Add examples where clauses interact (e.g., minimum reinforcement vs maximum spacing requirements)</li>
+                            <li><strong>Quality review:</strong> Have a licensed engineer verify all Q&amp;A pairs for correctness and completeness</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h3>Fine-Tuning Datasets for Construction / Engineering</h3>
+
+                <p>
+                    Beyond building codes, several data sources are valuable for
+                    creating civil engineering fine-tuning datasets:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Potential CE Fine-Tuning Data Sources</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Design codes &amp; standards:</strong> ACI, AISC, Eurocode, IS, BS, AS series &mdash; structured clause-level extraction</li>
+                            <li><strong>Technical manuals:</strong> FHWA bridge inspection guides, PCI design handbooks, steel construction manuals</li>
+                            <li><strong>Inspection reports:</strong> Historical building and bridge inspection records (anonymised)</li>
+                            <li><strong>Project specifications:</strong> Standard specification sections (CSI MasterFormat divisions)</li>
+                            <li><strong>Academic papers:</strong> ASCE, ICE, and fib journals covering structural analysis, geotechnics, and construction management</li>
+                            <li><strong>Calculation templates:</strong> Worked examples from textbooks and design guides</li>
+                            <li><strong>Failure case studies:</strong> NIST, ASCE forensic investigation reports with lessons learned</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: WHEN TO FINE-TUNE VS PROMPT
+             ========================================== -->
+        <section class="ch-section" id="ft-vs-prompt">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-branch"></i>
+                    When to Fine-Tune vs Prompt Engineer
+                </h2>
+
+                <p>
+                    This is the most important practical question for any engineering
+                    team adopting LLMs. The answer depends on your data, budget,
+                    latency requirements, and the complexity of your task.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Decision Framework</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-active);">
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Factor</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Choose Prompting</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Choose Fine-Tuning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Data available</td>
+                                    <td style="padding:8px 12px;">&lt; 100 examples</td>
+                                    <td style="padding:8px 12px;">1,000+ labelled examples</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Budget</td>
+                                    <td style="padding:8px 12px;">API costs only ($0.01&ndash;$0.10/query)</td>
+                                    <td style="padding:8px 12px;">GPU costs + engineering time ($100&ndash;$10K+)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Iteration speed</td>
+                                    <td style="padding:8px 12px;">Minutes to change a prompt</td>
+                                    <td style="padding:8px 12px;">Hours to retrain</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Task complexity</td>
+                                    <td style="padding:8px 12px;">Standard formats, classification, Q&amp;A</td>
+                                    <td style="padding:8px 12px;">Niche domain knowledge, custom output styles</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Latency</td>
+                                    <td style="padding:8px 12px;">Long prompts increase inference time</td>
+                                    <td style="padding:8px 12px;">Shorter prompts, faster inference after training</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 12px; font-weight:600;">Consistency</td>
+                                    <td style="padding:8px 12px;">Moderate (sensitive to wording)</td>
+                                    <td style="padding:8px 12px;">High (behaviour baked into weights)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Best Practice</span>
+                    </div>
+                    <p>
+                        <strong>Start with prompt engineering.</strong> Most civil
+                        engineering tasks can be solved with a well-crafted prompt on a
+                        capable model like GPT-4 or Claude. Fine-tune only when you
+                        have proven the task is feasible via prompting but need better
+                        consistency, lower latency, or reduced per-query cost at scale.
+                        The progression is: zero-shot &rarr; few-shot &rarr; system
+                        prompt + CoT &rarr; RAG (Sub-chapter 5.8) &rarr; fine-tuning.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: DEMO 1 — PROMPT PLAYGROUND
+             ========================================== -->
+        <section class="ch-section" id="demo-prompt-playground">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Prompt Strategy Playground
+                </h2>
+
+                <p>
+                    Select a civil engineering task and a prompting strategy below to
+                    see how different prompt approaches change the quality and
+                    structure of the model's output. Compare zero-shot, few-shot, and
+                    chain-of-thought responses side by side.
+                </p>
+
+                <div class="demo-panel" id="prompt-playground-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Prompt Playground &mdash; Compare prompting strategies for CE tasks</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">CE Task:</label>
+                        <select id="pp-task-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer;">
+                            <option value="crack">Crack Assessment</option>
+                            <option value="load">Load Calculation</option>
+                            <option value="material">Material Specification</option>
+                        </select>
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Strategy:</label>
+                        <select id="pp-strategy-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer;">
+                            <option value="zero">Zero-Shot</option>
+                            <option value="few">Few-Shot</option>
+                            <option value="cot">Chain-of-Thought</option>
+                        </select>
+                        <button id="pp-run-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                            <i class="fa-solid fa-play"></i> Generate
+                        </button>
+                    </div>
+                    <canvas id="pp-canvas" style="width:100%; height:480px; border-radius:8px;"></canvas>
+                    <p id="pp-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Select a task and strategy, then press "Generate" to see the prompt and simulated output side by side.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: DEMO 2 — FINE-TUNING SIMULATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-finetune-sim">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 2: Fine-Tuning Simulator
+                </h2>
+
+                <p>
+                    Drag the training-step slider to watch a model improve over
+                    epochs. The loss curve shows how the training loss decreases as
+                    the model sees more examples. Below the curve, sample outputs
+                    demonstrate how the model's responses evolve from generic and
+                    inaccurate (early training) to precise and domain-aware (late
+                    training).
+                </p>
+
+                <div class="demo-panel" id="finetune-sim-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Fine-Tuning Simulator &mdash; Watch a model learn building codes</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Training Step:</label>
+                        <input type="range" id="ft-step-slider" min="0" max="100" value="0" style="flex:1; min-width:200px; accent-color:var(--accent-primary);">
+                        <span id="ft-step-label" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); min-width:70px;">Step 0</span>
+                        <button id="ft-play-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                            <i class="fa-solid fa-play"></i> Auto-Play
+                        </button>
+                        <button id="ft-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="ft-canvas" style="width:100%; height:480px; border-radius:8px;"></canvas>
+                    <p id="ft-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Drag the slider or press "Auto-Play" to watch the loss curve decrease and sample outputs improve over training steps.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: CE APPLICATION — INSPECTION REPORTS
+             ========================================== -->
+        <section class="ch-section" id="ce-inspection-reports">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-file-contract"></i>
+                    CE Application: Generating Standardised Inspection Reports
+                </h2>
+
+                <p>
+                    One of the highest-value applications of LLMs in civil engineering
+                    is automating the generation of standardised inspection reports.
+                    Field engineers collect observations (crack locations, spalling
+                    areas, corrosion extent, settlement measurements) and the model
+                    transforms these raw notes into a structured, code-referenced
+                    report.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-circle-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Workflow: Field Notes to Report</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li><strong>Input:</strong> Engineer enters field observations via a mobile form or voice-to-text</li>
+                            <li><strong>Prompt template:</strong> Observations are injected into a pre-built prompt template with role, format, and code reference requirements</li>
+                            <li><strong>Model processing:</strong> The LLM classifies defect severity, maps observations to code clauses, and generates narrative text</li>
+                            <li><strong>Review:</strong> The engineer reviews, edits, and approves the draft report</li>
+                            <li><strong>Output:</strong> Finalised report in standard format (PDF/Word) with defect table, photo references, and recommendations</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    This workflow reduces report writing time from 2&ndash;4 hours to
+                    15&ndash;30 minutes while improving consistency across inspectors.
+                    The model handles the tedious formatting and code-lookup work; the
+                    engineer provides the critical judgment and field knowledge that no
+                    model can replace.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: KNOWLEDGE CHECK (4 QUIZZES)
+             ========================================== -->
+        <section class="ch-section" id="knowledge-check">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of fine-tuning and prompt engineering with
+                    these four questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What is the primary advantage of LoRA over full fine-tuning?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>LoRA always produces higher-quality outputs than full fine-tuning</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz1" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>LoRA trains only a small number of additional parameters, reducing memory and compute requirements by 10x or more while preserving the base model</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>LoRA does not require any training data</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>LoRA eliminates the need for prompt engineering entirely</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> LoRA freezes the pre-trained
+                            weights and adds small low-rank matrices (typically 0.1&ndash;1%
+                            of total parameters). This means you can fine-tune a 7B model
+                            on a single GPU instead of requiring multiple A100s. After
+                            training, the LoRA weights can be merged into the base model
+                            with zero inference overhead. Multiple LoRA adapters can share
+                            one base model for different tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            Which prompt engineering strategy is most effective for
+                            multi-step engineering calculations?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Zero-shot prompting with a simple instruction</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Few-shot prompting with classification examples</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz2" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Chain-of-thought prompting that instructs the model to show reasoning step by step</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Output formatting with JSON schema constraints</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Chain-of-thought (CoT) prompting
+                            instructs the model to break a problem into intermediate steps
+                            before arriving at the final answer. This dramatically improves
+                            accuracy on multi-step calculations, logical reasoning, and
+                            engineering analysis where intermediate results feed into
+                            subsequent steps. The phrase "Think step by step" is often
+                            sufficient to trigger this behaviour.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            When should a civil engineering team choose fine-tuning over
+                            prompt engineering?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Always &mdash; fine-tuning is strictly superior to prompting</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>When they have fewer than 10 examples of the desired output</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz3" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>When they have 1,000+ labelled examples and need high consistency, low latency, or reduced per-query cost at scale</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>When the task is a simple classification with two categories</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Fine-tuning is justified when
+                            you have sufficient domain data (1,000+ examples), need
+                            consistent and reproducible outputs, require lower latency (by
+                            eliminating long few-shot prompts), or must reduce per-query
+                            costs at high volumes. For tasks with limited data or rapid
+                            iteration needs, prompt engineering is faster and more
+                            cost-effective. The recommended progression is: zero-shot
+                            &rarr; few-shot &rarr; CoT &rarr; RAG &rarr; fine-tuning.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What role does the reward model play in the RLHF pipeline?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>It generates the training data for pre-training</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>It replaces the language model during inference</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>It tokenizes the input text before the language model processes it</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz4" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>It predicts human preference scores for model outputs, serving as the objective function for RL optimisation</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: D.</strong> In the RLHF pipeline, the reward
+                            model is trained on human-ranked response pairs to predict
+                            which response a human would prefer. During RL optimisation
+                            (typically PPO), this reward model scores the language model's
+                            generated outputs, providing the gradient signal that pushes
+                            the model toward responses that are more helpful, accurate,
+                            and aligned with human preferences.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Transfer learning:</strong> Pre-trained models encode general knowledge that can be adapted to civil engineering tasks through fine-tuning or prompt engineering</li>
+                            <li><strong>Full fine-tuning:</strong> Updates all model parameters. Maximum flexibility but requires significant GPU memory and risks catastrophic forgetting</li>
+                            <li><strong>LoRA / QLoRA:</strong> Train only small low-rank adapter matrices (~0.1&ndash;1% of parameters). Feasible on a single GPU, swappable across tasks, zero inference overhead after merging</li>
+                            <li><strong>Adapters:</strong> Insert trainable bottleneck layers. Similar quality to LoRA but add inference latency</li>
+                            <li><strong>Instruction tuning:</strong> Fine-tuning on (instruction, response) pairs teaches the model to follow directives rather than just predicting the next token</li>
+                            <li><strong>RLHF:</strong> Reinforcement learning from human feedback aligns model behaviour with human preferences for helpfulness, safety, and accuracy</li>
+                            <li><strong>Zero-shot:</strong> Describe the task directly. Works for common tasks the model learned during pre-training</li>
+                            <li><strong>Few-shot:</strong> Provide 2&ndash;5 examples. Dramatically improves format consistency and domain accuracy</li>
+                            <li><strong>Chain-of-thought:</strong> Ask the model to reason step by step. Essential for multi-step calculations and engineering analysis</li>
+                            <li><strong>System prompts:</strong> Set role, constraints, and output conventions for the entire conversation</li>
+                            <li><strong>Start with prompting:</strong> Escalate to fine-tuning only when prompting proves insufficient for consistency, latency, or cost requirements at scale</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In the next sub-chapter, we will explore <strong>RAG &amp;
+                    Knowledge Retrieval</strong> &mdash; how to ground LLM outputs in
+                    external knowledge sources (design codes, project documents,
+                    specifications) using retrieval-augmented generation, combining the
+                    flexibility of prompt engineering with the factual grounding of
+                    a curated knowledge base.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub6.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">5.6 Tokenization &amp; Embeddings</div>
+        </a>
+        <a href="index.html" class="chapter-nav-footer__link chapter-nav-footer__link--index">
+            <i class="fa-solid fa-list"></i>
+            <span>All Sub-chapters</span>
+        </a>
+        <a href="sub8.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">5.8 RAG &amp; Knowledge Retrieval</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa', PINK:'#f472b6', ORANGE:'#fb923c',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a + (b - a) * t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random() * (b - a) + a; };
+
+        /* ==============================================
+           HERO CANVAS — FLOATING TUNING PARAMETERS
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var t = 0;
+
+            var particles = [];
+            var labels = [
+                'LoRA','QLoRA','adapter','RLHF','SFT','zero-shot',
+                'few-shot','CoT','system','prompt','fine-tune',
+                'rank=8','loss','epoch','lr=2e-5','gradient',
+                'reward','PPO','frozen','trainable','merge',
+                'ACI 318','Eurocode','inspect','DCR','beam'
+            ];
+            var numParticles = 28;
+            for (var i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: rand(w * 0.05, w * 0.95),
+                    y: rand(h * 0.05, h * 0.95),
+                    vx: rand(-0.35, 0.35),
+                    vy: rand(-0.35, 0.35),
+                    label: labels[i % labels.length],
+                    alpha: rand(0.15, 0.5),
+                    size: rand(9, 14)
+                });
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+                t += 0.006;
+
+                for (var i = 0; i < numParticles; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+                    p.x = clamp(p.x, 0, w);
+                    p.y = clamp(p.y, 0, h);
+
+                    for (var j = i + 1; j < numParticles; j++) {
+                        var dx = particles[j].x - p.x;
+                        var dy = particles[j].y - p.y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 110) {
+                            ctx.strokeStyle = C.TEAL;
+                            ctx.globalAlpha = (1 - dist / 110) * 0.1;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                    ctx.globalAlpha = 1;
+
+                    ctx.font = '500 ' + p.size + 'px JetBrains Mono, monospace';
+                    var tw = ctx.measureText(p.label).width + 14;
+                    var th = p.size + 10;
+                    var rx = p.x - tw / 2;
+                    var ry = p.y - th / 2;
+
+                    var isWarm = p.label === 'LoRA' || p.label === 'QLoRA' || p.label === 'RLHF' || p.label === 'fine-tune' || p.label === 'adapter';
+                    ctx.globalAlpha = p.alpha * 0.25;
+                    ctx.fillStyle = isWarm ? C.AMBER : C.TEAL;
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, tw, th, 4);
+                    ctx.fill();
+
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = isWarm ? C.AMBER : C.TEAL;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.label, p.x, p.y);
+                    ctx.globalAlpha = 1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: PROMPT STRATEGY PLAYGROUND
+           ============================================== */
+        (function promptPlayground() {
+            var canvas = document.getElementById('pp-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var taskSelect = document.getElementById('pp-task-select');
+            var stratSelect = document.getElementById('pp-strategy-select');
+            var runBtn = document.getElementById('pp-run-btn');
+            var infoEl = document.getElementById('pp-info');
+
+            /* ---- Prompt/response data ---- */
+            var data = {
+                crack: {
+                    title: 'Crack Assessment',
+                    zero: {
+                        prompt: 'Assess this crack: "Diagonal crack at beam-column joint, 4mm wide, propagating at 45 degrees."',
+                        output: 'This is a crack in a beam-column joint. It is 4mm wide and diagonal. It may need repair.',
+                        quality: 25
+                    },
+                    few: {
+                        prompt: 'Examples:\n1. "Hairline plaster crack, <0.1mm" -> Cosmetic, No action\n2. "Vertical crack in shear wall, 2mm" -> Structural, Investigate\n3. "Paint flaking on soffit" -> Cosmetic, Repaint\n\nAssess: "Diagonal crack at beam-column joint, 4mm wide, at 45 degrees."',
+                        output: 'Classification: Structural\nSeverity: Critical\nAction: Immediate investigation by structural engineer required.\nReason: Diagonal cracking at beam-column joints at 45 deg suggests shear distress.',
+                        quality: 65
+                    },
+                    cot: {
+                        prompt: 'Assess this crack step by step:\n"Diagonal crack at beam-column joint, 4mm wide, at 45 degrees."\n\nConsider: location, orientation, width, and structural implications.',
+                        output: 'Step 1 - Location: Beam-column joint is a critical structural connection.\nStep 2 - Orientation: 45-degree diagonal pattern indicates principal tensile stress failure, consistent with shear cracking.\nStep 3 - Width: 4mm exceeds the 0.3mm serviceability limit per ACI 224R.\nStep 4 - Implication: Possible shear deficiency in the joint per ACI 352R.\n\nClassification: Structural - Critical\nAction: Evacuate if load-bearing. Immediate assessment by PE. Install crack monitors. Review original design for joint shear capacity per ACI 318-19 Ch.18.',
+                        quality: 95
+                    }
+                },
+                load: {
+                    title: 'Load Calculation',
+                    zero: {
+                        prompt: 'Calculate the factored load for a beam with dead load 15 kN/m and live load 10 kN/m.',
+                        output: 'The factored load is 15 + 10 = 25 kN/m.',
+                        quality: 15
+                    },
+                    few: {
+                        prompt: 'Examples:\n1. DL=10, LL=8 -> Wu = 1.2(10) + 1.6(8) = 24.8 kN/m\n2. DL=20, LL=12 -> Wu = 1.2(20) + 1.6(12) = 43.2 kN/m\n\nCalc: DL=15 kN/m, LL=10 kN/m',
+                        output: 'Wu = 1.2(DL) + 1.6(LL) per ACI 318\nWu = 1.2(15) + 1.6(10)\nWu = 18 + 16 = 34 kN/m',
+                        quality: 70
+                    },
+                    cot: {
+                        prompt: 'Calculate factored load for DL=15 kN/m, LL=10 kN/m.\nThink step by step. State the code, load combinations, and governing case.',
+                        output: 'Step 1 - Code: ACI 318-19, Section 5.3\nStep 2 - Load combinations to check:\n  (a) 1.4D = 1.4(15) = 21.0 kN/m\n  (b) 1.2D + 1.6L = 1.2(15) + 1.6(10) = 18 + 16 = 34.0 kN/m\n  (c) 1.2D + 1.0L = 1.2(15) + 1.0(10) = 28.0 kN/m\nStep 3 - Governing: Combination (b) = 34.0 kN/m\nStep 4 - Note: If wind or seismic loads apply, additional combinations per ACI 318-19 Table 5.3.1 must be checked.\n\nFactored load Wu = 34.0 kN/m (governs)',
+                        quality: 95
+                    }
+                },
+                material: {
+                    title: 'Material Specification',
+                    zero: {
+                        prompt: 'What grade of steel should I use for a bridge girder?',
+                        output: 'You should use structural steel. Common grades include A36 and A992.',
+                        quality: 20
+                    },
+                    few: {
+                        prompt: 'Examples:\n1. App: Building columns -> A992 Gr.50, Fy=345MPa, ASTM A992\n2. App: Concrete rebar -> A615 Gr.60, Fy=420MPa, ASTM A615\n\nQuery: App: Bridge girder, weathering exposure',
+                        output: 'Material: A709 Gr.50W (weathering steel)\nFy: 345 MPa\nStandard: ASTM A709\nNote: Weathering grade (W) for unpainted exposure in bridge applications.',
+                        quality: 72
+                    },
+                    cot: {
+                        prompt: 'Specify steel for a bridge girder with weathering exposure.\nThink step by step: consider application, environment, code requirements, and material properties.',
+                        output: 'Step 1 - Application: Bridge girder requires high strength-to-weight ratio and fatigue resistance per AASHTO LRFD.\nStep 2 - Environment: Weathering exposure means the steel must form a protective patina. This rules out standard A992.\nStep 3 - Code: AASHTO LRFD 6.4.1 specifies ASTM A709 for structural steel in bridges.\nStep 4 - Grade selection: A709 Gr.50W provides Fy=345MPa with weathering characteristics. For high-performance, HPS 70W (Fy=485MPa) offers better fracture toughness.\nStep 5 - CVN requirements: Zone 2 or 3 fracture-critical requires Charpy V-notch testing per AASHTO Table 6.6.2.\n\nRecommendation: ASTM A709 Gr.50W for standard girders; HPS 70W for fracture-critical or long-span applications.',
+                        quality: 95
+                    }
+                }
+            };
+
+            var currentTask = 'crack';
+            var currentStrategy = 'zero';
+            var animProgress = 0;
+            var isAnimating = false;
+
+            function wrapText(text, maxWidth, font) {
+                ctx.font = font;
+                var words = text.split(/(\s+|\n)/);
+                var lines = [];
+                var line = '';
+                for (var i = 0; i < words.length; i++) {
+                    if (words[i] === '\n') {
+                        lines.push(line);
+                        line = '';
+                        continue;
+                    }
+                    var test = line + words[i];
+                    if (ctx.measureText(test).width > maxWidth && line.length > 0) {
+                        lines.push(line);
+                        line = words[i];
+                    } else {
+                        line = test;
+                    }
+                }
+                if (line) lines.push(line);
+                return lines;
+            }
+
+            function render() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                ctx.clearRect(0, 0, w, h);
+
+                /* Background */
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var d = data[currentTask][currentStrategy];
+                var pad = 24;
+                var colW = (w - pad * 3) / 2;
+                var headerH = 36;
+
+                /* ---- Left panel: Prompt ---- */
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(pad, pad, colW, h - pad * 2, 8);
+                ctx.fill();
+
+                ctx.fillStyle = C.TEAL;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('PROMPT (' + currentStrategy.toUpperCase().replace('ZERO','ZERO-SHOT').replace('FEW','FEW-SHOT').replace('COT','CHAIN-OF-THOUGHT') + ')', pad + 12, pad + 10);
+
+                ctx.strokeStyle = C.TEAL;
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.moveTo(pad + 12, pad + headerH);
+                ctx.lineTo(pad + colW - 12, pad + headerH);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                var promptFont = '400 11px JetBrains Mono, monospace';
+                var promptLines = wrapText(d.prompt, colW - 32, promptFont);
+                ctx.fillStyle = C.TEXT;
+                ctx.font = promptFont;
+                var lineH = 16;
+                var maxLines = Math.floor((h - pad * 2 - headerH - 16) / lineH);
+                var visiblePrompt = promptLines.slice(0, maxLines);
+                for (var i = 0; i < visiblePrompt.length; i++) {
+                    ctx.fillText(visiblePrompt[i], pad + 16, pad + headerH + 12 + i * lineH);
+                }
+
+                /* ---- Right panel: Output ---- */
+                var rx = pad * 2 + colW;
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(rx, pad, colW, h - pad * 2, 8);
+                ctx.fill();
+
+                ctx.fillStyle = C.AMBER;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillText('MODEL OUTPUT', rx + 12, pad + 10);
+
+                ctx.strokeStyle = C.AMBER;
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.moveTo(rx + 12, pad + headerH);
+                ctx.lineTo(rx + colW - 12, pad + headerH);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                /* Animate output text */
+                var outputFont = '400 11px JetBrains Mono, monospace';
+                var outputLines = wrapText(d.output, colW - 32, outputFont);
+                ctx.font = outputFont;
+                var totalChars = d.output.length;
+                var charsToShow = Math.floor(animProgress * totalChars);
+                var charCount = 0;
+                ctx.fillStyle = C.TEXT;
+                for (var oi = 0; oi < outputLines.length && oi < maxLines; oi++) {
+                    var line = outputLines[oi];
+                    if (charCount + line.length <= charsToShow) {
+                        ctx.fillText(line, rx + 16, pad + headerH + 12 + oi * lineH);
+                        charCount += line.length;
+                    } else {
+                        var partial = line.substring(0, charsToShow - charCount);
+                        ctx.fillText(partial, rx + 16, pad + headerH + 12 + oi * lineH);
+                        break;
+                    }
+                }
+
+                /* Quality meter at bottom */
+                var meterY = h - pad - 28;
+                var meterW = colW - 32;
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(rx + 16, meterY, meterW, 18, 4);
+                ctx.fill();
+
+                var fillW = meterW * (d.quality / 100) * Math.min(animProgress * 1.5, 1);
+                var meterColor = d.quality >= 80 ? C.GREEN : d.quality >= 50 ? C.AMBER : C.RED;
+                ctx.fillStyle = meterColor;
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.roundRect(rx + 16, meterY, fillW, 18, 4);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                ctx.fillStyle = C.WHITE;
+                ctx.font = '600 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Quality: ' + d.quality + '%', rx + 16 + meterW / 2, meterY + 10);
+                ctx.textAlign = 'left';
+            }
+
+            function animate() {
+                if (!isAnimating) return;
+                animProgress += 0.015;
+                if (animProgress >= 1) {
+                    animProgress = 1;
+                    isAnimating = false;
+                }
+                render();
+                if (isAnimating) requestAnimationFrame(animate);
+            }
+
+            runBtn.addEventListener('click', function() {
+                currentTask = taskSelect.value;
+                currentStrategy = stratSelect.value;
+                animProgress = 0;
+                isAnimating = true;
+                var d = data[currentTask][currentStrategy];
+                infoEl.textContent = 'Task: ' + data[currentTask].title + ' | Strategy: ' + currentStrategy.toUpperCase() + ' | Quality score: ' + d.quality + '%';
+                animate();
+            });
+
+            taskSelect.addEventListener('change', function() {
+                animProgress = 0;
+                isAnimating = false;
+                render();
+            });
+
+            stratSelect.addEventListener('change', function() {
+                animProgress = 0;
+                isAnimating = false;
+                render();
+            });
+
+            render();
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var obs1 = new MutationObserver(function() { render(); });
+            obs1.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2: FINE-TUNING SIMULATOR
+           ============================================== */
+        (function finetuneSimulator() {
+            var canvas = document.getElementById('ft-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var slider = document.getElementById('ft-step-slider');
+            var stepLabel = document.getElementById('ft-step-label');
+            var playBtn = document.getElementById('ft-play-btn');
+            var resetBtn = document.getElementById('ft-reset-btn');
+            var infoEl = document.getElementById('ft-info');
+
+            var isPlaying = false;
+            var playTimer = null;
+
+            /* Sample outputs at different training stages */
+            var sampleOutputs = [
+                { step: 0, loss: 4.2, label: 'Untrained (Base Model)',
+                  text: 'Q: Min concrete cover for beam per ACI 318?\nA: Concrete cover is important for structures. It protects steel. You should use enough cover for your project.' },
+                { step: 15, loss: 3.1, label: 'Early Training (Step 150)',
+                  text: 'Q: Min concrete cover for beam per ACI 318?\nA: The minimum concrete cover for beams is specified in ACI 318. It depends on exposure conditions. Typical values range from 20mm to 75mm.' },
+                { step: 35, loss: 2.0, label: 'Mid Training (Step 350)',
+                  text: 'Q: Min concrete cover for beam per ACI 318?\nA: Per ACI 318-19 Table 20.6.1.3.1, minimum cover for beams is:\n- Not exposed to weather: 38mm (1.5 in)\n- Exposed to weather: 50mm for #19 bars and larger' },
+                { step: 60, loss: 1.2, label: 'Late Training (Step 600)',
+                  text: 'Q: Min concrete cover for beam per ACI 318?\nA: Per ACI 318-19 Table 20.6.1.3.1:\n- Not exposed to weather/ground: 38mm (#36 and smaller)\n- Exposed to weather: 50mm (#19-#57), 38mm (#16 and smaller)\n- Cast against ground: 75mm\nNote: Cover is measured to the nearest surface of the reinforcement.' },
+                { step: 85, loss: 0.5, label: 'Converged (Step 850)',
+                  text: 'Q: Min concrete cover for beam per ACI 318?\nA: Per ACI 318-19 Table 20.6.1.3.1, minimum concrete cover for cast-in-place beams:\n\n| Exposure | Bar Size | Cover |\n|----------|----------|-------|\n| Interior | #36 & smaller | 38mm |\n| Weather  | #19-#57  | 50mm  |\n| Weather  | #16 & smaller | 38mm  |\n| Ground contact | All | 75mm |\n\nRef: ACI 318-19 Sec. 20.6.1. For precast, see Table 20.6.1.3.2. For corrosive environments, see ACI 318-19 Sec. 19.3.3 for additional requirements.' }
+            ];
+
+            /* Generate loss curve data points */
+            var lossCurve = [];
+            for (var i = 0; i <= 100; i++) {
+                var loss = 4.2 * Math.exp(-0.022 * i) + 0.3 + Math.sin(i * 0.3) * 0.15 * Math.exp(-0.015 * i);
+                lossCurve.push(Math.max(0.25, loss));
+            }
+
+            function getOutputForStep(step) {
+                var best = sampleOutputs[0];
+                for (var i = 0; i < sampleOutputs.length; i++) {
+                    if (sampleOutputs[i].step <= step) best = sampleOutputs[i];
+                }
+                return best;
+            }
+
+            function wrapTextFT(text, maxW, font) {
+                ctx.font = font;
+                var segments = text.split('\n');
+                var lines = [];
+                for (var s = 0; s < segments.length; s++) {
+                    if (segments[s].length === 0) { lines.push(''); continue; }
+                    var words = segments[s].split(' ');
+                    var line = '';
+                    for (var wi = 0; wi < words.length; wi++) {
+                        var test = line + (line ? ' ' : '') + words[wi];
+                        if (ctx.measureText(test).width > maxW && line.length > 0) {
+                            lines.push(line);
+                            line = words[wi];
+                        } else {
+                            line = test;
+                        }
+                    }
+                    if (line) lines.push(line);
+                }
+                return lines;
+            }
+
+            function render() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var step = parseInt(slider.value, 10);
+                var pad = 24;
+
+                /* ---- Top half: Loss curve ---- */
+                var chartH = h * 0.42;
+                var chartW = w - pad * 2;
+                var chartX = pad;
+                var chartY = pad;
+
+                /* Chart title */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('Training Loss Curve', chartX, chartY);
+
+                var plotY = chartY + 28;
+                var plotH = chartH - 36;
+
+                /* Grid */
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 1;
+                for (var g = 0; g <= 4; g++) {
+                    var gy = plotY + (plotH / 4) * g;
+                    ctx.beginPath();
+                    ctx.moveTo(chartX, gy);
+                    ctx.lineTo(chartX + chartW, gy);
+                    ctx.stroke();
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 10px JetBrains Mono, monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText((4.5 - g * 1.0).toFixed(1), chartX - 6, gy - 4);
+                }
+
+                /* Y-axis label */
+                ctx.save();
+                ctx.translate(chartX - 38, plotY + plotH / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '400 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loss', 0, 0);
+                ctx.restore();
+
+                /* X-axis label */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '400 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Training Steps (x10)', chartX + chartW / 2, plotY + plotH + 16);
+
+                /* Draw loss curve up to current step */
+                ctx.strokeStyle = C.TEAL;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                var maxLoss = 4.5;
+                var minLoss = 0.0;
+                for (var ci = 0; ci <= step; ci++) {
+                    var cx = chartX + (ci / 100) * chartW;
+                    var cy = plotY + plotH - ((lossCurve[ci] - minLoss) / (maxLoss - minLoss)) * plotH;
+                    if (ci === 0) ctx.moveTo(cx, cy);
+                    else ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+
+                /* Current point marker */
+                if (step > 0) {
+                    var cpx = chartX + (step / 100) * chartW;
+                    var cpy = plotY + plotH - ((lossCurve[step] - minLoss) / (maxLoss - minLoss)) * plotH;
+
+                    ctx.fillStyle = C.TEAL;
+                    ctx.beginPath();
+                    ctx.arc(cpx, cpy, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = C.TEAL;
+                    ctx.globalAlpha = 0.3;
+                    ctx.beginPath();
+                    ctx.arc(cpx, cpy, 10, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '500 11px JetBrains Mono, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Loss: ' + lossCurve[step].toFixed(2), cpx + 14, cpy - 2);
+                }
+
+                /* ---- Bottom half: Sample output ---- */
+                var outY = chartY + chartH + 16;
+                var outH = h - outY - pad;
+                var output = getOutputForStep(step);
+
+                /* Output panel background */
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(pad, outY, w - pad * 2, outH, 8);
+                ctx.fill();
+
+                /* Panel header */
+                var qualColor = step < 20 ? C.RED : step < 50 ? C.AMBER : C.GREEN;
+                ctx.fillStyle = qualColor;
+                ctx.font = '600 12px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Sample Output: ' + output.label, pad + 14, outY + 14);
+
+                /* Divider */
+                ctx.strokeStyle = qualColor;
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.moveTo(pad + 14, outY + 32);
+                ctx.lineTo(w - pad - 14, outY + 32);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                /* Output text */
+                var outFont = '400 11px JetBrains Mono, monospace';
+                var outLines = wrapTextFT(output.text, w - pad * 2 - 36, outFont);
+                ctx.fillStyle = C.TEXT;
+                ctx.font = outFont;
+                var olh = 16;
+                var maxOutLines = Math.floor((outH - 48) / olh);
+                for (var oli = 0; oli < Math.min(outLines.length, maxOutLines); oli++) {
+                    var isQ = outLines[oli].indexOf('Q:') === 0;
+                    var isHeader = outLines[oli].indexOf('|') === 0;
+                    ctx.fillStyle = isQ ? C.AMBER : isHeader ? C.CYAN : C.TEXT;
+                    ctx.fillText(outLines[oli], pad + 18, outY + 42 + oli * olh);
+                }
+
+                /* Epoch indicator bar */
+                var barY = outY + outH - 22;
+                var barW = w - pad * 2 - 28;
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(pad + 14, barY, barW, 12, 3);
+                ctx.fill();
+
+                ctx.fillStyle = qualColor;
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.roundRect(pad + 14, barY, barW * (step / 100), 12, 3);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                ctx.fillStyle = C.WHITE;
+                ctx.font = '600 8px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Epoch ' + Math.floor(step / 20 + 1) + '/5', pad + 14 + barW / 2, barY + 7);
+            }
+
+            slider.addEventListener('input', function() {
+                stepLabel.textContent = 'Step ' + (parseInt(this.value, 10) * 10);
+                infoEl.textContent = 'Step ' + (parseInt(this.value, 10) * 10) + ' | Loss: ' + lossCurve[parseInt(this.value, 10)].toFixed(3);
+                render();
+            });
+
+            playBtn.addEventListener('click', function() {
+                if (isPlaying) {
+                    isPlaying = false;
+                    clearInterval(playTimer);
+                    playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Auto-Play';
+                    return;
+                }
+                isPlaying = true;
+                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                if (parseInt(slider.value, 10) >= 100) slider.value = 0;
+
+                playTimer = setInterval(function() {
+                    var v = parseInt(slider.value, 10);
+                    if (v >= 100) {
+                        clearInterval(playTimer);
+                        isPlaying = false;
+                        playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Auto-Play';
+                        return;
+                    }
+                    slider.value = v + 1;
+                    stepLabel.textContent = 'Step ' + ((v + 1) * 10);
+                    infoEl.textContent = 'Step ' + ((v + 1) * 10) + ' | Loss: ' + lossCurve[v + 1].toFixed(3);
+                    render();
+                }, 80);
+            });
+
+            resetBtn.addEventListener('click', function() {
+                isPlaying = false;
+                clearInterval(playTimer);
+                slider.value = 0;
+                stepLabel.textContent = 'Step 0';
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Auto-Play';
+                infoEl.textContent = 'Drag the slider or press "Auto-Play" to watch the loss curve decrease and sample outputs improve over training steps.';
+                render();
+            });
+
+            render();
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var obs2 = new MutationObserver(function() { render(); });
+            obs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

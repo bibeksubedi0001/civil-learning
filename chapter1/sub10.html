@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1.10 Types of Machine Learning &mdash; Supervised, Unsupervised, RL, Semi-supervised | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore the four main types of machine learning &mdash; supervised, unsupervised, reinforcement, and semi-supervised learning &mdash; with civil engineering analogies, interactive demos, and quizzes.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ── Comparison Table ── */
+        .comparison-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            margin: 2rem 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table thead {
+            background: var(--accent-primary);
+            color: #fff;
+        }
+
+        .comparison-table thead th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .comparison-table tbody tr {
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background 0.2s;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .comparison-table tbody td {
+            padding: 12px 16px;
+            color: var(--text-primary);
+            vertical-align: top;
+        }
+
+        .comparison-table tbody td:first-child {
+            font-weight: 600;
+            color: var(--accent-primary);
+            white-space: nowrap;
+        }
+
+        .comparison-table tbody td i {
+            margin-right: 6px;
+            color: var(--accent-primary);
+        }
+
+        /* ── Demo Canvases ── */
+        .demo-canvas-wrap {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .demo-canvas-wrap canvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 14px 18px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            align-items: center;
+        }
+
+        .demo-controls button {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s, border-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .demo-controls button:hover,
+        .demo-controls button.active {
+            background: var(--accent-primary);
+            color: #fff;
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        .demo-controls .demo-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .demo-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            padding: 12px 18px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .demo-stat {
+            text-align: center;
+        }
+
+        .demo-stat .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .demo-stat .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        /* ── RL Grid World ── */
+        .rl-grid-canvas-wrap canvas {
+            cursor: default;
+        }
+
+        .rl-speed-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rl-speed-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .rl-speed-group input[type="range"] {
+            width: 100px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        /* ── Decision Flowchart ── */
+        .flowchart-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 2rem 0;
+            overflow-x: auto;
+        }
+
+        .flowchart-node {
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 12px auto;
+            max-width: 520px;
+            text-align: center;
+            position: relative;
+            transition: border-color 0.2s, transform 0.15s;
+        }
+
+        .flowchart-node:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .flowchart-node.decision {
+            border-color: var(--accent-primary);
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-tertiary));
+        }
+
+        .flowchart-node.answer {
+            border-color: var(--accent-secondary, #34d399);
+            background: var(--bg-tertiary);
+        }
+
+        .flowchart-node h4 {
+            margin: 0 0 6px;
+            color: var(--accent-primary);
+            font-size: 0.95rem;
+        }
+
+        .flowchart-node p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .flowchart-arrow {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin: 4px 0;
+        }
+
+        .flowchart-branch {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .flowchart-branch-label {
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+            margin-bottom: 4px;
+        }
+
+        /* ── Paradigm Cards ── */
+        .paradigm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin: 2rem 0;
+        }
+
+        .paradigm-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 24px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .paradigm-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .paradigm-card__icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 14px;
+        }
+
+        .paradigm-card h3 {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin: 0 0 8px;
+        }
+
+        .paradigm-card p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* ── Takeaway List ── */
+        .takeaway-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .takeaway-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .takeaway-list li:last-child {
+            border-bottom: none;
+        }
+
+        .takeaway-list li i {
+            color: var(--accent-primary);
+            font-size: 1rem;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 1</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-diagram-project"></i> Chapter 1 &mdash; Sub-chapter 1.10
+            </div>
+            <h1 class="chapter-hero__title">Types of Machine Learning</h1>
+            <p class="chapter-hero__subtitle">
+                Supervised, Unsupervised, Reinforcement, and Semi-supervised Learning &mdash;
+                the four paradigms that power every AI application in civil engineering.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 30 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE FOUR PARADIGMS OPENING
+             ========================================== -->
+        <section class="ch-section" id="opening">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sitemap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Four Ways a Machine Can Learn</h2>
+                        <p>
+                            Think about how knowledge is passed down on a construction site. Sometimes
+                            an experienced engineer sits beside a junior and says, "This is the correct
+                            rebar spacing for this load case." Other times, a surveyor walks an unknown
+                            site and discovers natural drainage patterns nobody documented. A project
+                            manager learns through years of trial and error which scheduling strategies
+                            minimise delays. And occasionally, a team combines a handful of verified
+                            lab results with thousands of unverified field measurements to make
+                            practical decisions.
+                        </p>
+                        <p>
+                            Each of these scenarios mirrors a fundamental type of machine learning.
+                            Understanding these four paradigms &mdash; <strong>Supervised</strong>,
+                            <strong>Unsupervised</strong>, <strong>Reinforcement</strong>, and
+                            <strong>Semi-supervised</strong> &mdash; is the key to choosing the
+                            right approach for any engineering problem.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Construction Site Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Machine learning paradigms are like training methods for construction
+                            crews.</strong> A master mason teaching an apprentice step-by-step is
+                            supervised learning. A surveyor mapping terrain without a prior map is
+                            unsupervised learning. A crane operator who improves through simulated
+                            practice runs is reinforcement learning. And a quality inspector who
+                            verifies a few samples, then applies those standards to thousands of
+                            unchecked units, is semi-supervised learning.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Before we dive into each type, let us see them at a glance. The four paradigms
+                    differ primarily in what kind of data they use and how they receive feedback
+                    during learning.
+                </p>
+
+                <div class="paradigm-grid">
+                    <div class="paradigm-card">
+                        <div class="paradigm-card__icon">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <h3>Supervised Learning</h3>
+                        <p>
+                            Learn from labelled examples. The algorithm sees both the input and the
+                            correct output, then learns to map between them.
+                        </p>
+                    </div>
+                    <div class="paradigm-card">
+                        <div class="paradigm-card__icon">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </div>
+                        <h3>Unsupervised Learning</h3>
+                        <p>
+                            Find hidden structure in unlabelled data. No correct answers are provided;
+                            the algorithm discovers patterns on its own.
+                        </p>
+                    </div>
+                    <div class="paradigm-card">
+                        <div class="paradigm-card__icon">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <h3>Reinforcement Learning</h3>
+                        <p>
+                            Learn by interacting with an environment. The agent receives rewards or
+                            penalties and optimises its strategy over time.
+                        </p>
+                    </div>
+                    <div class="paradigm-card">
+                        <div class="paradigm-card__icon">
+                            <i class="fa-solid fa-circle-half-stroke"></i>
+                        </div>
+                        <h3>Semi-supervised Learning</h3>
+                        <p>
+                            Combine a small amount of labelled data with a large pool of unlabelled
+                            data to achieve better results than either alone.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: SUPERVISED LEARNING
+             ========================================== -->
+        <section class="ch-section" id="supervised-learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    Supervised Learning: The Master-Apprentice Model
+                </h2>
+
+                <p>
+                    Supervised learning is the most widely used and most intuitive form of machine
+                    learning. The concept is straightforward: you give the algorithm a set of
+                    examples where each input is paired with its correct output, and the algorithm
+                    learns the relationship between them. Once trained, it can predict outputs for
+                    new, unseen inputs.
+                </p>
+
+                <p>
+                    In mathematical terms, supervised learning finds a function
+                    <em>f(x) = y</em> that maps inputs <em>x</em> to outputs <em>y</em>,
+                    minimising the error between predicted and actual values across all
+                    training examples.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Supervised learning is like an apprentice learning from a master
+                            engineer.</strong> The master shows the apprentice dozens of concrete mix
+                            designs (inputs) and their resulting 28-day compressive strengths (outputs).
+                            "This mix with a 0.45 water-cement ratio gave 35 MPa. This one with 0.38
+                            gave 42 MPa." After studying enough examples, the apprentice can predict
+                            the strength of a new mix design &mdash; without having to wait 28 days
+                            for the test result.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>How It Works</h3>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h4>Collect Labelled Data</h4>
+                        <p>
+                            Gather input-output pairs. For concrete strength prediction: the inputs
+                            are mix proportions (cement, water, aggregate, admixture amounts), and
+                            the output is the measured compressive strength. You need hundreds or
+                            thousands of such pairs.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h4>Train the Model</h4>
+                        <p>
+                            Feed the data to a learning algorithm (linear regression, decision tree,
+                            neural network, etc.). The algorithm adjusts its internal parameters to
+                            minimise prediction error across all training examples. This is the
+                            "learning" phase.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h4>Validate and Test</h4>
+                        <p>
+                            Evaluate the model on data it has never seen. If it predicts concrete
+                            strengths within an acceptable margin of error on new mix designs,
+                            the model has successfully generalised.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h4>Deploy and Predict</h4>
+                        <p>
+                            Use the trained model in production. An engineer inputs a proposed mix
+                            design and instantly gets a predicted strength &mdash; enabling rapid
+                            iteration without waiting for laboratory results.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Two Sub-types</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Regression (Continuous Output)</h3>
+                        <p>
+                            When the output is a continuous number. Predicting concrete compressive
+                            strength (35.2 MPa), estimating construction cost ($4.7 million), or
+                            forecasting settlement of a foundation (12.3 mm) are all regression
+                            problems. The model outputs a specific numerical value.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Classification (Discrete Categories)</h3>
+                        <p>
+                            When the output is a category. Classifying a crack as "structural" vs
+                            "cosmetic", determining if a bridge is "safe" vs "needs inspection", or
+                            categorising soil as "clay", "sand", or "silt" are classification problems.
+                            The model assigns one of several predefined labels.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>CE Applications of Supervised Learning</span>
+                    </div>
+                    <ul>
+                        <li>
+                            <strong>Concrete strength prediction:</strong> Given mix proportions,
+                            curing conditions, and aggregate properties, predict the 28-day
+                            compressive strength.
+                        </li>
+                        <li>
+                            <strong>Load capacity estimation:</strong> Predict the ultimate load
+                            capacity of a beam given its dimensions, reinforcement, and material
+                            properties.
+                        </li>
+                        <li>
+                            <strong>Crack classification:</strong> Analyse images of concrete
+                            surfaces and classify detected cracks by severity level.
+                        </li>
+                        <li>
+                            <strong>Cost estimation:</strong> Predict project costs based on
+                            historical data from similar projects.
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: UNSUPERVISED LEARNING
+             ========================================== -->
+        <section class="ch-section" id="unsupervised-learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    Unsupervised Learning: Mapping Unknown Terrain
+                </h2>
+
+                <p>
+                    Unsupervised learning is fundamentally different from supervised learning.
+                    Here, the algorithm receives only inputs &mdash; no correct answers, no
+                    labels, no teacher. Its job is to find hidden structure, patterns, or
+                    groupings in the data entirely on its own.
+                </p>
+
+                <p>
+                    This may sound abstract, but it is remarkably practical. Think about the
+                    enormous volume of sensor data collected from a bridge over a decade. No
+                    human has labelled every reading as "normal" or "anomalous." Unsupervised
+                    learning can sift through millions of readings and discover patterns that
+                    humans might never notice.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Unsupervised learning is like a surveyor mapping unknown
+                            terrain.</strong> When a surveyor enters an unmapped region, nobody
+                            hands them a finished map. They observe the landscape, measure elevations,
+                            note where rivers flow and ridges rise, and gradually discover the
+                            natural structure of the terrain. They might find that the land naturally
+                            divides into three distinct drainage basins or five geological zones &mdash;
+                            categories that existed but were never defined by anyone.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Common Techniques</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Clustering</h3>
+                        <p>
+                            Group similar data points together without predefined categories.
+                            K-means, DBSCAN, and hierarchical clustering are popular algorithms.
+                            In civil engineering, clustering can group soil samples by their
+                            geotechnical properties, revealing natural soil type boundaries that
+                            do not follow textbook categories.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Dimensionality Reduction</h3>
+                        <p>
+                            Reduce the number of variables while preserving essential information.
+                            Principal Component Analysis (PCA) and t-SNE are widely used. When a
+                            structural health monitoring system records 500 sensor channels, PCA
+                            can identify the 10 most informative combinations &mdash; making analysis
+                            tractable without losing critical signals.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Anomaly Detection</h3>
+                        <p>
+                            Identify data points that deviate significantly from the norm. The
+                            algorithm learns what "normal" looks like and flags anything unusual.
+                            For structural damage pattern recognition, the model learns the typical
+                            vibration signature of a healthy bridge and alerts engineers when the
+                            pattern shifts &mdash; potentially indicating damage.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>CE Applications of Unsupervised Learning</span>
+                    </div>
+                    <ul>
+                        <li>
+                            <strong>Soil type clustering:</strong> Group borehole samples by
+                            geotechnical properties (plasticity, grain size, moisture content)
+                            to identify natural soil strata without predefined categories.
+                        </li>
+                        <li>
+                            <strong>Structural damage pattern recognition:</strong> Detect unusual
+                            vibration patterns in bridges or buildings that indicate developing
+                            structural issues.
+                        </li>
+                        <li>
+                            <strong>Traffic flow segmentation:</strong> Discover natural groupings
+                            in traffic patterns to optimise road design and signalling.
+                        </li>
+                        <li>
+                            <strong>Construction material grouping:</strong> Cluster suppliers
+                            or material batches by quality characteristics for procurement
+                            optimisation.
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: REINFORCEMENT LEARNING
+             ========================================== -->
+        <section class="ch-section" id="reinforcement-learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gamepad"></i>
+                    Reinforcement Learning: Trial, Error, and Optimisation
+                </h2>
+
+                <p>
+                    Reinforcement learning (RL) stands apart from both supervised and unsupervised
+                    approaches. Instead of learning from a fixed dataset, an RL agent learns by
+                    <strong>interacting with an environment</strong>. It takes actions, observes
+                    the consequences, and receives rewards or penalties. Over time, it discovers
+                    which strategies maximise cumulative reward.
+                </p>
+
+                <p>
+                    The key elements are: an <strong>agent</strong> (the learner), an
+                    <strong>environment</strong> (the world it operates in),
+                    <strong>states</strong> (the current situation), <strong>actions</strong>
+                    (what the agent can do), and <strong>rewards</strong> (feedback from the
+                    environment).
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Reinforcement learning is like optimising traffic signal timing
+                            through simulation.</strong> Imagine a traffic engineer who can run
+                            thousands of simulated traffic scenarios. She tries different signal
+                            timing patterns at an intersection. When a pattern reduces average
+                            wait time, she gets a "reward" (good performance metric). When it
+                            causes gridlock, she gets a "penalty." After thousands of trials, she
+                            discovers an optimal timing strategy that no amount of manual analysis
+                            would have found &mdash; because the problem has too many interacting
+                            variables for a human to optimise simultaneously.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The RL Loop</h3>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h4>Observe State</h4>
+                        <p>
+                            The agent observes the current state of the environment. For a
+                            construction robot, this might be its position, the positions of
+                            obstacles, and the location of materials it needs to move.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h4>Choose Action</h4>
+                        <p>
+                            Based on the state, the agent selects an action from its repertoire.
+                            The robot might choose to move forward, turn left, pick up an item,
+                            or wait.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h4>Receive Reward</h4>
+                        <p>
+                            The environment provides a numerical reward. Moving closer to the
+                            goal earns a small positive reward. Colliding with an obstacle earns
+                            a negative reward. Reaching the destination earns a large positive
+                            reward.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h4>Update Strategy</h4>
+                        <p>
+                            The agent updates its decision-making policy based on the reward.
+                            Over many episodes, it converges on the strategy that maximises
+                            long-term cumulative reward.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>CE Applications of Reinforcement Learning</span>
+                    </div>
+                    <ul>
+                        <li>
+                            <strong>Construction robot path planning:</strong> Autonomous vehicles
+                            and robots on construction sites learn to navigate complex, changing
+                            environments while avoiding workers and obstacles.
+                        </li>
+                        <li>
+                            <strong>HVAC optimisation:</strong> RL agents control heating,
+                            ventilation, and air conditioning systems in buildings to minimise
+                            energy use while maintaining occupant comfort.
+                        </li>
+                        <li>
+                            <strong>Traffic signal control:</strong> Adaptive signal timing that
+                            responds to real-time traffic conditions, reducing congestion and
+                            emissions.
+                        </li>
+                        <li>
+                            <strong>Structural design optimisation:</strong> An agent explores
+                            the vast design space of structural configurations to find optimal
+                            solutions that balance weight, strength, and cost.
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: SEMI-SUPERVISED LEARNING
+             ========================================== -->
+        <section class="ch-section" id="semi-supervised-learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-half-stroke"></i>
+                    Semi-supervised Learning: Best of Both Worlds
+                </h2>
+
+                <p>
+                    In the real world of civil engineering, fully labelled datasets are a luxury.
+                    Getting a structural engineer to label 50,000 crack images as "structural" or
+                    "cosmetic" costs months of expert time. But collecting 50,000 <em>unlabelled</em>
+                    crack images from routine inspections is trivial. Semi-supervised learning
+                    bridges this gap.
+                </p>
+
+                <p>
+                    The idea is elegantly practical: use a small number of expensive labelled
+                    examples to guide the algorithm, and let it leverage a large pool of cheap
+                    unlabelled data to improve its understanding. Typically, even 5&ndash;10%
+                    labelled data combined with the remaining 90&ndash;95% unlabelled data can
+                    achieve performance close to a fully supervised model.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Semi-supervised learning is like combining verified lab results
+                            with unverified field measurements.</strong> A geotechnical engineer
+                            has 20 carefully controlled laboratory tests on soil samples from a
+                            site (labelled data). She also has 2,000 quick field measurements
+                            taken with a dynamic cone penetrometer (unlabelled data &mdash; correlated
+                            with properties but not directly giving classification). By using the
+                            lab results to calibrate her interpretation of the field measurements,
+                            she creates a far more detailed and accurate soil map than either data
+                            source alone could provide.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why It Matters</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Cost Efficiency</h3>
+                        <p>
+                            Labelling data in civil engineering often requires expensive expert
+                            analysis or destructive testing. A single concrete core test can
+                            cost hundreds of dollars. Semi-supervised learning reduces the number
+                            of labelled samples needed by 80&ndash;90%, dramatically cutting
+                            data preparation costs while maintaining model accuracy.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Leveraging Abundant Unlabelled Data</h3>
+                        <p>
+                            Modern infrastructure generates massive quantities of unlabelled
+                            sensor data every day. Structural health monitoring systems, drone
+                            surveys, and IoT devices produce terabytes of data that would be
+                            impractical to manually label. Semi-supervised learning puts this
+                            data to productive use.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>CE Applications of Semi-supervised Learning</span>
+                    </div>
+                    <ul>
+                        <li>
+                            <strong>Crack detection with limited labels:</strong> Label a few
+                            hundred images with expert annotations, then use thousands of
+                            unlabelled inspection photos to train a robust detector.
+                        </li>
+                        <li>
+                            <strong>Material quality assessment:</strong> Combine a few
+                            destructive test results with many non-destructive measurements
+                            (rebound hammer, ultrasonic pulse) to predict material properties.
+                        </li>
+                        <li>
+                            <strong>Land use classification:</strong> Label a small number of
+                            satellite image patches, then classify large areas using the
+                            unlabelled imagery.
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: COMPARISON TABLE
+             ========================================== -->
+        <section class="ch-section" id="comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-table-columns"></i>
+                    Side-by-Side Comparison
+                </h2>
+
+                <p>
+                    The following table summarises the key differences and characteristics of
+                    all four machine learning paradigms. Use this as a quick reference when
+                    evaluating which approach fits your engineering problem.
+                </p>
+
+                <div class="comparison-table-wrap">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th><i class="fa-solid fa-chalkboard-user"></i> Supervised</th>
+                                <th><i class="fa-solid fa-magnifying-glass-chart"></i> Unsupervised</th>
+                                <th><i class="fa-solid fa-gamepad"></i> Reinforcement</th>
+                                <th><i class="fa-solid fa-circle-half-stroke"></i> Semi-supervised</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Training Data</td>
+                                <td>Fully labelled input-output pairs</td>
+                                <td>Unlabelled data only</td>
+                                <td>Environment interactions with reward signals</td>
+                                <td>Small labelled set + large unlabelled set</td>
+                            </tr>
+                            <tr>
+                                <td>Feedback Type</td>
+                                <td>Direct &mdash; correct answer provided</td>
+                                <td>None &mdash; self-discovery</td>
+                                <td>Indirect &mdash; reward/penalty signals</td>
+                                <td>Partial &mdash; some labels guide learning</td>
+                            </tr>
+                            <tr>
+                                <td>Goal</td>
+                                <td>Predict output for new inputs</td>
+                                <td>Discover hidden structure</td>
+                                <td>Maximise cumulative reward</td>
+                                <td>Predict output using minimal labels</td>
+                            </tr>
+                            <tr>
+                                <td>CE Analogy</td>
+                                <td>Apprentice with a master</td>
+                                <td>Surveyor mapping unknown land</td>
+                                <td>Traffic engineer running simulations</td>
+                                <td>Lab results + field measurements</td>
+                            </tr>
+                            <tr>
+                                <td>Key Algorithms</td>
+                                <td>Linear regression, SVM, neural networks, random forests</td>
+                                <td>K-means, DBSCAN, PCA, autoencoders</td>
+                                <td>Q-learning, DQN, PPO, A3C</td>
+                                <td>Self-training, label propagation, GANs</td>
+                            </tr>
+                            <tr>
+                                <td>Data Labelling Cost</td>
+                                <td>High &mdash; all data must be labelled</td>
+                                <td>None &mdash; no labels needed</td>
+                                <td>N/A &mdash; rewards come from environment</td>
+                                <td>Low &mdash; only a fraction needs labels</td>
+                            </tr>
+                            <tr>
+                                <td>Typical Accuracy</td>
+                                <td>Highest (with sufficient labels)</td>
+                                <td>Moderate (no ground truth)</td>
+                                <td>Variable (depends on reward design)</td>
+                                <td>Near-supervised (with good unlabelled data)</td>
+                            </tr>
+                            <tr>
+                                <td>CE Example</td>
+                                <td>Predict concrete strength from mix design</td>
+                                <td>Cluster soil samples by properties</td>
+                                <td>Optimise HVAC energy usage</td>
+                                <td>Crack detection with few labelled images</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: INTERACTIVE DEMO 1
+             SUPERVISED VS UNSUPERVISED
+             ========================================== -->
+        <section class="ch-section" id="demo-supervised-unsupervised">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Interactive Demo &mdash; Supervised vs Unsupervised
+                </h2>
+
+                <p>
+                    This split-view demo shows the fundamental difference between supervised
+                    and unsupervised learning. On the <strong>left</strong>, labelled data
+                    points are classified with a decision boundary (supervised). On the
+                    <strong>right</strong>, unlabelled points are grouped by a clustering
+                    algorithm (unsupervised). Click anywhere on either side to add new data
+                    points and observe the difference.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-canvas-wrap">
+                        <canvas id="svuCanvas" height="420"></canvas>
+                    </div>
+                    <div class="demo-controls">
+                        <span class="demo-label">Add point as:</span>
+                        <button id="btnClassA" class="active" onclick="setSVUClass('A')">
+                            <i class="fa-solid fa-circle" style="color:#2dd4bf"></i> Class A (High Strength)
+                        </button>
+                        <button id="btnClassB" onclick="setSVUClass('B')">
+                            <i class="fa-solid fa-circle" style="color:#f472b6"></i> Class B (Low Strength)
+                        </button>
+                        <button onclick="resetSVU()">
+                            <i class="fa-solid fa-rotate-right"></i> Reset
+                        </button>
+                    </div>
+                    <div class="demo-stats">
+                        <div class="demo-stat">
+                            <div class="stat-label">Left: Supervised</div>
+                            <div class="stat-value" id="svuStatLeft">0 points</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Right: Unsupervised</div>
+                            <div class="stat-value" id="svuStatRight">0 points</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Clusters Found</div>
+                            <div class="stat-value" id="svuStatClusters">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>What to Notice</span>
+                    </div>
+                    <p>
+                        On the supervised side (left), the algorithm knows the correct class for
+                        each point and draws a boundary to separate them. On the unsupervised side
+                        (right), the algorithm has no labels &mdash; it groups points by proximity
+                        alone. Add points in different arrangements to see how each approach
+                        responds differently to the same spatial distribution.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: INTERACTIVE DEMO 2
+             RL GRID WORLD
+             ========================================== -->
+        <section class="ch-section" id="demo-rl-agent">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-robot"></i>
+                    Interactive Demo &mdash; RL Grid World Agent
+                </h2>
+
+                <p>
+                    Watch a reinforcement learning agent learn to navigate a grid world. The
+                    agent (blue) starts at the top-left and must reach the goal (green) while
+                    avoiding obstacles (red). Each episode, it learns a little more about which
+                    actions lead to rewards. Watch how its path improves over successive episodes.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-canvas-wrap rl-grid-canvas-wrap">
+                        <canvas id="rlCanvas" height="420"></canvas>
+                    </div>
+                    <div class="demo-controls">
+                        <button id="btnRLStart" onclick="startRL()">
+                            <i class="fa-solid fa-play"></i> Start Training
+                        </button>
+                        <button onclick="resetRL()">
+                            <i class="fa-solid fa-rotate-right"></i> Reset
+                        </button>
+                        <div class="rl-speed-group">
+                            <label><i class="fa-solid fa-gauge-high"></i> Speed</label>
+                            <input type="range" id="rlSpeedSlider" min="1" max="10" value="5">
+                        </div>
+                    </div>
+                    <div class="demo-stats">
+                        <div class="demo-stat">
+                            <div class="stat-label">Episode</div>
+                            <div class="stat-value" id="rlEpisode">0</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Steps This Episode</div>
+                            <div class="stat-value" id="rlSteps">0</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Best Path</div>
+                            <div class="stat-value" id="rlBest">--</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Total Reward</div>
+                            <div class="stat-value" id="rlReward">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Construction Robotics Parallel</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>This grid world mirrors a construction robot navigating a
+                            job site.</strong> The obstacles represent equipment, excavations,
+                            and restricted zones. The goal is the material staging area. Just
+                            as the virtual agent learns the optimal path through trial and error,
+                            real autonomous construction vehicles use reinforcement learning to
+                            navigate dynamic environments where obstacles (workers, equipment,
+                            material piles) change daily.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: DECISION FLOWCHART
+             ========================================== -->
+        <section class="ch-section" id="decision-tree">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Which Type of ML Should I Use?
+                </h2>
+
+                <p>
+                    Choosing the right type of machine learning for your engineering problem
+                    is one of the most important decisions in any AI project. Use this
+                    decision flowchart as a practical guide.
+                </p>
+
+                <div class="flowchart-container">
+
+                    <div class="flowchart-node decision">
+                        <h4><i class="fa-solid fa-circle-question"></i> Do you have labelled data?</h4>
+                        <p>i.e., input-output pairs where the correct answer is known</p>
+                    </div>
+
+                    <div class="flowchart-branch">
+                        <div>
+                            <div class="flowchart-branch-label">Yes</div>
+                            <div class="flowchart-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                            <div class="flowchart-node decision">
+                                <h4><i class="fa-solid fa-circle-question"></i> Is all your data labelled?</h4>
+                                <p>Or only a small fraction?</p>
+                            </div>
+                            <div class="flowchart-branch">
+                                <div>
+                                    <div class="flowchart-branch-label">All labelled</div>
+                                    <div class="flowchart-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                                    <div class="flowchart-node answer">
+                                        <h4><i class="fa-solid fa-chalkboard-user"></i> Supervised Learning</h4>
+                                        <p>Use regression or classification algorithms</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flowchart-branch-label">Partially labelled</div>
+                                    <div class="flowchart-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                                    <div class="flowchart-node answer">
+                                        <h4><i class="fa-solid fa-circle-half-stroke"></i> Semi-supervised Learning</h4>
+                                        <p>Leverage both labelled and unlabelled data</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flowchart-branch-label">No</div>
+                            <div class="flowchart-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                            <div class="flowchart-node decision">
+                                <h4><i class="fa-solid fa-circle-question"></i> Can you simulate the environment?</h4>
+                                <p>Is there a reward signal or feedback loop?</p>
+                            </div>
+                            <div class="flowchart-branch">
+                                <div>
+                                    <div class="flowchart-branch-label">Yes, with rewards</div>
+                                    <div class="flowchart-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                                    <div class="flowchart-node answer">
+                                        <h4><i class="fa-solid fa-gamepad"></i> Reinforcement Learning</h4>
+                                        <p>Agent learns from environment interactions</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flowchart-branch-label">No, just raw data</div>
+                                    <div class="flowchart-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                                    <div class="flowchart-node answer">
+                                        <h4><i class="fa-solid fa-magnifying-glass-chart"></i> Unsupervised Learning</h4>
+                                        <p>Discover hidden patterns and structure</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Tip</span>
+                    </div>
+                    <p>
+                        In practice, many civil engineering projects use a <strong>combination</strong>
+                        of approaches. You might start with unsupervised learning to explore and
+                        clean your data, then use the discovered structure to create labels for
+                        supervised learning. Or you might use semi-supervised learning when labelling
+                        is expensive, and reinforcement learning when you need to optimise an ongoing
+                        process. The boundaries between paradigms are guidelines, not walls.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Test your grasp of the four machine learning paradigms. Each question
+                    reinforces a key concept that you will apply in later chapters.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A civil engineer has 10,000 concrete cylinder test results, each paired
+                        with the exact mix design that produced it. She wants to predict the
+                        28-day strength of a new mix. Which type of ML is most appropriate?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Supervised learning &mdash; she has labelled input-output pairs
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Unsupervised learning &mdash; she needs to discover hidden patterns
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Reinforcement learning &mdash; the model learns by trial and error
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Semi-supervised learning &mdash; she only has partial labels
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! With 10,000 fully labelled input-output pairs
+                        (mix designs mapped to strengths), this is a classic supervised learning
+                        regression problem. The model learns the relationship between mix
+                        parameters and resulting strength.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Since the engineer has
+                        <strong>fully labelled data</strong> (each mix design paired with its test
+                        result), this is a <strong>supervised learning</strong> problem. The model
+                        learns to predict outputs (strength) from inputs (mix design).
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        A transportation engineer wants to automatically group 50,000 traffic
+                        sensor readings into distinct traffic patterns, but has no predefined
+                        categories. Which approach should she use?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Supervised learning &mdash; classify each reading into a category
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> Unsupervised learning &mdash; discover natural groupings in the data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Reinforcement learning &mdash; optimise through reward signals
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Semi-supervised learning &mdash; combine a few labels with unlabelled data
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! With no predefined categories and the goal of
+                        discovering natural groupings, this is a textbook unsupervised learning
+                        (clustering) problem. Algorithms like K-means or DBSCAN will reveal
+                        the inherent traffic patterns.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Since there are
+                        <strong>no predefined categories</strong> and the goal is to
+                        <strong>discover natural groupings</strong>, this is an
+                        <strong>unsupervised learning</strong> problem using clustering algorithms.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        An HVAC system in a large commercial building adjusts its settings
+                        every 15 minutes based on occupancy, weather, and energy prices.
+                        It receives a "score" based on energy cost and comfort level. Which
+                        ML type is this?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> Supervised learning &mdash; it has labelled historical data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Unsupervised learning &mdash; it discovers patterns in sensor data
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Reinforcement learning &mdash; it learns from reward signals over time
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Semi-supervised learning &mdash; it uses partially labelled data
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The HVAC system is an RL agent: it takes actions
+                        (adjusting settings), observes states (occupancy, weather), and receives
+                        rewards (the comfort/cost score). Over time it learns the optimal control
+                        policy.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. This is
+                        <strong>reinforcement learning</strong>. The system interacts with its
+                        environment in real time, takes actions (settings), and receives a reward
+                        signal (the comfort/cost score). It improves its strategy through
+                        continuous interaction.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        A research team has 200 expertly-labelled bridge inspection images and
+                        15,000 unlabelled images from drone surveys. They want to build a damage
+                        detection model. Which approach maximises their data?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Supervised learning using only the 200 labelled images
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Unsupervised learning using all 15,200 images without labels
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Reinforcement learning with a simulated inspection environment
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Semi-supervised learning using 200 labelled + 15,000 unlabelled images
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Semi-supervised learning is the ideal approach here.
+                        The 200 labelled images provide the ground truth the model needs, and the
+                        15,000 unlabelled images provide the volume needed to learn robust features.
+                        This combination far outperforms using either dataset alone.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite.
+                        <strong>Semi-supervised learning</strong> is the best fit because it
+                        leverages both the small set of expensive labelled images and the large
+                        pool of cheap unlabelled images, getting far better results than 200
+                        supervised examples alone.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul class="takeaway-list">
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    <strong>Supervised learning</strong> requires labelled data
+                                    (input-output pairs) and is the most common type. Use it when
+                                    you have enough labelled examples and need to predict a
+                                    specific output (strength, cost, category).
+                                </span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    <strong>Unsupervised learning</strong> works with unlabelled
+                                    data and discovers hidden structure. Use it when you want to
+                                    find natural groupings, detect anomalies, or reduce the
+                                    complexity of high-dimensional data.
+                                </span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    <strong>Reinforcement learning</strong> learns through
+                                    interaction with an environment via rewards and penalties.
+                                    Use it for sequential decision-making and optimisation
+                                    problems where an agent must adapt in real time.
+                                </span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    <strong>Semi-supervised learning</strong> combines a small
+                                    labelled set with a large unlabelled set. Use it when labelling
+                                    is expensive but unlabelled data is abundant &mdash; a very
+                                    common scenario in civil engineering.
+                                </span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    The choice of ML type depends on your <strong>data
+                                    availability</strong>, <strong>labelling budget</strong>,
+                                    and <strong>problem structure</strong>. Use the decision
+                                    flowchart as a practical starting point.
+                                </span>
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    Real-world projects often <strong>combine multiple
+                                    paradigms</strong>. Unsupervised exploration followed by
+                                    supervised prediction is a particularly powerful pattern
+                                    in engineering applications.
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>Looking Ahead</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we will explore <strong>Deep Learning</strong>
+                        &mdash; a powerful subset of machine learning that uses multi-layered
+                        neural networks to learn increasingly abstract representations of data.
+                        Deep learning has revolutionised image recognition, natural language
+                        processing, and many engineering applications. Understanding the four
+                        paradigms you have just learned is essential preparation for that journey.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── Chapter Navigation Footer ── -->
+    <nav class="chapter-nav-footer">
+        <a href="sub9.html" class="nav-prev">
+            <i class="fas fa-arrow-left"></i>
+            <div>
+                <span class="nav-dir">Previous</span>
+                <span class="nav-label">1.9 Dam vs River</span>
+            </div>
+        </a>
+        <a href="sub11.html" class="nav-next">
+            <div>
+                <span class="nav-dir">Next</span>
+                <span class="nav-label">1.11 Deep Learning</span>
+            </div>
+            <i class="fas fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ── Footer ── -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ── Scripts ── -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ══════════════════════════════════════════════
+           UTILITIES
+           ══════════════════════════════════════════════ */
+        var dpr = window.devicePixelRatio || 1;
+
+        function initCanvas(canvas) {
+            var rect = canvas.parentElement.getBoundingClientRect();
+            var w = rect.width;
+            var h = canvas.getAttribute('height') ? parseInt(canvas.getAttribute('height'), 10) : rect.height;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            var ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { ctx: ctx, w: w, h: h };
+        }
+
+        function getThemeColors() {
+            var s = getComputedStyle(document.documentElement);
+            return {
+                bg: s.getPropertyValue('--bg-primary').trim() || '#0f172a',
+                card: s.getPropertyValue('--bg-card').trim() || '#1e293b',
+                accent: s.getPropertyValue('--accent-primary').trim() || '#2dd4bf',
+                text: s.getPropertyValue('--text-primary').trim() || '#f1f5f9',
+                textSec: s.getPropertyValue('--text-secondary').trim() || '#94a3b8',
+                border: s.getPropertyValue('--border-subtle').trim() || '#334155'
+            };
+        }
+
+        /* ══════════════════════════════════════════════
+           SCROLL PROGRESS BAR
+           ══════════════════════════════════════════════ */
+        var scrollProgress = document.getElementById('scroll-progress');
+        function updateScrollProgress() {
+            var scrollTop = window.scrollY;
+            var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            var pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+            scrollProgress.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', updateScrollProgress, { passive: true });
+        updateScrollProgress();
+
+        /* ══════════════════════════════════════════════
+           INTERSECTION OBSERVER
+           ══════════════════════════════════════════════ */
+        var observerOpts = { root: null, rootMargin: '0px 0px -60px 0px', threshold: 0.15 };
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOpts);
+
+        document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .paradigm-card')
+            .forEach(function (el) { observer.observe(el); });
+
+        /* ══════════════════════════════════════════════
+           QUIZ SYSTEM
+           ══════════════════════════════════════════════ */
+        window.checkQuiz = function (btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (block.classList.contains('answered')) return;
+            block.classList.add('answered');
+
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+            btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+            document.getElementById(quizId + '-correct').style.display = isCorrect ? 'block' : 'none';
+            document.getElementById(quizId + '-wrong').style.display = isCorrect ? 'none' : 'block';
+
+            block.querySelectorAll('.quiz-option').forEach(function (opt) {
+                opt.disabled = true;
+                if (opt.getAttribute('data-correct') === 'true') opt.classList.add('reveal-correct');
+            });
+        };
+
+        /* ══════════════════════════════════════════════
+           HERO CANVAS
+           ══════════════════════════════════════════════ */
+        (function heroAnim() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var ctx, w, h;
+            var particles = [];
+            var pCount = 55;
+            var maxDist = 130;
+            var time = 0;
+
+            function resize() {
+                var C = initCanvas(canvas);
+                ctx = C.ctx; w = C.w; h = C.h;
+                particles = [];
+                for (var i = 0; i < pCount; i++) {
+                    particles.push({
+                        x: Math.random() * w, y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+                        r: Math.random() * 2.5 + 1,
+                        type: Math.floor(Math.random() * 4)
+                    });
+                }
+            }
+
+            function draw() {
+                var col = getThemeColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var typeColors = ['#2dd4bf', '#f472b6', '#fbbf24', '#818cf8'];
+
+                // draw connections
+                for (var i = 0; i < particles.length; i++) {
+                    for (var j = i + 1; j < particles.length; j++) {
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < maxDist) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = 'rgba(45,212,191,' + (0.15 * (1 - dist / maxDist)) + ')';
+                            ctx.lineWidth = 0.8;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // draw particles with type colors
+                for (var k = 0; k < particles.length; k++) {
+                    var p = particles[k];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = typeColors[p.type];
+                    ctx.globalAlpha = 0.7;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+                }
+
+                time += 0.016;
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ══════════════════════════════════════════════
+           DEMO 1: SUPERVISED VS UNSUPERVISED
+           ══════════════════════════════════════════════ */
+        (function svuDemo() {
+            var canvas = document.getElementById('svuCanvas');
+            if (!canvas) return;
+            var ctx, w, h;
+            var points = [];
+            var currentClass = 'A';
+            var clusters = [];
+
+            function resize() {
+                var C = initCanvas(canvas);
+                ctx = C.ctx; w = C.w; h = C.h;
+                render();
+            }
+
+            function addPoint(x, y) {
+                // Left half = supervised, Right half = unsupervised
+                var side = x < w / 2 ? 'left' : 'right';
+                var localX = side === 'left' ? x : x - w / 2;
+                points.push({
+                    x: localX,
+                    y: y,
+                    cls: currentClass,
+                    side: side
+                });
+                updateClusters();
+                render();
+                updateStats();
+            }
+
+            function updateClusters() {
+                // Simple K-means on right-side points
+                var rightPts = points.filter(function (p) { return p.side === 'right'; });
+                if (rightPts.length < 2) { clusters = []; return; }
+
+                var k = Math.min(3, Math.max(2, Math.floor(rightPts.length / 4)));
+                // Initialize centroids randomly from points
+                var centroids = [];
+                var used = {};
+                for (var i = 0; i < k; i++) {
+                    var idx;
+                    do { idx = Math.floor(Math.random() * rightPts.length); }
+                    while (used[idx] && Object.keys(used).length < rightPts.length);
+                    used[idx] = true;
+                    centroids.push({ x: rightPts[idx].x, y: rightPts[idx].y });
+                }
+
+                // Run 15 iterations of K-means
+                for (var iter = 0; iter < 15; iter++) {
+                    var groups = [];
+                    for (var g = 0; g < k; g++) groups.push([]);
+
+                    for (var p = 0; p < rightPts.length; p++) {
+                        var minDist = Infinity, minIdx = 0;
+                        for (var c = 0; c < k; c++) {
+                            var dx = rightPts[p].x - centroids[c].x;
+                            var dy = rightPts[p].y - centroids[c].y;
+                            var d = dx * dx + dy * dy;
+                            if (d < minDist) { minDist = d; minIdx = c; }
+                        }
+                        rightPts[p].cluster = minIdx;
+                        groups[minIdx].push(rightPts[p]);
+                    }
+
+                    // Update centroids
+                    for (var c2 = 0; c2 < k; c2++) {
+                        if (groups[c2].length === 0) continue;
+                        var sx = 0, sy = 0;
+                        for (var m = 0; m < groups[c2].length; m++) {
+                            sx += groups[c2][m].x;
+                            sy += groups[c2][m].y;
+                        }
+                        centroids[c2].x = sx / groups[c2].length;
+                        centroids[c2].y = sy / groups[c2].length;
+                    }
+                }
+
+                clusters = centroids;
+            }
+
+            function render() {
+                if (!ctx) return;
+                var col = getThemeColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var halfW = w / 2;
+
+                // Background panels
+                ctx.fillStyle = col.card;
+                ctx.fillRect(0, 0, halfW - 1, h);
+                ctx.fillRect(halfW + 1, 0, halfW, h);
+
+                // Divider
+                ctx.strokeStyle = col.border;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(halfW, 0);
+                ctx.lineTo(halfW, h);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Labels
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#2dd4bf';
+                ctx.fillText('SUPERVISED', halfW / 2, 28);
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillText('UNSUPERVISED', halfW + halfW / 2, 28);
+
+                ctx.font = '400 11px Inter, sans-serif';
+                ctx.fillStyle = col.textSec;
+                ctx.fillText('Labelled points with decision boundary', halfW / 2, 46);
+                ctx.fillText('Unlabelled points with clustering', halfW + halfW / 2, 46);
+
+                var clusterColors = ['#2dd4bf', '#f472b6', '#fbbf24', '#818cf8'];
+
+                // Draw LEFT (supervised) side points
+                var leftPts = points.filter(function (p) { return p.side === 'left'; });
+                var leftA = leftPts.filter(function (p) { return p.cls === 'A'; });
+                var leftB = leftPts.filter(function (p) { return p.cls === 'B'; });
+
+                // Draw decision boundary (simple linear) if we have both classes
+                if (leftA.length > 0 && leftB.length > 0) {
+                    var avgAx = 0, avgAy = 0, avgBx = 0, avgBy = 0;
+                    leftA.forEach(function (p) { avgAx += p.x; avgAy += p.y; });
+                    leftB.forEach(function (p) { avgBx += p.x; avgBy += p.y; });
+                    avgAx /= leftA.length; avgAy /= leftA.length;
+                    avgBx /= leftB.length; avgBy /= leftB.length;
+
+                    var mx = (avgAx + avgBx) / 2;
+                    var my = (avgAy + avgBy) / 2;
+                    var dx = avgBx - avgAx;
+                    var dy = avgBy - avgAy;
+                    // Perpendicular direction
+                    var len = Math.sqrt(dx * dx + dy * dy);
+                    if (len > 0) {
+                        var nx = -dy / len;
+                        var ny = dx / len;
+                        ctx.beginPath();
+                        ctx.moveTo(mx - nx * 500, my - ny * 500);
+                        ctx.lineTo(mx + nx * 500, my + ny * 500);
+                        ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([8, 4]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+
+                // Class A points (left side)
+                leftA.forEach(function (p) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = '#2dd4bf';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(45,212,191,0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+
+                // Class B points (left side)
+                leftB.forEach(function (p) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f472b6';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(244,114,182,0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+
+                // Draw RIGHT (unsupervised) side points
+                var rightPts = points.filter(function (p) { return p.side === 'right'; });
+
+                // Draw cluster regions
+                if (clusters.length > 0 && rightPts.length > 2) {
+                    clusters.forEach(function (c, ci) {
+                        ctx.beginPath();
+                        ctx.arc(c.x + halfW, c.y, 50, 0, Math.PI * 2);
+                        ctx.fillStyle = clusterColors[ci % clusterColors.length].replace(')', ',0.08)').replace('rgb', 'rgba');
+                        ctx.fill();
+                        ctx.strokeStyle = clusterColors[ci % clusterColors.length].replace(')', ',0.3)').replace('rgb', 'rgba');
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([4, 3]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        // Centroid marker
+                        ctx.beginPath();
+                        ctx.arc(c.x + halfW, c.y, 4, 0, Math.PI * 2);
+                        ctx.fillStyle = clusterColors[ci % clusterColors.length];
+                        ctx.fill();
+                    });
+                }
+
+                rightPts.forEach(function (p) {
+                    var color = clusters.length > 0 && p.cluster !== undefined
+                        ? clusterColors[p.cluster % clusterColors.length]
+                        : '#94a3b8';
+                    ctx.beginPath();
+                    ctx.arc(p.x + halfW, p.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.strokeStyle = color.replace(')', ',0.4)').replace('rgb', 'rgba');
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+
+                // Instructions
+                if (points.length === 0) {
+                    ctx.font = '500 14px Inter, sans-serif';
+                    ctx.fillStyle = col.textSec;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Click anywhere to add data points', w / 2, h / 2);
+                }
+            }
+
+            function updateStats() {
+                var left = points.filter(function (p) { return p.side === 'left'; }).length;
+                var right = points.filter(function (p) { return p.side === 'right'; }).length;
+                document.getElementById('svuStatLeft').textContent = left + ' points';
+                document.getElementById('svuStatRight').textContent = right + ' points';
+                document.getElementById('svuStatClusters').textContent = clusters.length;
+            }
+
+            canvas.addEventListener('click', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var x = (e.clientX - rect.left);
+                var y = (e.clientY - rect.top);
+                addPoint(x, y);
+            });
+
+            window.setSVUClass = function (cls) {
+                currentClass = cls;
+                document.getElementById('btnClassA').classList.toggle('active', cls === 'A');
+                document.getElementById('btnClassB').classList.toggle('active', cls === 'B');
+            };
+
+            window.resetSVU = function () {
+                points = [];
+                clusters = [];
+                render();
+                updateStats();
+            };
+
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ══════════════════════════════════════════════
+           DEMO 2: RL GRID WORLD
+           ══════════════════════════════════════════════ */
+        (function rlDemo() {
+            var canvas = document.getElementById('rlCanvas');
+            if (!canvas) return;
+            var ctx, w, h;
+
+            var GRID = 8;
+            var cellSize;
+            var agent = { r: 0, c: 0 };
+            var goal = { r: GRID - 1, c: GRID - 1 };
+            var obstacles = [];
+            var qTable = {};
+            var actions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // up, down, left, right
+            var actionNames = ['up', 'down', 'left', 'right'];
+            var episode = 0;
+            var stepCount = 0;
+            var bestSteps = Infinity;
+            var totalReward = 0;
+            var running = false;
+            var animId = null;
+            var path = [];
+            var epsilon = 1.0;
+            var alpha = 0.15;
+            var gamma = 0.95;
+
+            function initObstacles() {
+                obstacles = [];
+                var blocked = {};
+                blocked['0,0'] = true;
+                blocked[(GRID - 1) + ',' + (GRID - 1)] = true;
+                var numObs = Math.floor(GRID * GRID * 0.2);
+                for (var i = 0; i < numObs; i++) {
+                    var r, c;
+                    do {
+                        r = Math.floor(Math.random() * GRID);
+                        c = Math.floor(Math.random() * GRID);
+                    } while (blocked[r + ',' + c]);
+                    blocked[r + ',' + c] = true;
+                    obstacles.push({ r: r, c: c });
+                }
+            }
+
+            function isObstacle(r, c) {
+                for (var i = 0; i < obstacles.length; i++) {
+                    if (obstacles[i].r === r && obstacles[i].c === c) return true;
+                }
+                return false;
+            }
+
+            function getQ(state, action) {
+                var key = state + ',' + action;
+                if (qTable[key] === undefined) qTable[key] = 0;
+                return qTable[key];
+            }
+
+            function setQ(state, action, val) {
+                qTable[state + ',' + action] = val;
+            }
+
+            function chooseAction(state) {
+                if (Math.random() < epsilon) {
+                    return Math.floor(Math.random() * 4);
+                }
+                var best = -Infinity, bestA = 0;
+                for (var a = 0; a < 4; a++) {
+                    var q = getQ(state, a);
+                    if (q > best) { best = q; bestA = a; }
+                }
+                return bestA;
+            }
+
+            function step() {
+                var state = agent.r + ',' + agent.c;
+                var action = chooseAction(state);
+                var nr = agent.r + actions[action][0];
+                var nc = agent.c + actions[action][1];
+
+                var reward = -1;
+                if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID || isObstacle(nr, nc)) {
+                    nr = agent.r;
+                    nc = agent.c;
+                    reward = -5;
+                }
+
+                var done = false;
+                if (nr === goal.r && nc === goal.c) {
+                    reward = 100;
+                    done = true;
+                }
+
+                var newState = nr + ',' + nc;
+                var maxNextQ = -Infinity;
+                for (var a = 0; a < 4; a++) {
+                    var q = getQ(newState, a);
+                    if (q > maxNextQ) maxNextQ = q;
+                }
+
+                var oldQ = getQ(state, action);
+                setQ(state, action, oldQ + alpha * (reward + gamma * maxNextQ - oldQ));
+
+                agent.r = nr;
+                agent.c = nc;
+                stepCount++;
+                totalReward += reward;
+                path.push({ r: nr, c: nc });
+
+                return done;
+            }
+
+            function runEpisode() {
+                agent.r = 0;
+                agent.c = 0;
+                stepCount = 0;
+                totalReward = 0;
+                path = [{ r: 0, c: 0 }];
+                episode++;
+
+                epsilon = Math.max(0.05, epsilon * 0.995);
+
+                var maxSteps = GRID * GRID * 4;
+                var stepIdx = 0;
+
+                function tick() {
+                    if (!running) return;
+                    var speed = parseInt(document.getElementById('rlSpeedSlider').value, 10);
+                    var stepsPerFrame = speed;
+
+                    for (var s = 0; s < stepsPerFrame; s++) {
+                        var done = step();
+                        stepIdx++;
+                        if (done) {
+                            if (stepCount < bestSteps) bestSteps = stepCount;
+                            updateRLStats();
+                            render();
+                            setTimeout(function () { if (running) runEpisode(); }, 200);
+                            return;
+                        }
+                        if (stepIdx >= maxSteps) {
+                            updateRLStats();
+                            render();
+                            setTimeout(function () { if (running) runEpisode(); }, 100);
+                            return;
+                        }
+                    }
+
+                    updateRLStats();
+                    render();
+                    animId = requestAnimationFrame(tick);
+                }
+
+                tick();
+            }
+
+            function updateRLStats() {
+                document.getElementById('rlEpisode').textContent = episode;
+                document.getElementById('rlSteps').textContent = stepCount;
+                document.getElementById('rlBest').textContent = bestSteps === Infinity ? '--' : bestSteps;
+                document.getElementById('rlReward').textContent = totalReward;
+            }
+
+            function resize() {
+                var C = initCanvas(canvas);
+                ctx = C.ctx; w = C.w; h = C.h;
+                cellSize = Math.min(Math.floor(w / GRID), Math.floor(h / GRID));
+                render();
+            }
+
+            function render() {
+                if (!ctx) return;
+                var col = getThemeColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var offsetX = (w - GRID * cellSize) / 2;
+                var offsetY = (h - GRID * cellSize) / 2;
+
+                // Draw grid
+                for (var r = 0; r < GRID; r++) {
+                    for (var c = 0; c < GRID; c++) {
+                        var x = offsetX + c * cellSize;
+                        var y = offsetY + r * cellSize;
+
+                        // Cell background
+                        ctx.fillStyle = col.card;
+                        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+                        // Q-value heatmap
+                        var state = r + ',' + c;
+                        var maxQ = -Infinity;
+                        for (var a = 0; a < 4; a++) {
+                            var q = getQ(state, a);
+                            if (q > maxQ) maxQ = q;
+                        }
+                        if (maxQ > 0) {
+                            var intensity = Math.min(1, maxQ / 80);
+                            ctx.fillStyle = 'rgba(45, 212, 191, ' + (intensity * 0.2) + ')';
+                            ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+                        }
+
+                        // Grid lines
+                        ctx.strokeStyle = col.border;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x, y, cellSize, cellSize);
+                    }
+                }
+
+                // Obstacles
+                obstacles.forEach(function (ob) {
+                    var x = offsetX + ob.c * cellSize;
+                    var y = offsetY + ob.r * cellSize;
+                    ctx.fillStyle = '#ef4444';
+                    ctx.globalAlpha = 0.7;
+                    ctx.fillRect(x + 3, y + 3, cellSize - 6, cellSize - 6);
+                    ctx.globalAlpha = 1;
+                    ctx.font = '600 ' + (cellSize * 0.4) + 'px Inter, sans-serif';
+                    ctx.fillStyle = '#fff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('X', x + cellSize / 2, y + cellSize / 2);
+                });
+
+                // Path trail
+                if (path.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        offsetX + path[0].c * cellSize + cellSize / 2,
+                        offsetY + path[0].r * cellSize + cellSize / 2
+                    );
+                    for (var p = 1; p < path.length; p++) {
+                        ctx.lineTo(
+                            offsetX + path[p].c * cellSize + cellSize / 2,
+                            offsetY + path[p].r * cellSize + cellSize / 2
+                        );
+                    }
+                    ctx.strokeStyle = 'rgba(45, 212, 191, 0.3)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                // Goal
+                var gx = offsetX + goal.c * cellSize;
+                var gy = offsetY + goal.r * cellSize;
+                ctx.fillStyle = '#34d399';
+                ctx.globalAlpha = 0.8;
+                ctx.fillRect(gx + 3, gy + 3, cellSize - 6, cellSize - 6);
+                ctx.globalAlpha = 1;
+                ctx.font = '700 ' + (cellSize * 0.35) + 'px Inter, sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('GOAL', gx + cellSize / 2, gy + cellSize / 2);
+
+                // Agent
+                var ax = offsetX + agent.c * cellSize + cellSize / 2;
+                var ay = offsetY + agent.r * cellSize + cellSize / 2;
+                ctx.beginPath();
+                ctx.arc(ax, ay, cellSize * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fill();
+                ctx.strokeStyle = '#93c5fd';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Start label
+                var sx = offsetX + cellSize / 2;
+                var sy = offsetY - 10;
+                ctx.font = '600 11px Inter, sans-serif';
+                ctx.fillStyle = col.textSec;
+                ctx.textAlign = 'center';
+                ctx.fillText('START', sx, sy > 10 ? sy : 12);
+
+                // Legend
+                var lx = offsetX + GRID * cellSize + 10;
+                if (lx + 100 < w) {
+                    ctx.textAlign = 'left';
+                    ctx.font = '600 11px Inter, sans-serif';
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillText('Agent', lx + 14, offsetY + 16);
+                    ctx.beginPath();
+                    ctx.arc(lx + 6, offsetY + 12, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillText('Obstacle', lx + 14, offsetY + 36);
+                    ctx.fillRect(lx, offsetY + 28, 10, 10);
+
+                    ctx.fillStyle = '#34d399';
+                    ctx.fillText('Goal', lx + 14, offsetY + 56);
+                    ctx.fillRect(lx, offsetY + 48, 10, 10);
+                }
+            }
+
+            window.startRL = function () {
+                if (running) {
+                    running = false;
+                    if (animId) cancelAnimationFrame(animId);
+                    document.getElementById('btnRLStart').innerHTML =
+                        '<i class="fa-solid fa-play"></i> Resume';
+                    return;
+                }
+                running = true;
+                document.getElementById('btnRLStart').innerHTML =
+                    '<i class="fa-solid fa-pause"></i> Pause';
+                runEpisode();
+            };
+
+            window.resetRL = function () {
+                running = false;
+                if (animId) cancelAnimationFrame(animId);
+                episode = 0;
+                stepCount = 0;
+                bestSteps = Infinity;
+                totalReward = 0;
+                epsilon = 1.0;
+                qTable = {};
+                agent = { r: 0, c: 0 };
+                path = [{ r: 0, c: 0 }];
+                initObstacles();
+                updateRLStats();
+                render();
+                document.getElementById('btnRLStart').innerHTML =
+                    '<i class="fa-solid fa-play"></i> Start Training';
+            };
+
+            initObstacles();
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ══════════════════════════════════════════════
+           THEME CHANGE LISTENER — re-render canvases
+           ══════════════════════════════════════════════ */
+        var themeBtn = document.querySelector('.theme-toggle');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', function () {
+                setTimeout(function () {
+                    // Trigger resize to re-render with new colors
+                    window.dispatchEvent(new Event('resize'));
+                }, 50);
+            });
+        }
+
+    })();
+    </script>
+
+</body>
+</html>

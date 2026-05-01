@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.10 CE Case Study: GIS Land Classification | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="End-to-end unsupervised learning case study: classifying land use from satellite imagery using spectral indices (NDVI, NDWI) and K-Means clustering for urban planning, environmental assessment, and site selection.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.10
+            </div>
+            <h1 class="chapter-hero__title">CE Case Study: GIS Land Classification</h1>
+            <p class="chapter-hero__subtitle">
+                Every civil engineering project begins with the land. Before a
+                single survey stake is driven, engineers must understand what
+                covers the terrain &mdash; urban fabric, vegetation, open water,
+                or bare soil. Satellite imagery provides this picture at scale,
+                but interpreting thousands of pixels by hand is impractical.
+                This capstone case study walks through an end-to-end unsupervised
+                pipeline that transforms raw satellite bands into an actionable
+                land-use map using spectral indices and K-Means clustering &mdash;
+                tying together every concept from Chapter 3.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: PROJECT OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="project-overview">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-satellite"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Project Overview: From Pixels to Land-Use Maps</h2>
+                        <p>
+                            A county planning department needs an up-to-date
+                            land-use map covering 250 km&sup2; to support
+                            decisions on zoning, stormwater management, and
+                            environmental impact assessment. Traditional field
+                            surveys would take months and cost hundreds of
+                            thousands of dollars. Instead, the engineering team
+                            proposes an unsupervised classification of
+                            multispectral satellite imagery &mdash; a workflow
+                            that can be repeated quarterly as new imagery
+                            becomes available.
+                        </p>
+                        <p>
+                            The pipeline follows five stages:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Data acquisition</strong> &mdash;
+                                Obtain multispectral satellite imagery with
+                                Red, Green, Blue (RGB) and Near-Infrared (NIR)
+                                bands.
+                            </li>
+                            <li>
+                                <strong>Feature extraction</strong> &mdash;
+                                Compute spectral indices (NDVI, NDWI, and
+                                additional band ratios) that amplify the
+                                differences between land-cover types.
+                            </li>
+                            <li>
+                                <strong>Clustering</strong> &mdash; Apply
+                                K-Means to the feature vectors to partition
+                                every pixel into one of K land-use classes.
+                            </li>
+                            <li>
+                                <strong>Evaluation</strong> &mdash; Assess
+                                cluster quality using silhouette scores and
+                                visual inspection against known landmarks.
+                            </li>
+                            <li>
+                                <strong>Interpretation</strong> &mdash; Map
+                                cluster labels to meaningful categories
+                                (urban, vegetation, water, bare soil) and
+                                generate the final classified map.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of this project as a modern version of what
+                            surveyors have done for centuries: classifying the
+                            terrain. Where a 19th-century surveyor walked the
+                            land, noted soil types, sketched tree lines, and
+                            flagged water courses in a field book, the
+                            satellite-and-algorithm approach does the same
+                            classification from orbit &mdash; covering an area
+                            in minutes that would take weeks on foot. The
+                            &ldquo;field book&rdquo; is the feature matrix; the
+                            &ldquo;surveyor's judgement&rdquo; is the K-Means
+                            algorithm; and the &ldquo;final map&rdquo; is the
+                            clustered output coloured by land-use type.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: SATELLITE IMAGERY BANDS
+             ========================================== -->
+        <section class="ch-section" id="satellite-bands">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Satellite Imagery Bands</h2>
+                        <p>
+                            Multispectral satellites capture reflected sunlight
+                            in discrete wavelength bands. Each band reveals
+                            different information about the surface:
+                        </p>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Band</th>
+                                    <th style="text-align:left; padding:0.6rem;">Wavelength</th>
+                                    <th style="text-align:left; padding:0.6rem;">What It Captures</th>
+                                    <th style="text-align:left; padding:0.6rem;">CE Relevance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">Red</td>
+                                    <td style="padding:0.6rem;">620&ndash;700 nm</td>
+                                    <td style="padding:0.6rem;">Chlorophyll absorption; vegetation appears dark</td>
+                                    <td style="padding:0.6rem;">Distinguishes vegetated vs. built-up areas</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">Green</td>
+                                    <td style="padding:0.6rem;">500&ndash;565 nm</td>
+                                    <td style="padding:0.6rem;">Vegetation reflectance peak; water appears dark</td>
+                                    <td style="padding:0.6rem;">Helps identify water bodies and vigour of vegetation</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">Blue</td>
+                                    <td style="padding:0.6rem;">450&ndash;515 nm</td>
+                                    <td style="padding:0.6rem;">Water penetration; atmospheric scattering</td>
+                                    <td style="padding:0.6rem;">Bathymetry of shallow water; identifying haze</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">NIR</td>
+                                    <td style="padding:0.6rem;">750&ndash;900 nm</td>
+                                    <td style="padding:0.6rem;">Strong vegetation reflection; water absorbs completely</td>
+                                    <td style="padding:0.6rem;">Key to NDVI; separates vegetation from water and soil</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p>
+                            A single pixel in a four-band image is a vector of
+                            four reflectance values: <code>[Red, Green, Blue, NIR]</code>.
+                            The entire image is a matrix of dimensions
+                            <em>rows &times; cols &times; 4</em>. For clustering,
+                            we reshape this into an <em>N &times; 4</em> matrix
+                            where <em>N = rows &times; cols</em>, treating each
+                            pixel as an independent sample.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why NIR Is the Game-Changer</h3>
+                        <p>
+                            Healthy vegetation has a distinctive spectral
+                            signature: it absorbs Red light for photosynthesis
+                            but strongly reflects Near-Infrared. This creates
+                            a dramatic contrast that is invisible to the human
+                            eye but unmistakable to the sensor. Water does the
+                            opposite &mdash; it absorbs NIR almost completely.
+                            Urban surfaces (concrete, asphalt) reflect moderately
+                            across all bands. These opposing behaviours are what
+                            make spectral indices so powerful for land-cover
+                            classification.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: FEATURE EXTRACTION — SPECTRAL INDICES
+             ========================================== -->
+        <section class="ch-section" id="spectral-indices">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wave-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Feature Extraction: Spectral Indices</h2>
+                        <p>
+                            Raw band values can separate some land-cover types,
+                            but spectral <strong>indices</strong> &mdash;
+                            normalised ratios of bands &mdash; amplify the
+                            differences and reduce the effect of illumination
+                            variations. The two most important indices for this
+                            project are NDVI and NDWI.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-leaf"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>NDVI &mdash; Normalised Difference Vegetation Index</h3>
+                        <pre><code>NDVI = (NIR - Red) / (NIR + Red)</code></pre>
+                        <p>
+                            NDVI ranges from -1 to +1. Dense, healthy vegetation
+                            yields values of 0.6 to 0.9. Bare soil and urban
+                            surfaces fall between 0.0 and 0.2. Water bodies
+                            typically produce negative values because NIR
+                            reflectance is near zero while Red reflectance
+                            is non-zero.
+                        </p>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">NDVI Range</th>
+                                    <th style="text-align:left; padding:0.6rem;">Typical Cover</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">-1.0 to -0.1</td>
+                                    <td style="padding:0.6rem;">Deep water</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">-0.1 to 0.1</td>
+                                    <td style="padding:0.6rem;">Bare rock, sand, snow, clouds</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;"> 0.1 to 0.3</td>
+                                    <td style="padding:0.6rem;">Sparse vegetation, grassland, urban gardens</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;"> 0.3 to 0.6</td>
+                                    <td style="padding:0.6rem;">Moderate vegetation, shrubs, crops</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;"> 0.6 to 1.0</td>
+                                    <td style="padding:0.6rem;">Dense forest, healthy crops at peak growth</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>NDWI &mdash; Normalised Difference Water Index</h3>
+                        <pre><code>NDWI = (Green - NIR) / (Green + NIR)</code></pre>
+                        <p>
+                            NDWI highlights water content. Positive values
+                            indicate water bodies or saturated soil. Negative
+                            values correspond to dry surfaces and vegetation.
+                            For civil engineers, NDWI is invaluable for
+                            delineating floodplains, identifying wetlands
+                            that constrain site selection, and monitoring
+                            reservoir levels.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-list"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Additional Band Ratios</h3>
+                        <p>
+                            Beyond NDVI and NDWI, the feature vector for each
+                            pixel can include:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Built-up Index (NBI)</strong> &mdash;
+                                <code>(Red &times; SWIR) / NIR</code> &mdash;
+                                amplifies urban surfaces. When SWIR is unavailable,
+                                a simplified ratio <code>Red / NIR</code> serves as
+                                a proxy for distinguishing built-up areas from
+                                vegetation.
+                            </li>
+                            <li>
+                                <strong>Bare Soil Index (BSI)</strong> &mdash;
+                                <code>((Red + SWIR) - (NIR + Blue)) / ((Red + SWIR) + (NIR + Blue))</code>.
+                                Without SWIR, the approximation
+                                <code>(Red - Green) / (Red + Green)</code> captures
+                                exposed soil reasonably well.
+                            </li>
+                            <li>
+                                <strong>Brightness</strong> &mdash; The mean of all
+                                bands: <code>(Red + Green + Blue + NIR) / 4</code>.
+                                High brightness combined with low NDVI suggests
+                                urban concrete or dry sand.
+                            </li>
+                        </ul>
+                        <p>
+                            For this case study, we construct a six-feature vector
+                            per pixel: <code>[Red, Green, Blue, NIR, NDVI, NDWI]</code>.
+                            Standardisation (z-score) is applied before clustering
+                            so that no single feature dominates the distance
+                            calculations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Spectral indices are the remote-sensing equivalent
+                            of geotechnical index properties. Just as the
+                            plasticity index (PI = LL - PL) collapses two
+                            Atterberg limits into a single number that separates
+                            clays from silts, NDVI collapses two spectral bands
+                            into a single number that separates vegetation from
+                            non-vegetation. Both are simple ratios that encode
+                            domain knowledge about what matters most for
+                            classification.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: K-MEANS ON SPECTRAL DATA
+             ========================================== -->
+        <section class="ch-section" id="kmeans-spectral">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-object-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>K-Means Clustering on Spectral Data</h2>
+                        <p>
+                            With the feature matrix prepared &mdash; each row
+                            a pixel, each column a spectral feature &mdash;
+                            K-Means partitions the pixels into K land-use
+                            clusters. The algorithm iterates between assigning
+                            each pixel to its nearest centroid and updating
+                            centroids until convergence.
+                        </p>
+                        <p>
+                            <strong>Choosing K:</strong> For a four-class
+                            land-use map (urban, vegetation, water, bare soil),
+                            K = 4 is the natural starting point. However, real
+                            imagery contains mixed pixels (e.g., a pixel
+                            spanning both road and grass) and sub-classes
+                            (e.g., dense forest vs. sparse grassland). It is
+                            common practice to cluster with K = 6 or K = 8
+                            and then merge related clusters into the four
+                            target categories during interpretation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Python Pipeline: From Image to Clusters</h3>
+                        <pre><code>import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# 1. Load bands (simulated as 2D arrays of reflectance)
+red   = load_band('red.tif')    # shape: (rows, cols)
+green = load_band('green.tif')
+blue  = load_band('blue.tif')
+nir   = load_band('nir.tif')
+
+# 2. Compute spectral indices
+ndvi = (nir - red) / (nir + red + 1e-8)
+ndwi = (green - nir) / (green + nir + 1e-8)
+
+# 3. Stack into feature matrix
+rows, cols = red.shape
+features = np.stack([red, green, blue, nir, ndvi, ndwi], axis=-1)
+X = features.reshape(-1, 6)  # shape: (N, 6)
+
+# 4. Standardise
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 5. Cluster
+kmeans = KMeans(n_clusters=4, n_init=10, random_state=42)
+labels = kmeans.fit_predict(X_scaled)
+
+# 6. Reshape to map
+land_map = labels.reshape(rows, cols)</code></pre>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Practical Tips for Satellite Clustering</h3>
+                        <ul>
+                            <li>
+                                <strong>Add a small epsilon</strong> (1e-8) to
+                                denominators in index formulas to avoid division
+                                by zero at pixels with no reflectance (e.g.,
+                                deep shadows).
+                            </li>
+                            <li>
+                                <strong>Mask clouds and no-data pixels</strong>
+                                before clustering. Including them distorts
+                                centroids and wastes a cluster on artefacts.
+                            </li>
+                            <li>
+                                <strong>Use <code>n_init=10</code> or higher</strong>
+                                to mitigate K-Means sensitivity to random
+                                initialisation. Each run starts from a different
+                                seed and the best SSE is kept.
+                            </li>
+                            <li>
+                                <strong>Over-cluster and merge.</strong> Starting
+                                with K = 8 and merging down to 4 avoids forcing
+                                dissimilar pixels into the same cluster.
+                            </li>
+                            <li>
+                                <strong>Preserve spatial context.</strong> After
+                                clustering, apply a 3&times;3 majority filter to
+                                remove salt-and-pepper noise &mdash; isolated
+                                pixels misclassified relative to their neighbours.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: EVALUATION WITH SILHOUETTE & VISUAL INSPECTION
+             ========================================== -->
+        <section class="ch-section" id="evaluation">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Evaluation: Silhouette Scores and Visual Inspection</h2>
+                        <p>
+                            With no ground-truth labels, evaluation relies on
+                            the internal metrics from Sub-chapter 3.9. The two
+                            most practical tools for this case study are:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Silhouette score</strong> &mdash; Computed
+                                on a random sample of 5,000 pixels (full
+                                computation on millions of pixels is prohibitively
+                                expensive). A score above 0.45 for K = 4 indicates
+                                that the four classes are reasonably separated in
+                                spectral space.
+                            </li>
+                            <li>
+                                <strong>Visual inspection</strong> &mdash; Overlay
+                                the classified map on the original RGB composite.
+                                Do the &ldquo;water&rdquo; pixels align with
+                                rivers and lakes? Does the &ldquo;vegetation&rdquo;
+                                class cover parks and forests? Does
+                                &ldquo;urban&rdquo; track roads and buildings?
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interpreting the Centroids</h3>
+                        <p>
+                            Each K-Means centroid is a prototype spectral
+                            signature. By examining the centroid values, the
+                            engineer assigns a land-cover label:
+                        </p>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Cluster</th>
+                                    <th style="text-align:left; padding:0.6rem;">NDVI (centroid)</th>
+                                    <th style="text-align:left; padding:0.6rem;">NDWI (centroid)</th>
+                                    <th style="text-align:left; padding:0.6rem;">Brightness</th>
+                                    <th style="text-align:left; padding:0.6rem;">Assigned Label</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">C0</td>
+                                    <td style="padding:0.6rem;">0.72</td>
+                                    <td style="padding:0.6rem;">-0.35</td>
+                                    <td style="padding:0.6rem;">Low</td>
+                                    <td style="padding:0.6rem;">Vegetation</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">C1</td>
+                                    <td style="padding:0.6rem;">-0.28</td>
+                                    <td style="padding:0.6rem;">0.65</td>
+                                    <td style="padding:0.6rem;">Low</td>
+                                    <td style="padding:0.6rem;">Water</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">C2</td>
+                                    <td style="padding:0.6rem;">0.08</td>
+                                    <td style="padding:0.6rem;">-0.10</td>
+                                    <td style="padding:0.6rem;">High</td>
+                                    <td style="padding:0.6rem;">Urban</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">C3</td>
+                                    <td style="padding:0.6rem;">0.15</td>
+                                    <td style="padding:0.6rem;">-0.05</td>
+                                    <td style="padding:0.6rem;">Medium</td>
+                                    <td style="padding:0.6rem;">Bare Soil</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p>
+                            The key discriminators: vegetation has high NDVI
+                            and negative NDWI; water has negative NDVI and
+                            high positive NDWI; urban surfaces have low NDVI,
+                            slightly negative NDWI, and high overall
+                            brightness; bare soil sits between urban and
+                            vegetation with moderate values across all indices.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Misclassification Patterns</h3>
+                        <ul>
+                            <li>
+                                <strong>Urban &harr; Bare soil:</strong> Concrete
+                                and dry sand have similar spectral profiles. Adding
+                                texture features (local variance) or thermal data
+                                helps separate them.
+                            </li>
+                            <li>
+                                <strong>Shadow pixels:</strong> Shadows in urban
+                                canyons reduce reflectance in all bands, making
+                                buildings look like water. A shadow mask or
+                                terrain correction mitigates this.
+                            </li>
+                            <li>
+                                <strong>Mixed pixels:</strong> At 10 m resolution,
+                                a pixel covering half road and half lawn gets an
+                                intermediate spectral signature. Over-clustering
+                                creates a &ldquo;mixed&rdquo; class that can be
+                                re-assigned by majority vote with neighbours.
+                            </li>
+                            <li>
+                                <strong>Seasonal variation:</strong> Deciduous
+                                trees in winter lose their NIR reflectance,
+                                causing vegetation to be classified as bare soil.
+                                Multi-temporal imagery (summer + winter) resolves
+                                this ambiguity.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: CE RELEVANCE
+             ========================================== -->
+        <section class="ch-section" id="ce-relevance">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Civil Engineering Applications</h2>
+                        <p>
+                            A classified land-use map derived from satellite
+                            imagery feeds directly into several critical civil
+                            engineering workflows:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-city"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Urban Planning and Zoning</h3>
+                        <p>
+                            The urban cluster delineates the current built-up
+                            footprint. Comparing maps from successive years
+                            reveals urban sprawl rates, guides growth boundaries,
+                            and supports transit corridor planning. A planner
+                            can overlay the vegetation class to identify green
+                            corridors worth preserving and the bare-soil class
+                            to locate potential development parcels.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tree"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Environmental Impact Assessment (EIA)</h3>
+                        <p>
+                            Regulatory agencies require an assessment of how a
+                            proposed project will affect existing land cover.
+                            The classified map quantifies the area of vegetation,
+                            wetland, and water body that falls within the
+                            project footprint. Change detection between pre-
+                            and post-construction imagery measures the actual
+                            impact and compliance with mitigation commitments.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Site Selection</h3>
+                        <p>
+                            For infrastructure projects &mdash; highways,
+                            dams, treatment plants &mdash; the land-use map
+                            is a first-pass screening tool. Sites with
+                            extensive vegetation or water bodies carry higher
+                            environmental constraints and mitigation costs.
+                            Bare-soil areas near existing urban zones are
+                            preferred candidates. The clustering approach
+                            automates this screening over hundreds of
+                            candidate sites simultaneously.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cloud-rain"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Stormwater and Hydrological Modelling</h3>
+                        <p>
+                            Land-use classification directly determines runoff
+                            coefficients in rational-method or SCS-CN
+                            hydrological models. Urban surfaces have high
+                            imperviousness (C = 0.7&ndash;0.95), vegetation
+                            has low imperviousness (C = 0.1&ndash;0.3), and
+                            water bodies contribute zero overland flow but
+                            may produce baseflow. A classified map feeds these
+                            coefficients into watershed delineation tools,
+                            enabling accurate flood peak estimation.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: DEMO 1 — SATELLITE BAND EXPLORER
+             ========================================== -->
+        <section class="ch-section" id="demo-band-explorer">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Interactive Demo 1: Satellite Band Explorer</h2>
+                        <p>
+                            This demo generates a simulated 32&times;32 satellite
+                            scene containing four land-cover types &mdash; urban
+                            (grey), vegetation (green), water (blue), and bare
+                            soil (brown). Toggle between RGB composite, individual
+                            bands (Red, Green, Blue, NIR), and the computed NDVI
+                            overlay to see how each view highlights different
+                            surface types. Observe how NIR makes vegetation
+                            &ldquo;glow&rdquo; bright and water appear dark.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel" id="demo1-panel">
+                    <h3><i class="fa-solid fa-satellite-dish"></i> Satellite Band Explorer</h3>
+
+                    <div style="display:flex; gap:1rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                View Mode:
+                            </label>
+                            <select id="band-mode" style="padding:0.3rem 0.6rem; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; font-size:0.85rem; margin-left:0.5rem;">
+                                <option value="rgb" selected>RGB Composite</option>
+                                <option value="red">Red Band</option>
+                                <option value="green">Green Band</option>
+                                <option value="blue">Blue Band</option>
+                                <option value="nir">NIR Band</option>
+                                <option value="ndvi">NDVI Overlay</option>
+                                <option value="ndwi">NDWI Overlay</option>
+                            </select>
+                        </div>
+                        <button id="btn-band-regen" style="padding:0.5rem 1rem; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-arrows-rotate"></i> New Scene
+                        </button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-image"></i> Band View
+                            </h4>
+                            <canvas id="band-canvas" style="width:100%; aspect-ratio:1; border-radius:8px; border:1px solid var(--border-subtle); image-rendering:pixelated;"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-map"></i> Ground Truth
+                            </h4>
+                            <canvas id="truth-canvas" style="width:100%; aspect-ratio:1; border-radius:8px; border:1px solid var(--border-subtle); image-rendering:pixelated;"></canvas>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:0.75rem; display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.8rem; color:var(--text-secondary);">
+                        <span><i class="fa-solid fa-square" style="color:#7f8c8d;"></i> Urban</span>
+                        <span><i class="fa-solid fa-square" style="color:#27ae60;"></i> Vegetation</span>
+                        <span><i class="fa-solid fa-square" style="color:#2980b9;"></i> Water</span>
+                        <span><i class="fa-solid fa-square" style="color:#d4a574;"></i> Bare Soil</span>
+                    </div>
+
+                    <div id="band-info" style="margin-top:0.75rem; padding:0.75rem; background:var(--bg-tertiary); border-radius:8px; font-size:0.85rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace;">
+                        Select a view mode to explore different spectral bands.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ BLOCK 1 & 2
+             ========================================== -->
+        <section class="ch-section" id="quiz-section-1">
+            <div class="section-container">
+
+                <div class="quiz-block" id="quiz1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 1: NDVI Interpretation</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            A pixel has Red reflectance = 0.08 and NIR reflectance
+                            = 0.52. What is its NDVI value, and what land cover
+                            does it most likely represent?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                A) NDVI = 0.15; bare soil or urban surface.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="true">
+                                B) NDVI = 0.73; dense, healthy vegetation.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                C) NDVI = -0.73; deep water body.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                D) NDVI = 0.44; moderate vegetation or grassland.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz1-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> NDVI = (0.52 - 0.08) /
+                            (0.52 + 0.08) = 0.44 / 0.60 = 0.733. A value above
+                            0.6 indicates dense, healthy vegetation where
+                            chlorophyll strongly absorbs Red and cell structures
+                            strongly reflect NIR.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz1-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> Calculate: NDVI = (NIR -
+                            Red) / (NIR + Red) = (0.52 - 0.08) / (0.52 + 0.08)
+                            = 0.44 / 0.60 = 0.733. This high positive value
+                            indicates dense vegetation.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-block" id="quiz2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 2: Feature Engineering for Clustering</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            Why do we compute spectral indices (NDVI, NDWI)
+                            instead of clustering directly on the raw band
+                            values (R, G, B, NIR)?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                A) Raw band values cannot be used with K-Means.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                B) Spectral indices reduce the number of features to speed up clustering.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="true">
+                                C) Indices amplify meaningful differences between land-cover types and reduce the effect of illumination variation.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                D) K-Means requires exactly two features, so indices are needed to replace the four bands.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz2-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> Spectral indices like NDVI
+                            and NDWI are normalised ratios that amplify the
+                            physical differences between land-cover types
+                            (vegetation reflects NIR strongly, water absorbs it)
+                            while suppressing variations caused by sun angle,
+                            atmospheric haze, and sensor calibration. They are
+                            added alongside raw bands, not as replacements.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz2-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> K-Means works with any
+                            number of numeric features. We add spectral indices
+                            because they amplify meaningful differences between
+                            cover types and normalise out illumination effects.
+                            They supplement the raw bands, not replace them.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 2 — CLUSTERING RESULT MAP
+             ========================================== -->
+        <section class="ch-section" id="demo-cluster-map">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Interactive Demo 2: K-Means Land Classification</h2>
+                        <p>
+                            This demo applies K-Means clustering to the simulated
+                            satellite scene from Demo 1. Each pixel's six-feature
+                            vector <code>[R, G, B, NIR, NDVI, NDWI]</code> is
+                            clustered into K groups. The result is a classified
+                            land-use grid coloured by cluster. Adjust K to see
+                            how under- or over-clustering affects the map. The
+                            silhouette score updates in real time to quantify
+                            cluster quality.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel" id="demo2-panel">
+                    <h3><i class="fa-solid fa-map"></i> K-Means Land Classification Map</h3>
+
+                    <div style="display:flex; gap:1.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                Number of Clusters (K): <span id="cluster-k-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">4</span>
+                            </label>
+                            <input type="range" id="cluster-k-slider" min="2" max="8" step="1" value="4"
+                                style="width:180px; accent-color:var(--accent-primary); display:block; margin-top:0.3rem;">
+                        </div>
+                        <button id="btn-cluster-run" style="padding:0.5rem 1rem; background:var(--gradient-main); border:none; border-radius:6px; color:var(--text-inverse); font-weight:600; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-play"></i> Run Clustering
+                        </button>
+                        <button id="btn-cluster-regen" style="padding:0.5rem 1rem; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-arrows-rotate"></i> New Scene
+                        </button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-image"></i> RGB Composite
+                            </h4>
+                            <canvas id="cluster-rgb-canvas" style="width:100%; aspect-ratio:1; border-radius:8px; border:1px solid var(--border-subtle); image-rendering:pixelated;"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-map"></i> Classified Map
+                            </h4>
+                            <canvas id="cluster-map-canvas" style="width:100%; aspect-ratio:1; border-radius:8px; border:1px solid var(--border-subtle); image-rendering:pixelated;"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="cluster-stats" style="margin-top:1rem; padding:0.75rem; background:var(--bg-tertiary); border-radius:8px; font-size:0.85rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace;">
+                        Click &ldquo;Run Clustering&rdquo; to classify the satellite scene with K-Means.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: FULL PIPELINE WALKTHROUGH
+             ========================================== -->
+        <section class="ch-section" id="pipeline-walkthrough">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Full Pipeline Walkthrough</h2>
+                        <p>
+                            Bringing together every step into a coherent
+                            workflow that a civil engineering team can
+                            execute end-to-end:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Step 1 &mdash; Acquire imagery.</strong>
+                                Download a cloud-free, multispectral scene
+                                (e.g., Sentinel-2, Landsat 8/9) covering the
+                                project area. Sentinel-2 provides 10 m resolution
+                                in RGB and NIR, freely available from ESA's
+                                Copernicus Open Access Hub.
+                            </li>
+                            <li>
+                                <strong>Step 2 &mdash; Pre-process.</strong>
+                                Apply atmospheric correction (e.g., Sen2Cor for
+                                Sentinel-2) to convert digital numbers to surface
+                                reflectance. Mask clouds, shadows, and no-data
+                                pixels using the scene's quality band.
+                            </li>
+                            <li>
+                                <strong>Step 3 &mdash; Extract features.</strong>
+                                Compute NDVI, NDWI, and any additional indices.
+                                Stack into a feature matrix of shape
+                                <code>(N_pixels, n_features)</code>.
+                            </li>
+                            <li>
+                                <strong>Step 4 &mdash; Standardise.</strong>
+                                Apply z-score standardisation so that all
+                                features contribute equally to the distance
+                                metric.
+                            </li>
+                            <li>
+                                <strong>Step 5 &mdash; Determine K.</strong>
+                                Run the elbow method and silhouette analysis
+                                for K = 2 to 10. Start with K = number of
+                                expected land-cover types, but explore
+                                neighbouring values.
+                            </li>
+                            <li>
+                                <strong>Step 6 &mdash; Cluster.</strong>
+                                Run K-Means with the chosen K and
+                                <code>n_init &ge; 10</code>. Record the
+                                centroids and labels.
+                            </li>
+                            <li>
+                                <strong>Step 7 &mdash; Post-process.</strong>
+                                Apply a spatial majority filter. Merge
+                                sub-clusters that represent the same land-cover
+                                category (e.g., &ldquo;bright urban&rdquo; and
+                                &ldquo;dark urban&rdquo; into one
+                                &ldquo;urban&rdquo; class).
+                            </li>
+                            <li>
+                                <strong>Step 8 &mdash; Evaluate.</strong>
+                                Compute silhouette on a subsample. Visually
+                                compare the classified map against known
+                                landmarks (rivers, parks, highways).
+                            </li>
+                            <li>
+                                <strong>Step 9 &mdash; Deliver.</strong>
+                                Export the classified raster as a GeoTIFF
+                                with a colour table and legend. Import into
+                                GIS software (QGIS, ArcGIS) for integration
+                                with other project layers.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            The land-classification pipeline is structurally
+                            identical to a geotechnical site investigation.
+                            Data acquisition is the field sampling. Feature
+                            extraction is the laboratory testing (grain-size
+                            distribution, Atterberg limits). Clustering is the
+                            soil classification (USCS grouping). Evaluation is
+                            the cross-check between lab results and boring-log
+                            observations. And the deliverable &mdash; a
+                            classified map &mdash; is the geotechnical report
+                            that feeds into foundation design. The same
+                            discipline applies whether you are classifying
+                            soil strata underground or land cover from space.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: LIMITATIONS & EXTENSIONS
+             ========================================== -->
+        <section class="ch-section" id="limitations">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Limitations and Possible Extensions</h2>
+                        <ul>
+                            <li>
+                                <strong>No spatial awareness.</strong> K-Means
+                                treats each pixel independently. Two adjacent
+                                pixels with slightly different spectra may end
+                                up in different clusters even though spatial
+                                context suggests they are the same cover type.
+                                Object-based image analysis (OBIA) first
+                                segments the image into homogeneous regions,
+                                then classifies the segments &mdash; a natural
+                                extension of this pipeline.
+                            </li>
+                            <li>
+                                <strong>Fixed K.</strong> K-Means requires K
+                                to be specified in advance. DBSCAN or
+                                Gaussian Mixture Models can infer the number
+                                of clusters from the data, though they
+                                introduce other hyper-parameters.
+                            </li>
+                            <li>
+                                <strong>Spectral ambiguity.</strong> Some
+                                cover types (concrete vs. dry sand) are nearly
+                                indistinguishable in four bands. Additional
+                                bands (SWIR, thermal) or multi-temporal analysis
+                                resolve many of these ambiguities.
+                            </li>
+                            <li>
+                                <strong>Scale effects.</strong> At 10 m
+                                resolution, many pixels are mixtures of multiple
+                                cover types. Sub-pixel or spectral unmixing
+                                techniques estimate the fraction of each class
+                                within a pixel.
+                            </li>
+                            <li>
+                                <strong>Supervised alternatives.</strong> When
+                                training data are available (e.g., ground-truth
+                                samples from field visits), supervised classifiers
+                                (Random Forest, CNNs &mdash; covered in Chapter 4)
+                                typically outperform unsupervised methods. The
+                                unsupervised pipeline in this case study is
+                                ideal when labelled data are scarce or
+                                unavailable.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ BLOCK 3 & 4
+             ========================================== -->
+        <section class="ch-section" id="quiz-section-2">
+            <div class="section-container">
+
+                <div class="quiz-block" id="quiz3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 3: Cluster Interpretation</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            After running K-Means with K = 4 on satellite imagery,
+                            a cluster centroid has NDVI = -0.25, NDWI = 0.58, and
+                            low brightness. What land-cover type does this cluster
+                            most likely represent?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                A) Dense vegetation (high NDVI expected).
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                B) Urban surface (high brightness expected).
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="true">
+                                C) Water body (negative NDVI, high positive NDWI, low brightness).
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                D) Bare soil (moderate NDVI and NDWI expected).
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz3-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> Water bodies absorb NIR
+                            almost completely (driving NDVI negative) and reflect
+                            Green more than NIR (driving NDWI positive). Low
+                            overall brightness is consistent with the dark
+                            appearance of water in all visible bands.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz3-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> Negative NDVI and strongly
+                            positive NDWI are the spectral fingerprint of water.
+                            Vegetation would have high NDVI; urban surfaces would
+                            have high brightness; bare soil would have moderate
+                            values across indices.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-block" id="quiz4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 4: Pipeline Best Practice</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            An engineer clusters satellite imagery with K = 4 but
+                            notices that the &ldquo;urban&rdquo; cluster includes
+                            both concrete buildings and dry sandy terrain. What is
+                            the best course of action?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                A) Accept the result; K-Means cannot distinguish these surfaces.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                B) Reduce K to 3 so the problem disappears.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="true">
+                                C) Increase K (e.g., K = 6 or 8) to separate urban and sand into distinct clusters, then merge related clusters during post-processing.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                D) Switch from K-Means to DBSCAN, which always separates these surfaces.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz4-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> The over-cluster-and-merge
+                            strategy is standard practice in remote-sensing
+                            classification. By using a higher K, spectrally
+                            similar but distinct surfaces get their own clusters.
+                            The engineer then merges unrelated sub-clusters (e.g.,
+                            &ldquo;bright urban&rdquo; + &ldquo;dark urban&rdquo;)
+                            while keeping truly different classes separate.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz4-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> Reducing K would merge even
+                            more dissimilar pixels. DBSCAN may help but has its
+                            own challenges with satellite data. The proven approach
+                            is to increase K (over-cluster) and then manually merge
+                            related clusters during the interpretation phase.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: CHAPTER 3 SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="chapter3-summary">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Chapter 3 Summary: Unsupervised Learning</h2>
+                        <p>
+                            This case study brings together every concept
+                            from Chapter 3 into one cohesive project. Here
+                            is a recap of how each sub-chapter contributed:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sub-chapter Connections</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Sub-chapter</th>
+                                    <th style="text-align:left; padding:0.6rem;">Topic</th>
+                                    <th style="text-align:left; padding:0.6rem;">Role in This Case Study</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.1</td>
+                                    <td style="padding:0.6rem;">Introduction to Unsupervised Learning</td>
+                                    <td style="padding:0.6rem;">Established the premise: no labelled training data for pixel classification.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.2</td>
+                                    <td style="padding:0.6rem;">Clustering Fundamentals</td>
+                                    <td style="padding:0.6rem;">Defined distance metrics and the clustering objective used by K-Means.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.3</td>
+                                    <td style="padding:0.6rem;">K-Means Algorithm</td>
+                                    <td style="padding:0.6rem;">The core algorithm partitioning pixels into K land-use classes.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.4</td>
+                                    <td style="padding:0.6rem;">Hierarchical Clustering</td>
+                                    <td style="padding:0.6rem;">An alternative approach for merging sub-clusters during post-processing.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.5</td>
+                                    <td style="padding:0.6rem;">DBSCAN</td>
+                                    <td style="padding:0.6rem;">A density-based alternative when the number of classes is unknown.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.6</td>
+                                    <td style="padding:0.6rem;">Dimensionality Reduction (PCA)</td>
+                                    <td style="padding:0.6rem;">Could reduce the 6-feature space for visualisation or noise reduction.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.7</td>
+                                    <td style="padding:0.6rem;">Feature Scaling &amp; Preprocessing</td>
+                                    <td style="padding:0.6rem;">Z-score standardisation ensures equal feature contribution.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.8</td>
+                                    <td style="padding:0.6rem;">Association Rules</td>
+                                    <td style="padding:0.6rem;">Could discover co-occurrence patterns (e.g., water always near vegetation).</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.9</td>
+                                    <td style="padding:0.6rem;">Evaluating UL Models</td>
+                                    <td style="padding:0.6rem;">Silhouette scores and visual inspection validate the classification.</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">3.10</td>
+                                    <td style="padding:0.6rem;">CE Case Study (this page)</td>
+                                    <td style="padding:0.6rem;">Integrates all concepts into a real-world GIS classification project.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways from Chapter 3</h3>
+                        <ul>
+                            <li>
+                                <strong>Unsupervised learning discovers structure</strong>
+                                in unlabelled data. It is ideal for civil engineering
+                                problems where labelled datasets are scarce or
+                                expensive to create.
+                            </li>
+                            <li>
+                                <strong>K-Means</strong> is the workhorse algorithm
+                                for partitioning data into a pre-specified number of
+                                clusters. It is fast, interpretable, and effective
+                                when clusters are roughly spherical.
+                            </li>
+                            <li>
+                                <strong>Feature engineering</strong> (spectral
+                                indices, standardisation) is as important as the
+                                algorithm itself. Poor features lead to poor
+                                clusters regardless of the method.
+                            </li>
+                            <li>
+                                <strong>Evaluation requires multiple lenses:</strong>
+                                internal metrics (silhouette, DB, CH, elbow), visual
+                                inspection, and domain cross-validation. No single
+                                metric suffices.
+                            </li>
+                            <li>
+                                <strong>The over-cluster-and-merge strategy</strong>
+                                is a pragmatic approach that handles spectral
+                                ambiguity better than trying to guess the exact K.
+                            </li>
+                            <li>
+                                <strong>Domain expertise is irreplaceable.</strong>
+                                The algorithm finds patterns; the engineer decides
+                                which patterns are meaningful. A cluster is only
+                                useful if it maps to an actionable category in the
+                                project context.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Looking Ahead: Chapter 4 &mdash; Convolutional Neural Networks</h3>
+                        <p>
+                            Chapter 3 demonstrated what can be achieved without
+                            labelled data. Chapter 4 introduces
+                            <strong>Convolutional Neural Networks (CNNs)</strong>,
+                            which learn spatial hierarchies of features directly
+                            from images. Where K-Means treats each pixel
+                            independently, CNNs consider the neighbourhood
+                            context &mdash; recognising that a group of pixels
+                            forms a roof, a road, or a tree canopy. This makes
+                            CNNs dramatically more powerful for image
+                            classification tasks, provided sufficient labelled
+                            training data are available. The transition from
+                            unsupervised spectral clustering to supervised
+                            deep learning marks a quantum leap in what remote
+                            sensing can achieve for civil engineering.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub9.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.9 Evaluating UL Models
+        </a>
+        <a href="../chapter4/index.html" class="chapter-nav__link next">
+            Chapter 4: CNNs <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var CU = window.ChapterUtils;
+        var getColors = CU.getColors;
+        var initCanvas = CU.initCanvas;
+
+        /* ================================================
+           COLOUR PALETTE — land cover classes
+           ================================================ */
+        var LAND_COLORS = {
+            urban:      { r: 127, g: 140, b: 141 },
+            vegetation: { r:  39, g: 174, b:  96 },
+            water:      { r:  41, g: 128, b: 185 },
+            bare:       { r: 212, g: 165, b: 116 }
+        };
+        var CLASS_NAMES = ['urban', 'vegetation', 'water', 'bare'];
+
+        var CLUSTER_PALETTE = [
+            '#00d4aa', '#0ea5e9', '#f59e0b', '#ef4444',
+            '#a855f7', '#22c55e', '#ec4899', '#06b6d4'
+        ];
+
+        /* ================================================
+           UTILITY: Random normal via Box-Muller
+           ================================================ */
+        function randNormal() {
+            var u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        /* ================================================
+           GENERATE SYNTHETIC SATELLITE SCENE
+           ================================================ */
+        var GRID = 32;  // 32x32 pixel scene
+        var sceneData = null;
+
+        function generateScene() {
+            var N = GRID * GRID;
+            var labels = new Array(N);
+            var red = new Float32Array(N);
+            var green = new Float32Array(N);
+            var blue = new Float32Array(N);
+            var nir = new Float32Array(N);
+
+            /* Create a simple land-cover pattern:
+               - top-left quadrant + some scatter: urban
+               - top-right + bottom-right strip: vegetation
+               - bottom-left block: water
+               - remaining: bare soil
+               Add noise and random patches for realism */
+            for (var row = 0; row < GRID; row++) {
+                for (var col = 0; col < GRID; col++) {
+                    var idx = row * GRID + col;
+                    var cls;
+
+                    /* Base pattern with organic boundaries */
+                    var nr = row / GRID;
+                    var nc = col / GRID;
+                    var noise = randNormal() * 0.12;
+
+                    if (nr < 0.45 + noise && nc < 0.5 + noise) {
+                        cls = 0; // urban
+                    } else if (nc > 0.5 - noise && nr < 0.55 + noise) {
+                        cls = 1; // vegetation
+                    } else if (nr > 0.6 - noise && nc < 0.4 + noise) {
+                        cls = 2; // water
+                    } else if (nr > 0.55 + noise) {
+                        cls = 1; // vegetation
+                    } else {
+                        cls = 3; // bare soil
+                    }
+
+                    /* Random patches */
+                    if (Math.random() < 0.06) cls = Math.floor(Math.random() * 4);
+
+                    labels[idx] = cls;
+
+                    /* Generate spectral values based on class */
+                    var n1 = randNormal() * 0.03;
+                    var n2 = randNormal() * 0.03;
+                    var n3 = randNormal() * 0.03;
+                    var n4 = randNormal() * 0.04;
+
+                    switch (cls) {
+                        case 0: // urban — moderate R,G,B; moderate NIR
+                            red[idx]   = Math.max(0, Math.min(1, 0.45 + n1));
+                            green[idx] = Math.max(0, Math.min(1, 0.42 + n2));
+                            blue[idx]  = Math.max(0, Math.min(1, 0.40 + n3));
+                            nir[idx]   = Math.max(0, Math.min(1, 0.48 + n4));
+                            break;
+                        case 1: // vegetation — low R; moderate G; low B; high NIR
+                            red[idx]   = Math.max(0, Math.min(1, 0.08 + n1));
+                            green[idx] = Math.max(0, Math.min(1, 0.28 + n2));
+                            blue[idx]  = Math.max(0, Math.min(1, 0.05 + n3));
+                            nir[idx]   = Math.max(0, Math.min(1, 0.65 + n4));
+                            break;
+                        case 2: // water — low R,G; very low B; very low NIR
+                            red[idx]   = Math.max(0, Math.min(1, 0.06 + n1));
+                            green[idx] = Math.max(0, Math.min(1, 0.10 + n2));
+                            blue[idx]  = Math.max(0, Math.min(1, 0.18 + n3));
+                            nir[idx]   = Math.max(0, Math.min(1, 0.03 + n4));
+                            break;
+                        case 3: // bare soil — moderate-high R; moderate G; moderate B; moderate NIR
+                            red[idx]   = Math.max(0, Math.min(1, 0.38 + n1));
+                            green[idx] = Math.max(0, Math.min(1, 0.30 + n2));
+                            blue[idx]  = Math.max(0, Math.min(1, 0.22 + n3));
+                            nir[idx]   = Math.max(0, Math.min(1, 0.40 + n4));
+                            break;
+                    }
+                }
+            }
+
+            /* Compute indices */
+            var ndvi = new Float32Array(N);
+            var ndwi = new Float32Array(N);
+            for (var i = 0; i < N; i++) {
+                ndvi[i] = (nir[i] - red[i]) / (nir[i] + red[i] + 1e-8);
+                ndwi[i] = (green[i] - nir[i]) / (green[i] + nir[i] + 1e-8);
+            }
+
+            sceneData = {
+                labels: labels,
+                red: red, green: green, blue: blue, nir: nir,
+                ndvi: ndvi, ndwi: ndwi
+            };
+            return sceneData;
+        }
+
+        /* ================================================
+           DPI-AWARE CANVAS DRAWING HELPERS
+           ================================================ */
+        function initPixelCanvas(canvas, gridSize) {
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            var size = Math.min(rect.width, rect.height);
+            canvas.width = gridSize;
+            canvas.height = gridSize;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            return canvas.getContext('2d');
+        }
+
+        function drawPixelGrid(ctx, gridSize, colorFn) {
+            var imgData = ctx.createImageData(gridSize, gridSize);
+            for (var i = 0; i < gridSize * gridSize; i++) {
+                var c = colorFn(i);
+                var off = i * 4;
+                imgData.data[off]     = c.r;
+                imgData.data[off + 1] = c.g;
+                imgData.data[off + 2] = c.b;
+                imgData.data[off + 3] = 255;
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        /* ================================================
+           DEMO 1: SATELLITE BAND EXPLORER
+           ================================================ */
+        var bandCanvas = document.getElementById('band-canvas');
+        var truthCanvas = document.getElementById('truth-canvas');
+        var bandMode = document.getElementById('band-mode');
+        var bandInfo = document.getElementById('band-info');
+        var btnBandRegen = document.getElementById('btn-band-regen');
+
+        function renderBandView() {
+            if (!sceneData) generateScene();
+            var sd = sceneData;
+
+            var ctx = initPixelCanvas(bandCanvas, GRID);
+            var mode = bandMode.value;
+
+            var descriptions = {
+                rgb:   'RGB Composite: Natural colour view combining Red, Green, and Blue bands.',
+                red:   'Red Band (620-700 nm): Vegetation appears dark (absorbs Red for photosynthesis). Urban surfaces appear bright.',
+                green: 'Green Band (500-565 nm): Vegetation reflects some Green. Water appears very dark.',
+                blue:  'Blue Band (450-515 nm): Atmospheric scattering makes everything hazy. Water penetration is highest.',
+                nir:   'NIR Band (750-900 nm): Vegetation glows bright (strong NIR reflection). Water is completely dark.',
+                ndvi:  'NDVI Overlay: Green = high NDVI (vegetation). Brown = low/negative NDVI (non-vegetation). Blue = negative (water).',
+                ndwi:  'NDWI Overlay: Blue = high NDWI (water). Yellow/Brown = negative NDWI (dry surfaces).'
+            };
+
+            drawPixelGrid(ctx, GRID, function (i) {
+                switch (mode) {
+                    case 'rgb':
+                        return {
+                            r: Math.round(sd.red[i] * 255),
+                            g: Math.round(sd.green[i] * 255),
+                            b: Math.round(sd.blue[i] * 255)
+                        };
+                    case 'red':
+                        var rv = Math.round(sd.red[i] * 255);
+                        return { r: rv, g: rv * 0.2, b: rv * 0.2 };
+                    case 'green':
+                        var gv = Math.round(sd.green[i] * 255);
+                        return { r: gv * 0.2, g: gv, b: gv * 0.2 };
+                    case 'blue':
+                        var bv = Math.round(sd.blue[i] * 255);
+                        return { r: bv * 0.2, g: bv * 0.2, b: bv };
+                    case 'nir':
+                        var nv = Math.round(sd.nir[i] * 255);
+                        return { r: nv, g: nv * 0.6, b: nv * 0.8 };
+                    case 'ndvi':
+                        var v = sd.ndvi[i];
+                        if (v < -0.1) return { r: 30, g: 80, b: 180 };      // water
+                        if (v < 0.2)  return { r: 180, g: 140, b: 80 };     // bare/urban
+                        if (v < 0.4)  return { r: 160, g: 190, b: 80 };     // sparse veg
+                        return { r: 20, g: Math.round(100 + v * 155), b: 40 }; // dense veg
+                    case 'ndwi':
+                        var w = sd.ndwi[i];
+                        if (w > 0.3)  return { r: 20, g: 60, b: 200 };      // water
+                        if (w > 0.0)  return { r: 60, g: 130, b: 200 };     // wet
+                        return { r: 200, g: 170, b: 80 };                    // dry
+                    default:
+                        return { r: 0, g: 0, b: 0 };
+                }
+            });
+
+            bandInfo.textContent = descriptions[mode] || '';
+        }
+
+        function renderTruthMap() {
+            if (!sceneData) generateScene();
+            var sd = sceneData;
+            var ctx = initPixelCanvas(truthCanvas, GRID);
+
+            var classColors = [
+                LAND_COLORS.urban,
+                LAND_COLORS.vegetation,
+                LAND_COLORS.water,
+                LAND_COLORS.bare
+            ];
+
+            drawPixelGrid(ctx, GRID, function (i) {
+                return classColors[sd.labels[i]];
+            });
+        }
+
+        function initDemo1() {
+            generateScene();
+            renderBandView();
+            renderTruthMap();
+        }
+
+        bandMode.addEventListener('change', renderBandView);
+        btnBandRegen.addEventListener('click', function () {
+            generateScene();
+            renderBandView();
+            renderTruthMap();
+            /* Also update Demo 2 if it has been run */
+            var clusterStats = document.getElementById('cluster-stats');
+            if (clusterStats) {
+                clusterStats.textContent = 'Scene regenerated. Click "Run Clustering" to re-classify.';
+            }
+        });
+
+        /* ================================================
+           K-MEANS IMPLEMENTATION
+           ================================================ */
+        function eucDistSq(a, b) {
+            var s = 0;
+            for (var i = 0; i < a.length; i++) s += (a[i] - b[i]) * (a[i] - b[i]);
+            return s;
+        }
+
+        function eucDist(a, b) {
+            return Math.sqrt(eucDistSq(a, b));
+        }
+
+        function kMeans(points, K, maxIter) {
+            maxIter = maxIter || 50;
+            var N = points.length;
+            var dim = points[0].length;
+
+            /* K-Means++ initialisation */
+            var centroids = [points[Math.floor(Math.random() * N)].slice()];
+            for (var c = 1; c < K; c++) {
+                var dists = points.map(function (p) {
+                    return Math.min.apply(null, centroids.map(function (ctr) {
+                        return eucDistSq(p, ctr);
+                    }));
+                });
+                var total = dists.reduce(function (a, b) { return a + b; }, 0);
+                var r = Math.random() * total;
+                var cum = 0;
+                for (var i = 0; i < N; i++) {
+                    cum += dists[i];
+                    if (cum >= r) { centroids.push(points[i].slice()); break; }
+                }
+            }
+
+            var labels = new Array(N);
+            for (var iter = 0; iter < maxIter; iter++) {
+                var changed = false;
+                for (var i = 0; i < N; i++) {
+                    var best = 0, bestD = Infinity;
+                    for (var c = 0; c < K; c++) {
+                        var d = eucDistSq(points[i], centroids[c]);
+                        if (d < bestD) { bestD = d; best = c; }
+                    }
+                    if (labels[i] !== best) changed = true;
+                    labels[i] = best;
+                }
+                if (!changed) break;
+                for (var c = 0; c < K; c++) {
+                    var sum = new Array(dim).fill(0);
+                    var cnt = 0;
+                    for (var i = 0; i < N; i++) {
+                        if (labels[i] === c) {
+                            for (var d2 = 0; d2 < dim; d2++) sum[d2] += points[i][d2];
+                            cnt++;
+                        }
+                    }
+                    if (cnt > 0) {
+                        for (var d2 = 0; d2 < dim; d2++) centroids[c][d2] = sum[d2] / cnt;
+                    }
+                }
+            }
+
+            var sse = 0;
+            for (var i = 0; i < N; i++) {
+                sse += eucDistSq(points[i], centroids[labels[i]]);
+            }
+
+            return { labels: labels, centroids: centroids, sse: sse };
+        }
+
+        /* ================================================
+           SILHOUETTE COMPUTATION (sampled for speed)
+           ================================================ */
+        function computeSilhouette(points, labels, K) {
+            var N = points.length;
+            /* Sample if too large */
+            var maxSample = 500;
+            var indices = [];
+            if (N <= maxSample) {
+                for (var i = 0; i < N; i++) indices.push(i);
+            } else {
+                var used = {};
+                while (indices.length < maxSample) {
+                    var ri = Math.floor(Math.random() * N);
+                    if (!used[ri]) { used[ri] = true; indices.push(ri); }
+                }
+            }
+
+            var silValues = [];
+            for (var si = 0; si < indices.length; si++) {
+                var idx = indices[si];
+                var myCluster = labels[idx];
+
+                var aSum = 0, aCnt = 0;
+                for (var j = 0; j < N; j++) {
+                    if (j !== idx && labels[j] === myCluster) {
+                        aSum += eucDist(points[idx], points[j]);
+                        aCnt++;
+                    }
+                }
+                var a = aCnt > 0 ? aSum / aCnt : 0;
+
+                var b = Infinity;
+                for (var c = 0; c < K; c++) {
+                    if (c === myCluster) continue;
+                    var bSum = 0, bCnt = 0;
+                    for (var j = 0; j < N; j++) {
+                        if (labels[j] === c) {
+                            bSum += eucDist(points[idx], points[j]);
+                            bCnt++;
+                        }
+                    }
+                    if (bCnt > 0) {
+                        var bAvg = bSum / bCnt;
+                        if (bAvg < b) b = bAvg;
+                    }
+                }
+
+                var s = (b - a) / Math.max(a, b);
+                if (isNaN(s)) s = 0;
+                silValues.push(s);
+            }
+
+            var avg = silValues.reduce(function (a, b) { return a + b; }, 0) / silValues.length;
+            return avg;
+        }
+
+        /* ================================================
+           Z-SCORE STANDARDISATION
+           ================================================ */
+        function zScore(matrix) {
+            var N = matrix.length;
+            var dim = matrix[0].length;
+            var means = new Array(dim).fill(0);
+            var stds = new Array(dim).fill(0);
+
+            for (var i = 0; i < N; i++) {
+                for (var d = 0; d < dim; d++) means[d] += matrix[i][d];
+            }
+            for (var d = 0; d < dim; d++) means[d] /= N;
+
+            for (var i = 0; i < N; i++) {
+                for (var d = 0; d < dim; d++) {
+                    stds[d] += (matrix[i][d] - means[d]) * (matrix[i][d] - means[d]);
+                }
+            }
+            for (var d = 0; d < dim; d++) stds[d] = Math.sqrt(stds[d] / N) || 1;
+
+            var result = [];
+            for (var i = 0; i < N; i++) {
+                var row = [];
+                for (var d = 0; d < dim; d++) {
+                    row.push((matrix[i][d] - means[d]) / stds[d]);
+                }
+                result.push(row);
+            }
+            return result;
+        }
+
+        /* ================================================
+           DEMO 2: K-MEANS LAND CLASSIFICATION MAP
+           ================================================ */
+        var clusterRGBCanvas = document.getElementById('cluster-rgb-canvas');
+        var clusterMapCanvas = document.getElementById('cluster-map-canvas');
+        var clusterKSlider = document.getElementById('cluster-k-slider');
+        var clusterKVal = document.getElementById('cluster-k-val');
+        var clusterStats = document.getElementById('cluster-stats');
+        var btnClusterRun = document.getElementById('btn-cluster-run');
+        var btnClusterRegen = document.getElementById('btn-cluster-regen');
+
+        clusterKSlider.addEventListener('input', function () {
+            clusterKVal.textContent = this.value;
+        });
+
+        function renderClusterRGB() {
+            if (!sceneData) generateScene();
+            var sd = sceneData;
+            var ctx = initPixelCanvas(clusterRGBCanvas, GRID);
+            drawPixelGrid(ctx, GRID, function (i) {
+                return {
+                    r: Math.round(sd.red[i] * 255),
+                    g: Math.round(sd.green[i] * 255),
+                    b: Math.round(sd.blue[i] * 255)
+                };
+            });
+        }
+
+        function hexToRgb(hex) {
+            var r = parseInt(hex.slice(1, 3), 16);
+            var g = parseInt(hex.slice(3, 5), 16);
+            var b = parseInt(hex.slice(5, 7), 16);
+            return { r: r, g: g, b: b };
+        }
+
+        function runClustering() {
+            if (!sceneData) generateScene();
+            var sd = sceneData;
+            var K = parseInt(clusterKSlider.value);
+            var N = GRID * GRID;
+
+            /* Build feature matrix: [R, G, B, NIR, NDVI, NDWI] */
+            var features = [];
+            for (var i = 0; i < N; i++) {
+                features.push([
+                    sd.red[i], sd.green[i], sd.blue[i],
+                    sd.nir[i], sd.ndvi[i], sd.ndwi[i]
+                ]);
+            }
+
+            /* Standardise */
+            var scaled = zScore(features);
+
+            /* Run K-Means */
+            var result = kMeans(scaled, K, 60);
+
+            /* Compute silhouette */
+            var sil = computeSilhouette(scaled, result.labels, K);
+
+            /* Render classified map */
+            var ctx = initPixelCanvas(clusterMapCanvas, GRID);
+            var paletteRgb = CLUSTER_PALETTE.map(hexToRgb);
+
+            drawPixelGrid(ctx, GRID, function (i) {
+                return paletteRgb[result.labels[i] % paletteRgb.length];
+            });
+
+            /* Compute class distribution */
+            var counts = new Array(K).fill(0);
+            for (var i = 0; i < N; i++) counts[result.labels[i]]++;
+            var distStr = counts.map(function (c, idx) {
+                var pct = ((c / N) * 100).toFixed(1);
+                return 'C' + idx + ': ' + pct + '%';
+            }).join('  |  ');
+
+            clusterStats.innerHTML =
+                'K = ' + K +
+                '  |  Silhouette = ' + sil.toFixed(3) +
+                '  |  SSE = ' + result.sse.toFixed(1) +
+                '<br>' + distStr;
+        }
+
+        btnClusterRun.addEventListener('click', runClustering);
+        btnClusterRegen.addEventListener('click', function () {
+            generateScene();
+            renderBandView();
+            renderTruthMap();
+            renderClusterRGB();
+            clusterStats.textContent = 'Scene regenerated. Click "Run Clustering" to re-classify.';
+        });
+
+        /* ================================================
+           HERO CANVAS ANIMATION
+           ================================================ */
+        function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            var w = rect.width, h = rect.height;
+
+            /* Floating satellite grid cells */
+            var cells = [];
+            for (var i = 0; i < 80; i++) {
+                cells.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: 4 + Math.random() * 12,
+                    speed: 0.15 + Math.random() * 0.3,
+                    hue: [127, 39, 41, 212][Math.floor(Math.random() * 4)],
+                    opacity: 0.08 + Math.random() * 0.15
+                });
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Grid pattern */
+                ctx.strokeStyle = colors.GRID;
+                ctx.lineWidth = 0.5;
+                var gs = 40;
+                for (var x = 0; x < w; x += gs) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+                }
+                for (var y = 0; y < h; y += gs) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+
+                /* Animated cells */
+                for (var i = 0; i < cells.length; i++) {
+                    var c = cells[i];
+                    c.y -= c.speed;
+                    if (c.y + c.size < 0) { c.y = h + c.size; c.x = Math.random() * w; }
+
+                    ctx.fillStyle = 'rgba(' + c.hue + ',' + Math.round(c.hue * 0.8) + ',' +
+                        Math.round(c.hue * 0.6) + ',' + c.opacity + ')';
+                    ctx.fillRect(c.x, c.y, c.size, c.size);
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        /* ================================================
+           INITIALISATION
+           ================================================ */
+        document.addEventListener('DOMContentLoaded', function () {
+            initHeroCanvas();
+            initDemo1();
+            renderClusterRGB();
+        });
+
+    })();
+    </script>
+
+</body>
+</html>

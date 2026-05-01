@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.8 RAG &amp; Knowledge Retrieval | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Retrieval-Augmented Generation (RAG) for civil engineering: ground LLM outputs in building codes, project specifications, and safety manuals using embedding-based retrieval, vector databases, chunking strategies, and hybrid search.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-database"></i> Chapter 5 &mdash; Sub-chapter 5.8
+            </div>
+            <h1 class="chapter-hero__title">RAG &amp; Knowledge Retrieval</h1>
+            <p class="chapter-hero__subtitle">
+                Large language models are powerful but fundamentally limited: their
+                knowledge is frozen at training time, and they can confidently
+                fabricate facts. <strong>Retrieval-Augmented Generation (RAG)</strong>
+                solves this by connecting an LLM to external knowledge sources
+                &mdash; building codes, project specifications, safety manuals &mdash;
+                so every answer is grounded in real, verifiable documents. For civil
+                engineers, RAG transforms an LLM from an unreliable oracle into a
+                precise, citation-backed assistant.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY LLMs NEED EXTERNAL KNOWLEDGE
+             ========================================== -->
+        <section class="ch-section" id="why-external-knowledge">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why LLMs Need External Knowledge</h2>
+                        <p>
+                            An LLM like GPT-4 or Llama 3 is trained on a snapshot of
+                            human text up to a certain date. After that date, the model
+                            knows nothing. If IS 456 is revised, if a new Eurocode
+                            amendment is published, or if your project specification is
+                            updated &mdash; the model has no awareness of these changes.
+                            Worse, when asked about information it does not have, the
+                            model does not say "I don't know." It <em>hallucinates</em>
+                            &mdash; generating plausible-sounding but entirely fabricated
+                            clause numbers, load factors, and design provisions.
+                        </p>
+                        <p>
+                            For civil engineering, this is not merely an inconvenience.
+                            A hallucinated concrete cover requirement or an invented
+                            seismic zone factor can propagate through a design calculation,
+                            leading to an unsafe structure. The consequences are structural
+                            failures, regulatory non-compliance, and professional liability.
+                            RAG addresses this fundamental limitation by anchoring every
+                            LLM response in retrieved, verifiable source documents.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with the Transformer
+                        architecture (Sub-chapter 5.3), tokenization and embeddings
+                        (Sub-chapter 5.6), and the basics of fine-tuning and prompt
+                        engineering (Sub-chapter 5.7). We will reference embedding
+                        vectors, cosine similarity, and attention mechanisms throughout.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE HALLUCINATION PROBLEM
+             ========================================== -->
+        <section class="ch-section" id="hallucination-problem">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-ghost"></i>
+                    The Hallucination Problem
+                </h2>
+
+                <p>
+                    Hallucination occurs because LLMs are trained to predict the
+                    <em>most likely next token</em>, not the <em>most truthful</em>
+                    next token. The model has no internal fact-checker, no connection
+                    to live databases, and no concept of "I am uncertain." When the
+                    model's parametric knowledge is insufficient, it fills the gap with
+                    statistically plausible text &mdash; a dangerous failure mode in
+                    engineering contexts.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bug"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Types of Hallucination in Engineering</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-active);">
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Type</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Example</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Factual fabrication</td>
+                                    <td style="padding:8px 12px;">Invents "IS 456 Clause 34.2.4.1" (does not exist)</td>
+                                    <td style="padding:8px 12px;">Design based on non-existent code provisions</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Numerical drift</td>
+                                    <td style="padding:8px 12px;">States partial safety factor as 1.6 instead of 1.5</td>
+                                    <td style="padding:8px 12px;">Under-designed or over-designed members</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Context confusion</td>
+                                    <td style="padding:8px 12px;">Mixes ACI 318 provisions with Eurocode 2 clauses</td>
+                                    <td style="padding:8px 12px;">Inconsistent design methodology</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Outdated information</td>
+                                    <td style="padding:8px 12px;">Cites a superseded edition of a standard</td>
+                                    <td style="padding:8px 12px;">Regulatory non-compliance</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 12px; font-weight:600;">Confident uncertainty</td>
+                                    <td style="padding:8px 12px;">Provides a precise value for a parameter the model was never trained on</td>
+                                    <td style="padding:8px 12px;">False sense of reliability</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    RAG does not eliminate hallucination entirely, but it dramatically
+                    reduces it by providing the model with <strong>ground truth
+                    context</strong> at inference time. When the LLM generates an
+                    answer, it draws from retrieved document chunks rather than relying
+                    solely on its parametric memory. And because the source documents
+                    are attached to the response, every claim can be verified.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: CE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Civil Engineering Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>An LLM without RAG is like an experienced engineer
+                            answering questions from memory alone.</strong> They have
+                            read thousands of codes and specifications over their career,
+                            but they are working without any reference documents on their
+                            desk. They will give you an answer &mdash; and it will
+                            <em>sound</em> authoritative &mdash; but specific clause
+                            numbers, table values, and amendment dates may be wrong.
+                            No competent engineer would sign off on a design without
+                            checking the actual code.
+                        </p>
+                        <p>
+                            <strong>RAG is like giving that engineer a well-organised
+                            technical library with a fast search system.</strong> When
+                            asked "What is the minimum lap length for 16mm bars in M25
+                            concrete?", the engineer does not guess from memory. They
+                            look up IS 456, find the relevant clause, read the table,
+                            and give you the exact value with the clause reference. RAG
+                            does the same thing for an LLM: it retrieves the relevant
+                            document sections before generating the answer.
+                        </p>
+                        <p>
+                            The quality of the library matters. If the codes are outdated,
+                            poorly indexed, or missing key sections, even the best
+                            engineer will give wrong answers. Similarly, RAG quality
+                            depends on the quality of your document corpus, how you
+                            chunk it, and how accurately the retrieval system finds the
+                            right sections.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: RAG ARCHITECTURE
+             ========================================== -->
+        <section class="ch-section" id="rag-architecture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sitemap"></i>
+                    RAG Architecture Overview
+                </h2>
+
+                <p>
+                    Retrieval-Augmented Generation was introduced by Lewis et al. (2020)
+                    at Facebook AI Research. The core idea is deceptively simple: before
+                    generating a response, retrieve relevant documents and include them
+                    in the prompt. The architecture has two main components:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Retriever</h3>
+                        <p>
+                            The retriever takes the user's query, converts it into an
+                            embedding vector (a dense numerical representation), and
+                            searches a vector database for the most similar document
+                            chunks. It returns the top-<em>k</em> most relevant passages.
+                            The retriever does not understand the content &mdash; it
+                            operates purely on semantic similarity in embedding space.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-pen-fancy"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Generator</h3>
+                        <p>
+                            The generator is the LLM itself. It receives the original
+                            query <strong>plus</strong> the retrieved document chunks
+                            as context, and produces a response that synthesises
+                            information from the retrieved passages. The key difference
+                            from standard prompting is that the model now has access to
+                            specific, relevant, up-to-date information &mdash; not just
+                            its pre-trained knowledge.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The full pipeline flows as follows:
+                    <strong>User Query</strong> &rarr;
+                    <strong>Embed Query</strong> &rarr;
+                    <strong>Vector Search</strong> &rarr;
+                    <strong>Retrieve Top-k Chunks</strong> &rarr;
+                    <strong>Augment Prompt</strong> &rarr;
+                    <strong>LLM Generation</strong> &rarr;
+                    <strong>Response with Citations</strong>.
+                    Each step introduces design decisions that affect the quality of
+                    the final output.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: EMBEDDING-BASED RETRIEVAL
+             ========================================== -->
+        <section class="ch-section" id="embedding-retrieval">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-vector-square"></i>
+                    Embedding-Based Retrieval
+                </h2>
+
+                <p>
+                    Embeddings are the backbone of modern RAG systems. An embedding
+                    model (such as OpenAI's <code>text-embedding-3-small</code>,
+                    Cohere's <code>embed-v3</code>, or open-source models like
+                    <code>bge-large</code>) converts text into a high-dimensional
+                    vector &mdash; typically 768 to 3072 dimensions. Texts with similar
+                    meaning produce vectors that are close together in this space,
+                    measured by cosine similarity.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How Semantic Search Works</h3>
+                        <p>
+                            Consider two document chunks from IS 456:
+                        </p>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Chunk A:</strong> "The nominal cover to meet
+                            durability requirements shall not be less than the values
+                            given in Table 16."</li>
+                            <li><strong>Chunk B:</strong> "The design of beam sections
+                            for flexure shall be based on the assumptions given in
+                            26.3.1."</li>
+                        </ul>
+                        <p>
+                            If a user asks "What is the minimum concrete cover for
+                            durability?", the embedding of this query will be closer to
+                            Chunk A's embedding than Chunk B's, even though both chunks
+                            are from the same standard. The embedding model has learned
+                            that "minimum cover" and "nominal cover" and "durability"
+                            are semantically related concepts.
+                        </p>
+                        <p>
+                            Cosine similarity between the query and Chunk A might be
+                            0.87, while similarity with Chunk B might be 0.43. The
+                            retriever returns Chunk A as the more relevant result.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The quality of the embedding model directly determines retrieval
+                    quality. A model trained on general web text may not understand
+                    that "reinforcement ratio" and "steel percentage" refer to the
+                    same concept. Domain-adapted embedding models &mdash; fine-tuned
+                    on engineering text &mdash; can significantly improve retrieval
+                    accuracy for civil engineering applications.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: VECTOR DATABASES
+             ========================================== -->
+        <section class="ch-section" id="vector-databases">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-database"></i>
+                    Vector Databases
+                </h2>
+
+                <p>
+                    Once documents are embedded, the vectors must be stored in a
+                    database optimised for similarity search. Traditional SQL databases
+                    are designed for exact-match queries ("find all records where
+                    <code>clause_id = '26.5.1'</code>"). Vector databases are designed
+                    for approximate nearest-neighbour (ANN) queries ("find the 10
+                    vectors most similar to this query vector").
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Popular Vector Databases Compared</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-active);">
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Database</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Type</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Best For</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Scale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Pinecone</td>
+                                    <td style="padding:8px 12px;">Managed cloud</td>
+                                    <td style="padding:8px 12px;">Production deployments, zero-ops</td>
+                                    <td style="padding:8px 12px;">Billions of vectors</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">ChromaDB</td>
+                                    <td style="padding:8px 12px;">Open-source, embedded</td>
+                                    <td style="padding:8px 12px;">Prototyping, small projects</td>
+                                    <td style="padding:8px 12px;">Millions of vectors</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">FAISS</td>
+                                    <td style="padding:8px 12px;">Library (Meta)</td>
+                                    <td style="padding:8px 12px;">Research, custom pipelines</td>
+                                    <td style="padding:8px 12px;">Billions (GPU-accelerated)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Weaviate</td>
+                                    <td style="padding:8px 12px;">Open-source, self-hosted</td>
+                                    <td style="padding:8px 12px;">Hybrid search, multi-modal</td>
+                                    <td style="padding:8px 12px;">Hundreds of millions</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 12px; font-weight:600;">Qdrant</td>
+                                    <td style="padding:8px 12px;">Open-source, Rust-based</td>
+                                    <td style="padding:8px 12px;">High performance, filtering</td>
+                                    <td style="padding:8px 12px;">Hundreds of millions</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    For a civil engineering firm starting with RAG, <strong>ChromaDB
+                    </strong> or <strong>FAISS</strong> are excellent choices. They run
+                    locally, require no cloud infrastructure, and can handle a corpus
+                    of design codes and project documents (typically tens of thousands
+                    of chunks) with sub-second query times. As the corpus grows or
+                    multiple teams need concurrent access, migrating to Pinecone or
+                    Qdrant provides the scalability and reliability needed for
+                    production systems.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CHUNKING STRATEGIES
+             ========================================== -->
+        <section class="ch-section" id="chunking-strategies">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scissors"></i>
+                    Chunking Strategies
+                </h2>
+
+                <p>
+                    Before documents can be embedded and stored, they must be split
+                    into chunks &mdash; smaller, self-contained passages that the
+                    retriever can match against queries. Chunking is one of the most
+                    consequential design decisions in a RAG system. Too large, and the
+                    chunk contains irrelevant noise that dilutes the answer. Too small,
+                    and critical context is lost across chunk boundaries.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Chunking Methods</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Fixed-size chunking:</strong> Split every
+                                <em>N</em> tokens (e.g., 512 tokens) with an overlap
+                                window (e.g., 50 tokens). Simple and predictable, but
+                                splits can occur mid-sentence or mid-clause, breaking
+                                semantic coherence.
+                            </li>
+                            <li>
+                                <strong>Sentence-based chunking:</strong> Use sentence
+                                boundary detection to create chunks of complete sentences.
+                                Preserves grammatical units but may produce very uneven
+                                chunk sizes.
+                            </li>
+                            <li>
+                                <strong>Paragraph / section-based chunking:</strong>
+                                Split on structural markers &mdash; headings, clause
+                                numbers, paragraph breaks. Ideal for structured documents
+                                like design codes where each clause is a self-contained
+                                unit of meaning.
+                            </li>
+                            <li>
+                                <strong>Semantic chunking:</strong> Use an embedding model
+                                to detect topic boundaries. When the cosine similarity
+                                between consecutive sentences drops below a threshold,
+                                insert a chunk break. Produces semantically coherent
+                                chunks but is computationally expensive.
+                            </li>
+                            <li>
+                                <strong>Recursive chunking:</strong> Attempt to split on
+                                the largest structural unit first (section), then fall
+                                back to paragraphs, then sentences, then fixed-size. Used
+                                by LangChain's <code>RecursiveCharacterTextSplitter</code>.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Chunking Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of chunking like dividing a set of construction
+                            drawings into reference sheets. If you cut each drawing
+                            into arbitrary 10cm x 10cm squares (fixed-size chunking),
+                            you might get a detail that shows half a beam-column joint
+                            &mdash; useless for understanding the connection. If you
+                            divide by individual detail callouts (semantic chunking),
+                            each piece is a complete, meaningful unit that an engineer
+                            can interpret independently.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    For civil engineering documents like IS codes, Eurocodes, or ACI
+                    standards, <strong>section-based chunking aligned with clause
+                    structure</strong> typically works best. Each clause (e.g., IS 456
+                    Clause 26.5.1 "Development length of bars") becomes one chunk.
+                    Tables should be kept intact within their parent clause chunk.
+                    Overlap of 1&ndash;2 sentences between adjacent chunks preserves
+                    cross-reference context.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: THE RETRIEVAL PIPELINE
+             ========================================== -->
+        <section class="ch-section" id="retrieval-pipeline">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    The Retrieval Pipeline
+                </h2>
+
+                <p>
+                    A production RAG system involves multiple stages beyond simple
+                    vector search. Each stage adds precision and reduces the chance
+                    of irrelevant or misleading context reaching the LLM.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pipeline Stages</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.4;">
+                            <li>
+                                <strong>Query processing:</strong> Clean, expand, or
+                                rephrase the user's query. Acronym expansion
+                                ("RCC" &rarr; "Reinforced Cement Concrete") and query
+                                decomposition ("What are the cover and spacing requirements
+                                for beam reinforcement?" &rarr; two sub-queries) improve
+                                retrieval recall.
+                            </li>
+                            <li>
+                                <strong>Embedding:</strong> Convert the processed query
+                                into a dense vector using the same embedding model used
+                                to embed the document corpus.
+                            </li>
+                            <li>
+                                <strong>Vector search:</strong> Query the vector database
+                                for the top-<em>k</em> (typically 5&ndash;20) most similar
+                                chunks by cosine similarity.
+                            </li>
+                            <li>
+                                <strong>Re-ranking:</strong> Use a cross-encoder model
+                                (e.g., Cohere Rerank, <code>bge-reranker</code>) to
+                                re-score the retrieved chunks against the original query.
+                                Cross-encoders process the query and chunk together, giving
+                                more accurate relevance scores than embedding similarity
+                                alone. The top-<em>k</em> is narrowed to the final
+                                3&ndash;5 chunks.
+                            </li>
+                            <li>
+                                <strong>Context assembly:</strong> Format the retrieved
+                                chunks into a structured prompt section with source
+                                metadata (document name, clause number, page). Apply
+                                any token-budget constraints.
+                            </li>
+                            <li>
+                                <strong>LLM generation:</strong> Pass the augmented
+                                prompt (system instructions + retrieved context + user
+                                query) to the LLM. Instruct the model to answer based
+                                solely on the provided context and cite sources.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    The <strong>re-ranking step</strong> is often the single most
+                    impactful improvement to a basic RAG pipeline. Bi-encoder
+                    embeddings (used in Step 2) are fast but approximate. Cross-encoder
+                    re-rankers are slower but significantly more accurate, because they
+                    attend to the interaction between the query and the document
+                    simultaneously rather than encoding them independently.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: HYBRID SEARCH
+             ========================================== -->
+        <section class="ch-section" id="hybrid-search">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-merge"></i>
+                    Hybrid Search: Dense + Sparse
+                </h2>
+
+                <p>
+                    Dense retrieval (embedding-based) excels at semantic matching
+                    &mdash; understanding that "deflection limit" and "serviceability
+                    check" are related concepts. But it struggles with exact keyword
+                    matches that matter in engineering: specific clause numbers
+                    ("26.5.1.3"), product names ("HYSD bars"), or code identifiers
+                    ("EN 1992-1-1"). Sparse retrieval methods like BM25 (the algorithm
+                    behind traditional search engines) excel at exact keyword matching
+                    but miss semantic connections.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Hybrid Search Strategy</h3>
+                        <p>
+                            Hybrid search combines both approaches:
+                        </p>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Dense retrieval:</strong> Returns chunks that are
+                                semantically similar to the query meaning.
+                            </li>
+                            <li>
+                                <strong>Sparse retrieval (BM25):</strong> Returns chunks
+                                that contain exact keyword matches, weighted by term
+                                frequency and inverse document frequency.
+                            </li>
+                            <li>
+                                <strong>Reciprocal Rank Fusion (RRF):</strong> Merges the
+                                two ranked lists using the formula
+                                <code>score = 1 / (k + rank)</code>, where <em>k</em>
+                                is a constant (typically 60). Chunks that appear in both
+                                lists are boosted; unique results from either list are
+                                preserved.
+                            </li>
+                        </ul>
+                        <p>
+                            For civil engineering queries, hybrid search typically
+                            improves recall by 15&ndash;25% compared to dense-only
+                            retrieval, especially for queries containing specific code
+                            references, material grades, or numerical parameters.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: RAG vs FINE-TUNING
+             ========================================== -->
+        <section class="ch-section" id="rag-vs-finetuning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    RAG vs Fine-Tuning
+                </h2>
+
+                <p>
+                    RAG and fine-tuning are complementary, not competing, strategies.
+                    Understanding when to use each &mdash; or both &mdash; is critical
+                    for building effective AI systems in civil engineering.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison Matrix</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-active);">
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Dimension</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">RAG</th>
+                                    <th style="text-align:left; padding:8px 12px; color:var(--accent-primary);">Fine-Tuning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Knowledge update</td>
+                                    <td style="padding:8px 12px;">Update documents anytime &mdash; no retraining</td>
+                                    <td style="padding:8px 12px;">Requires retraining to incorporate new data</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Traceability</td>
+                                    <td style="padding:8px 12px;">Cites source documents and clauses</td>
+                                    <td style="padding:8px 12px;">No source attribution &mdash; knowledge is implicit</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Hallucination</td>
+                                    <td style="padding:8px 12px;">Reduced (grounded in retrieved text)</td>
+                                    <td style="padding:8px 12px;">Reduced but not eliminated</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Latency</td>
+                                    <td style="padding:8px 12px;">Higher (retrieval + generation)</td>
+                                    <td style="padding:8px 12px;">Lower (single forward pass)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Data required</td>
+                                    <td style="padding:8px 12px;">Raw documents (no labelling needed)</td>
+                                    <td style="padding:8px 12px;">Labelled (instruction, response) pairs</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px 12px; font-weight:600;">Cost</td>
+                                    <td style="padding:8px 12px;">Embedding cost + vector DB hosting</td>
+                                    <td style="padding:8px 12px;">GPU compute for training</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px 12px; font-weight:600;">Best for</td>
+                                    <td style="padding:8px 12px;">Factual Q&amp;A, code lookup, document search</td>
+                                    <td style="padding:8px 12px;">Style adaptation, format consistency, specialised reasoning</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    In practice, the most powerful systems combine both:
+                    <strong>fine-tune</strong> the LLM to understand civil engineering
+                    terminology and output formats, then use <strong>RAG</strong> to
+                    provide it with the specific clauses and project data it needs for
+                    each query. This is sometimes called <em>RAG + FT</em> or
+                    <em>grounded fine-tuning</em>.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: EVALUATION METRICS
+             ========================================== -->
+        <section class="ch-section" id="evaluation-metrics">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    Evaluation Metrics
+                </h2>
+
+                <p>
+                    Measuring RAG quality requires evaluating both the retrieval stage
+                    and the generation stage independently. A system that retrieves
+                    the right documents but generates a wrong answer has a generation
+                    problem. A system that generates well from the context but
+                    retrieves irrelevant chunks has a retrieval problem. Frameworks
+                    like <strong>RAGAS</strong> (Retrieval-Augmented Generation
+                    Assessment) provide standardised metrics.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key RAG Metrics</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2.4;">
+                            <li>
+                                <strong>Faithfulness:</strong> Does the generated answer
+                                contain only claims supported by the retrieved context?
+                                A faithfulness score of 1.0 means every statement in the
+                                answer can be traced to a retrieved chunk. This is the
+                                most critical metric for engineering applications.
+                            </li>
+                            <li>
+                                <strong>Context relevance:</strong> Are the retrieved
+                                chunks actually relevant to the query? Low context
+                                relevance means the retriever is returning noise, which
+                                wastes the LLM's context window and can introduce
+                                misleading information.
+                            </li>
+                            <li>
+                                <strong>Answer relevance:</strong> Does the generated
+                                answer actually address the user's question? A model
+                                might faithfully summarise the retrieved context but fail
+                                to answer the specific question asked.
+                            </li>
+                            <li>
+                                <strong>Answer correctness:</strong> Is the generated
+                                answer factually correct when compared against a ground
+                                truth answer? This requires human-annotated test sets.
+                            </li>
+                            <li>
+                                <strong>Context recall:</strong> Did the retriever find
+                                all the relevant documents in the corpus? Missing a
+                                critical clause means the LLM cannot possibly include
+                                it in the answer.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building"></i>
+                    Civil Engineering Applications
+                </h2>
+
+                <p>
+                    RAG is arguably the most immediately useful AI technology for
+                    civil engineering practice. Unlike fine-tuning, which requires
+                    labelled datasets and training infrastructure, RAG can be deployed
+                    with existing documents and off-the-shelf components. Here are
+                    the highest-impact applications:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Querying Building Codes &amp; Standards</h3>
+                        <p>
+                            Load IS 456, IS 1893, IS 875, Eurocode 2, ACI 318, and other
+                            relevant codes into a vector database. Engineers can then
+                            ask natural language questions: "What is the maximum
+                            water-cement ratio for severe exposure per IS 456?" or
+                            "Compare the punching shear provisions of EC2 and ACI 318."
+                            The system retrieves the exact clauses and generates a
+                            precise, cited answer.
+                        </p>
+                        <p>
+                            This eliminates the tedious process of searching through
+                            hundreds of pages of dense regulatory text. A query that
+                            might take 15 minutes of manual search takes 3 seconds
+                            with RAG.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Construction Specification Retrieval</h3>
+                        <p>
+                            Project specifications can run to thousands of pages across
+                            multiple volumes. RAG allows project managers and site
+                            engineers to query specs in natural language: "What is the
+                            required compressive strength at 7 days for grade M40
+                            concrete in this project?" or "What are the curing
+                            requirements for the foundation works?"
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Project Document Q&amp;A</h3>
+                        <p>
+                            Index all project documents &mdash; drawings registers,
+                            meeting minutes, RFIs, NCR reports, daily logs &mdash; into
+                            a single RAG system. Ask questions like "When was the
+                            foundation pour for Block C approved?" or "List all NCRs
+                            related to waterproofing in the last 3 months." The system
+                            retrieves the relevant documents and synthesises the answer
+                            with references to specific document IDs and dates.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Safety Manual Lookup</h3>
+                        <p>
+                            Construction safety manuals, method statements, and risk
+                            assessment documents are critical but often poorly accessed
+                            on site. A RAG-powered chatbot allows workers and safety
+                            officers to quickly find relevant safety procedures: "What
+                            PPE is required for welding at height?" or "What is the
+                            rescue procedure for a confined space entry?" Immediate
+                            access to safety information can prevent accidents and
+                            ensure compliance.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: DEMO 1 — RAG PIPELINE VISUALIZER
+             ========================================== -->
+        <section class="ch-section" id="demo-rag-pipeline">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Demo 1: RAG Pipeline Visualizer
+                </h2>
+
+                <p>
+                    Watch a query flow through the complete RAG pipeline step by step.
+                    Each stage is animated to show how the query is embedded, compared
+                    against document chunks, and how the top-k results are assembled
+                    into context for the LLM.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Interactive RAG Pipeline</span>
+                    </div>
+                    <div class="demo-panel__body">
+                        <canvas id="rag-canvas" style="width:100%; height:520px; border-radius:8px; display:block;"></canvas>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; align-items:center;">
+                            <button id="rag-play-btn" style="padding:8px 20px; border-radius:6px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); cursor:pointer; font-family:Inter,sans-serif; font-weight:600; font-size:0.85rem;">
+                                <i class="fa-solid fa-play"></i> Start Pipeline
+                            </button>
+                            <button id="rag-reset-btn" style="padding:8px 20px; border-radius:6px; border:1px solid var(--border-subtle); background:var(--bg-tertiary); color:var(--text-secondary); cursor:pointer; font-family:Inter,sans-serif; font-weight:500; font-size:0.85rem;">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </button>
+                            <span id="rag-info" style="font-size:0.82rem; color:var(--text-secondary); margin-left:8px;">
+                                Press "Start Pipeline" to animate the RAG retrieval process.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: DEMO 2 — CHUNKING COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="demo-chunking">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-table-columns"></i>
+                    Demo 2: Chunking Strategy Comparison
+                </h2>
+
+                <p>
+                    See how the same document looks when chunked with different
+                    strategies. Each strategy produces different chunk boundaries,
+                    affecting retrieval quality. Select a strategy and observe which
+                    chunks are retrieved for a sample query.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-scissors"></i>
+                        <span>Chunking Strategies Visualizer</span>
+                    </div>
+                    <div class="demo-panel__body">
+                        <canvas id="chunk-canvas" style="width:100%; height:480px; border-radius:8px; display:block;"></canvas>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; align-items:center;">
+                            <select id="chunk-strategy" style="padding:8px 14px; border-radius:6px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); cursor:pointer; font-family:Inter,sans-serif; font-size:0.85rem;">
+                                <option value="fixed">Fixed-size (512 tokens)</option>
+                                <option value="sentence">Sentence-based</option>
+                                <option value="paragraph">Paragraph / Section-based</option>
+                            </select>
+                            <button id="chunk-search-btn" style="padding:8px 20px; border-radius:6px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); cursor:pointer; font-family:Inter,sans-serif; font-weight:600; font-size:0.85rem;">
+                                <i class="fa-solid fa-magnifying-glass"></i> Search Query
+                            </button>
+                            <span id="chunk-info" style="font-size:0.82rem; color:var(--text-secondary); margin-left:8px;">
+                                Select a chunking strategy, then click "Search Query" to see retrieval results.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What is the primary purpose of the retrieval step in a RAG pipeline?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>To fine-tune the LLM on domain-specific data before each query</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz1" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>To find and provide relevant document chunks as context so the LLM can generate grounded, factual answers</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>To replace the LLM entirely with a keyword-based search engine</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>To compress the LLM's parameters for faster inference</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> The retrieval step searches
+                            a vector database for document chunks semantically similar
+                            to the user's query. These chunks are injected into the
+                            LLM's prompt as context, allowing the model to generate
+                            answers grounded in actual source material rather than
+                            relying solely on its parametric knowledge. This is the
+                            core mechanism that reduces hallucination.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            Why is hybrid search (dense + sparse) particularly
+                            valuable for civil engineering RAG systems?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>It eliminates the need for a vector database entirely</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Sparse retrieval alone is always superior to dense retrieval</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz2" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Engineering queries often contain specific clause numbers, material codes, and exact terms that benefit from keyword matching, while semantic understanding captures conceptual relationships</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Hybrid search is faster than either dense or sparse search alone</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Civil engineering queries
+                            frequently reference specific identifiers like clause
+                            numbers (IS 456 Cl. 26.5.1), material grades (Fe500,
+                            M40), or code designations (EN 1992-1-1). Sparse retrieval
+                            (BM25) excels at finding exact keyword matches for these
+                            identifiers, while dense retrieval understands that
+                            "concrete cover" and "nominal cover" refer to the same
+                            concept. Combining both yields significantly better
+                            retrieval performance.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            Which chunking strategy is generally most effective for
+                            structured documents like IS codes or Eurocodes?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Fixed-size 128-token chunks with no overlap</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Single-sentence chunks for maximum granularity</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz3" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Section/clause-based chunking that preserves each clause as a self-contained unit, keeping tables intact within their parent clause</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Embedding the entire document as a single chunk</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Design codes are structured
+                            around clauses, each of which is a self-contained unit of
+                            specification. Chunking along clause boundaries preserves
+                            this structure, keeping related requirements, tables, and
+                            notes together. Fixed-size chunking risks splitting a
+                            clause mid-sentence, and single-sentence chunking loses
+                            the context needed to interpret a provision correctly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What does the "faithfulness" metric measure in RAG evaluation?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>How fast the retrieval system returns results</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>How many documents are in the vector database</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>How often users click on the generated answer</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz4" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Whether every claim in the generated answer is supported by the retrieved context, ensuring the model does not fabricate information beyond what the sources state</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: D.</strong> Faithfulness measures the
+                            degree to which the generated answer is grounded in the
+                            retrieved context. A faithfulness score of 1.0 means every
+                            factual claim in the answer can be attributed to a specific
+                            passage in the retrieved chunks. This is the single most
+                            important metric for engineering RAG systems, where
+                            fabricated values can have safety implications.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Hallucination is the core problem:</strong> LLMs confidently fabricate code clauses, load factors, and design provisions when their parametric knowledge is insufficient</li>
+                            <li><strong>RAG grounds LLMs in real documents:</strong> By retrieving relevant passages at query time and injecting them into the prompt, RAG ensures answers are traceable to source material</li>
+                            <li><strong>Embeddings power semantic search:</strong> Text is converted into high-dimensional vectors; similar meanings produce similar vectors, enabling retrieval by meaning rather than exact keywords</li>
+                            <li><strong>Vector databases (Pinecone, Chroma, FAISS):</strong> Store and index embedding vectors for fast approximate nearest-neighbour search</li>
+                            <li><strong>Chunking strategy matters:</strong> For design codes, section/clause-based chunking preserves the self-contained structure of each provision. Tables should stay with their parent clause</li>
+                            <li><strong>The retrieval pipeline:</strong> Query &rarr; Embed &rarr; Vector Search &rarr; Re-rank &rarr; Context Assembly &rarr; LLM Generation &rarr; Cited Response</li>
+                            <li><strong>Re-ranking with cross-encoders:</strong> Significantly improves precision by jointly scoring query-document pairs rather than comparing independent embeddings</li>
+                            <li><strong>Hybrid search (dense + sparse):</strong> Combines semantic understanding with exact keyword matching &mdash; essential for engineering queries with specific code references</li>
+                            <li><strong>RAG vs fine-tuning:</strong> RAG provides traceability and easy updates; fine-tuning provides style consistency and lower latency. The best systems use both</li>
+                            <li><strong>Evaluate with RAGAS metrics:</strong> Faithfulness (grounding), context relevance, answer relevance, and answer correctness</li>
+                            <li><strong>CE applications:</strong> Code lookup, specification retrieval, project document Q&amp;A, and safety manual access are the highest-impact use cases</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In the next sub-chapter, we will explore <strong>LLM Limitations
+                    &amp; Hallucinations</strong> in greater depth &mdash; understanding
+                    the fundamental failure modes of language models, why they occur,
+                    and the engineering strategies to detect, mitigate, and work around
+                    them in safety-critical civil engineering workflows.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub7.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">5.7 Fine-Tuning &amp; Prompt Engineering</div>
+        </a>
+        <a href="index.html" class="chapter-nav-footer__link chapter-nav-footer__link--index">
+            <i class="fa-solid fa-list"></i>
+            <span>All Sub-chapters</span>
+        </a>
+        <a href="sub9.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">5.9 LLM Limitations &amp; Hallucinations</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── Shared helpers (mirrors sub-common.js) ── */
+        var $ = function (s) { return document.querySelector(s); };
+        var PI = Math.PI, TAU = PI * 2;
+
+        function getColors() {
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:   dark ? '#2dd4bf' : '#059669',
+                CYAN:   dark ? '#22d3ee' : '#0284c7',
+                AMBER:  dark ? '#fbbf24' : '#d97706',
+                RED:    dark ? '#ef4444' : '#dc2626',
+                GREEN:  dark ? '#22c55e' : '#16a34a',
+                PURPLE: dark ? '#a78bfa' : '#7c3aed',
+                BG:     dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT:   dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:    dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:   dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE:   dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                STROKE: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE:  dark ? '#fff' : '#1a1a2e',
+                MUTED:  dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        }
+
+        function initCanvas(canvas) {
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width  = rect.width  * dpr;
+            canvas.height = rect.height * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx: ctx, w: rect.width, h: rect.height };
+        }
+
+        /* ==============================================
+           HERO CANVAS — Floating document nodes
+           ============================================== */
+        (function heroAnim() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var nodes = [];
+            var count = Math.min(60, Math.floor(w * h / 6000));
+            for (var i = 0; i < count; i++) {
+                nodes.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    r: 2 + Math.random() * 3,
+                    type: Math.floor(Math.random() * 3)
+                });
+            }
+
+            function draw() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                ctx.clearRect(0, 0, w, h);
+
+                var colors = [C.TEAL, C.CYAN, C.AMBER];
+
+                /* Draw connections */
+                for (var i = 0; i < nodes.length; i++) {
+                    for (var j = i + 1; j < nodes.length; j++) {
+                        var dx = nodes[i].x - nodes[j].x;
+                        var dy = nodes[i].y - nodes[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.strokeStyle = C.STROKE;
+                            ctx.globalAlpha = 1 - dist / 120;
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                /* Draw nodes */
+                for (var k = 0; k < nodes.length; k++) {
+                    var n = nodes[k];
+                    ctx.fillStyle = colors[n.type];
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.r, 0, TAU);
+                    ctx.fill();
+
+                    n.x += n.vx;
+                    n.y += n.vy;
+                    if (n.x < 0 || n.x > w) n.vx *= -1;
+                    if (n.y < 0 || n.y > h) n.vy *= -1;
+                }
+                ctx.globalAlpha = 1;
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function () {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+            });
+        })();
+
+
+        /* ==============================================
+           DEMO 1: RAG PIPELINE VISUALIZER
+           ============================================== */
+        (function ragPipeline() {
+            var canvas = document.getElementById('rag-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var playBtn = document.getElementById('rag-play-btn');
+            var resetBtn = document.getElementById('rag-reset-btn');
+            var infoEl = document.getElementById('rag-info');
+
+            var animPhase = -1;       /* -1=idle, 0..5=pipeline stages */
+            var animProgress = 0;     /* 0..1 within current phase */
+            var animTimer = null;
+            var isPlaying = false;
+
+            var query = 'What is the minimum concrete cover for beams per IS 456?';
+
+            /* Simulated document chunks with relevance scores */
+            var docChunks = [
+                { id: 'IS456-26.4', text: 'Cl 26.4 — Nominal cover to meet durability...', score: 0.92, relevant: true },
+                { id: 'IS456-26.5', text: 'Cl 26.5 — Requirements of reinforcement...', score: 0.71, relevant: false },
+                { id: 'IS456-26.3', text: 'Cl 26.3 — Spacing of reinforcement...', score: 0.63, relevant: false },
+                { id: 'IS456-Table16', text: 'Table 16 — Nominal cover (mm)...', score: 0.95, relevant: true },
+                { id: 'IS456-8.2', text: 'Cl 8.2 — Exposure conditions...', score: 0.84, relevant: true },
+                { id: 'ACI318-20.6', text: 'ACI 318 Sec 20.6 — Cover requirements...', score: 0.55, relevant: false },
+                { id: 'IS456-26.1', text: 'Cl 26.1 — Development length...', score: 0.42, relevant: false },
+                { id: 'IS456-31.1', text: 'Cl 31.1 — Beams — General...', score: 0.48, relevant: false }
+            ];
+
+            var stageLabels = [
+                'User Query',
+                'Embed Query',
+                'Vector Search',
+                'Top-k Retrieval',
+                'Context + Prompt',
+                'LLM Generation'
+            ];
+
+            var stageIcons = [
+                '\uf075',  /* fa-comment */
+                '\uf1b2',  /* fa-cube */
+                '\uf002',  /* fa-search */
+                '\uf15c',  /* fa-file-lines */
+                '\uf5fd',  /* fa-layer-group */
+                '\uf544'   /* fa-robot */
+            ];
+
+            function drawRoundRect(x, y, rw, rh, radius) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + rw - radius, y);
+                ctx.quadraticCurveTo(x + rw, y, x + rw, y + radius);
+                ctx.lineTo(x + rw, y + rh - radius);
+                ctx.quadraticCurveTo(x + rw, y + rh, x + rw - radius, y + rh);
+                ctx.lineTo(x + radius, y + rh);
+                ctx.quadraticCurveTo(x, y + rh, x, y + rh - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+            }
+
+            function wrapText(text, maxW, font) {
+                ctx.font = font;
+                var words = text.split(' ');
+                var lines = [];
+                var line = '';
+                for (var i = 0; i < words.length; i++) {
+                    var test = line + (line ? ' ' : '') + words[i];
+                    if (ctx.measureText(test).width > maxW && line.length > 0) {
+                        lines.push(line);
+                        line = words[i];
+                    } else {
+                        line = test;
+                    }
+                }
+                if (line) lines.push(line);
+                return lines;
+            }
+
+            function render() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var pad = 20;
+                var stageW = 110;
+                var stageH = 44;
+                var totalStages = 6;
+                var gapX = (w - pad * 2 - stageW * totalStages) / (totalStages - 1);
+                if (gapX < 10) { stageW = 90; gapX = (w - pad * 2 - stageW * totalStages) / (totalStages - 1); }
+                var stageY = 20;
+
+                /* Draw pipeline stage boxes */
+                for (var s = 0; s < totalStages; s++) {
+                    var sx = pad + s * (stageW + gapX);
+                    var isActive = s <= animPhase;
+                    var isCurrent = s === animPhase;
+
+                    /* Box */
+                    var boxColor = isCurrent ? C.TEAL : (isActive ? C.CYAN : C.DIM);
+                    ctx.fillStyle = boxColor;
+                    ctx.globalAlpha = isCurrent ? 0.25 : (isActive ? 0.12 : 0.6);
+                    drawRoundRect(sx, stageY, stageW, stageH, 8);
+                    ctx.fill();
+
+                    ctx.strokeStyle = isCurrent ? C.TEAL : (isActive ? C.CYAN : C.STROKE);
+                    ctx.lineWidth = isCurrent ? 2 : 1;
+                    ctx.globalAlpha = 1;
+                    drawRoundRect(sx, stageY, stageW, stageH, 8);
+                    ctx.stroke();
+
+                    /* Label */
+                    ctx.fillStyle = isActive ? C.WHITE : C.MUTED;
+                    ctx.font = '600 ' + (w < 600 ? '9' : '11') + 'px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(stageLabels[s], sx + stageW / 2, stageY + stageH / 2);
+
+                    /* Arrow between stages */
+                    if (s < totalStages - 1) {
+                        var arrowX = sx + stageW + 4;
+                        var arrowEndX = sx + stageW + gapX - 4;
+                        var arrowY = stageY + stageH / 2;
+                        ctx.strokeStyle = isActive ? C.TEAL : C.STROKE;
+                        ctx.lineWidth = 1.5;
+                        ctx.globalAlpha = isActive ? 0.8 : 0.3;
+                        ctx.beginPath();
+                        ctx.moveTo(arrowX, arrowY);
+                        ctx.lineTo(arrowEndX, arrowY);
+                        ctx.stroke();
+
+                        /* Arrowhead */
+                        ctx.fillStyle = isActive ? C.TEAL : C.STROKE;
+                        ctx.beginPath();
+                        ctx.moveTo(arrowEndX, arrowY);
+                        ctx.lineTo(arrowEndX - 6, arrowY - 4);
+                        ctx.lineTo(arrowEndX - 6, arrowY + 4);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+                }
+
+                /* ---- Content area below stages ---- */
+                var contentY = stageY + stageH + 30;
+                var contentH = h - contentY - pad;
+
+                if (animPhase === 0) {
+                    /* Phase 0: Show query */
+                    ctx.fillStyle = C.WHITE;
+                    ctx.font = '600 14px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Query:', pad, contentY + 10);
+
+                    ctx.fillStyle = C.AMBER;
+                    ctx.font = '400 13px JetBrains Mono, monospace';
+                    var qLines = wrapText('"' + query + '"', w - pad * 2 - 10, '400 13px JetBrains Mono, monospace');
+                    for (var qi = 0; qi < qLines.length; qi++) {
+                        ctx.fillText(qLines[qi], pad + 10, contentY + 36 + qi * 20);
+                    }
+                }
+
+                if (animPhase === 1) {
+                    /* Phase 1: Embedding visualization */
+                    ctx.fillStyle = C.WHITE;
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Embedding the query into a 1536-dim vector...', pad, contentY + 10);
+
+                    /* Show vector representation */
+                    var vecY = contentY + 40;
+                    var vecW = w - pad * 2;
+                    var barH = 16;
+                    var numBars = Math.min(48, Math.floor(vecW / 8));
+                    var barGap = vecW / numBars;
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 10px JetBrains Mono, monospace';
+                    ctx.fillText('[', pad, vecY + barH / 2 + 4);
+
+                    for (var b = 0; b < numBars; b++) {
+                        var val = Math.sin(b * 0.5 + animProgress * 6) * 0.5 + 0.5;
+                        var bx = pad + 10 + b * barGap;
+                        var barActualH = val * barH * 2;
+
+                        var grad = ctx.createLinearGradient(bx, vecY + barH - barActualH / 2, bx, vecY + barH + barActualH / 2);
+                        grad.addColorStop(0, C.TEAL);
+                        grad.addColorStop(1, C.CYAN);
+                        ctx.fillStyle = grad;
+                        ctx.globalAlpha = 0.5 + val * 0.5;
+
+                        ctx.fillRect(bx, vecY + barH - barActualH / 2, Math.max(3, barGap - 3), barActualH);
+                    }
+                    ctx.globalAlpha = 1;
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 10px JetBrains Mono, monospace';
+                    ctx.fillText(']  dim=1536', pad + 10 + numBars * barGap + 4, vecY + barH / 2 + 4);
+
+                    /* Float values preview */
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '400 11px JetBrains Mono, monospace';
+                    ctx.fillText('[0.0234, -0.1892, 0.4521, 0.0087, -0.3145, 0.2789, ...  ]', pad, vecY + barH * 2 + 30);
+                }
+
+                if (animPhase === 2) {
+                    /* Phase 2: Vector search — show all chunks with scores */
+                    ctx.fillStyle = C.WHITE;
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Searching vector database (' + docChunks.length + ' chunks)...', pad, contentY + 10);
+
+                    var chunkY = contentY + 36;
+                    var chunkH = 32;
+                    var maxBarW = w - pad * 2 - 200;
+
+                    /* Sort by score for display */
+                    var sorted = docChunks.slice().sort(function (a, b) { return b.score - a.score; });
+
+                    for (var ci = 0; ci < sorted.length; ci++) {
+                        var chunk = sorted[ci];
+                        var cy = chunkY + ci * (chunkH + 6);
+                        if (cy + chunkH > h - pad) break;
+
+                        /* ID label */
+                        ctx.fillStyle = C.TEXT;
+                        ctx.font = '500 11px JetBrains Mono, monospace';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(chunk.id, pad, cy + chunkH / 2 + 4);
+
+                        /* Score bar */
+                        var barStartX = pad + 130;
+                        var barW = chunk.score * maxBarW * Math.min(1, animProgress * 2);
+
+                        ctx.fillStyle = chunk.relevant ? C.TEAL : C.DIM;
+                        ctx.globalAlpha = chunk.relevant ? 0.7 : 0.3;
+                        drawRoundRect(barStartX, cy + 4, barW, chunkH - 8, 4);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+
+                        /* Score label */
+                        ctx.fillStyle = chunk.relevant ? C.TEAL : C.MUTED;
+                        ctx.font = '600 11px JetBrains Mono, monospace';
+                        ctx.textAlign = 'left';
+                        ctx.fillText((chunk.score * Math.min(1, animProgress * 2)).toFixed(2), barStartX + barW + 8, cy + chunkH / 2 + 4);
+                    }
+                }
+
+                if (animPhase === 3) {
+                    /* Phase 3: Top-k retrieval — highlight top 3 */
+                    ctx.fillStyle = C.WHITE;
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Top-3 retrieved chunks (re-ranked):', pad, contentY + 10);
+
+                    var topChunks = docChunks.filter(function (c) { return c.relevant; })
+                                             .sort(function (a, b) { return b.score - a.score; });
+
+                    var tcy = contentY + 40;
+                    var tcH = 70;
+
+                    for (var ti = 0; ti < topChunks.length; ti++) {
+                        var tc = topChunks[ti];
+                        var ty = tcy + ti * (tcH + 12);
+
+                        /* Card background */
+                        ctx.fillStyle = C.DIM;
+                        drawRoundRect(pad, ty, w - pad * 2, tcH, 8);
+                        ctx.fill();
+
+                        ctx.strokeStyle = C.TEAL;
+                        ctx.lineWidth = 1.5;
+                        ctx.globalAlpha = 0.6;
+                        drawRoundRect(pad, ty, w - pad * 2, tcH, 8);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+
+                        /* Rank badge */
+                        ctx.fillStyle = C.TEAL;
+                        ctx.beginPath();
+                        ctx.arc(pad + 24, ty + tcH / 2, 14, 0, TAU);
+                        ctx.fill();
+
+                        ctx.fillStyle = C.BG;
+                        ctx.font = '700 12px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('#' + (ti + 1), pad + 24, ty + tcH / 2);
+
+                        /* Chunk info */
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'top';
+                        ctx.fillStyle = C.AMBER;
+                        ctx.font = '600 12px JetBrains Mono, monospace';
+                        ctx.fillText(tc.id, pad + 50, ty + 12);
+
+                        ctx.fillStyle = C.TEXT;
+                        ctx.font = '400 11px Inter, sans-serif';
+                        ctx.fillText(tc.text, pad + 50, ty + 32);
+
+                        ctx.fillStyle = C.GREEN;
+                        ctx.font = '600 11px JetBrains Mono, monospace';
+                        ctx.fillText('score: ' + tc.score.toFixed(2), pad + 50, ty + 52);
+                    }
+                }
+
+                if (animPhase === 4) {
+                    /* Phase 4: Context assembly */
+                    ctx.fillStyle = C.WHITE;
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Assembling augmented prompt:', pad, contentY + 10);
+
+                    var promptLines = [
+                        { color: C.CYAN, text: '### System Instruction' },
+                        { color: C.TEXT, text: 'You are an expert civil engineering assistant.' },
+                        { color: C.TEXT, text: 'Answer based ONLY on the provided context.' },
+                        { color: C.TEXT, text: 'Cite clause numbers for every claim.' },
+                        { color: C.TEXT, text: '' },
+                        { color: C.TEAL, text: '### Retrieved Context' },
+                        { color: C.AMBER, text: '[IS456-Table16] Table 16 - Nominal cover (mm)...' },
+                        { color: C.AMBER, text: '[IS456-26.4]   Cl 26.4 - Nominal cover to meet...' },
+                        { color: C.AMBER, text: '[IS456-8.2]    Cl 8.2 - Exposure conditions...' },
+                        { color: C.TEXT, text: '' },
+                        { color: C.PURPLE, text: '### User Query' },
+                        { color: C.TEXT, text: '"' + query + '"' }
+                    ];
+
+                    var plY = contentY + 32;
+                    var lineH = 22;
+                    for (var pl = 0; pl < promptLines.length; pl++) {
+                        var line = promptLines[pl];
+                        if (plY + pl * lineH > h - pad) break;
+                        ctx.fillStyle = line.color;
+                        ctx.font = line.text.indexOf('###') === 0
+                            ? '700 12px JetBrains Mono, monospace'
+                            : '400 11px JetBrains Mono, monospace';
+                        ctx.fillText(line.text, pad + 10, plY + pl * lineH);
+                    }
+                }
+
+                if (animPhase === 5) {
+                    /* Phase 5: LLM generation */
+                    ctx.fillStyle = C.WHITE;
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('LLM Response (with citations):', pad, contentY + 10);
+
+                    var responseText = [
+                        'Per IS 456:2000, the minimum concrete cover for beams depends',
+                        'on the exposure condition:',
+                        '',
+                        '  Mild exposure:     20 mm  [Table 16, Cl 26.4.1]',
+                        '  Moderate exposure:  30 mm  [Table 16, Cl 26.4.1]',
+                        '  Severe exposure:    45 mm  [Table 16, Cl 26.4.1]',
+                        '  Very severe:        50 mm  [Table 16, Cl 26.4.1]',
+                        '  Extreme:            75 mm  [Table 16, Cl 26.4.1]',
+                        '',
+                        'The nominal cover shall not be less than the diameter of the',
+                        'bar [Cl 26.4.1]. For durability, refer to Table 16 and the',
+                        'exposure conditions defined in Cl 8.2.3.'
+                    ];
+
+                    var respY = contentY + 36;
+                    var respLineH = 20;
+                    var visibleChars = Math.floor(animProgress * responseText.join('').length * 1.2);
+                    var charCount = 0;
+
+                    for (var ri = 0; ri < responseText.length; ri++) {
+                        var rLine = responseText[ri];
+                        var displayLine = '';
+                        for (var rc = 0; rc < rLine.length; rc++) {
+                            if (charCount < visibleChars) {
+                                displayLine += rLine[rc];
+                                charCount++;
+                            }
+                        }
+                        if (charCount >= visibleChars && displayLine.length === 0 && rLine.length > 0) break;
+
+                        var isRef = displayLine.indexOf('[') >= 0;
+                        var isIndented = displayLine.indexOf('  ') === 0 && displayLine.indexOf('mm') > 0;
+                        ctx.fillStyle = isRef ? C.TEAL : (isIndented ? C.AMBER : C.TEXT);
+                        ctx.font = '400 11px JetBrains Mono, monospace';
+                        ctx.fillText(displayLine, pad + 10, respY + ri * respLineH);
+                        charCount++;
+                    }
+
+                    /* Cursor blink */
+                    if (animProgress < 0.95) {
+                        var cursorBlink = Math.floor(Date.now() / 500) % 2;
+                        if (cursorBlink) {
+                            ctx.fillStyle = C.TEAL;
+                            ctx.fillRect(pad + 10 + ctx.measureText(responseText[Math.min(ri, responseText.length - 1)] || '').width + 4, respY + (ri - 1) * respLineH - 10, 8, 14);
+                        }
+                    }
+                }
+
+                /* Idle state message */
+                if (animPhase === -1) {
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 14px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Press "Start Pipeline" to visualize the RAG retrieval process', w / 2, h / 2 + 20);
+
+                    /* Draw a document icon */
+                    ctx.fillStyle = C.TEAL;
+                    ctx.globalAlpha = 0.15;
+                    ctx.beginPath();
+                    ctx.arc(w / 2, h / 2 - 30, 40, 0, TAU);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    ctx.fillStyle = C.TEAL;
+                    ctx.font = '900 32px "Font Awesome 6 Free"';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('\uf1c1', w / 2, h / 2 - 30);
+                }
+            }
+
+            function startAnimation() {
+                if (isPlaying) return;
+                isPlaying = true;
+                animPhase = 0;
+                animProgress = 0;
+                playBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running...';
+                playBtn.style.pointerEvents = 'none';
+
+                var phaseDurations = [1200, 1800, 2000, 1600, 1800, 2400];
+                var phaseStartTime = Date.now();
+
+                function tick() {
+                    if (!isPlaying) return;
+                    var elapsed = Date.now() - phaseStartTime;
+                    animProgress = Math.min(1, elapsed / phaseDurations[animPhase]);
+
+                    infoEl.textContent = 'Stage ' + (animPhase + 1) + '/6: ' + stageLabels[animPhase];
+                    render();
+
+                    if (animProgress >= 1) {
+                        if (animPhase < 5) {
+                            animPhase++;
+                            animProgress = 0;
+                            phaseStartTime = Date.now();
+                            animTimer = requestAnimationFrame(tick);
+                        } else {
+                            isPlaying = false;
+                            playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start Pipeline';
+                            playBtn.style.pointerEvents = '';
+                            infoEl.textContent = 'Pipeline complete. The LLM generated a cited answer from 3 retrieved IS 456 clauses.';
+                        }
+                    } else {
+                        animTimer = requestAnimationFrame(tick);
+                    }
+                }
+
+                animTimer = requestAnimationFrame(tick);
+            }
+
+            playBtn.addEventListener('click', startAnimation);
+
+            resetBtn.addEventListener('click', function () {
+                isPlaying = false;
+                if (animTimer) cancelAnimationFrame(animTimer);
+                animPhase = -1;
+                animProgress = 0;
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start Pipeline';
+                playBtn.style.pointerEvents = '';
+                infoEl.textContent = 'Press "Start Pipeline" to animate the RAG retrieval process.';
+                render();
+            });
+
+            render();
+
+            window.addEventListener('resize', function () {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var obs1 = new MutationObserver(function () { render(); });
+            obs1.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+
+        /* ==============================================
+           DEMO 2: CHUNKING STRATEGY COMPARISON
+           ============================================== */
+        (function chunkingDemo() {
+            var canvas = document.getElementById('chunk-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var strategySelect = document.getElementById('chunk-strategy');
+            var searchBtn = document.getElementById('chunk-search-btn');
+            var infoEl = document.getElementById('chunk-info');
+
+            var hasSearched = false;
+            var searchAnim = 0;
+            var searchTimer = null;
+
+            /* Document content — simulated IS 456 sections */
+            var documentSections = [
+                { title: 'Cl 26.4.1 — Nominal Cover', body: 'The nominal cover to all steel reinforcement including links shall not be less than the value given in Table 16. The nominal cover to meet durability requirements shall be as given in Table 16 for different exposure conditions.', type: 'clause' },
+                { title: 'Cl 26.4.2 — Cover for Fire', body: 'Minimum cover to main reinforcement for fire resistance shall be as specified in Table 16A. Additional protection may be provided by using concrete with better fire resistance properties.', type: 'clause' },
+                { title: 'Table 16', body: 'Nominal Cover (mm): Mild=20, Moderate=30, Severe=45, Very Severe=50, Extreme=75. The nominal cover shall in no case be less than the diameter of the bar.', type: 'table' },
+                { title: 'Cl 8.2.3 — Exposure Conditions', body: 'For the purpose of design, environmental exposure conditions are classified into five categories: mild, moderate, severe, very severe, and extreme. The classification is based on Table 3.', type: 'clause' },
+                { title: 'Cl 26.5.1 — Development Length', body: 'The development length Ld shall be sufficient to develop the design stress in the reinforcement. The development length is given by Ld = (phi * sigma_s) / (4 * tau_bd).', type: 'clause' },
+                { title: 'Cl 26.3 — Spacing of Reinforcement', body: 'The horizontal distance between two parallel main reinforcing bars shall usually not be less than the greatest of the following: diameter of bar, 5mm more than nominal maximum size of coarse aggregate.', type: 'clause' }
+            ];
+
+            var sampleQuery = 'minimum concrete cover for durability';
+
+            /* Generate chunks based on strategy */
+            function getChunks(strategy) {
+                var chunks = [];
+                if (strategy === 'fixed') {
+                    /* Fixed-size: split all text into ~80 char chunks */
+                    var allText = '';
+                    for (var i = 0; i < documentSections.length; i++) {
+                        allText += documentSections[i].title + ': ' + documentSections[i].body + ' ';
+                    }
+                    var chunkSize = 120;
+                    var overlap = 20;
+                    for (var pos = 0; pos < allText.length; pos += chunkSize - overlap) {
+                        var chunk = allText.substring(pos, pos + chunkSize);
+                        chunks.push({
+                            text: chunk,
+                            label: 'Chunk ' + (chunks.length + 1) + ' (chars ' + pos + '-' + Math.min(pos + chunkSize, allText.length) + ')',
+                            relevance: 0
+                        });
+                    }
+                    /* Assign relevance */
+                    for (var c = 0; c < chunks.length; c++) {
+                        var t = chunks[c].text.toLowerCase();
+                        if (t.indexOf('cover') >= 0 && t.indexOf('nominal') >= 0) chunks[c].relevance = 0.72;
+                        else if (t.indexOf('cover') >= 0 || t.indexOf('durability') >= 0) chunks[c].relevance = 0.55;
+                        else if (t.indexOf('mild') >= 0 || t.indexOf('exposure') >= 0) chunks[c].relevance = 0.48;
+                        else chunks[c].relevance = 0.1 + Math.random() * 0.25;
+                    }
+                } else if (strategy === 'sentence') {
+                    /* Sentence-based */
+                    for (var si = 0; si < documentSections.length; si++) {
+                        var sentences = documentSections[si].body.split('. ');
+                        for (var sj = 0; sj < sentences.length; sj++) {
+                            var sent = sentences[sj].replace(/\.$/, '') + '.';
+                            chunks.push({
+                                text: sent,
+                                label: documentSections[si].title + ' — Sent ' + (sj + 1),
+                                relevance: 0
+                            });
+                        }
+                    }
+                    for (var sc = 0; sc < chunks.length; sc++) {
+                        var st = chunks[sc].text.toLowerCase();
+                        if (st.indexOf('nominal cover') >= 0 && st.indexOf('durability') >= 0) chunks[sc].relevance = 0.93;
+                        else if (st.indexOf('nominal cover') >= 0) chunks[sc].relevance = 0.82;
+                        else if (st.indexOf('cover') >= 0) chunks[sc].relevance = 0.65;
+                        else if (st.indexOf('exposure') >= 0) chunks[sc].relevance = 0.52;
+                        else chunks[sc].relevance = 0.1 + Math.random() * 0.2;
+                    }
+                } else {
+                    /* Paragraph / section-based */
+                    for (var pi = 0; pi < documentSections.length; pi++) {
+                        var sec = documentSections[pi];
+                        chunks.push({
+                            text: sec.title + ': ' + sec.body,
+                            label: sec.title + (sec.type === 'table' ? ' [TABLE]' : ''),
+                            relevance: 0
+                        });
+                    }
+                    /* Relevance: clause-level makes the best matches */
+                    chunks[0].relevance = 0.95;  /* Cl 26.4.1 — exact match */
+                    chunks[1].relevance = 0.62;  /* Cl 26.4.2 — cover for fire */
+                    chunks[2].relevance = 0.91;  /* Table 16 */
+                    chunks[3].relevance = 0.78;  /* Cl 8.2.3 — exposure */
+                    chunks[4].relevance = 0.22;  /* Dev length — not relevant */
+                    chunks[5].relevance = 0.18;  /* Spacing — not relevant */
+                }
+                return chunks;
+            }
+
+            function render() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var pad = 20;
+                var strategy = strategySelect.value;
+                var chunks = getChunks(strategy);
+
+                /* Header */
+                ctx.fillStyle = C.WHITE;
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Strategy: ' + strategySelect.options[strategySelect.selectedIndex].text, pad, pad + 14);
+
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '400 11px Inter, sans-serif';
+                ctx.fillText(chunks.length + ' chunks generated', pad, pad + 34);
+
+                if (hasSearched) {
+                    ctx.fillStyle = C.AMBER;
+                    ctx.font = '500 11px JetBrains Mono, monospace';
+                    ctx.fillText('Query: "' + sampleQuery + '"', pad + 200, pad + 34);
+                }
+
+                /* Chunk display area */
+                var listY = pad + 54;
+                var chunkH = 48;
+                var maxVisible = Math.floor((h - listY - pad) / (chunkH + 6));
+
+                /* Sort by relevance if searched */
+                var displayChunks = chunks.slice();
+                if (hasSearched) {
+                    displayChunks.sort(function (a, b) { return b.relevance - a.relevance; });
+                }
+
+                for (var i = 0; i < Math.min(displayChunks.length, maxVisible); i++) {
+                    var chunk = displayChunks[i];
+                    var cy = listY + i * (chunkH + 6);
+
+                    var isRelevant = hasSearched && chunk.relevance > 0.6;
+                    var barAnim = hasSearched ? Math.min(1, searchAnim) : 0;
+
+                    /* Background */
+                    ctx.fillStyle = isRelevant ? C.TEAL : C.DIM;
+                    ctx.globalAlpha = isRelevant ? 0.12 : 0.5;
+                    drawRoundRect(pad, cy, w - pad * 2, chunkH, 6);
+                    ctx.fill();
+
+                    if (isRelevant) {
+                        ctx.strokeStyle = C.TEAL;
+                        ctx.lineWidth = 1.5;
+                        ctx.globalAlpha = 0.6;
+                        drawRoundRect(pad, cy, w - pad * 2, chunkH, 6);
+                        ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1;
+
+                    /* Rank badge (if searched) */
+                    if (hasSearched && i < 3 && chunk.relevance > 0.6) {
+                        ctx.fillStyle = C.TEAL;
+                        ctx.beginPath();
+                        ctx.arc(pad + 18, cy + chunkH / 2, 11, 0, TAU);
+                        ctx.fill();
+
+                        ctx.fillStyle = C.BG;
+                        ctx.font = '700 10px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(i + 1, pad + 18, cy + chunkH / 2);
+                    }
+
+                    /* Label */
+                    var labelX = hasSearched && i < 3 && chunk.relevance > 0.6 ? pad + 38 : pad + 14;
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillStyle = isRelevant ? C.AMBER : C.TEXT;
+                    ctx.font = '600 11px JetBrains Mono, monospace';
+                    ctx.fillText(chunk.label, labelX, cy + 8);
+
+                    /* Truncated text preview */
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 10px Inter, sans-serif';
+                    var maxTextW = w - pad * 2 - labelX - (hasSearched ? 80 : 10);
+                    var previewText = chunk.text;
+                    while (ctx.measureText(previewText).width > maxTextW && previewText.length > 10) {
+                        previewText = previewText.substring(0, previewText.length - 4) + '...';
+                    }
+                    ctx.fillText(previewText, labelX, cy + 28);
+
+                    /* Relevance score bar (if searched) */
+                    if (hasSearched) {
+                        var scoreBarX = w - pad - 70;
+                        var scoreBarW = 50;
+                        var scoreBarH = 8;
+
+                        ctx.fillStyle = C.DIM;
+                        drawRoundRect(scoreBarX, cy + chunkH / 2 - scoreBarH / 2, scoreBarW, scoreBarH, 3);
+                        ctx.fill();
+
+                        ctx.fillStyle = chunk.relevance > 0.6 ? C.TEAL : (chunk.relevance > 0.4 ? C.AMBER : C.RED);
+                        ctx.globalAlpha = 0.7;
+                        drawRoundRect(scoreBarX, cy + chunkH / 2 - scoreBarH / 2, scoreBarW * chunk.relevance * barAnim, scoreBarH, 3);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+
+                        ctx.fillStyle = chunk.relevance > 0.6 ? C.TEAL : C.MUTED;
+                        ctx.font = '600 9px JetBrains Mono, monospace';
+                        ctx.textAlign = 'right';
+                        ctx.fillText((chunk.relevance * barAnim).toFixed(2), scoreBarX - 4, cy + chunkH / 2 + 3);
+                    }
+                }
+
+                /* Overflow indicator */
+                if (displayChunks.length > maxVisible) {
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('+ ' + (displayChunks.length - maxVisible) + ' more chunks...', w / 2, h - pad);
+                }
+            }
+
+            function doSearch() {
+                hasSearched = true;
+                searchAnim = 0;
+
+                var startTime = Date.now();
+                function animTick() {
+                    searchAnim = Math.min(1, (Date.now() - startTime) / 800);
+                    render();
+                    if (searchAnim < 1) {
+                        searchTimer = requestAnimationFrame(animTick);
+                    } else {
+                        var strategy = strategySelect.value;
+                        var chunks = getChunks(strategy);
+                        var topChunks = chunks.filter(function (c) { return c.relevance > 0.6; });
+                        infoEl.textContent = topChunks.length + ' relevant chunks found. ' +
+                            (strategy === 'paragraph' ? 'Section-based chunking retrieves the most complete, relevant context.'
+                            : strategy === 'sentence' ? 'Sentence-based: precise match but may lack surrounding context.'
+                            : 'Fixed-size: chunks may split mid-clause, fragmenting relevant information.');
+                    }
+                }
+                searchTimer = requestAnimationFrame(animTick);
+            }
+
+            searchBtn.addEventListener('click', doSearch);
+
+            strategySelect.addEventListener('change', function () {
+                hasSearched = false;
+                searchAnim = 0;
+                if (searchTimer) cancelAnimationFrame(searchTimer);
+                infoEl.textContent = 'Select a chunking strategy, then click "Search Query" to see retrieval results.';
+                render();
+            });
+
+            render();
+
+            window.addEventListener('resize', function () {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var obs2 = new MutationObserver(function () { render(); });
+            obs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

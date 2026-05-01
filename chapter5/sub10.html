@@ -1,0 +1,2429 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.10 CE Case Study: AI-Assisted Design Review | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="End-to-end case study of using NLP and LLMs for AI-assisted structural design review in civil engineering: document ingestion, information extraction, code compliance checking, automated report generation, and human sign-off.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-building"></i> Chapter 5 &mdash; Sub-chapter 5.10
+            </div>
+            <h1 class="chapter-hero__title">CE Case Study: AI-Assisted Design Review</h1>
+            <p class="chapter-hero__subtitle">
+                A structural engineering firm deploys NLP and LLM technologies to
+                transform its design review process. This end-to-end case study
+                traces the full pipeline &mdash; from <strong>OCR-based document
+                ingestion</strong> through <strong>NER-driven information
+                extraction</strong>, <strong>RAG-grounded code compliance
+                checking</strong>, and <strong>automated report generation</strong>
+                &mdash; culminating in human review and sign-off. We quantify time
+                savings, accuracy improvements, error detection rates, and
+                cost-benefit outcomes, while documenting every implementation
+                challenge and lesson learned along the way.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 55 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: SCENARIO OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="scenario-overview">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Scenario</h2>
+                        <p>
+                            <strong>Meridian Structural Consultants</strong> is a
+                            mid-size structural engineering firm with 45 engineers
+                            across three offices. They handle 80&ndash;120 design
+                            review projects per year, ranging from residential
+                            multi-storey buildings to industrial warehouses and
+                            infrastructure projects. Each review involves checking
+                            structural drawings, design calculations, and
+                            specifications against applicable building codes &mdash;
+                            primarily IS 456 (reinforced concrete), IS 800 (structural
+                            steel), IS 1893 (seismic design), ACI 318, and Eurocode 2.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Problem</h3>
+                <p>
+                    Traditional design review at Meridian is a manually intensive
+                    process. A senior engineer spends 8&ndash;14 working days on a
+                    typical medium-complexity project review. The process involves
+                    reading through hundreds of pages of drawings and calculations,
+                    cross-referencing against multiple code documents, checking
+                    dimensional consistency, verifying load paths, and producing a
+                    comprehensive review report with annotated comments. The firm
+                    faces a growing backlog: demand for reviews outstrips the
+                    capacity of their experienced engineers, and junior engineers
+                    lack the expertise to conduct reviews independently.
+                </p>
+
+                <h3>The Objective</h3>
+                <p>
+                    Meridian's leadership decides to pilot an AI-assisted design
+                    review system. The goal is not to replace human reviewers but
+                    to <strong>augment them</strong> &mdash; automating the
+                    repetitive, rule-based checks so that human experts can focus
+                    on judgment-intensive aspects: design philosophy, load path
+                    adequacy, detailing quality, and constructability. The target
+                    is to reduce review time by 60&ndash;70% while maintaining or
+                    improving review accuracy.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__body">
+                        <p>
+                            Think of the AI-assisted review system like an advanced
+                            concrete testing laboratory. The lab automates routine
+                            compressive strength tests, slump tests, and gradation
+                            analyses &mdash; producing reliable, standardised results
+                            far faster than manual testing. But the materials engineer
+                            still interprets the results, makes mix design decisions,
+                            and signs off on the concrete's fitness for purpose. The
+                            lab does not replace the engineer; it gives the engineer
+                            better data, faster.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: TRADITIONAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="traditional-workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    Traditional Design Review Workflow
+                </h2>
+
+                <p>
+                    Before examining the AI-assisted pipeline, we must understand
+                    the baseline. Meridian's traditional design review follows a
+                    well-established sequential process that has evolved over
+                    decades of practice.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Phase 1: Document Receipt &amp; Organisation (Days 1&ndash;2)</h3>
+                        <p>
+                            The design documents arrive as a mix of PDF drawings,
+                            calculation sheets (often scanned), specification documents,
+                            and geotechnical reports. A junior engineer spends 1&ndash;2
+                            days organising the documents, creating a tracking
+                            spreadsheet, and assembling the applicable code documents.
+                            Missing documents are identified and requested from the
+                            design team, often introducing delays.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Phase 2: Preliminary Review (Days 2&ndash;4)</h3>
+                        <p>
+                            A senior engineer conducts a preliminary scan of all
+                            drawings and calculations. This involves reading through
+                            the general arrangement drawings, understanding the
+                            structural system, identifying the key members, and
+                            noting the design assumptions (material grades, load
+                            combinations, seismic zone, exposure conditions). The
+                            engineer manually extracts key parameters and records
+                            them for systematic checking.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Phase 3: Detailed Checking (Days 4&ndash;10)</h3>
+                        <p>
+                            The core of the review: the engineer checks every
+                            structural member against the applicable code. For a
+                            reinforced concrete building, this means verifying beam
+                            flexure and shear capacities, column interaction checks,
+                            slab design, foundation bearing pressures, development
+                            lengths, detailing provisions (minimum reinforcement,
+                            maximum spacing, cover requirements), and deflection
+                            limits. Each check requires locating the relevant code
+                            clause, extracting the applicable formula and limits,
+                            and verifying the designer's calculations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-pen"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Phase 4: Report Preparation (Days 10&ndash;12)</h3>
+                        <p>
+                            The reviewer prepares a formal review report, documenting
+                            each comment with the drawing reference, element
+                            identification, the specific code clause, the required
+                            value, the provided value, and the disposition
+                            (acceptable / revise / clarify). A typical medium-project
+                            review generates 80&ndash;200 comments. Formatting,
+                            cross-referencing, and quality-checking the report itself
+                            consumes 2&ndash;3 days.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Phase 5: Internal QA &amp; Sign-off (Days 12&ndash;14)</h3>
+                        <p>
+                            A second senior engineer reviews the review report for
+                            completeness and accuracy. Discrepancies are resolved,
+                            the report is finalised, and the principal engineer
+                            signs off. The complete cycle from receipt to issuance
+                            typically takes <strong>10&ndash;14 working days</strong>
+                            for a medium-complexity project.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Pain Points in the Traditional Process</h3>
+                <ul style="margin:12px 0; padding-left:24px; line-height:2.2;">
+                    <li><strong>Time-intensive:</strong> 80% of review time is spent on repetitive code-lookup and parameter-checking tasks</li>
+                    <li><strong>Error-prone:</strong> Manual transcription of values from drawings to spreadsheets introduces human errors</li>
+                    <li><strong>Inconsistent:</strong> Different reviewers apply different levels of scrutiny; junior reviewers miss subtle issues</li>
+                    <li><strong>Bottlenecked:</strong> Only 6 of the firm's 45 engineers have sufficient experience to lead reviews</li>
+                    <li><strong>Documentation overhead:</strong> Report writing consumes 20&ndash;25% of total review time</li>
+                    <li><strong>Code navigation:</strong> Engineers spend significant time searching through code documents for the relevant clause</li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: AI-ASSISTED PIPELINE OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="ai-pipeline-overview">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    AI-Assisted Pipeline Overview
+                </h2>
+
+                <p>
+                    Meridian's AI system is built as a five-stage pipeline. Each
+                    stage has specific AI/ML technologies, well-defined inputs
+                    and outputs, and clear boundaries where human oversight is
+                    required. The architecture follows the RAG paradigm studied
+                    in Sub-chapter 5.8, with NER and OCR technologies from
+                    earlier chapters integrated into the front end.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>System Architecture</h3>
+                        <p>
+                            The pipeline operates in five sequential stages, each
+                            feeding into the next. The system is designed with
+                            explicit checkpoints where a human reviewer can inspect,
+                            override, or halt the process. No output reaches the
+                            client without human sign-off.
+                        </p>
+                        <ol style="margin:12px 0; padding-left:24px; line-height:2.2;">
+                            <li><strong>Document Ingestion</strong> &mdash; OCR + PDF parsing of structural drawings and specifications</li>
+                            <li><strong>Information Extraction</strong> &mdash; NER for materials, dimensions, loads, member sizes</li>
+                            <li><strong>Code Compliance Checking</strong> &mdash; RAG-based lookup against IS 456, ACI 318, Eurocode 2</li>
+                            <li><strong>Automated Report Generation</strong> &mdash; LLM generates structured review comments</li>
+                            <li><strong>Human Review &amp; Sign-off</strong> &mdash; Engineer validates, edits, and approves the report</li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: STAGE 1 — DOCUMENT INGESTION
+             ========================================== -->
+        <section class="ch-section" id="stage-document-ingestion">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-file-import"></i>
+                    Stage 1: Document Ingestion
+                </h2>
+
+                <p>
+                    The first challenge is converting heterogeneous engineering
+                    documents &mdash; scanned drawings, native PDFs, handwritten
+                    calculation sheets, and specification documents &mdash; into
+                    machine-readable text. This stage combines multiple
+                    technologies.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>OCR Pipeline</h3>
+                        <p>
+                            Structural drawings present unique OCR challenges: text
+                            appears at arbitrary angles, mixed with graphical elements
+                            (dimension lines, section marks, reinforcement schedules),
+                            and uses engineering-specific notation (diameter symbols,
+                            reinforcement bar designations like "4-20T + 2-16T"). The
+                            system uses a two-pass OCR approach:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Pass 1 &mdash; Layout analysis:</strong> A CNN-based document layout model segments the drawing into regions: title block, beam schedule, column schedule, general notes, section details, and reinforcement tables</li>
+                            <li><strong>Pass 2 &mdash; Region-specific OCR:</strong> Each region is processed with specialised OCR models. Table regions use a table-extraction model that preserves row/column structure. Text regions use a standard OCR engine fine-tuned on engineering notation. Dimension text uses a separate model trained on rotated and scaled engineering fonts</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Native PDF Parsing</h3>
+                        <p>
+                            For digitally-created PDFs (from AutoCAD, Revit, ETABS
+                            output), the system bypasses OCR entirely and extracts text
+                            directly from the PDF structure. This is significantly more
+                            accurate. The parser handles multi-column layouts, embedded
+                            tables, equation blocks, and cross-references. Structural
+                            analysis software outputs (ETABS, STAAD, SAP2000) are
+                            parsed using format-specific templates that map output
+                            fields to a standardised data schema.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Output: Structured Document Store</h3>
+                        <p>
+                            The ingestion stage produces a structured document store:
+                            a JSON-based representation where every text element is
+                            tagged with its source document, page number, region type,
+                            and spatial coordinates. Reinforcement schedules are
+                            extracted into structured tables. Design parameters are
+                            tagged with confidence scores. Elements with OCR confidence
+                            below 85% are flagged for manual verification. The
+                            ingestion stage achieves an overall text accuracy of
+                            <strong>94.2%</strong> on engineering documents, compared
+                            to 99.5% for native PDFs.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: STAGE 2 — INFORMATION EXTRACTION
+             ========================================== -->
+        <section class="ch-section" id="stage-information-extraction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-tags"></i>
+                    Stage 2: Information Extraction (NER)
+                </h2>
+
+                <p>
+                    Raw text is insufficient for automated checking. The system
+                    must identify and classify specific engineering entities:
+                    material grades, member dimensions, reinforcement details,
+                    applied loads, and code references. This is the domain of
+                    Named Entity Recognition (NER), adapted for civil engineering.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Custom NER Model</h3>
+                        <p>
+                            Meridian trained a custom NER model on 2,400 annotated
+                            engineering documents. The model recognises 18 entity
+                            types specific to structural engineering:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>MATERIAL_GRADE:</strong> M25, M30, Fe415, Fe500, E250, S355</li>
+                            <li><strong>MEMBER_TYPE:</strong> beam, column, slab, footing, wall, lintel</li>
+                            <li><strong>DIMENSION:</strong> 300x600 mm, 450 mm dia, 150 mm thick</li>
+                            <li><strong>REINFORCEMENT:</strong> 4-20T, 6-25T + 2-20T, 8mm @ 150 c/c</li>
+                            <li><strong>LOAD_VALUE:</strong> 25 kN/m, 150 kN, 3.5 kN/m&sup2;</li>
+                            <li><strong>LOAD_TYPE:</strong> dead load, live load, seismic, wind</li>
+                            <li><strong>CODE_REF:</strong> IS 456 Cl. 26.5.1.1, ACI 318 &sect;9.6.1.2</li>
+                            <li><strong>COVER:</strong> 40 mm clear cover, 25 mm nominal cover</li>
+                            <li><strong>EXPOSURE:</strong> mild, moderate, severe, very severe</li>
+                            <li><strong>SPAN:</strong> 6.0 m clear span, 7.5 m effective span</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Relation Extraction</h3>
+                        <p>
+                            NER alone identifies entities; relation extraction links
+                            them. The system identifies relationships such as
+                            "Beam B1 has dimensions 300x600 mm with 4-20T bottom
+                            reinforcement and M30 concrete." These relations are
+                            critical for downstream compliance checking: the system
+                            must know which reinforcement belongs to which member
+                            at which location. Relation extraction achieves
+                            <strong>91.7% F1 score</strong> on the test set.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sitemap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Knowledge Graph Construction</h3>
+                        <p>
+                            Extracted entities and relations are assembled into a
+                            project knowledge graph: a structured representation
+                            where every structural member is a node, connected to
+                            its properties (dimensions, materials, reinforcement,
+                            loads) and to other members (load paths, connections,
+                            support conditions). This graph becomes the queryable
+                            backbone for compliance checking. An engineer can ask
+                            "Show me all columns with concrete grade below M30 in
+                            seismic zone IV" and get an instant, accurate answer.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Extraction Accuracy</h3>
+                <p>
+                    The NER + relation extraction pipeline was benchmarked against
+                    50 manually-reviewed projects. Results by entity type:
+                </p>
+                <div style="overflow-x:auto; margin:20px 0;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.92rem;">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border-active);">
+                                <th style="text-align:left; padding:12px 16px; color:var(--accent-primary);">Entity Type</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Precision</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Recall</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">F1 Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background:var(--table-row-alt);">
+                                <td style="padding:10px 16px;">MATERIAL_GRADE</td>
+                                <td style="text-align:center; padding:10px 16px;">97.8%</td>
+                                <td style="text-align:center; padding:10px 16px;">96.5%</td>
+                                <td style="text-align:center; padding:10px 16px;">97.1%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 16px;">DIMENSION</td>
+                                <td style="text-align:center; padding:10px 16px;">95.2%</td>
+                                <td style="text-align:center; padding:10px 16px;">93.8%</td>
+                                <td style="text-align:center; padding:10px 16px;">94.5%</td>
+                            </tr>
+                            <tr style="background:var(--table-row-alt);">
+                                <td style="padding:10px 16px;">REINFORCEMENT</td>
+                                <td style="text-align:center; padding:10px 16px;">93.4%</td>
+                                <td style="text-align:center; padding:10px 16px;">91.2%</td>
+                                <td style="text-align:center; padding:10px 16px;">92.3%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 16px;">LOAD_VALUE</td>
+                                <td style="text-align:center; padding:10px 16px;">94.1%</td>
+                                <td style="text-align:center; padding:10px 16px;">92.6%</td>
+                                <td style="text-align:center; padding:10px 16px;">93.3%</td>
+                            </tr>
+                            <tr style="background:var(--table-row-alt);">
+                                <td style="padding:10px 16px;">CODE_REF</td>
+                                <td style="text-align:center; padding:10px 16px;">96.9%</td>
+                                <td style="text-align:center; padding:10px 16px;">95.3%</td>
+                                <td style="text-align:center; padding:10px 16px;">96.1%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 16px;">COVER</td>
+                                <td style="text-align:center; padding:10px 16px;">98.1%</td>
+                                <td style="text-align:center; padding:10px 16px;">97.4%</td>
+                                <td style="text-align:center; padding:10px 16px;">97.7%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: STAGE 3 — CODE COMPLIANCE CHECKING
+             ========================================== -->
+        <section class="ch-section" id="stage-code-compliance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Stage 3: Code Compliance Checking
+                </h2>
+
+                <p>
+                    This is the intellectual core of the system. Given a structured
+                    knowledge graph of the project's structural elements and their
+                    properties, the system checks each element against the
+                    applicable design code provisions. The approach uses RAG
+                    (Retrieval-Augmented Generation) to ground every check in
+                    the actual code text, as discussed in Sub-chapter 5.8.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Code Knowledge Base</h3>
+                        <p>
+                            The RAG system's retrieval corpus contains the full text
+                            of the following standards, chunked into semantically
+                            coherent segments with overlap:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>IS 456:2000</strong> &mdash; Plain and Reinforced Concrete (with amendments)</li>
+                            <li><strong>IS 800:2007</strong> &mdash; General Construction in Steel</li>
+                            <li><strong>IS 1893 (Part 1):2016</strong> &mdash; Earthquake Resistant Design</li>
+                            <li><strong>IS 13920:2016</strong> &mdash; Ductile Design and Detailing of RC Structures</li>
+                            <li><strong>ACI 318-19</strong> &mdash; Building Code Requirements for Structural Concrete</li>
+                            <li><strong>Eurocode 2 (EN 1992-1-1)</strong> &mdash; Design of Concrete Structures</li>
+                            <li><strong>SP 16:1980</strong> &mdash; Design Aids for Reinforced Concrete to IS 456</li>
+                        </ul>
+                        <p>
+                            Each code chunk is embedded using a domain-fine-tuned
+                            embedding model (based on E5-large, fine-tuned on 15,000
+                            engineering Q&A pairs). The embeddings are stored in a
+                            vector database with metadata tags for code name, edition,
+                            clause number, and topic category.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Rule-Based Pre-Checks</h3>
+                        <p>
+                            Before invoking the LLM, the system performs deterministic
+                            rule-based checks for provisions that can be expressed as
+                            simple numerical comparisons. These checks are hard-coded
+                            and do not depend on AI inference:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li>Minimum concrete cover per exposure class (IS 456 Table 16)</li>
+                            <li>Minimum and maximum reinforcement ratios (IS 456 Cl. 26.5.1)</li>
+                            <li>Maximum spacing of shear reinforcement (IS 456 Cl. 26.5.1.5)</li>
+                            <li>Minimum member dimensions for seismic detailing (IS 13920)</li>
+                            <li>Width-to-depth ratios for beams and columns</li>
+                            <li>Development length requirements (IS 456 Cl. 26.2)</li>
+                        </ul>
+                        <p>
+                            These rule-based checks are 100% accurate by construction
+                            (they implement the code provisions directly) and process
+                            thousands of checks per second. They catch approximately
+                            <strong>40% of all code violations</strong> without any
+                            LLM involvement.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>RAG-Based Complex Checks</h3>
+                        <p>
+                            For provisions that require interpretation, contextual
+                            understanding, or multi-clause reasoning, the system uses
+                            RAG. The query is formulated from the knowledge graph
+                            (e.g., "For a beam with b=300mm, d=550mm, f<sub>ck</sub>=30
+                            MPa, f<sub>y</sub>=500 MPa, clear span=6.0m, carrying UDL
+                            of 35 kN/m: check if 4-20T bottom bars satisfy the flexural
+                            capacity requirement per IS 456 Cl. 38.1"). The retriever
+                            fetches the relevant code clauses, and the LLM performs
+                            the calculation, providing a step-by-step derivation with
+                            clause references at each step.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Confidence Scoring &amp; Verification</h3>
+                        <p>
+                            Every RAG-based check receives a confidence score based on:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Retrieval confidence:</strong> Cosine similarity between query and retrieved chunks (threshold: 0.82)</li>
+                            <li><strong>Self-consistency:</strong> The check is run 3 times with temperature=0.1; if all 3 agree, confidence is "high"</li>
+                            <li><strong>Citation verification:</strong> Every clause number cited in the response is verified against the code index</li>
+                            <li><strong>Numerical validation:</strong> Calculated values are cross-checked against the rule-based engine where possible</li>
+                        </ul>
+                        <p>
+                            Checks with confidence below "medium" are flagged for
+                            mandatory human review. In practice, approximately
+                            <strong>12% of RAG-based checks</strong> require manual
+                            verification.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: STAGE 4 — REPORT GENERATION
+             ========================================== -->
+        <section class="ch-section" id="stage-report-generation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-file-lines"></i>
+                    Stage 4: Automated Report Generation
+                </h2>
+
+                <p>
+                    The compliance checking stage produces a structured dataset of
+                    check results. The report generation stage transforms this data
+                    into a professional design review document that matches
+                    Meridian's existing report format and tone.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-pen-nib"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>LLM-Generated Review Comments</h3>
+                        <p>
+                            For each compliance check result, the LLM generates a
+                            review comment in Meridian's standard format:
+                        </p>
+                        <div style="background:var(--bg-code); border-radius:8px; padding:16px 20px; margin:16px 0; font-family:var(--font-mono); font-size:0.85rem; line-height:1.8; overflow-x:auto;">
+                            <div><span style="color:var(--code-keyword);">Comment #:</span> <span style="color:var(--code-string);">RC-042</span></div>
+                            <div><span style="color:var(--code-keyword);">Drawing Ref:</span> <span style="color:var(--code-string);">S-12, Grid C3-C5</span></div>
+                            <div><span style="color:var(--code-keyword);">Element:</span> <span style="color:var(--code-string);">Beam B14 (300x600mm)</span></div>
+                            <div><span style="color:var(--code-keyword);">Check:</span> <span style="color:var(--code-string);">Minimum shear reinforcement</span></div>
+                            <div><span style="color:var(--code-keyword);">Code Ref:</span> <span style="color:var(--code-string);">IS 456:2000, Cl. 26.5.1.6</span></div>
+                            <div><span style="color:var(--code-keyword);">Required:</span> <span style="color:var(--code-string);">8mm dia @ 300 c/c (A_sv,min = 0.4b*s/0.87*f_y)</span></div>
+                            <div><span style="color:var(--code-keyword);">Provided:</span> <span style="color:var(--code-string);">8mm dia @ 350 c/c</span></div>
+                            <div><span style="color:var(--code-keyword);">Status:</span> <span style="color:var(--code-keyword);">REVISE</span></div>
+                            <div><span style="color:var(--code-keyword);">Remark:</span> <span style="color:var(--code-string);">Shear stirrup spacing exceeds maximum permitted. Reduce spacing to 300mm c/c or less.</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Report Structure</h3>
+                        <p>
+                            The generated report includes:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Executive summary:</strong> Total checks performed, pass/fail/review counts, critical findings</li>
+                            <li><strong>Design basis verification:</strong> Material grades, load combinations, code editions confirmed</li>
+                            <li><strong>Member-by-member results:</strong> Organised by structural system (beams, columns, slabs, foundations)</li>
+                            <li><strong>Code compliance matrix:</strong> Tabular summary of all code provisions checked and their status</li>
+                            <li><strong>Critical findings:</strong> High-priority items requiring immediate attention, with severity ranking</li>
+                            <li><strong>Appendix:</strong> Detailed calculations for all REVISE dispositions with step-by-step derivations</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Key Design Decision</span>
+                    </div>
+                    <p>
+                        The system generates the report in a structured intermediate
+                        format (JSON), not directly as a Word document. This allows
+                        the human reviewer to modify, reorder, add, or remove comments
+                        before the final document is rendered. The LLM produces
+                        content; the formatting is deterministic. This separation
+                        ensures that layout changes never require re-running the AI
+                        pipeline.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: STAGE 5 — HUMAN REVIEW & SIGN-OFF
+             ========================================== -->
+        <section class="ch-section" id="stage-human-review">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-user-shield"></i>
+                    Stage 5: Human Review &amp; Sign-off
+                </h2>
+
+                <p>
+                    The final stage is non-negotiable: a qualified professional
+                    engineer reviews every AI-generated comment, validates the
+                    compliance checks, exercises engineering judgment on ambiguous
+                    cases, and signs the report. The AI system is a tool; the
+                    engineer is the professional.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tasks"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Review Interface</h3>
+                        <p>
+                            Meridian built a custom review interface that presents
+                            each AI-generated comment alongside the source drawing
+                            region and the retrieved code clause. The engineer can:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Accept:</strong> Approve the comment as-is</li>
+                            <li><strong>Edit:</strong> Modify the wording, add context, or change the disposition</li>
+                            <li><strong>Reject:</strong> Remove a false positive or incorrect comment</li>
+                            <li><strong>Escalate:</strong> Flag for senior review when the AI's assessment is uncertain</li>
+                            <li><strong>Add:</strong> Insert new comments that the AI missed</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Human Reviewer Metrics</h3>
+                        <p>
+                            After six months of operation, Meridian tracked the human
+                            reviewer's actions on AI-generated comments:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Accepted as-is:</strong> 72% of comments</li>
+                            <li><strong>Edited (minor wording):</strong> 16% of comments</li>
+                            <li><strong>Rejected (false positive):</strong> 8% of comments</li>
+                            <li><strong>Escalated:</strong> 3% of comments</li>
+                            <li><strong>Added (AI missed):</strong> ~1% additional comments added by human reviewer</li>
+                        </ul>
+                        <p>
+                            The 8% false positive rate and 1% miss rate (comments the
+                            AI failed to generate) are key quality metrics. The false
+                            positive rate is manageable &mdash; rejecting an incorrect
+                            comment takes seconds. The 1% miss rate confirms that the
+                            AI catches the vast majority of code violations.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: WORKFLOW COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="workflow-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-left-right"></i>
+                    Traditional vs. AI-Assisted Workflow Comparison
+                </h2>
+
+                <p>
+                    The following comparison quantifies the impact of the AI system
+                    across every phase of the design review process, based on data
+                    from 35 projects completed during the six-month pilot period.
+                </p>
+
+                <div style="overflow-x:auto; margin:20px 0;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border-active);">
+                                <th style="text-align:left; padding:12px 16px; color:var(--accent-primary);">Phase</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Traditional</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">AI-Assisted</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Reduction</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background:var(--table-row-alt);">
+                                <td style="padding:10px 16px;">Document Organisation</td>
+                                <td style="text-align:center; padding:10px 16px;">1.5 days</td>
+                                <td style="text-align:center; padding:10px 16px;">0.25 days</td>
+                                <td style="text-align:center; padding:10px 16px; color:var(--accent-success);">83%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 16px;">Preliminary Review</td>
+                                <td style="text-align:center; padding:10px 16px;">2.0 days</td>
+                                <td style="text-align:center; padding:10px 16px;">0.5 days</td>
+                                <td style="text-align:center; padding:10px 16px; color:var(--accent-success);">75%</td>
+                            </tr>
+                            <tr style="background:var(--table-row-alt);">
+                                <td style="padding:10px 16px;">Detailed Checking</td>
+                                <td style="text-align:center; padding:10px 16px;">6.0 days</td>
+                                <td style="text-align:center; padding:10px 16px;">0.5 days</td>
+                                <td style="text-align:center; padding:10px 16px; color:var(--accent-success);">92%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 16px;">Report Preparation</td>
+                                <td style="text-align:center; padding:10px 16px;">2.5 days</td>
+                                <td style="text-align:center; padding:10px 16px;">0.25 days</td>
+                                <td style="text-align:center; padding:10px 16px; color:var(--accent-success);">90%</td>
+                            </tr>
+                            <tr style="background:var(--table-row-alt);">
+                                <td style="padding:10px 16px;">Human Review &amp; QA</td>
+                                <td style="text-align:center; padding:10px 16px;">2.0 days</td>
+                                <td style="text-align:center; padding:10px 16px;">1.5 days</td>
+                                <td style="text-align:center; padding:10px 16px; color:var(--accent-success);">25%</td>
+                            </tr>
+                            <tr style="border-top:2px solid var(--border-active); font-weight:700;">
+                                <td style="padding:12px 16px;">Total</td>
+                                <td style="text-align:center; padding:12px 16px;">14.0 days</td>
+                                <td style="text-align:center; padding:12px 16px;">3.0 days</td>
+                                <td style="text-align:center; padding:12px 16px; color:var(--accent-primary);">79%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>
+                    The most dramatic reduction is in <strong>detailed checking</strong>
+                    (92%), where the combination of rule-based pre-checks and RAG-based
+                    compliance verification replaces days of manual code lookup. The
+                    <strong>human review phase shrinks the least</strong> (25%) because
+                    this is where irreplaceable engineering judgment is exercised.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: ACCURACY ANALYSIS
+             ========================================== -->
+        <section class="ch-section" id="accuracy-analysis">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bullseye"></i>
+                    Accuracy Analysis: AI vs. Human Reviewers
+                </h2>
+
+                <p>
+                    To benchmark the AI system's accuracy, Meridian conducted a
+                    blind comparison: 10 projects were reviewed independently by
+                    both the AI system and a panel of three senior engineers. The
+                    engineers' consensus review served as the ground truth.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Detection Rates by Error Category</h3>
+                        <div style="overflow-x:auto; margin:16px 0;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-active);">
+                                        <th style="text-align:left; padding:10px 14px; color:var(--accent-primary);">Error Type</th>
+                                        <th style="text-align:center; padding:10px 14px; color:var(--accent-primary);">AI Detection</th>
+                                        <th style="text-align:center; padding:10px 14px; color:var(--accent-primary);">Human Detection</th>
+                                        <th style="text-align:center; padding:10px 14px; color:var(--accent-primary);">Winner</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background:var(--table-row-alt);">
+                                        <td style="padding:8px 14px;">Minimum reinforcement violations</td>
+                                        <td style="text-align:center; padding:8px 14px;">98%</td>
+                                        <td style="text-align:center; padding:8px 14px;">89%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-primary);">AI</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 14px;">Cover requirement errors</td>
+                                        <td style="text-align:center; padding:8px 14px;">99%</td>
+                                        <td style="text-align:center; padding:8px 14px;">94%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-primary);">AI</td>
+                                    </tr>
+                                    <tr style="background:var(--table-row-alt);">
+                                        <td style="padding:8px 14px;">Spacing violations (stirrups)</td>
+                                        <td style="text-align:center; padding:8px 14px;">97%</td>
+                                        <td style="text-align:center; padding:8px 14px;">82%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-primary);">AI</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 14px;">Development length errors</td>
+                                        <td style="text-align:center; padding:8px 14px;">95%</td>
+                                        <td style="text-align:center; padding:8px 14px;">78%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-primary);">AI</td>
+                                    </tr>
+                                    <tr style="background:var(--table-row-alt);">
+                                        <td style="padding:8px 14px;">Load path discontinuities</td>
+                                        <td style="text-align:center; padding:8px 14px;">42%</td>
+                                        <td style="text-align:center; padding:8px 14px;">91%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-warm);">Human</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 14px;">Constructability issues</td>
+                                        <td style="text-align:center; padding:8px 14px;">15%</td>
+                                        <td style="text-align:center; padding:8px 14px;">85%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-warm);">Human</td>
+                                    </tr>
+                                    <tr style="background:var(--table-row-alt);">
+                                        <td style="padding:8px 14px;">Design philosophy concerns</td>
+                                        <td style="text-align:center; padding:8px 14px;">8%</td>
+                                        <td style="text-align:center; padding:8px 14px;">88%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-warm);">Human</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 14px;">Seismic detailing deficiencies</td>
+                                        <td style="text-align:center; padding:8px 14px;">91%</td>
+                                        <td style="text-align:center; padding:8px 14px;">86%</td>
+                                        <td style="text-align:center; padding:8px 14px; color:var(--accent-primary);">AI</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Key Findings</h3>
+                <p>
+                    The AI system excels at <strong>rule-based, quantitative
+                    checks</strong> where the code provision can be expressed as a
+                    numerical comparison. It consistently outperforms human reviewers
+                    in catching minimum reinforcement, cover, and spacing violations
+                    &mdash; errors that humans frequently overlook due to fatigue,
+                    particularly in large projects with hundreds of members.
+                </p>
+                <p>
+                    Conversely, humans dramatically outperform the AI on
+                    <strong>judgment-intensive, holistic assessments</strong>: load
+                    path adequacy, constructability, and design philosophy. These
+                    require spatial reasoning, experience-based intuition, and an
+                    understanding of construction practice that current AI systems
+                    cannot replicate. This finding validates the "AI as augmentation"
+                    approach rather than replacement.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <span>Engineering Insight</span>
+                    </div>
+                    <div class="analogy-block__body">
+                        <p>
+                            The AI is like a meticulous quantity surveyor who checks
+                            every dimension on every drawing against the bill of
+                            quantities &mdash; tireless, consistent, and thorough.
+                            But the experienced project manager still walks the site,
+                            looks at the soil conditions, talks to the contractor,
+                            and decides whether the proposed construction sequence
+                            will actually work. Both roles are essential; neither
+                            can fully replace the other.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: COST-BENEFIT ANALYSIS
+             ========================================== -->
+        <section class="ch-section" id="cost-benefit">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-coins"></i>
+                    Cost-Benefit Analysis
+                </h2>
+
+                <p>
+                    Meridian conducted a rigorous cost-benefit analysis after the
+                    six-month pilot. The numbers below reflect actual costs, not
+                    projections.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Implementation Costs (One-Time)</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>NER model training &amp; annotation:</strong> 3,200 person-hours (12 months, 2 ML engineers + 1 domain expert)</li>
+                            <li><strong>RAG system development:</strong> 2,100 person-hours (code chunking, embedding, retrieval pipeline)</li>
+                            <li><strong>OCR pipeline &amp; document parser:</strong> 1,800 person-hours</li>
+                            <li><strong>Review interface development:</strong> 1,200 person-hours</li>
+                            <li><strong>Infrastructure (GPU servers, vector DB):</strong> Initial setup cost</li>
+                            <li><strong>Total one-time investment:</strong> Approximately 8,300 person-hours plus infrastructure</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Ongoing Costs (Monthly)</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>LLM API costs:</strong> Approximately 1,500&ndash;2,500 USD/month (GPT-4 class model for complex checks)</li>
+                            <li><strong>Cloud infrastructure:</strong> 800&ndash;1,200 USD/month (vector DB, compute, storage)</li>
+                            <li><strong>ML engineer maintenance:</strong> 0.25 FTE for model monitoring, updates, and fine-tuning</li>
+                            <li><strong>Code updates:</strong> 40&ndash;60 hours per year to update the knowledge base when codes are revised</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-piggy-bank"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Benefits Realised</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Time savings:</strong> 11 days per project &times; 100 projects/year = 1,100 senior-engineer-days saved</li>
+                            <li><strong>Throughput increase:</strong> Review capacity increased from 100 to 180 projects/year without new hires</li>
+                            <li><strong>Quality improvement:</strong> 23% increase in code violations detected per review</li>
+                            <li><strong>Consistency:</strong> Standard deviation in review thoroughness reduced by 67%</li>
+                            <li><strong>Junior engineer enablement:</strong> Junior engineers can now lead reviews with AI assistance, with senior oversight reduced to the human review phase only</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    <strong>Break-even point:</strong> The system paid for its
+                    development costs within <strong>8 months</strong> of deployment
+                    (month 14 from project start). By month 18, cumulative savings
+                    exceeded development costs by 2.3&times;. The projected 3-year
+                    ROI is <strong>5.8&times;</strong> the total investment.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: IMPLEMENTATION CHALLENGES
+             ========================================== -->
+        <section class="ch-section" id="implementation-challenges">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Implementation Challenges
+                </h2>
+
+                <p>
+                    The path to deployment was not smooth. Meridian encountered
+                    significant technical, organisational, and cultural challenges
+                    that offer valuable lessons for firms considering similar
+                    systems.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>OCR Quality on Legacy Drawings</h3>
+                        <p>
+                            Older scanned drawings (pre-2005) with low resolution,
+                            faded ink, or hand-drawn annotations produced OCR accuracy
+                            as low as 72%. The system required a separate processing
+                            path for legacy documents, including image enhancement
+                            (contrast adjustment, de-skewing, noise removal) and
+                            manual verification of extracted parameters. This added
+                            0.5&ndash;1.0 days to the review timeline for legacy
+                            projects.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-language"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Engineering Notation Ambiguity</h3>
+                        <p>
+                            Engineering notation is rife with ambiguity: "4-20T" could
+                            be 4 bars of 20mm diameter (correct) or a range from 4 to
+                            20 (incorrect parse). "150 c/c" means centre-to-centre
+                            spacing of 150mm, but the NER model initially confused
+                            this with dimension values. Resolving these ambiguities
+                            required extensive domain-specific training data and
+                            context-aware parsing rules. The model needed to understand
+                            that "8mm @ 150 c/c" is a stirrup specification, not two
+                            separate dimensions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-branch"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Code Interpretation Edge Cases</h3>
+                        <p>
+                            Building codes contain provisions that require
+                            interpretation, not just lookup. IS 456 Clause 23.2.1
+                            specifies deflection limits but notes that these may be
+                            exceeded "under certain conditions" with proper
+                            justification. The AI system initially treated all such
+                            provisions as hard limits, generating false positives.
+                            Handling interpretive provisions required adding a
+                            classification layer that distinguishes between mandatory
+                            provisions ("shall"), recommended provisions ("should"),
+                            and conditional provisions ("may, subject to...").
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Cultural Resistance</h3>
+                        <p>
+                            Several senior engineers initially resisted the system,
+                            viewing it as a threat to their expertise. "I've been
+                            doing design reviews for 25 years &mdash; I don't need a
+                            machine to tell me what to check." Overcoming this required
+                            demonstrating that the system enhanced rather than
+                            replaced their role, involved them in the system design,
+                            and showed them concrete examples of errors the system
+                            caught that they had missed. After three months, the same
+                            engineers became the system's strongest advocates.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Data Confidentiality</h3>
+                        <p>
+                            Client drawings and design documents are confidential.
+                            Sending them to cloud-based LLM APIs raised data privacy
+                            concerns. Meridian addressed this by deploying an
+                            on-premise LLM (Llama 2 70B, later upgraded to Llama 3)
+                            for the compliance checking stage, using cloud APIs only
+                            for the less-sensitive report formatting stage with
+                            anonymised data. This hybrid approach maintained
+                            confidentiality while leveraging the superior language
+                            quality of frontier models for report generation.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: LESSONS LEARNED
+             ========================================== -->
+        <section class="ch-section" id="lessons-learned">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Lessons Learned
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Start with Rule-Based, Add AI Incrementally</h3>
+                        <p>
+                            The most impactful early wins came from deterministic
+                            rule-based checks, not AI. Minimum cover, maximum spacing,
+                            and reinforcement ratio checks are simple conditionals
+                            that can be coded in a weekend and deliver immediate value.
+                            Adding RAG-based complex reasoning on top of this
+                            rule-based foundation was far more effective than building
+                            an entirely AI-driven system from scratch.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Domain Expert Involvement is Non-Negotiable</h3>
+                        <p>
+                            Every stage of development required deep involvement from
+                            practising structural engineers. The ML engineers built
+                            the infrastructure; the domain experts defined what to
+                            check, how to check it, and what constitutes a correct
+                            result. Projects that minimise domain expert involvement
+                            produce technically impressive but practically useless
+                            systems.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>False Positives Are More Damaging Than False Negatives</h3>
+                        <p>
+                            A system that generates too many incorrect review comments
+                            will be ignored by engineers. Meridian learned that tuning
+                            for precision (fewer false positives) was more important
+                            than tuning for recall (catching every possible issue).
+                            Engineers trust a system that is right 95% of the time
+                            far more than one that catches everything but is wrong
+                            30% of the time. The target was set at less than 10%
+                            false positive rate.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Human Review Phase Cannot Be Shortened</h3>
+                        <p>
+                            Despite pressure to reduce the human review time (the
+                            remaining bottleneck), Meridian's leadership decided
+                            that the 1.5-day human review phase was the minimum
+                            acceptable for professional liability. The AI saves
+                            time in preparation and checking; it does not save time
+                            in professional judgment. Attempting to compress the
+                            human review phase would undermine the system's
+                            fundamental value proposition of augmented (not
+                            autonomous) design review.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-5"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Continuous Feedback Loop is Essential</h3>
+                        <p>
+                            Every human correction (edit, reject, add) is fed back
+                            into the system as training data. After six months,
+                            the false positive rate dropped from 14% to 8%, and the
+                            miss rate from 3.5% to 1%. Without this feedback loop,
+                            the system would stagnate. Firms must budget for ongoing
+                            model improvement, not just initial deployment.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: FUTURE DIRECTIONS
+             ========================================== -->
+        <section class="ch-section" id="future-directions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-rocket"></i>
+                    Future Directions
+                </h2>
+
+                <p>
+                    Meridian's roadmap extends the AI-assisted review system in
+                    several directions, driven by emerging capabilities in
+                    multimodal AI and foundation models.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-images"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Multimodal Models Reading Drawings Directly</h3>
+                        <p>
+                            The current pipeline relies on OCR to convert drawings
+                            to text before analysis. Emerging multimodal models
+                            (GPT-4V, Gemini Pro Vision, Claude 3) can interpret
+                            images directly. The vision is to feed a structural
+                            drawing sheet directly to a multimodal model and have
+                            it identify structural elements, read dimensions and
+                            reinforcement details, understand connection details
+                            from section drawings, and perform compliance checks
+                            &mdash; all from the visual representation, eliminating
+                            the OCR stage entirely.
+                        </p>
+                        <p>
+                            Early experiments show promising results for simple
+                            drawings (85% accuracy on beam schedules) but significant
+                            challenges remain for complex detail drawings with
+                            overlapping annotations, multiple scales, and
+                            non-standard layouts. Meridian estimates this capability
+                            will be production-ready within 2&ndash;3 years.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>BIM Integration</h3>
+                        <p>
+                            Integrating the review system with BIM (Building
+                            Information Modelling) software would enable direct
+                            access to the 3D model data, eliminating both the
+                            OCR stage and the information extraction stage. The
+                            system could query the BIM model directly for member
+                            dimensions, material properties, and reinforcement
+                            details, then run compliance checks against the code
+                            knowledge base. Meridian is developing an IFC parser
+                            that maps BIM entities to their compliance checking
+                            schema.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-globe"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Multi-Code, Multi-Jurisdiction Support</h3>
+                        <p>
+                            The current system supports IS, ACI, and Eurocode
+                            standards. Future development will add support for
+                            BS EN (British), AS (Australian), and NZS (New Zealand)
+                            codes, with automatic code selection based on project
+                            location. The challenge is not just adding code text to
+                            the RAG corpus but understanding the philosophical
+                            differences between code systems (limit state vs.
+                            working stress, partial safety factors vs. load and
+                            resistance factor design).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>AI-Assisted Design (Not Just Review)</h3>
+                        <p>
+                            The ultimate vision extends beyond review to design
+                            assistance: given a set of design requirements (spans,
+                            loads, material constraints, code requirements), the
+                            AI system could propose preliminary member sizes,
+                            reinforcement layouts, and connection details. The
+                            engineer would review and refine the AI's proposals,
+                            rather than starting from scratch. This reverses the
+                            workflow: instead of AI checking human designs, humans
+                            would refine AI-generated designs.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: DEMO 1 — DESIGN REVIEW SIMULATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-review-simulator">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Demo 1: Design Review Simulator
+                </h2>
+
+                <p>
+                    Select a structural element below. The simulator will extract
+                    its parameters, run code compliance checks against IS 456
+                    provisions, and display pass/fail results with code references
+                    &mdash; replicating the core of the AI-assisted review pipeline.
+                </p>
+
+                <div class="demo-panel" id="review-sim-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <span>AI Design Review Simulator</span>
+                    </div>
+                    <div class="demo-panel__body" style="padding:24px;">
+
+                        <div style="margin-bottom:20px;">
+                            <label style="display:block; font-weight:600; margin-bottom:8px; color:var(--text-primary);">
+                                <i class="fa-solid fa-cubes"></i> Select Structural Element:
+                            </label>
+                            <select id="sim-element-select" style="width:100%; max-width:400px; padding:10px 14px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-tertiary); color:var(--text-primary); font-size:0.95rem; cursor:pointer;">
+                                <option value="">-- Choose an element --</option>
+                                <option value="beam">Beam B14 (300x600mm, M30, Fe500)</option>
+                                <option value="column">Column C7 (450x450mm, M35, Fe500)</option>
+                                <option value="slab">Slab S3 (150mm thick, M25, Fe415)</option>
+                            </select>
+                        </div>
+
+                        <button id="sim-run-btn" style="padding:10px 28px; border-radius:8px; border:none; background:var(--gradient-main); color:var(--text-inverse); font-weight:700; font-size:0.95rem; cursor:pointer; margin-bottom:20px;" disabled>
+                            <i class="fa-solid fa-play"></i> Run Design Review
+                        </button>
+
+                        <div id="sim-extraction" style="display:none; margin-bottom:20px;">
+                            <h4 style="color:var(--accent-primary); margin-bottom:12px;">
+                                <i class="fa-solid fa-tags"></i> Extracted Parameters
+                            </h4>
+                            <div id="sim-params" style="background:var(--bg-code); border-radius:8px; padding:16px 20px; font-family:var(--font-mono); font-size:0.85rem; line-height:1.9;"></div>
+                        </div>
+
+                        <div id="sim-results" style="display:none;">
+                            <h4 style="color:var(--accent-primary); margin-bottom:12px;">
+                                <i class="fa-solid fa-clipboard-check"></i> Compliance Check Results
+                            </h4>
+                            <div id="sim-checks" style="display:flex; flex-direction:column; gap:10px;"></div>
+                        </div>
+
+                        <div id="sim-summary" style="display:none; margin-top:20px; padding:16px 20px; border-radius:8px; border:1px solid var(--border-active); background:var(--bg-card);">
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: DEMO 2 — WORKFLOW TIMELINE COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="demo-timeline">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Demo 2: Workflow Timeline Comparison
+                </h2>
+
+                <p>
+                    This animated side-by-side comparison shows the traditional
+                    14-day review process alongside the AI-assisted 3-day process.
+                    Click "Start Animation" to watch both timelines progress
+                    simultaneously, revealing how the AI compresses each phase.
+                </p>
+
+                <div class="demo-panel" id="timeline-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-clock"></i>
+                        <span>Workflow Timeline &mdash; Traditional vs. AI-Assisted</span>
+                    </div>
+                    <div class="demo-panel__body" style="padding:24px;">
+
+                        <button id="timeline-start-btn" style="padding:10px 28px; border-radius:8px; border:none; background:var(--gradient-main); color:var(--text-inverse); font-weight:700; font-size:0.95rem; cursor:pointer; margin-bottom:24px;">
+                            <i class="fa-solid fa-play"></i> Start Animation
+                        </button>
+                        <button id="timeline-reset-btn" style="padding:10px 28px; border-radius:8px; border:none; background:var(--bg-tertiary); color:var(--text-primary); font-weight:700; font-size:0.95rem; cursor:pointer; margin-bottom:24px; display:none; border:1px solid var(--border-subtle);">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+
+                        <canvas id="timeline-canvas" width="800" height="500" style="width:100%; border-radius:8px; background:var(--bg-code);"></canvas>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            In Meridian's AI-assisted pipeline, which stage catches
+                            approximately 40% of all code violations without any
+                            LLM involvement?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Document Ingestion (OCR + PDF parsing)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Information Extraction (NER)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz1" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Rule-based pre-checks within the Code Compliance stage</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Automated Report Generation</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> The rule-based pre-checks
+                            are deterministic conditional checks (e.g., is the provided
+                            cover greater than the minimum required cover for the given
+                            exposure class?) that implement code provisions directly as
+                            numerical comparisons. They require no LLM inference,
+                            are 100% accurate by construction, and process thousands
+                            of checks per second. These simple but thorough checks
+                            catch 40% of all code violations found by the system.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            In the accuracy comparison between AI and human reviewers,
+                            which category of errors did human reviewers detect far
+                            better than the AI system?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Minimum reinforcement violations</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Cover requirement errors</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz2" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Load path discontinuities and constructability issues</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Stirrup spacing violations</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Human reviewers dramatically
+                            outperformed the AI on load path discontinuities (91% vs 42%)
+                            and constructability issues (85% vs 15%). These categories
+                            require spatial reasoning, construction experience, and
+                            holistic understanding of how a building is actually built
+                            &mdash; capabilities that current AI systems lack. The AI
+                            excels at quantitative, rule-based checks (reinforcement,
+                            cover, spacing) where it consistently outperforms humans.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            Why did Meridian prioritise reducing false positives
+                            over maximising recall (catching every possible issue)?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>False positives are more dangerous than missed errors in structural engineering</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz3" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>A high false positive rate erodes engineer trust, causing them to ignore the system entirely</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>False positives are more expensive to compute than true positives</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Building codes require a maximum false positive rate of 5%</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> This is a crucial lesson in
+                            deploying AI for professional use. If engineers encounter
+                            too many incorrect review comments, they lose trust in the
+                            system and begin ignoring its outputs &mdash; including the
+                            correct ones. A system that is right 95% of the time earns
+                            trust; one that catches everything but is wrong 30% of the
+                            time is dismissed as unreliable. The missed errors (false
+                            negatives) are caught by the human reviewer in Stage 5.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What emerging technology does Meridian expect will
+                            eventually eliminate the OCR stage entirely from the
+                            AI-assisted design review pipeline?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Quantum computing applied to document processing</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz4" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Multimodal AI models that can interpret structural drawings directly as images</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Blockchain-based document verification systems</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Augmented reality headsets that scan drawings in real-time</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> Multimodal models (such as
+                            GPT-4V, Gemini Pro Vision, and Claude 3) can interpret
+                            images directly without requiring OCR text extraction.
+                            The vision is to feed a structural drawing sheet directly
+                            to the model and have it identify elements, read
+                            dimensions and reinforcement details, and perform
+                            compliance checks from the visual representation alone.
+                            Early experiments show 85% accuracy on beam schedules,
+                            with production readiness estimated at 2&ndash;3 years.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 18: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Five-stage pipeline:</strong> Document ingestion (OCR/PDF), information extraction (NER), code compliance checking (rule-based + RAG), report generation (LLM), and human review &amp; sign-off</li>
+                            <li><strong>79% time reduction:</strong> Average design review compressed from 14 working days to 3 working days</li>
+                            <li><strong>AI excels at quantitative checks:</strong> 95&ndash;99% detection rates for reinforcement, cover, and spacing violations, consistently outperforming human reviewers</li>
+                            <li><strong>Humans excel at judgment:</strong> Load path assessment, constructability, and design philosophy remain firmly in the human domain (85&ndash;91% human vs 8&ndash;42% AI)</li>
+                            <li><strong>Rule-based foundation:</strong> 40% of violations caught by simple deterministic checks with zero AI overhead</li>
+                            <li><strong>False positive management:</strong> Maintaining less than 10% false positive rate is critical for engineer trust and system adoption</li>
+                            <li><strong>ROI of 5.8x:</strong> System paid for itself within 8 months of deployment; 3-year projected return is 5.8 times total investment</li>
+                            <li><strong>Human sign-off is non-negotiable:</strong> Professional liability rests with the signing engineer, not the AI system</li>
+                            <li><strong>Continuous improvement:</strong> Feedback from human corrections reduces false positive rate over time (14% to 8% in six months)</li>
+                            <li><strong>Future: multimodal models</strong> will eliminate OCR by reading drawings directly; BIM integration will eliminate information extraction</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    This case study demonstrates that AI-assisted design review is
+                    not a futuristic concept but a <strong>practical, deployable
+                    reality</strong> for structural engineering firms today. The key
+                    to success is treating AI as an augmentation tool &mdash; not a
+                    replacement &mdash; for professional engineering judgment. The
+                    engineer's stamp, experience, and accountability remain at the
+                    centre of the process. AI simply gives the engineer better
+                    tools to work with.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <span>Final Reflection</span>
+                    </div>
+                    <div class="analogy-block__body">
+                        <p>
+                            The transition from manual to AI-assisted design review
+                            mirrors the transition from hand calculations to computer
+                            analysis in the 1980s and 1990s. Engineers who mastered
+                            STAAD and ETABS did not become less important &mdash; they
+                            became more productive. The same principle applies here:
+                            engineers who learn to work with AI will not be replaced
+                            by AI. They will be replaced by engineers who use AI.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub9.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">5.9 LLM Limitations &amp; Hallucinations</div>
+        </a>
+        <a href="index.html" class="chapter-nav-footer__link chapter-nav-footer__link--index">
+            <i class="fa-solid fa-list"></i>
+            <span>All Sub-chapters</span>
+        </a>
+        <a href="../index.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">Back to Home</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* -- Shared helpers -- */
+        var $ = function (s) { return document.querySelector(s); };
+        var $$ = function (s) { return document.querySelectorAll(s); };
+        var PI = Math.PI, TAU = PI * 2;
+
+        function rand(a, b) { return a + Math.random() * (b - a); }
+
+        function getColors() {
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:   dark ? '#2dd4bf' : '#059669',
+                CYAN:   dark ? '#22d3ee' : '#0284c7',
+                AMBER:  dark ? '#fbbf24' : '#d97706',
+                RED:    dark ? '#ef4444' : '#dc2626',
+                GREEN:  dark ? '#22c55e' : '#16a34a',
+                PURPLE: dark ? '#a78bfa' : '#7c3aed',
+                BG:     dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT:   dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:    dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:   dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE:   dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                STROKE: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE:  dark ? '#fff' : '#1a1a2e',
+                MUTED:  dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        }
+
+        function initCanvas(canvas) {
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width  = rect.width  * dpr;
+            canvas.height = rect.height * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx: ctx, w: rect.width, h: rect.height };
+        }
+
+        /* ==============================================
+           HERO CANVAS — PIPELINE FLOW NETWORK
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var time = 0;
+            var particles = [];
+            var dataPackets = [];
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                particles = [];
+                dataPackets = [];
+                var count = Math.floor((w * h) / 5000);
+                for (var i = 0; i < count; i++) {
+                    particles.push({
+                        x: rand(0, w), y: rand(0, h),
+                        vx: rand(-0.2, 0.2), vy: rand(-0.2, 0.2),
+                        r: rand(1.5, 3),
+                        phase: rand(0, TAU),
+                        type: Math.random() < 0.2 ? 'doc' : Math.random() < 0.4 ? 'check' : 'data'
+                    });
+                }
+                for (var j = 0; j < 8; j++) {
+                    dataPackets.push({
+                        x: rand(0, w), y: rand(0, h),
+                        tx: rand(0, w), ty: rand(0, h),
+                        speed: rand(0.5, 1.5),
+                        progress: rand(0, 1),
+                        size: rand(3, 5)
+                    });
+                }
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Grid */
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 60) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 60) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                /* Particles */
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+                    if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+
+                    var pulse = 0.5 + 0.5 * Math.sin(time * 0.025 + p.phase);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r * (0.8 + pulse * 0.4), 0, TAU);
+
+                    if (p.type === 'doc') {
+                        ctx.fillStyle = 'rgba(14,165,233,' + (0.3 + pulse * 0.4).toFixed(2) + ')';
+                    } else if (p.type === 'check') {
+                        ctx.fillStyle = 'rgba(34,197,94,' + (0.3 + pulse * 0.4).toFixed(2) + ')';
+                    } else {
+                        ctx.fillStyle = 'rgba(45,212,191,' + (0.15 + pulse * 0.2).toFixed(2) + ')';
+                    }
+                    ctx.fill();
+                }
+
+                /* Connections */
+                for (var a = 0; a < particles.length; a++) {
+                    for (var b = a + 1; b < particles.length; b++) {
+                        var dx = particles[a].x - particles[b].x;
+                        var dy = particles[a].y - particles[b].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 70) {
+                            var alpha = (1 - dist / 70) * 0.06;
+                            ctx.strokeStyle = 'rgba(45,212,191,' + alpha.toFixed(3) + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[a].x, particles[a].y);
+                            ctx.lineTo(particles[b].x, particles[b].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                /* Data packets flowing */
+                for (var d = 0; d < dataPackets.length; d++) {
+                    var pk = dataPackets[d];
+                    pk.progress += pk.speed * 0.003;
+                    if (pk.progress >= 1) {
+                        pk.x = pk.tx; pk.y = pk.ty;
+                        pk.tx = rand(0, w); pk.ty = rand(0, h);
+                        pk.progress = 0;
+                    }
+                    var cx = pk.x + (pk.tx - pk.x) * pk.progress;
+                    var cy = pk.y + (pk.ty - pk.y) * pk.progress;
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, pk.size, 0, TAU);
+                    ctx.fillStyle = 'rgba(0,212,170,0.6)';
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, pk.size * 2.5, 0, TAU);
+                    ctx.fillStyle = 'rgba(0,212,170,0.08)';
+                    ctx.fill();
+                }
+
+                time++;
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           DEMO 1: DESIGN REVIEW SIMULATOR
+           ============================================== */
+        (function initReviewSimulator() {
+            var selectEl = document.getElementById('sim-element-select');
+            var runBtn   = document.getElementById('sim-run-btn');
+            var extractDiv = document.getElementById('sim-extraction');
+            var paramsDiv  = document.getElementById('sim-params');
+            var resultsDiv = document.getElementById('sim-results');
+            var checksDiv  = document.getElementById('sim-checks');
+            var summaryDiv = document.getElementById('sim-summary');
+            if (!selectEl || !runBtn) return;
+
+            var elements = {
+                beam: {
+                    name: 'Beam B14',
+                    params: {
+                        'Member Type': 'Simply Supported Beam',
+                        'Dimensions': '300 mm x 600 mm (b x D)',
+                        'Effective Depth (d)': '550 mm',
+                        'Concrete Grade': 'M30 (f_ck = 30 MPa)',
+                        'Steel Grade': 'Fe500 (f_y = 500 MPa)',
+                        'Clear Span': '6.0 m',
+                        'Clear Cover': '30 mm',
+                        'Exposure': 'Moderate',
+                        'Bottom Reinf.': '4-20T (A_st = 1256 mm\u00B2)',
+                        'Top Reinf.': '2-16T (A_sc = 402 mm\u00B2)',
+                        'Stirrups': '8 mm dia @ 200 c/c',
+                        'Factored UDL': '42 kN/m'
+                    },
+                    checks: [
+                        { name: 'Minimum Cover', code: 'IS 456 Table 16', required: '30 mm (moderate exposure)', provided: '30 mm', pass: true, detail: 'Nominal cover of 30 mm satisfies the requirement for moderate exposure conditions.' },
+                        { name: 'Minimum Tension Reinf.', code: 'IS 456 Cl. 26.5.1.1', required: 'A_s,min = 0.85*b*d/f_y = 281 mm\u00B2', provided: '1256 mm\u00B2', pass: true, detail: 'Provided reinforcement (1256 mm\u00B2) exceeds minimum requirement (281 mm\u00B2) by a factor of 4.47.' },
+                        { name: 'Maximum Tension Reinf.', code: 'IS 456 Cl. 26.5.1.1', required: 'A_s,max = 0.04*b*D = 7200 mm\u00B2', provided: '1256 mm\u00B2', pass: true, detail: 'Provided reinforcement (1256 mm\u00B2) is within the maximum limit of 4% of gross area.' },
+                        { name: 'Flexural Capacity', code: 'IS 456 Cl. 38.1', required: 'M_u,req = w_u*l\u00B2/8 = 189 kN.m', provided: 'M_u,prov = 0.87*f_y*A_st*d*(1 - A_st*f_y/(b*d*f_ck)) = 278.4 kN.m', pass: true, detail: 'Moment capacity (278.4 kN.m) exceeds factored moment demand (189.0 kN.m). Utilisation ratio = 0.68.' },
+                        { name: 'Shear Capacity', code: 'IS 456 Cl. 40.1', required: 'V_u = 42*6/2 = 126 kN', provided: 'V_c + V_s = 85.2 + 63.1 = 148.3 kN', pass: true, detail: 'Combined shear resistance (148.3 kN) exceeds factored shear force (126 kN).' },
+                        { name: 'Max Stirrup Spacing', code: 'IS 456 Cl. 26.5.1.5', required: 'min(0.75d, 300mm) = 300 mm', provided: '200 mm', pass: true, detail: 'Stirrup spacing (200 mm) is within the maximum limit of 300 mm.' },
+                        { name: 'Deflection Check (span/d)', code: 'IS 456 Cl. 23.2.1', required: 'L/d_basic = 20, modified = 20*1.18 = 23.6', provided: 'L/d = 6000/550 = 10.9', pass: true, detail: 'Actual span-to-depth ratio (10.9) is well within allowable (23.6). Deflection is satisfactory.' }
+                    ]
+                },
+                column: {
+                    name: 'Column C7',
+                    params: {
+                        'Member Type': 'Short Column (braced)',
+                        'Dimensions': '450 mm x 450 mm',
+                        'Concrete Grade': 'M35 (f_ck = 35 MPa)',
+                        'Steel Grade': 'Fe500 (f_y = 500 MPa)',
+                        'Clear Cover': '40 mm',
+                        'Exposure': 'Moderate',
+                        'Unsupported Length': '3.2 m',
+                        'Effective Length': '0.65 x 3.2 = 2.08 m',
+                        'Longitudinal Reinf.': '8-20T (A_sc = 2512 mm\u00B2)',
+                        'Ties': '8 mm dia @ 250 c/c',
+                        'Factored Axial Load': '1850 kN',
+                        'Factored Moment': '95 kN.m'
+                    },
+                    checks: [
+                        { name: 'Minimum Cover', code: 'IS 456 Table 16', required: '30 mm (moderate)', provided: '40 mm', pass: true, detail: 'Provided cover (40 mm) exceeds minimum (30 mm). Satisfactory.' },
+                        { name: 'Slenderness Ratio', code: 'IS 456 Cl. 25.1.2', required: 'l_eff/D < 12 for short column', provided: '2080/450 = 4.62', pass: true, detail: 'Slenderness ratio (4.62) is well below the short column limit of 12. Column is indeed short.' },
+                        { name: 'Min Longitudinal Reinf.', code: 'IS 456 Cl. 26.5.3.1', required: '0.8% of A_g = 1620 mm\u00B2', provided: '2512 mm\u00B2 (1.24%)', pass: true, detail: 'Provided reinforcement (1.24%) exceeds the minimum 0.8% requirement.' },
+                        { name: 'Max Longitudinal Reinf.', code: 'IS 456 Cl. 26.5.3.1', required: '6% of A_g = 12150 mm\u00B2', provided: '2512 mm\u00B2 (1.24%)', pass: true, detail: 'Provided reinforcement (1.24%) is well within the 6% maximum. Satisfactory.' },
+                        { name: 'Tie Spacing', code: 'IS 456 Cl. 26.5.3.2(c)', required: 'min(d_min, 16*phi_long, 300) = min(450, 320, 300) = 300 mm', provided: '250 mm', pass: true, detail: 'Tie spacing (250 mm) is within the maximum permitted (300 mm).' },
+                        { name: 'Axial Capacity Check', code: 'IS 456 Cl. 39.3', required: 'P_u = 0.4*f_ck*A_c + 0.67*f_y*A_sc = 0.4*35*(202500-2512) + 0.67*500*2512 = 3641 kN', provided: 'P_u,applied = 1850 kN', pass: true, detail: 'Axial capacity (3641 kN) exceeds applied load (1850 kN). Utilisation ratio = 0.51.' },
+                        { name: 'Min Number of Bars', code: 'IS 456 Cl. 26.5.3.1(b)', required: '4 bars for rectangular column', provided: '8 bars', pass: true, detail: 'Provided bar count (8) exceeds the minimum of 4 for rectangular columns.' }
+                    ]
+                },
+                slab: {
+                    name: 'Slab S3',
+                    params: {
+                        'Member Type': 'One-way Slab (continuous)',
+                        'Thickness': '150 mm',
+                        'Effective Depth (d)': '125 mm',
+                        'Concrete Grade': 'M25 (f_ck = 25 MPa)',
+                        'Steel Grade': 'Fe415 (f_y = 415 MPa)',
+                        'Clear Cover': '20 mm',
+                        'Exposure': 'Mild',
+                        'Short Span': '3.5 m',
+                        'Main Reinf.': '10 mm dia @ 150 c/c (A_st = 524 mm\u00B2/m)',
+                        'Distribution Reinf.': '8 mm dia @ 250 c/c (A_sd = 201 mm\u00B2/m)',
+                        'Factored Load': '9.8 kN/m\u00B2'
+                    },
+                    checks: [
+                        { name: 'Minimum Cover', code: 'IS 456 Table 16', required: '20 mm (mild exposure)', provided: '20 mm', pass: true, detail: 'Nominal cover of 20 mm meets the minimum for mild exposure.' },
+                        { name: 'Minimum Thickness', code: 'IS 456 Cl. 23.2.1', required: 'Span/26 (continuous) = 3500/26 = 135 mm', provided: '150 mm', pass: true, detail: 'Provided thickness (150 mm) exceeds minimum (135 mm) for deflection control.' },
+                        { name: 'Min Main Reinf.', code: 'IS 456 Cl. 26.5.2.1', required: '0.12% of bD (HYSD) = 0.12/100 * 1000 * 150 = 180 mm\u00B2/m', provided: '524 mm\u00B2/m', pass: true, detail: 'Main reinforcement (524 mm\u00B2/m) exceeds minimum (180 mm\u00B2/m).' },
+                        { name: 'Max Main Spacing', code: 'IS 456 Cl. 26.3.3(b)(1)', required: 'min(3d, 300) = min(375, 300) = 300 mm', provided: '150 mm', pass: true, detail: 'Main bar spacing (150 mm) is well within maximum (300 mm).' },
+                        { name: 'Min Distribution Reinf.', code: 'IS 456 Cl. 26.5.2.1', required: '0.12% of bD = 180 mm\u00B2/m', provided: '201 mm\u00B2/m', pass: true, detail: 'Distribution reinforcement (201 mm\u00B2/m) exceeds minimum (180 mm\u00B2/m).' },
+                        { name: 'Max Distribution Spacing', code: 'IS 456 Cl. 26.3.3(b)(2)', required: 'min(5d, 450) = min(625, 450) = 450 mm', provided: '250 mm', pass: true, detail: 'Distribution bar spacing (250 mm) is within maximum (450 mm).' },
+                        { name: 'Flexural Capacity', code: 'IS 456 Cl. 38.1', required: 'M_u,req = 9.8 * 3.5\u00B2 / 10 = 12.0 kN.m/m (continuous)', provided: 'M_u,prov = 0.87*415*524*125*(1-524*415/(1000*125*25)) = 22.8 kN.m/m', pass: true, detail: 'Moment capacity (22.8 kN.m/m) exceeds demand (12.0 kN.m/m). Utilisation = 0.53.' }
+                    ]
+                }
+            };
+
+            selectEl.addEventListener('change', function () {
+                runBtn.disabled = !selectEl.value;
+                extractDiv.style.display = 'none';
+                resultsDiv.style.display = 'none';
+                summaryDiv.style.display = 'none';
+            });
+
+            runBtn.addEventListener('click', function () {
+                var key = selectEl.value;
+                if (!key || !elements[key]) return;
+                var el = elements[key];
+
+                /* Show extraction */
+                var phtml = '';
+                for (var pk in el.params) {
+                    phtml += '<div><span style="color:var(--code-keyword);">' + pk + ':</span> <span style="color:var(--code-string);">' + el.params[pk] + '</span></div>';
+                }
+                paramsDiv.innerHTML = phtml;
+                extractDiv.style.display = 'block';
+
+                /* Animate checks */
+                checksDiv.innerHTML = '';
+                resultsDiv.style.display = 'block';
+                summaryDiv.style.display = 'none';
+
+                var passCount = 0;
+                var failCount = 0;
+                el.checks.forEach(function (chk, idx) {
+                    setTimeout(function () {
+                        var icon = chk.pass
+                            ? '<i class="fa-solid fa-circle-check" style="color:var(--accent-success);"></i>'
+                            : '<i class="fa-solid fa-circle-xmark" style="color:var(--accent-danger);"></i>';
+                        var status = chk.pass ? 'PASS' : 'FAIL';
+                        var statusColor = chk.pass ? 'var(--accent-success)' : 'var(--accent-danger)';
+                        if (chk.pass) passCount++; else failCount++;
+
+                        var card = document.createElement('div');
+                        card.style.cssText = 'background:var(--bg-tertiary); border-radius:8px; padding:14px 18px; border-left:3px solid ' + statusColor + '; opacity:0; transform:translateY(10px); transition:all 0.3s ease;';
+                        card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
+                            + '<strong>' + icon + ' ' + chk.name + '</strong>'
+                            + '<span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700; color:' + statusColor + ';">' + status + '</span>'
+                            + '</div>'
+                            + '<div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:4px;">'
+                            + '<i class="fa-solid fa-book"></i> ' + chk.code
+                            + '</div>'
+                            + '<div style="font-size:0.82rem; line-height:1.6; color:var(--text-secondary);">'
+                            + '<strong>Required:</strong> ' + chk.required + '<br>'
+                            + '<strong>Provided:</strong> ' + chk.provided
+                            + '</div>'
+                            + '<div style="font-size:0.82rem; color:var(--text-muted); margin-top:6px; font-style:italic;">'
+                            + chk.detail
+                            + '</div>';
+                        checksDiv.appendChild(card);
+
+                        requestAnimationFrame(function () {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        });
+
+                        /* Show summary after last check */
+                        if (idx === el.checks.length - 1) {
+                            setTimeout(function () {
+                                var total = passCount + failCount;
+                                summaryDiv.innerHTML = '<h4 style="color:var(--accent-primary); margin-bottom:8px;">'
+                                    + '<i class="fa-solid fa-clipboard-check"></i> Review Summary for ' + el.name
+                                    + '</h4>'
+                                    + '<p style="font-size:0.92rem; line-height:1.8;">'
+                                    + '<strong>' + total + '</strong> checks performed. '
+                                    + '<span style="color:var(--accent-success);"><i class="fa-solid fa-circle-check"></i> ' + passCount + ' passed</span>, '
+                                    + '<span style="color:var(--accent-danger);"><i class="fa-solid fa-circle-xmark"></i> ' + failCount + ' failed</span>.'
+                                    + (failCount === 0
+                                        ? ' All code provisions satisfied. Recommend: <strong>ACCEPT</strong>.'
+                                        : ' Non-compliant items found. Recommend: <strong>REVISE</strong>.')
+                                    + '</p>';
+                                summaryDiv.style.display = 'block';
+                            }, 300);
+                        }
+                    }, idx * 400);
+                });
+            });
+        })();
+
+        /* ==============================================
+           DEMO 2: WORKFLOW TIMELINE COMPARISON
+           ============================================== */
+        (function initTimelineDemo() {
+            var canvas   = document.getElementById('timeline-canvas');
+            var startBtn = document.getElementById('timeline-start-btn');
+            var resetBtn = document.getElementById('timeline-reset-btn');
+            if (!canvas || !startBtn) return;
+
+            var ctx, w, h;
+            var animating = false;
+            var progress = 0; /* 0..1 */
+
+            var tradPhases = [
+                { label: 'Doc Organisation', days: 1.5, color: '#6366f1' },
+                { label: 'Preliminary Review', days: 2.0, color: '#8b5cf6' },
+                { label: 'Detailed Checking', days: 6.0, color: '#a855f7' },
+                { label: 'Report Prep', days: 2.5, color: '#c084fc' },
+                { label: 'QA & Sign-off', days: 2.0, color: '#d8b4fe' }
+            ];
+            var aiPhases = [
+                { label: 'AI Ingestion', days: 0.25, color: '#06b6d4' },
+                { label: 'NER Extraction', days: 0.25, color: '#0ea5e9' },
+                { label: 'AI Compliance', days: 0.25, color: '#22c55e' },
+                { label: 'Report Gen', days: 0.25, color: '#10b981' },
+                { label: 'Human Review', days: 1.5, color: '#2dd4bf' },
+                { label: 'Sign-off', days: 0.5, color: '#5eead4' }
+            ];
+
+            var tradTotal = 14;
+            var aiTotal = 3;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function drawFrame() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var pad = 40;
+                var barH = 28;
+                var gap = 6;
+                var topY = 60;
+                var midGap = 80;
+
+                /* Title */
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.fillStyle = C.WHITE;
+                ctx.textAlign = 'left';
+                ctx.fillText('Traditional Process (14 days)', pad, topY - 12);
+
+                /* Traditional timeline */
+                var tradBarWidth = w - pad * 2;
+                var tradX = pad;
+                var currentTradDay = 0;
+                for (var i = 0; i < tradPhases.length; i++) {
+                    var tp = tradPhases[i];
+                    var phaseW = (tp.days / tradTotal) * tradBarWidth;
+                    var phaseProgress = Math.min(1, Math.max(0, (progress * tradTotal - currentTradDay) / tp.days));
+
+                    /* Background */
+                    ctx.fillStyle = C.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(tradX, topY, phaseW - gap, barH, 4);
+                    ctx.fill();
+
+                    /* Fill */
+                    if (phaseProgress > 0) {
+                        ctx.fillStyle = tp.color;
+                        ctx.globalAlpha = 0.85;
+                        ctx.beginPath();
+                        ctx.roundRect(tradX, topY, (phaseW - gap) * phaseProgress, barH, 4);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+
+                    /* Label */
+                    ctx.font = '500 10px Inter, sans-serif';
+                    ctx.fillStyle = phaseProgress > 0.3 ? '#fff' : C.MUTED;
+                    ctx.textAlign = 'center';
+                    if (phaseW > 50) {
+                        ctx.fillText(tp.label, tradX + (phaseW - gap) / 2, topY + barH / 2 + 3);
+                    }
+
+                    /* Days label below */
+                    ctx.font = '400 9px JetBrains Mono, monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.fillText(tp.days + 'd', tradX + (phaseW - gap) / 2, topY + barH + 14);
+
+                    tradX += phaseW;
+                    currentTradDay += tp.days;
+                }
+
+                /* Day markers for traditional */
+                ctx.font = '400 9px JetBrains Mono, monospace';
+                ctx.fillStyle = C.MUTED;
+                ctx.textAlign = 'center';
+                for (var d = 0; d <= 14; d += 2) {
+                    var dx = pad + (d / tradTotal) * tradBarWidth;
+                    ctx.fillText('D' + d, dx, topY + barH + 30);
+                    ctx.strokeStyle = C.GRID;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(dx, topY + barH + 32);
+                    ctx.lineTo(dx, topY + barH + 38);
+                    ctx.stroke();
+                }
+
+                /* AI-Assisted timeline */
+                var aiTopY = topY + barH + midGap;
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.fillStyle = C.WHITE;
+                ctx.textAlign = 'left';
+                ctx.fillText('AI-Assisted Process (3 days)', pad, aiTopY - 12);
+
+                var aiBarWidth = (aiTotal / tradTotal) * tradBarWidth;
+                var aiX = pad;
+                var currentAiDay = 0;
+                for (var j = 0; j < aiPhases.length; j++) {
+                    var ap = aiPhases[j];
+                    var aPhaseW = (ap.days / aiTotal) * aiBarWidth;
+                    var aProgress = Math.min(1, Math.max(0, (progress * aiTotal - currentAiDay) / ap.days));
+
+                    ctx.fillStyle = C.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(aiX, aiTopY, aPhaseW - gap, barH, 4);
+                    ctx.fill();
+
+                    if (aProgress > 0) {
+                        ctx.fillStyle = ap.color;
+                        ctx.globalAlpha = 0.85;
+                        ctx.beginPath();
+                        ctx.roundRect(aiX, aiTopY, (aPhaseW - gap) * aProgress, barH, 4);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+
+                    ctx.font = '500 10px Inter, sans-serif';
+                    ctx.fillStyle = aProgress > 0.3 ? '#fff' : C.MUTED;
+                    ctx.textAlign = 'center';
+                    if (aPhaseW > 40) {
+                        ctx.fillText(ap.label, aiX + (aPhaseW - gap) / 2, aiTopY + barH / 2 + 3);
+                    }
+
+                    ctx.font = '400 9px JetBrains Mono, monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.fillText(ap.days + 'd', aiX + (aPhaseW - gap) / 2, aiTopY + barH + 14);
+
+                    aiX += aPhaseW;
+                    currentAiDay += ap.days;
+                }
+
+                /* Remaining area — time saved */
+                if (progress > 0.1) {
+                    var savedX = pad + aiBarWidth;
+                    var savedW = tradBarWidth - aiBarWidth;
+                    ctx.fillStyle = 'rgba(34,197,94,0.06)';
+                    ctx.strokeStyle = 'rgba(34,197,94,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.roundRect(savedX, aiTopY, savedW, barH, 4);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.font = '600 12px Inter, sans-serif';
+                    ctx.fillStyle = '#22c55e';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('11 days saved (79% reduction)', savedX + savedW / 2, aiTopY + barH / 2 + 4);
+                }
+
+                /* Summary stats at bottom */
+                var statsY = aiTopY + barH + 60;
+                if (progress >= 1) {
+                    var stats = [
+                        { icon: '\uf017', label: 'Time Saved', value: '11 days / project', color: '#22c55e' },
+                        { icon: '\uf201', label: 'Throughput', value: '100 \u2192 180 projects/yr', color: '#0ea5e9' },
+                        { icon: '\uf06e', label: 'Violations Detected', value: '+23% more found', color: '#2dd4bf' },
+                        { icon: '\uf155', label: 'ROI (3-year)', value: '5.8x return', color: '#fbbf24' }
+                    ];
+                    var statW = (w - pad * 2) / stats.length;
+                    ctx.textAlign = 'center';
+                    for (var s = 0; s < stats.length; s++) {
+                        var sx = pad + statW * s + statW / 2;
+                        ctx.font = '700 18px JetBrains Mono, monospace';
+                        ctx.fillStyle = stats[s].color;
+                        ctx.fillText(stats[s].value, sx, statsY);
+                        ctx.font = '400 11px Inter, sans-serif';
+                        ctx.fillStyle = C.MUTED;
+                        ctx.fillText(stats[s].label, sx, statsY + 18);
+                    }
+                }
+            }
+
+            function animate() {
+                if (!animating) return;
+                progress += 0.004;
+                if (progress >= 1.15) {
+                    progress = 1.15;
+                    animating = false;
+                    startBtn.style.display = 'none';
+                    resetBtn.style.display = 'inline-block';
+                }
+                drawFrame();
+                if (animating) requestAnimationFrame(animate);
+            }
+
+            startBtn.addEventListener('click', function () {
+                if (animating) return;
+                animating = true;
+                progress = 0;
+                startBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running...';
+                animate();
+            });
+
+            resetBtn.addEventListener('click', function () {
+                animating = false;
+                progress = 0;
+                startBtn.style.display = 'inline-block';
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start Animation';
+                resetBtn.style.display = 'none';
+                resize();
+                drawFrame();
+            });
+
+            resize();
+            drawFrame();
+            window.addEventListener('resize', function () { resize(); drawFrame(); });
+
+            /* Redraw on theme change */
+            var observer = new MutationObserver(function () { drawFrame(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

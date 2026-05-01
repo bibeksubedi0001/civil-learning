@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1.3 AI Capabilities &mdash; Perception, Reasoning, Learning, Interaction | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore AI's four core capabilities — Perception, Reasoning, Learning, and Interaction — through civil engineering analogies, interactive demos, and real-world applications.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ── Capability Radar Demo ── */
+        .radar-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .radar-canvas-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        .radar-canvas-wrap canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .radar-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            flex-wrap: wrap;
+        }
+
+        .radar-controls button {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s, border-color 0.2s;
+        }
+
+        .radar-controls button:hover,
+        .radar-controls button.active {
+            background: var(--accent-primary);
+            color: #fff;
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        .radar-legend {
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* ── Perception Simulator ── */
+        .perception-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .perception-canvas-wrap {
+            position: relative;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        .perception-canvas-wrap canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .perception-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            flex-wrap: wrap;
+        }
+
+        .perception-toolbar button {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .perception-toolbar button:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+
+        .perception-toolbar .hint-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .perception-stats {
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .perception-stats span strong {
+            color: var(--accent-primary);
+        }
+
+        /* ── Reasoning Engine ── */
+        .reasoning-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .reasoning-canvas-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        .reasoning-canvas-wrap canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .reasoning-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .reasoning-params label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .reasoning-params select,
+        .reasoning-params input[type="number"] {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+        }
+
+        .reasoning-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .reasoning-toolbar button {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .reasoning-toolbar button:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+
+        .reasoning-result {
+            padding: 14px 20px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            min-height: 50px;
+        }
+
+        .reasoning-result .pass {
+            color: #22c55e;
+            font-weight: 700;
+        }
+
+        .reasoning-result .fail {
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        .reasoning-result .warn {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+
+        /* ── Capability matrix table ── */
+        .capability-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        .capability-matrix th,
+        .capability-matrix td {
+            padding: 10px 14px;
+            border: 1px solid var(--border-subtle);
+            text-align: left;
+        }
+
+        .capability-matrix th {
+            background: var(--bg-tertiary);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .capability-matrix td {
+            color: var(--text-secondary);
+        }
+
+        .capability-matrix .check {
+            color: #22c55e;
+            text-align: center;
+        }
+
+        .capability-matrix .dash {
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ── Workflow comparison ── */
+        .workflow-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        @media (max-width: 768px) {
+            .workflow-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .workflow-column {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .workflow-column h4 {
+            margin-bottom: 14px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .workflow-column ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .workflow-column ul li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .workflow-column ul li:last-child {
+            border-bottom: none;
+        }
+
+        .workflow-column ul li i {
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        /* ── Combined capabilities diagram ── */
+        .combined-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .combined-flow .flow-node {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px 18px;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 120px;
+        }
+
+        .combined-flow .flow-node i {
+            display: block;
+            font-size: 1.4rem;
+            margin-bottom: 6px;
+            color: var(--accent-primary);
+        }
+
+        .combined-flow .flow-arrow {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 1</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-microchip"></i> Chapter 1 &mdash; Sub-chapter 1.3
+            </div>
+            <h1 class="chapter-hero__title">AI Capabilities</h1>
+            <p class="chapter-hero__subtitle">
+                Perception, Reasoning, Learning, and Interaction &mdash; the four pillars that
+                enable AI to transform civil engineering from design to inspection.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 30 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 3 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING — THE FOUR PILLARS
+             ========================================== -->
+        <section class="ch-section" id="opening">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Four Pillars of AI Capability</h2>
+                        <p>
+                            Just as a building rests on its structural foundations, every AI system is
+                            built upon four core capabilities: <strong>Perception</strong> (sensing the
+                            world), <strong>Reasoning</strong> (making logical decisions),
+                            <strong>Learning</strong> (improving from data), and
+                            <strong>Interaction</strong> (communicating with humans). Understanding
+                            these pillars is essential for any civil engineer who wants to leverage AI
+                            effectively.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Consider a modern bridge monitoring system. Sensors along the deck
+                    <strong>perceive</strong> vibrations, temperature, and strain. An AI model
+                    <strong>learns</strong> normal patterns from years of data. When anomalies
+                    appear, it <strong>reasons</strong> about possible causes &mdash; wind load,
+                    traffic surge, or structural fatigue. Finally, it <strong>interacts</strong>
+                    with engineers by generating alerts, dashboards, and maintenance reports.
+                    No single capability is sufficient on its own; it is their combination that
+                    creates real engineering value.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div class="tip-box__content">
+                        <strong>Why This Matters for CE:</strong> Before adopting any AI tool, ask
+                        yourself: which capabilities does it use? A crack-detection drone relies
+                        heavily on Perception and Learning. A code-compliance checker emphasises
+                        Reasoning. Knowing the mix helps you evaluate whether the tool fits your
+                        needs and what its limitations might be.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: PERCEPTION — SENSING & UNDERSTANDING
+             ========================================== -->
+        <section class="ch-section" id="perception">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-eye"></i>
+                    Perception &mdash; Sensing &amp; Understanding
+                </h2>
+
+                <p>
+                    Perception is the ability to take in raw sensory data &mdash; images, sounds,
+                    point clouds, vibration signals &mdash; and convert it into structured,
+                    meaningful information. For civil engineers, this is the capability that
+                    powers automated inspection, surveying, and real-time monitoring.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Computer Vision for Crack Detection</h3>
+                        <p>
+                            Convolutional Neural Networks (CNNs) can analyse thousands of images
+                            from drone surveys and flag cracks as narrow as 0.1 mm on concrete
+                            surfaces. Traditional manual inspection of a large bridge can take weeks;
+                            an AI vision system processes the same area in hours with greater
+                            consistency.
+                        </p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Detects surface cracks, spalling, and rebar exposure</li>
+                            <li><i class="fa-solid fa-check"></i> Classifies severity from hairline to structural</li>
+                            <li><i class="fa-solid fa-check"></i> Maps defect locations onto 3D bridge models</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-satellite"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>LiDAR Point Cloud Processing</h3>
+                        <p>
+                            LiDAR scanners generate millions of 3D points per second. AI perception
+                            algorithms segment these point clouds into ground, vegetation, buildings,
+                            and infrastructure components. This enables rapid terrain modelling,
+                            as-built comparisons, and volumetric calculations for earthwork projects.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wave-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensor Data Interpretation</h3>
+                        <p>
+                            Structural Health Monitoring (SHM) systems embed accelerometers, strain
+                            gauges, and temperature sensors throughout a structure. AI perception
+                            transforms these continuous data streams into actionable insights:
+                            natural frequency shifts that indicate stiffness loss, temperature
+                            gradients that predict thermal cracking, and traffic patterns that
+                            inform load-rating decisions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Engineering Analogy: The Tireless Site Inspector</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine a site inspector who never gets tired, never misses a detail,
+                            and can examine every square centimetre of a 500-metre bridge deck in a
+                            single shift. That inspector does not get distracted by rain, does not
+                            overlook the crack hidden behind a drainpipe, and logs every finding
+                            with millimetre-precise coordinates. AI perception is that inspector.
+                            It does not replace human judgment about <em>what to do</em> with the
+                            findings, but it ensures nothing is missed in the first place.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Pseudocode: Basic Crack Detection Pipeline</span>
+                    </div>
+                    <pre><code>// 1. Capture: Drone photographs bridge deck at 1 cm/pixel
+images = drone.capture(bridge_deck, resolution="1cm")
+
+// 2. Preprocess: Normalise lighting, remove lens distortion
+processed = images.map(img => preprocess(img))
+
+// 3. Detect: CNN model identifies crack regions
+detections = crack_model.predict(processed)
+
+// 4. Filter: Remove false positives below confidence threshold
+cracks = detections.filter(d => d.confidence > 0.85)
+
+// 5. Locate: Map pixel coordinates to real-world positions
+cracks.forEach(c => c.location = geolocate(c, bridge_model))
+
+// 6. Report: Generate severity-ranked inspection report
+report = generate_report(cracks, severity_thresholds)</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: REASONING — LOGIC & DECISIONS
+             ========================================== -->
+        <section class="ch-section" id="reasoning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    Reasoning &mdash; Logic &amp; Decision Making
+                </h2>
+
+                <p>
+                    Reasoning is the ability to apply rules, constraints, and logic to reach
+                    conclusions. While perception gathers raw data, reasoning transforms that
+                    data into decisions. In civil engineering, reasoning is what enables AI to
+                    check code compliance, optimise structural designs, and assess risk.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Rule-Based Inference</h3>
+                        <p>
+                            The simplest form of AI reasoning encodes expert knowledge as
+                            if-then rules. Building codes are a natural fit: <em>"If the span
+                            exceeds 6 metres, the minimum beam depth shall be span/20."</em>
+                            Rule-based systems can check hundreds of code clauses against a
+                            BIM model in seconds, catching violations that manual review might
+                            miss.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Constraint Satisfaction</h3>
+                        <p>
+                            Many engineering problems are fundamentally constraint-satisfaction
+                            problems: find a design that satisfies <strong>all</strong> constraints
+                            simultaneously &mdash; structural capacity, serviceability limits,
+                            material availability, cost budget, and schedule. AI solvers explore
+                            the feasible design space far more efficiently than manual iteration,
+                            identifying solutions that a human might never consider.
+                        </p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> Floor layout optimisation under fire egress constraints</li>
+                            <li><i class="fa-solid fa-check"></i> Reinforcement detailing within cover and spacing rules</li>
+                            <li><i class="fa-solid fa-check"></i> Construction scheduling with resource and precedence constraints</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Optimisation</h3>
+                        <p>
+                            Optimisation algorithms find the best solution from a set of feasible
+                            alternatives. Genetic algorithms, gradient descent, and particle swarm
+                            optimisation have been used in CE for topology optimisation of trusses,
+                            least-cost pipe network design, and traffic signal timing. AI reasoning
+                            makes it possible to explore millions of design variants and converge on
+                            near-optimal solutions that minimise material, cost, or carbon footprint.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>Engineering Analogy: The Structural Analyst</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of AI reasoning as a structural analyst with perfect recall of
+                            every code clause ever written. When you hand this analyst a set of
+                            drawings, they do not just check one load case &mdash; they check every
+                            combination, every clause, every interaction. They do not get
+                            overloaded by complexity; a 200-page code is no harder to apply than
+                            a 20-page one. The analyst does not invent new rules (that is the
+                            committee's job), but they apply existing rules with superhuman
+                            thoroughness.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h4>Define the Objective Function</h4>
+                        <p>
+                            What are you trying to minimise or maximise? Material weight? Cost?
+                            Carbon emissions? The objective function translates an engineering goal
+                            into a mathematical expression the AI can optimise.
+                        </p>
+                    </div>
+                </div>
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h4>Encode Constraints</h4>
+                        <p>
+                            Translate code requirements, material limits, and geometric boundaries
+                            into mathematical inequalities. For example: deflection &le; span/360,
+                            stress &le; 0.6 &times; f<sub>y</sub>.
+                        </p>
+                    </div>
+                </div>
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h4>Search the Design Space</h4>
+                        <p>
+                            The AI explores thousands of candidate designs, evaluating each against
+                            the objective and constraints, converging toward the optimal solution.
+                        </p>
+                    </div>
+                </div>
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h4>Validate &amp; Interpret</h4>
+                        <p>
+                            The engineer reviews the AI-proposed design, verifies it with
+                            independent analysis, and applies engineering judgment before
+                            accepting or refining it.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: LEARNING — PATTERN DISCOVERY
+             ========================================== -->
+        <section class="ch-section" id="learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Learning &mdash; Pattern Discovery
+                </h2>
+
+                <p>
+                    Learning is the capability that distinguishes modern AI from traditional
+                    software. Instead of being explicitly programmed with every rule, an AI
+                    system learns patterns directly from data. The more data it sees, the
+                    better it performs &mdash; up to a point. For civil engineering, this means
+                    AI can discover relationships in structural data, soil behaviour, traffic
+                    flow, and construction productivity that would take human experts decades
+                    to uncover.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Training from Data</h3>
+                        <p>
+                            A machine learning model is trained by exposing it to thousands or
+                            millions of examples. A concrete strength predictor might be trained
+                            on 50,000 mix designs with known 28-day compressive strengths. During
+                            training, the model adjusts its internal parameters to minimise
+                            prediction error. Once trained, it can predict the strength of new,
+                            unseen mix designs.
+                        </p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> <strong>Supervised learning:</strong> Labelled data (input-output pairs)</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>Unsupervised learning:</strong> Discovers structure in unlabelled data</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>Reinforcement learning:</strong> Learns by trial and error with rewards</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Generalisation</h3>
+                        <p>
+                            The hallmark of good learning is <strong>generalisation</strong>
+                            &mdash; performing well on data the model has never seen before.
+                            A crack detection model trained on images from Highway Bridge A
+                            should also detect cracks on Railway Bridge B. If it fails, the model
+                            has <em>overfit</em> to the training data. Civil engineers must
+                            understand this concept to evaluate whether an AI model will work
+                            reliably on their specific project.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Adaptation &amp; Transfer Learning</h3>
+                        <p>
+                            Transfer learning allows a model trained on one task to be adapted for
+                            a related task with far less data. A model pre-trained on millions of
+                            general images can be fine-tuned with just a few hundred bridge crack
+                            images to become a specialist. This dramatically reduces the data
+                            requirements for CE applications where labelled datasets are scarce.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-user-graduate"></i>
+                        <span>Engineering Analogy: The Apprentice Engineer</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine an apprentice engineer who has access to the complete project
+                            archives of 10,000 past projects. This apprentice studies every
+                            design, every failure, every cost overrun, and every success. After
+                            reviewing all that data, the apprentice can predict likely problems
+                            in new projects with remarkable accuracy. They cannot explain their
+                            intuition as eloquently as a senior engineer, but their pattern
+                            recognition is unmatched. That apprentice is a machine learning model.
+                            The senior engineer &mdash; you &mdash; still makes the final call,
+                            but the apprentice's input is invaluable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="tip-box__content">
+                        <strong>Data Quality Warning:</strong> A model is only as good as the data
+                        it learns from. If training data contains biased measurements, mislabelled
+                        images, or unrepresentative samples, the model will learn those biases.
+                        In civil engineering, this can have safety implications &mdash; always
+                        validate AI predictions against independent tests and engineering judgment.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: INTERACTION — COMMUNICATION
+             ========================================== -->
+        <section class="ch-section" id="interaction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-comments"></i>
+                    Interaction &mdash; Communication
+                </h2>
+
+                <p>
+                    The final capability is Interaction: AI's ability to communicate with humans
+                    through natural language, visualisations, and collaborative interfaces. Even
+                    the most powerful perception, reasoning, and learning are useless if the AI
+                    cannot convey its findings to engineers in an understandable way.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>NLP for Report Generation</h3>
+                        <p>
+                            Natural Language Processing (NLP) models can automatically generate
+                            inspection reports, progress summaries, and technical documentation.
+                            Instead of an engineer spending hours writing a bridge inspection
+                            report, an AI system can draft the report from structured inspection
+                            data, complete with condition ratings, photographs, and recommended
+                            actions. The engineer reviews, edits, and signs off.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Chatbots for Project Management</h3>
+                        <p>
+                            AI-powered chatbots can serve as project management assistants.
+                            A site manager can ask: <em>"What is the concrete pour schedule for
+                            next week?"</em> and receive an instant, accurate answer pulled from
+                            the project management system. Chatbots reduce the time spent
+                            searching through documents and improve information flow on complex
+                            multi-stakeholder projects.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-handshake"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Human-AI Collaboration</h3>
+                        <p>
+                            The most effective AI systems are designed for collaboration, not
+                            replacement. In generative design, the AI proposes multiple design
+                            options; the engineer selects, refines, and combines them. In
+                            construction safety, the AI flags potential hazards; the safety
+                            officer investigates and decides on action. The human remains in the
+                            loop, and the AI amplifies their effectiveness.
+                        </p>
+                        <ul>
+                            <li><i class="fa-solid fa-check"></i> AI suggests, human decides</li>
+                            <li><i class="fa-solid fa-check"></i> AI monitors, human intervenes</li>
+                            <li><i class="fa-solid fa-check"></i> AI drafts, human reviews and approves</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <span>Engineering Analogy: The Project Coordinator</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Picture a project coordinator who reads every email, understands every
+                            RFI, tracks every submittal, and can summarise the status of any work
+                            package on demand. This coordinator never forgets a deadline, never
+                            misfiles a document, and can translate technical jargon into plain
+                            language for any stakeholder. AI interaction capability is that
+                            coordinator &mdash; tireless, comprehensive, and always available.
+                            The project manager still leads, but the coordinator ensures nothing
+                            falls through the cracks.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: HOW CAPABILITIES COMBINE
+             ========================================== -->
+        <section class="ch-section" id="capabilities-combined">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    How Capabilities Combine
+                </h2>
+
+                <p>
+                    Real-world AI systems rarely use a single capability in isolation. The most
+                    powerful applications combine all four pillars into an integrated pipeline.
+                    Let us trace how this works in a practical example: an automated crack
+                    detection and reporting system for bridge inspection.
+                </p>
+
+                <div class="combined-flow">
+                    <div class="flow-node">
+                        <i class="fa-solid fa-camera"></i>
+                        Perception<br><small>Drone camera captures images</small>
+                    </div>
+                    <span class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        Learning<br><small>CNN detects crack regions</small>
+                    </div>
+                    <span class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-gears"></i>
+                        Reasoning<br><small>Assesses severity &amp; priority</small>
+                    </div>
+                    <span class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-comments"></i>
+                        Interaction<br><small>Generates report &amp; alerts</small>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>End-to-End Example: Automated Bridge Inspection</h3>
+                        <ol>
+                            <li>
+                                <strong>Perception:</strong> A drone equipped with a high-resolution
+                                camera flies a pre-programmed path over the bridge deck and captures
+                                overlapping images at 1 cm/pixel resolution.
+                            </li>
+                            <li>
+                                <strong>Learning:</strong> A trained CNN processes each image,
+                                identifying crack locations, widths, and patterns. The model was
+                                trained on 100,000 labelled crack images from previous inspections.
+                            </li>
+                            <li>
+                                <strong>Reasoning:</strong> A rule-based reasoning engine evaluates
+                                each detected crack against severity criteria &mdash; width
+                                thresholds, proximity to load-bearing elements, rate of change from
+                                previous inspections. It assigns priority ratings (Critical, Major,
+                                Minor, Cosmetic).
+                            </li>
+                            <li>
+                                <strong>Interaction:</strong> The system generates a formatted
+                                inspection report with annotated images, a severity map, recommended
+                                repair actions, and estimated costs. It sends automated alerts to the
+                                maintenance team for any Critical findings.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div class="tip-box__content">
+                        <strong>Key Insight:</strong> When evaluating an AI tool for your project,
+                        map it to these four capabilities. A tool that is strong in perception but
+                        weak in reasoning might detect problems without prioritising them. A tool
+                        with great learning but poor interaction might be accurate but unusable.
+                        The best tools balance all four capabilities for the specific task at hand.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: DEMO 1 — CAPABILITY RADAR CHART
+             ========================================== -->
+        <section class="ch-section" id="demo-radar">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-radar"></i>
+                    Interactive Demo: Capability Radar
+                </h2>
+
+                <p>
+                    Select a civil engineering task below to see how heavily it relies on each
+                    AI capability. The radar chart visualises the relative importance of
+                    Perception, Reasoning, Learning, and Interaction for that specific
+                    application.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="radar-container">
+                        <div class="radar-canvas-wrap">
+                            <canvas id="radar-canvas" height="400" aria-label="AI Capability Radar Chart"></canvas>
+                        </div>
+                        <div class="radar-controls">
+                            <button class="active" data-task="crack">Crack Detection</button>
+                            <button data-task="design">Structural Design</button>
+                            <button data-task="schedule">Scheduling</button>
+                            <button data-task="safety">Safety Monitoring</button>
+                            <button data-task="survey">Surveying</button>
+                        </div>
+                        <div class="radar-legend" id="radar-legend">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Select a CE task to explore its AI capability profile.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 2 — PERCEPTION SIMULATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-perception">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Interactive Demo: Perception Simulator
+                </h2>
+
+                <p>
+                    Draw cracks on the simulated concrete surface below by clicking and dragging.
+                    When you click <strong>"Run AI Detection"</strong>, the system will analyse
+                    the surface and highlight detected crack regions with bounding boxes, just
+                    like a real computer vision model would.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="perception-container">
+                        <div class="perception-canvas-wrap">
+                            <canvas id="perception-canvas" height="400" aria-label="Crack Detection Perception Simulator"></canvas>
+                        </div>
+                        <div class="perception-toolbar">
+                            <span class="hint-text"><i class="fa-solid fa-pencil"></i> Draw cracks on the surface</span>
+                            <button id="btn-detect">
+                                <i class="fa-solid fa-microchip"></i> Run AI Detection
+                            </button>
+                            <button id="btn-clear-perception">
+                                <i class="fa-solid fa-eraser"></i> Clear
+                            </button>
+                        </div>
+                        <div class="perception-stats" id="perception-stats">
+                            <span>Cracks Detected: <strong id="crack-count">0</strong></span>
+                            <span>Coverage: <strong id="crack-coverage">0%</strong></span>
+                            <span>Max Severity: <strong id="crack-severity">N/A</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: DEMO 3 — REASONING ENGINE
+             ========================================== -->
+        <section class="ch-section" id="demo-reasoning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sitemap"></i>
+                    Interactive Demo: Reasoning Engine
+                </h2>
+
+                <p>
+                    Set the building parameters below and click <strong>"Check Compliance"</strong>.
+                    The AI reasoning engine will evaluate your design against a simplified set of
+                    building code rules, displaying a visual logic tree of the compliance checks.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="reasoning-container">
+                        <div class="reasoning-canvas-wrap">
+                            <canvas id="reasoning-canvas" height="420" aria-label="Code Compliance Reasoning Engine"></canvas>
+                        </div>
+                        <div class="reasoning-params">
+                            <label>
+                                Structure Type
+                                <select id="param-type">
+                                    <option value="residential">Residential Building</option>
+                                    <option value="commercial">Commercial Building</option>
+                                    <option value="industrial">Industrial Facility</option>
+                                </select>
+                            </label>
+                            <label>
+                                Number of Storeys
+                                <input type="number" id="param-storeys" min="1" max="50" value="5">
+                            </label>
+                            <label>
+                                Beam Span (m)
+                                <input type="number" id="param-span" min="1" max="20" step="0.5" value="6">
+                            </label>
+                            <label>
+                                Beam Depth (mm)
+                                <input type="number" id="param-depth" min="100" max="2000" step="50" value="400">
+                            </label>
+                            <label>
+                                Fire Rating (hours)
+                                <select id="param-fire">
+                                    <option value="0.5">0.5 hr</option>
+                                    <option value="1" selected>1 hr</option>
+                                    <option value="1.5">1.5 hr</option>
+                                    <option value="2">2 hr</option>
+                                </select>
+                            </label>
+                            <label>
+                                Concrete Cover (mm)
+                                <input type="number" id="param-cover" min="15" max="75" step="5" value="30">
+                            </label>
+                        </div>
+                        <div class="reasoning-toolbar">
+                            <button id="btn-check-compliance">
+                                <i class="fa-solid fa-clipboard-check"></i> Check Compliance
+                            </button>
+                        </div>
+                        <div class="reasoning-result" id="reasoning-result">
+                            <i class="fa-solid fa-info-circle"></i> Set parameters above and click "Check Compliance" to run the reasoning engine.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: WORKFLOW COMPARISON TABLE
+             ========================================== -->
+        <section class="ch-section" id="workflow-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-left-right"></i>
+                    Traditional vs AI-Enhanced Workflow
+                </h2>
+
+                <p>
+                    The table below illustrates how AI capabilities transform traditional civil
+                    engineering workflows. The goal is not to eliminate human involvement but to
+                    shift engineers from tedious, repetitive tasks to higher-value judgment and
+                    decision-making.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Phase</th>
+                                    <th><i class="fa-solid fa-person-digging"></i> Traditional</th>
+                                    <th><i class="fa-solid fa-robot"></i> AI-Enhanced</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Site Survey</strong></td>
+                                    <td>Manual measurements with total station; days to weeks per site</td>
+                                    <td>LiDAR + AI point cloud processing; hours per site with cm accuracy</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Structural Analysis</strong></td>
+                                    <td>Engineer sets up FE model, runs load cases, reviews results manually</td>
+                                    <td>AI suggests optimal mesh, auto-runs critical combinations, flags anomalies</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Code Compliance</strong></td>
+                                    <td>Manual clause-by-clause checking against printed standards</td>
+                                    <td>Automated rule engine checks all clauses against BIM model in seconds</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Inspection</strong></td>
+                                    <td>Inspector walks the structure with clipboard; subjective assessments</td>
+                                    <td>Drone + CV model scans entire structure; consistent quantitative ratings</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Reporting</strong></td>
+                                    <td>Engineer writes report from notes; hours of formatting and editing</td>
+                                    <td>NLP generates draft report from structured data; engineer reviews and signs</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Monitoring</strong></td>
+                                    <td>Periodic manual sensor readings; delayed fault detection</td>
+                                    <td>Continuous AI monitoring; real-time anomaly detection and alerting</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="workflow-comparison">
+                    <div class="workflow-column">
+                        <h4><i class="fa-solid fa-person-digging"></i> Traditional Workflow</h4>
+                        <ul>
+                            <li><i class="fa-solid fa-clock" style="color:var(--text-muted)"></i> Time-intensive manual data collection</li>
+                            <li><i class="fa-solid fa-clock" style="color:var(--text-muted)"></i> Sequential processing bottlenecks</li>
+                            <li><i class="fa-solid fa-clock" style="color:var(--text-muted)"></i> Subjective quality depends on inspector experience</li>
+                            <li><i class="fa-solid fa-clock" style="color:var(--text-muted)"></i> Limited by human working hours and attention span</li>
+                            <li><i class="fa-solid fa-clock" style="color:var(--text-muted)"></i> Knowledge siloed in individual experts</li>
+                        </ul>
+                    </div>
+                    <div class="workflow-column">
+                        <h4><i class="fa-solid fa-robot"></i> AI-Enhanced Workflow</h4>
+                        <ul>
+                            <li><i class="fa-solid fa-bolt" style="color:#22c55e"></i> Rapid automated data acquisition</li>
+                            <li><i class="fa-solid fa-bolt" style="color:#22c55e"></i> Parallel processing of multiple data streams</li>
+                            <li><i class="fa-solid fa-bolt" style="color:#22c55e"></i> Consistent, quantitative assessments every time</li>
+                            <li><i class="fa-solid fa-bolt" style="color:#22c55e"></i> 24/7 continuous monitoring without fatigue</li>
+                            <li><i class="fa-solid fa-bolt" style="color:#22c55e"></i> Organisational knowledge captured in trained models</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: CE APPLICATIONS MATRIX
+             ========================================== -->
+        <section class="ch-section" id="applications-matrix">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-grip"></i>
+                    CE Applications Matrix
+                </h2>
+
+                <p>
+                    This matrix maps which AI capabilities are most relevant to each civil
+                    engineering domain. A filled circle indicates a primary capability, while
+                    a dash indicates secondary or minimal involvement.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <table class="capability-matrix">
+                            <thead>
+                                <tr>
+                                    <th>CE Domain</th>
+                                    <th><i class="fa-solid fa-eye"></i> Perception</th>
+                                    <th><i class="fa-solid fa-gears"></i> Reasoning</th>
+                                    <th><i class="fa-solid fa-graduation-cap"></i> Learning</th>
+                                    <th><i class="fa-solid fa-comments"></i> Interaction</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Structural Inspection</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Structural Design</strong></td>
+                                    <td class="dash">&mdash;</td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Geotechnical Analysis</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Traffic Engineering</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Construction Safety</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Surveying &amp; Mapping</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Project Management</strong></td>
+                                    <td class="dash">&mdash;</td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Environmental Engineering</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Water Resources</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Materials Testing</strong></td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                    <td class="check"><i class="fa-solid fa-circle"></i></td>
+                                    <td class="dash">&mdash;</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of AI capabilities with these four questions.
+                    Select the best answer and click <strong>"Check Answer"</strong>.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__question">
+                        <span class="quiz-block__number">Q1</span>
+                        A drone-based bridge inspection system uses a CNN to detect cracks in
+                        images. Which AI capability is this primarily an example of?
+                    </div>
+                    <div class="quiz-block__options">
+                        <label>
+                            <input type="radio" name="quiz-1" value="a">
+                            <span>Reasoning</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-1" value="b">
+                            <span>Perception</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-1" value="c">
+                            <span>Interaction</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-1" value="d">
+                            <span>None of the above</span>
+                        </label>
+                    </div>
+                    <button class="quiz-block__check" onclick="checkQuiz(this, 'quiz-1')">
+                        <i class="fa-solid fa-check-circle"></i> Check Answer
+                    </button>
+                    <div class="quiz-block__feedback" data-correct="b">
+                        <p><strong>Correct!</strong> Crack detection from images is a Perception task
+                        &mdash; the AI is interpreting visual sensory data to extract meaningful
+                        information about the structure's condition.</p>
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__question">
+                        <span class="quiz-block__number">Q2</span>
+                        An AI system checks a BIM model against 500 building code clauses and
+                        flags violations. Which capability is dominant?
+                    </div>
+                    <div class="quiz-block__options">
+                        <label>
+                            <input type="radio" name="quiz-2" value="a">
+                            <span>Learning</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-2" value="b">
+                            <span>Perception</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-2" value="c">
+                            <span>Reasoning</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-2" value="d">
+                            <span>Interaction</span>
+                        </label>
+                    </div>
+                    <button class="quiz-block__check" onclick="checkQuiz(this, 'quiz-2')">
+                        <i class="fa-solid fa-check-circle"></i> Check Answer
+                    </button>
+                    <div class="quiz-block__feedback" data-correct="c">
+                        <p><strong>Correct!</strong> Applying rules and constraints to check compliance
+                        is a Reasoning task. The AI uses logical inference to determine whether the
+                        design satisfies each code clause.</p>
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__question">
+                        <span class="quiz-block__number">Q3</span>
+                        A concrete strength prediction model is trained on 50,000 historical
+                        mix designs. The ability to predict strength for new, unseen mixes is
+                        called:
+                    </div>
+                    <div class="quiz-block__options">
+                        <label>
+                            <input type="radio" name="quiz-3" value="a">
+                            <span>Overfitting</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-3" value="b">
+                            <span>Generalisation</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-3" value="c">
+                            <span>Perception</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-3" value="d">
+                            <span>Constraint satisfaction</span>
+                        </label>
+                    </div>
+                    <button class="quiz-block__check" onclick="checkQuiz(this, 'quiz-3')">
+                        <i class="fa-solid fa-check-circle"></i> Check Answer
+                    </button>
+                    <div class="quiz-block__feedback" data-correct="b">
+                        <p><strong>Correct!</strong> Generalisation is the ability of a trained model
+                        to perform accurately on new, unseen data. It is the hallmark of successful
+                        machine learning and essential for real-world engineering applications.</p>
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__question">
+                        <span class="quiz-block__number">Q4</span>
+                        In an automated inspection pipeline, which capability is responsible
+                        for generating the final human-readable report?
+                    </div>
+                    <div class="quiz-block__options">
+                        <label>
+                            <input type="radio" name="quiz-4" value="a">
+                            <span>Perception</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-4" value="b">
+                            <span>Learning</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-4" value="c">
+                            <span>Reasoning</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="quiz-4" value="d">
+                            <span>Interaction</span>
+                        </label>
+                    </div>
+                    <button class="quiz-block__check" onclick="checkQuiz(this, 'quiz-4')">
+                        <i class="fa-solid fa-check-circle"></i> Check Answer
+                    </button>
+                    <div class="quiz-block__feedback" data-correct="d">
+                        <p><strong>Correct!</strong> Interaction is the capability that handles
+                        communication with humans, including generating reports, dashboards, alerts,
+                        and natural language summaries of AI findings.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <ol>
+                            <li>
+                                <strong>Four Pillars:</strong> AI capabilities are organised into
+                                Perception (sensing), Reasoning (logic), Learning (patterns), and
+                                Interaction (communication). Every AI application draws on one or
+                                more of these.
+                            </li>
+                            <li>
+                                <strong>Perception</strong> transforms raw sensor data &mdash;
+                                images, point clouds, vibration signals &mdash; into structured
+                                information. It is the "eyes and ears" of AI in civil engineering.
+                            </li>
+                            <li>
+                                <strong>Reasoning</strong> applies rules and constraints to make
+                                decisions. It powers code compliance checking, optimisation, and
+                                risk assessment.
+                            </li>
+                            <li>
+                                <strong>Learning</strong> discovers patterns from data, enabling
+                                predictions about material behaviour, structural performance, and
+                                construction outcomes. Generalisation is the key to real-world
+                                reliability.
+                            </li>
+                            <li>
+                                <strong>Interaction</strong> bridges the gap between AI systems
+                                and human engineers through reports, chatbots, dashboards, and
+                                collaborative interfaces.
+                            </li>
+                            <li>
+                                <strong>Capabilities combine</strong> in real-world systems.
+                                The most effective AI tools integrate multiple capabilities into
+                                end-to-end pipelines tailored to specific CE workflows.
+                            </li>
+                            <li>
+                                <strong>AI augments, not replaces:</strong> The engineer provides
+                                judgment, context, and ethical oversight. AI provides speed, scale,
+                                and consistency. Together, they are more effective than either alone.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon"><i class="fa-solid fa-forward"></i></div>
+                    <div class="tip-box__content">
+                        <strong>Up Next:</strong> In Sub-chapter 1.4, we will explore the
+                        <em>subfields of AI</em> &mdash; Machine Learning, Deep Learning, Natural
+                        Language Processing, Computer Vision, and Robotics &mdash; and see how each
+                        subfield maps to specific civil engineering applications.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub2.html" class="chapter-nav__link prev"><i class="fa-solid fa-arrow-left"></i> 1.2 History of AI</a>
+        <a href="sub4.html" class="chapter-nav__link next">1.4 Subfields of AI <i class="fa-solid fa-arrow-right"></i></a>
+    </nav>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── Helpers ── */
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+        const PI = Math.PI, TAU = PI * 2;
+
+        function getColors() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:   dark ? '#2dd4bf' : '#059669',
+                CYAN:   dark ? '#22d3ee' : '#0284c7',
+                AMBER:  dark ? '#fbbf24' : '#d97706',
+                RED:    dark ? '#ef4444' : '#dc2626',
+                GREEN:  dark ? '#22c55e' : '#16a34a',
+                PURPLE: dark ? '#a78bfa' : '#7c3aed',
+                BG:     dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT:   dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:    dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:   dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                STROKE: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE:  dark ? '#fff' : '#1a1a2e',
+                MUTED:  dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        }
+
+        function initCanvas(canvas) {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width  = rect.width  * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx, w: rect.width, h: rect.height, dpr };
+        }
+
+        /* ============================================================
+           HERO CANVAS — floating capability icons
+           ============================================================ */
+        (function heroAnim() {
+            const canvas = $('#hero-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            const nodes = Array.from({ length: 40 }, () => ({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                r: 2 + Math.random() * 3,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4
+            }));
+
+            function draw() {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                for (let i = 0; i < nodes.length; i++) {
+                    const a = nodes[i];
+                    a.x += a.vx; a.y += a.vy;
+                    if (a.x < 0 || a.x > w) a.vx *= -1;
+                    if (a.y < 0 || a.y > h) a.vy *= -1;
+
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const b = nodes[j];
+                        const dx = a.x - b.x, dy = a.y - b.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(a.x, a.y);
+                            ctx.lineTo(b.x, b.y);
+                            ctx.strokeStyle = c.TEAL.replace(')', ', ' + (1 - dist / 120) * 0.3 + ')').replace('rgb', 'rgba');
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(a.x, a.y, a.r, 0, TAU);
+                    ctx.fillStyle = c.TEAL;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+            });
+        })();
+
+        /* ============================================================
+           DEMO 1: CAPABILITY RADAR CHART
+           ============================================================ */
+        (function radarDemo() {
+            const canvas = $('#radar-canvas');
+            if (!canvas) return;
+
+            const taskData = {
+                crack:    { label: 'Crack Detection',    values: [95, 40, 90, 60], desc: 'Heavy on Perception (camera/vision) and Learning (CNN model). Moderate Interaction for reporting.' },
+                design:   { label: 'Structural Design',  values: [15, 90, 75, 30], desc: 'Dominated by Reasoning (constraints, optimisation) and Learning (generative design). Minimal Perception.' },
+                schedule: { label: 'Project Scheduling', values: [10, 80, 70, 85], desc: 'Strong Reasoning (precedence logic) and Interaction (dashboards, chatbots). Learning predicts delays.' },
+                safety:   { label: 'Safety Monitoring',  values: [85, 65, 80, 75], desc: 'Balanced profile: Perception (cameras, wearables), Learning (anomaly detection), and Interaction (alerts).' },
+                survey:   { label: 'Surveying',          values: [90, 25, 70, 20], desc: 'Perception-dominant (LiDAR, photogrammetry). Learning for classification. Minimal Reasoning/Interaction.' }
+            };
+
+            const axes = ['Perception', 'Reasoning', 'Learning', 'Interaction'];
+            let currentTask = 'crack';
+
+            function drawRadar() {
+                const { ctx, w, h } = initCanvas(canvas);
+                const c = getColors();
+                const cx = w / 2, cy = h / 2;
+                const maxR = Math.min(w, h) * 0.35;
+                const angleStep = TAU / 4;
+
+                // Grid rings
+                for (let ring = 1; ring <= 5; ring++) {
+                    const r = maxR * ring / 5;
+                    ctx.beginPath();
+                    for (let i = 0; i <= 4; i++) {
+                        const angle = -PI / 2 + i * angleStep;
+                        const px = cx + r * Math.cos(angle);
+                        const py = cy + r * Math.sin(angle);
+                        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.strokeStyle = c.STROKE;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Axis lines and labels
+                for (let i = 0; i < 4; i++) {
+                    const angle = -PI / 2 + i * angleStep;
+                    const ex = cx + maxR * Math.cos(angle);
+                    const ey = cy + maxR * Math.sin(angle);
+
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(ex, ey);
+                    ctx.strokeStyle = c.STROKE;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    // Labels
+                    const lx = cx + (maxR + 24) * Math.cos(angle);
+                    const ly = cy + (maxR + 24) * Math.sin(angle);
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.fillStyle = c.WHITE;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(axes[i], lx, ly);
+                }
+
+                // Data polygon
+                const data = taskData[currentTask];
+                ctx.beginPath();
+                for (let i = 0; i < 4; i++) {
+                    const angle = -PI / 2 + i * angleStep;
+                    const r = maxR * data.values[i] / 100;
+                    const px = cx + r * Math.cos(angle);
+                    const py = cy + r * Math.sin(angle);
+                    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fillStyle = c.TEAL + '33';
+                ctx.fill();
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Data points
+                for (let i = 0; i < 4; i++) {
+                    const angle = -PI / 2 + i * angleStep;
+                    const r = maxR * data.values[i] / 100;
+                    const px = cx + r * Math.cos(angle);
+                    const py = cy + r * Math.sin(angle);
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, 5, 0, TAU);
+                    ctx.fillStyle = c.TEAL;
+                    ctx.fill();
+                    ctx.strokeStyle = c.BG;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Value labels
+                    const vlx = cx + (r + 16) * Math.cos(angle);
+                    const vly = cy + (r + 16) * Math.sin(angle);
+                    ctx.font = '700 12px JetBrains Mono, monospace';
+                    ctx.fillStyle = c.AMBER;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(data.values[i] + '%', vlx, vly);
+                }
+
+                // Title
+                ctx.font = '700 16px Inter, sans-serif';
+                ctx.fillStyle = c.WHITE;
+                ctx.textAlign = 'center';
+                ctx.fillText(data.label, cx, h - 16);
+            }
+
+            drawRadar();
+
+            // Controls
+            $$('.radar-controls button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    $$('.radar-controls button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentTask = btn.dataset.task;
+                    drawRadar();
+                    $('#radar-legend').innerHTML =
+                        '<i class="fa-solid fa-circle-info"></i> ' +
+                        taskData[currentTask].desc;
+                });
+            });
+
+            window.addEventListener('resize', drawRadar);
+            const observer = new MutationObserver(drawRadar);
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ============================================================
+           DEMO 2: PERCEPTION SIMULATOR — Crack Drawing & Detection
+           ============================================================ */
+        (function perceptionDemo() {
+            const canvas = $('#perception-canvas');
+            if (!canvas) return;
+
+            let { ctx, w, h, dpr } = initCanvas(canvas);
+            let drawing = false;
+            let strokes = [];       // array of stroke arrays
+            let currentStroke = [];
+            let detections = [];
+
+            function drawConcreteBackground() {
+                const c = getColors();
+                // Concrete surface texture
+                ctx.fillStyle = c.BG === '#0a0a0f'
+                    ? '#1a1a2e'
+                    : '#d5d0c8';
+                ctx.fillRect(0, 0, w, h);
+
+                // Subtle grain
+                for (let i = 0; i < 3000; i++) {
+                    const gx = Math.random() * w;
+                    const gy = Math.random() * h;
+                    ctx.fillStyle = c.BG === '#0a0a0f'
+                        ? 'rgba(255,255,255,' + (Math.random() * 0.04) + ')'
+                        : 'rgba(0,0,0,' + (Math.random() * 0.06) + ')';
+                    ctx.fillRect(gx, gy, 1, 1);
+                }
+
+                // Grid lines to suggest concrete panels
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 0.5;
+                const gridSize = 80;
+                for (let x = gridSize; x < w; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, h);
+                    ctx.stroke();
+                }
+                for (let y = gridSize; y < h; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(w, y);
+                    ctx.stroke();
+                }
+            }
+
+            function redraw() {
+                drawConcreteBackground();
+                const c = getColors();
+
+                // Draw all strokes (cracks)
+                strokes.forEach(stroke => {
+                    if (stroke.length < 2) return;
+                    ctx.beginPath();
+                    ctx.moveTo(stroke[0].x, stroke[0].y);
+                    for (let i = 1; i < stroke.length; i++) {
+                        ctx.lineTo(stroke[i].x, stroke[i].y);
+                    }
+                    ctx.strokeStyle = c.BG === '#0a0a0f' ? '#333' : '#555';
+                    ctx.lineWidth = 2 + Math.random();
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+                });
+
+                // Draw detections (bounding boxes)
+                detections.forEach(det => {
+                    ctx.strokeStyle = det.severity === 'High' ? '#ef4444'
+                                   : det.severity === 'Medium' ? '#fbbf24'
+                                   : '#22c55e';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.strokeRect(det.x, det.y, det.w, det.h);
+                    ctx.setLineDash([]);
+
+                    // Label
+                    ctx.font = '600 11px JetBrains Mono, monospace';
+                    ctx.fillStyle = ctx.strokeStyle;
+                    const label = det.severity + ' (' + det.confidence + '%)';
+                    const tm = ctx.measureText(label);
+                    ctx.fillStyle = c.BG === '#0a0a0f' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.8)';
+                    ctx.fillRect(det.x, det.y - 18, tm.width + 8, 18);
+                    ctx.fillStyle = det.severity === 'High' ? '#ef4444'
+                                  : det.severity === 'Medium' ? '#fbbf24'
+                                  : '#22c55e';
+                    ctx.fillText(label, det.x + 4, det.y - 5);
+                });
+            }
+
+            drawConcreteBackground();
+
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            canvas.addEventListener('mousedown', e => {
+                drawing = true;
+                currentStroke = [getCanvasPos(e)];
+                detections = [];
+            });
+
+            canvas.addEventListener('mousemove', e => {
+                if (!drawing) return;
+                currentStroke.push(getCanvasPos(e));
+                strokes.push([...currentStroke]);
+                strokes.pop();
+                // Live preview
+                redraw();
+                if (currentStroke.length >= 2) {
+                    const c = getColors();
+                    ctx.beginPath();
+                    ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
+                    for (let i = 1; i < currentStroke.length; i++) {
+                        ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
+                    }
+                    ctx.strokeStyle = c.BG === '#0a0a0f' ? '#333' : '#555';
+                    ctx.lineWidth = 2.5;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                if (currentStroke.length > 1) {
+                    strokes.push([...currentStroke]);
+                }
+                drawing = false;
+                currentStroke = [];
+                redraw();
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                if (drawing && currentStroke.length > 1) {
+                    strokes.push([...currentStroke]);
+                }
+                drawing = false;
+                currentStroke = [];
+            });
+
+            // Touch support
+            canvas.addEventListener('touchstart', e => {
+                e.preventDefault();
+                drawing = true;
+                currentStroke = [getCanvasPos(e)];
+                detections = [];
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', e => {
+                e.preventDefault();
+                if (!drawing) return;
+                currentStroke.push(getCanvasPos(e));
+                redraw();
+                if (currentStroke.length >= 2) {
+                    const c = getColors();
+                    ctx.beginPath();
+                    ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
+                    for (let i = 1; i < currentStroke.length; i++) {
+                        ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
+                    }
+                    ctx.strokeStyle = c.BG === '#0a0a0f' ? '#333' : '#555';
+                    ctx.lineWidth = 2.5;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                if (currentStroke.length > 1) {
+                    strokes.push([...currentStroke]);
+                }
+                drawing = false;
+                currentStroke = [];
+                redraw();
+            });
+
+            // AI Detection button
+            $('#btn-detect').addEventListener('click', () => {
+                detections = [];
+
+                if (strokes.length === 0) {
+                    $('#crack-count').textContent = '0';
+                    $('#crack-coverage').textContent = '0%';
+                    $('#crack-severity').textContent = 'N/A';
+                    redraw();
+                    return;
+                }
+
+                // Compute bounding boxes for each stroke
+                strokes.forEach(stroke => {
+                    if (stroke.length < 2) return;
+
+                    let minX = Infinity, minY = Infinity;
+                    let maxX = -Infinity, maxY = -Infinity;
+                    let totalLen = 0;
+
+                    for (let i = 0; i < stroke.length; i++) {
+                        minX = Math.min(minX, stroke[i].x);
+                        minY = Math.min(minY, stroke[i].y);
+                        maxX = Math.max(maxX, stroke[i].x);
+                        maxY = Math.max(maxY, stroke[i].y);
+                        if (i > 0) {
+                            const dx = stroke[i].x - stroke[i-1].x;
+                            const dy = stroke[i].y - stroke[i-1].y;
+                            totalLen += Math.sqrt(dx * dx + dy * dy);
+                        }
+                    }
+
+                    const pad = 12;
+                    const severity = totalLen > 150 ? 'High'
+                                   : totalLen > 60  ? 'Medium'
+                                   : 'Low';
+                    const confidence = Math.min(99, Math.round(75 + Math.random() * 20));
+
+                    detections.push({
+                        x: minX - pad,
+                        y: minY - pad,
+                        w: (maxX - minX) + pad * 2,
+                        h: (maxY - minY) + pad * 2,
+                        severity,
+                        confidence,
+                        length: totalLen
+                    });
+                });
+
+                // Merge overlapping boxes
+                const merged = [];
+                const used = new Set();
+                for (let i = 0; i < detections.length; i++) {
+                    if (used.has(i)) continue;
+                    let box = { ...detections[i] };
+                    for (let j = i + 1; j < detections.length; j++) {
+                        if (used.has(j)) continue;
+                        const b = detections[j];
+                        const overlapX = box.x < b.x + b.w && box.x + box.w > b.x;
+                        const overlapY = box.y < b.y + b.h && box.y + box.h > b.y;
+                        if (overlapX && overlapY) {
+                            const nx = Math.min(box.x, b.x);
+                            const ny = Math.min(box.y, b.y);
+                            box.w = Math.max(box.x + box.w, b.x + b.w) - nx;
+                            box.h = Math.max(box.y + box.h, b.y + b.h) - ny;
+                            box.x = nx;
+                            box.y = ny;
+                            if (b.severity === 'High' || box.severity === 'High') box.severity = 'High';
+                            else if (b.severity === 'Medium') box.severity = 'Medium';
+                            box.confidence = Math.max(box.confidence, b.confidence);
+                            used.add(j);
+                        }
+                    }
+                    merged.push(box);
+                }
+                detections = merged;
+
+                // Update stats
+                const totalArea = detections.reduce((s, d) => s + d.w * d.h, 0);
+                const coverage = Math.min(100, (totalArea / (w * h) * 100)).toFixed(1);
+                const maxSev = detections.some(d => d.severity === 'High') ? 'High'
+                             : detections.some(d => d.severity === 'Medium') ? 'Medium'
+                             : 'Low';
+
+                $('#crack-count').textContent = detections.length;
+                $('#crack-coverage').textContent = coverage + '%';
+                $('#crack-severity').textContent = maxSev;
+
+                redraw();
+            });
+
+            // Clear button
+            $('#btn-clear-perception').addEventListener('click', () => {
+                strokes = [];
+                detections = [];
+                currentStroke = [];
+                $('#crack-count').textContent = '0';
+                $('#crack-coverage').textContent = '0%';
+                $('#crack-severity').textContent = 'N/A';
+                redraw();
+            });
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h, dpr } = initCanvas(canvas));
+                redraw();
+            });
+
+            const observer = new MutationObserver(() => redraw());
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ============================================================
+           DEMO 3: REASONING ENGINE — Code Compliance Logic Tree
+           ============================================================ */
+        (function reasoningDemo() {
+            const canvas = $('#reasoning-canvas');
+            if (!canvas) return;
+
+            function runCheck() {
+                const { ctx, w, h } = initCanvas(canvas);
+                const c = getColors();
+
+                const type     = $('#param-type').value;
+                const storeys  = parseInt($('#param-storeys').value) || 5;
+                const span     = parseFloat($('#param-span').value) || 6;
+                const depth    = parseInt($('#param-depth').value) || 400;
+                const fire     = parseFloat($('#param-fire').value) || 1;
+                const cover    = parseInt($('#param-cover').value) || 30;
+
+                // Rules
+                const checks = [];
+
+                // Rule 1: Minimum beam depth (span/20 in m -> mm)
+                const minDepth = Math.round(span * 1000 / 20);
+                checks.push({
+                    label: 'Beam Depth',
+                    rule: 'depth >= span/20 (' + minDepth + ' mm)',
+                    pass: depth >= minDepth,
+                    detail: depth + ' mm vs min ' + minDepth + ' mm'
+                });
+
+                // Rule 2: Fire rating based on structure type
+                const minFire = type === 'industrial' ? 2
+                              : type === 'commercial' ? 1.5
+                              : 1;
+                checks.push({
+                    label: 'Fire Rating',
+                    rule: 'fire >= ' + minFire + ' hr for ' + type,
+                    pass: fire >= minFire,
+                    detail: fire + ' hr vs min ' + minFire + ' hr'
+                });
+
+                // Rule 3: Concrete cover for fire rating
+                const minCover = fire >= 2 ? 45
+                               : fire >= 1.5 ? 35
+                               : fire >= 1 ? 25
+                               : 20;
+                checks.push({
+                    label: 'Concrete Cover',
+                    rule: 'cover >= ' + minCover + ' mm for ' + fire + 'hr fire',
+                    pass: cover >= minCover,
+                    detail: cover + ' mm vs min ' + minCover + ' mm'
+                });
+
+                // Rule 4: Max storeys for type
+                const maxStoreys = type === 'residential' ? 30
+                                 : type === 'commercial' ? 40
+                                 : 15;
+                checks.push({
+                    label: 'Storey Limit',
+                    rule: 'storeys <= ' + maxStoreys + ' for ' + type,
+                    pass: storeys <= maxStoreys,
+                    detail: storeys + ' vs max ' + maxStoreys
+                });
+
+                // Rule 5: Span/depth ratio serviceability
+                const spanDepthRatio = (span * 1000) / depth;
+                const maxRatio = 26;
+                checks.push({
+                    label: 'Span/Depth Ratio',
+                    rule: 'L/d <= ' + maxRatio,
+                    pass: spanDepthRatio <= maxRatio,
+                    detail: 'L/d = ' + spanDepthRatio.toFixed(1) + ' vs max ' + maxRatio
+                });
+
+                // Draw logic tree
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                // Root node
+                const rootX = w / 2, rootY = 40;
+                ctx.font = '700 14px Inter, sans-serif';
+                ctx.fillStyle = c.WHITE;
+                ctx.textAlign = 'center';
+                ctx.fillText('Code Compliance Check', rootX, rootY);
+
+                const allPass = checks.every(ch => ch.pass);
+                const nodeW = 160, nodeH = 55;
+                const startY = 80;
+                const gap = 12;
+                const cols = Math.min(checks.length, 3);
+                const rows = Math.ceil(checks.length / cols);
+
+                checks.forEach((ch, idx) => {
+                    const row = Math.floor(idx / cols);
+                    const col = idx % cols;
+                    const totalRowWidth = cols * nodeW + (cols - 1) * gap;
+                    const startX = (w - totalRowWidth) / 2;
+                    const nx = startX + col * (nodeW + gap);
+                    const ny = startY + row * (nodeH + gap + 20);
+
+                    // Connection line
+                    ctx.beginPath();
+                    ctx.moveTo(rootX, rootY + 10);
+                    ctx.lineTo(nx + nodeW / 2, ny);
+                    ctx.strokeStyle = c.STROKE;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    // Node background
+                    ctx.fillStyle = ch.pass
+                        ? (c.BG === '#0a0a0f' ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.1)')
+                        : (c.BG === '#0a0a0f' ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.1)');
+                    ctx.strokeStyle = ch.pass ? '#22c55e' : '#ef4444';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.roundRect(nx, ny, nodeW, nodeH, 8);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Icon
+                    ctx.font = '600 12px Inter, sans-serif';
+                    ctx.fillStyle = ch.pass ? '#22c55e' : '#ef4444';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(ch.pass ? 'PASS' : 'FAIL', nx + 8, ny + 18);
+
+                    // Label
+                    ctx.font = '600 11px Inter, sans-serif';
+                    ctx.fillStyle = c.WHITE;
+                    ctx.fillText(ch.label, nx + 8, ny + 34);
+
+                    // Detail
+                    ctx.font = '400 10px JetBrains Mono, monospace';
+                    ctx.fillStyle = c.MUTED;
+                    ctx.fillText(ch.detail, nx + 8, ny + 48);
+                });
+
+                // Summary at bottom
+                const summaryY = startY + rows * (nodeH + gap + 20) + 20;
+                ctx.font = '700 16px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = allPass ? '#22c55e' : '#ef4444';
+                ctx.fillText(
+                    allPass ? 'ALL CHECKS PASSED' : 'COMPLIANCE ISSUES FOUND',
+                    w / 2, summaryY
+                );
+
+                // Update result panel
+                const resultDiv = $('#reasoning-result');
+                const passCount = checks.filter(ch => ch.pass).length;
+                const failCount = checks.length - passCount;
+
+                let html = '<strong>' + passCount + '/' + checks.length + '</strong> checks passed. ';
+                if (allPass) {
+                    html += '<span class="pass"><i class="fa-solid fa-circle-check"></i> Design meets all code requirements.</span>';
+                } else {
+                    html += '<span class="fail"><i class="fa-solid fa-circle-xmark"></i> ' + failCount + ' violation(s) found:</span><ul style="margin:8px 0 0 20px;">';
+                    checks.filter(ch => !ch.pass).forEach(ch => {
+                        html += '<li><strong>' + ch.label + ':</strong> ' + ch.detail + ' &mdash; ' + ch.rule + '</li>';
+                    });
+                    html += '</ul>';
+                }
+                resultDiv.innerHTML = html;
+            }
+
+            // Initial draw
+            runCheck();
+
+            $('#btn-check-compliance').addEventListener('click', runCheck);
+
+            window.addEventListener('resize', runCheck);
+            const observer = new MutationObserver(runCheck);
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ============================================================
+           QUIZ CHECKER
+           ============================================================ */
+        window.checkQuiz = function (btn, quizName) {
+            const block = btn.closest('.quiz-block');
+            const feedback = block.querySelector('.quiz-block__feedback');
+            const correct = feedback.dataset.correct;
+            const selected = block.querySelector('input[name="' + quizName + '"]:checked');
+
+            if (!selected) {
+                feedback.innerHTML = '<p style="color:#fbbf24;"><i class="fa-solid fa-triangle-exclamation"></i> Please select an answer first.</p>';
+                feedback.style.display = 'block';
+                return;
+            }
+
+            if (selected.value === correct) {
+                feedback.style.display = 'block';
+                feedback.classList.add('correct');
+                feedback.classList.remove('incorrect');
+            } else {
+                feedback.innerHTML = '<p style="color:#ef4444;"><i class="fa-solid fa-circle-xmark"></i> <strong>Not quite.</strong> Try again! Think about which capability handles that specific task.</p>';
+                feedback.style.display = 'block';
+                feedback.classList.add('incorrect');
+                feedback.classList.remove('correct');
+            }
+        };
+
+    })();
+    </script>
+
+</body>
+</html>

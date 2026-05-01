@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.7 Object Detection | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="From image classification to object detection: anchor boxes, IoU, Non-Maximum Suppression, mAP, two-stage vs one-stage detectors (R-CNN family, YOLO, SSD). Interactive IoU calculator and NMS visualizer. Civil engineering applications for crack detection, spalling, rebar exposure, and safety equipment monitoring.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ---- page-specific styles ---- */
+
+        /* IoU demo */
+        .iou-canvas-wrapper{position:relative;width:100%;margin:24px 0}
+        .iou-canvas{display:block;width:100%;min-height:460px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg);cursor:grab;touch-action:none}
+        .iou-canvas:active{cursor:grabbing}
+        .iou-readout{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .iou-readout .metric-box{background:var(--bg-tertiary);border:1px solid var(--border-subtle);padding:10px 18px;border-radius:10px;text-align:center;min-width:110px}
+        .iou-readout .metric-box .metric-label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:4px;font-weight:600}
+        .iou-readout .metric-box .metric-value{display:block;font-size:1.35rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-primary)}
+        .iou-readout .metric-box .metric-value.warn{color:var(--accent-warm)}
+        .iou-readout .metric-box .metric-value.bad{color:var(--accent-danger)}
+        .iou-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+        .iou-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .iou-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+
+        /* NMS demo */
+        .nms-canvas-wrapper{position:relative;width:100%;margin:24px 0}
+        .nms-canvas{display:block;width:100%;min-height:460px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg)}
+        .nms-controls{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .nms-controls label{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+        .nms-controls input[type="range"]{width:140px;accent-color:var(--accent-primary)}
+        .nms-controls .range-value{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-primary);min-width:40px}
+        .nms-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .nms-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+        .nms-controls button.active{background:var(--accent-primary);color:var(--text-inverse);border-color:var(--accent-primary)}
+
+        /* Detection pipeline diagram */
+        .pipeline-canvas{display:block;width:100%;min-height:220px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg)}
+
+        /* Detector comparison table */
+        .detector-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.88rem}
+        .detector-table th{text-align:left;padding:10px 14px;background:var(--bg-tertiary);color:var(--accent-primary);font-weight:600;border-bottom:2px solid var(--border-active)}
+        .detector-table td{padding:10px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary)}
+        .detector-table tr:hover td{background:var(--table-row-hover)}
+        .detector-table .highlight-cell{color:var(--accent-primary);font-weight:600}
+
+        /* Detector badges */
+        .det-badge{display:inline-block;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600;letter-spacing:.5px}
+        .det-badge--two{background:rgba(0,212,170,.12);color:var(--accent-primary)}
+        .det-badge--one{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .det-badge--metric{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+
+        /* CE application cards */
+        .ce-app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:20px 0}
+        .ce-app-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;transition:transform .25s,border-color .25s}
+        .ce-app-card:hover{transform:translateY(-3px);border-color:var(--accent-primary)}
+        .ce-app-card .ce-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:12px}
+        .ce-app-card .ce-icon--crack{background:rgba(239,68,68,.12);color:var(--accent-danger)}
+        .ce-app-card .ce-icon--spall{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .ce-app-card .ce-icon--rebar{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+        .ce-app-card .ce-icon--safety{background:rgba(34,197,94,.12);color:var(--accent-success)}
+        .ce-app-card h4{margin:0 0 6px;font-size:.95rem;color:var(--text-primary)}
+        .ce-app-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.6;margin:0}
+
+        /* Formula block */
+        .formula-block{background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-radius:12px;padding:20px 24px;margin:18px 0;text-align:center}
+        .formula-block .formula{font-family:'JetBrains Mono',monospace;font-size:1.15rem;color:var(--accent-primary);margin:10px 0}
+        .formula-block .formula-label{font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+
+        /* Step list */
+        .step-list{list-style:none;padding:0;margin:20px 0;counter-reset:step}
+        .step-list li{counter-increment:step;position:relative;padding:14px 14px 14px 58px;margin-bottom:12px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;font-size:.9rem;color:var(--text-secondary);line-height:1.7}
+        .step-list li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--gradient-main);color:var(--text-inverse);font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+
+        @keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.7
+            </div>
+            <h1 class="chapter-hero__title">Object Detection</h1>
+            <p class="chapter-hero__subtitle">
+                Moving beyond "what is in this image?" to "where is it?" &mdash;
+                anchor boxes, Intersection over Union, Non-Maximum Suppression,
+                and the detector families that now power automated structural
+                inspection on bridges, tunnels, and construction sites.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 50 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: FROM CLASSIFICATION TO DETECTION
+             ========================================== -->
+        <section class="ch-section" id="classification-to-detection">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>From Classification to Detection</h2>
+                        <p>
+                            In the previous sub-chapters you built CNNs that accept an image
+                            and return a single label: "cracked" or "intact." That is
+                            <strong>image classification</strong>. But a bridge inspector
+                            does not just say "this photo has a crack" &mdash; she points to
+                            the exact region, circles it, and writes its dimensions. Object
+                            detection teaches a neural network to do the same: predict
+                            <em>what</em> objects are present <strong>and</strong> draw a
+                            tight bounding box around each one.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The jump from classification to detection is one of the most important
+                    leaps in applied computer vision. It transforms AI from a passive
+                    labelling tool into an active spatial reasoning engine &mdash; one that
+                    can count cracks, measure their extent, flag un-helmeted workers, and
+                    locate exposed rebar in a single forward pass of the network.
+                </p>
+
+                <h3>The Four Levels of Visual Understanding</h3>
+
+                <p>
+                    Computer vision researchers organise visual tasks along a spectrum of
+                    spatial granularity. Each level builds on the one before it:
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Image Classification</strong> &mdash; assign one label to the
+                        entire image. "This image contains a crack." No spatial information.
+                    </li>
+                    <li>
+                        <strong>Object Localization</strong> &mdash; classify the image
+                        <em>and</em> draw a single bounding box around the primary object.
+                        One object per image.
+                    </li>
+                    <li>
+                        <strong>Object Detection</strong> &mdash; find <em>all</em> objects
+                        in the image, classify each, and draw a bounding box around each one.
+                        Multiple objects, multiple classes.
+                    </li>
+                    <li>
+                        <strong>Instance Segmentation</strong> &mdash; detection plus
+                        pixel-level masks. Instead of a rectangle, every pixel belonging to
+                        each object is labelled. Useful for measuring crack width or area of
+                        spalling with sub-pixel accuracy.
+                    </li>
+                </ol>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Think of a bridge inspection report. <strong>Classification</strong>
+                        is a summary sentence: "Defects found." <strong>Localization</strong>
+                        is a single arrow on a photo pointing to the worst defect.
+                        <strong>Detection</strong> is a marked-up photo with every defect
+                        circled, labelled, and numbered. <strong>Instance segmentation</strong>
+                        is a CAD overlay where every defect region is traced as a polygon
+                        with area measurements. Each level adds spatial precision but also
+                        computational cost.
+                    </p>
+                </div>
+
+                <p>
+                    This sub-chapter focuses squarely on <strong>Object Detection</strong>
+                    &mdash; level 3. We will touch on instance segmentation briefly at the
+                    end, and the next sub-chapter (4.8) covers semantic segmentation in
+                    full detail.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: BOUNDING BOXES AND ANCHOR BOXES
+             ========================================== -->
+        <section class="ch-section" id="bounding-boxes">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-vector-square"></i>
+                    Bounding Boxes and Anchor Boxes
+                </h2>
+
+                <p>
+                    A <strong>bounding box</strong> is the simplest way to localise an
+                    object: an axis-aligned rectangle defined by four numbers. The two most
+                    common representations are:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-border-all"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Box Representations</h3>
+                        <p>
+                            <strong>(x<sub>min</sub>, y<sub>min</sub>, x<sub>max</sub>,
+                            y<sub>max</sub>)</strong> &mdash; top-left and bottom-right
+                            corners. Intuitive for computing overlaps.<br>
+                            <strong>(x<sub>c</sub>, y<sub>c</sub>, w, h)</strong> &mdash;
+                            centre coordinates plus width and height. Preferred by YOLO and
+                            many modern detectors because the network predicts offsets from
+                            a reference point.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>What Are Anchor Boxes?</h3>
+
+                <p>
+                    Early detection approaches used a brute-force sliding window: evaluate
+                    the classifier at every position and scale across the image. This was
+                    enormously expensive. Modern detectors replace the sliding window with
+                    <strong>anchor boxes</strong> (also called <em>prior boxes</em> or
+                    <em>default boxes</em>): a predefined set of reference rectangles placed
+                    at regular grid positions on the feature map.
+                </p>
+
+                <p>
+                    Each anchor has a fixed aspect ratio and scale. The network does not
+                    predict bounding boxes from scratch; instead, it predicts small
+                    <em>offsets</em> (deltas) from the nearest anchor. This makes the
+                    regression problem much easier because the network only needs to learn
+                    small corrections rather than absolute coordinates.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                        <span>Typical Anchor Configurations</span>
+                    </div>
+                    <p>
+                        Faster R-CNN uses 9 anchors per grid cell (3 scales &times; 3 aspect
+                        ratios). YOLO v2 uses 5 anchors determined by k-means clustering on
+                        the training set bounding boxes. SSD uses 4&ndash;6 anchors per
+                        feature-map level. More anchors increase recall but also increase
+                        the number of proposals the network must evaluate.
+                    </p>
+                </div>
+
+                <p>
+                    For civil engineering data, anchor design matters. Cracks are
+                    long and thin (high aspect ratio), spalling regions are roughly
+                    square, and rebar exposure patches are often small and narrow.
+                    Tuning anchor ratios to match your defect geometry improves
+                    detection accuracy significantly.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: IoU (INTERSECTION OVER UNION)
+             ========================================== -->
+        <section class="ch-section" id="iou">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    Intersection over Union (IoU)
+                </h2>
+
+                <p>
+                    <strong>Intersection over Union</strong> (IoU), also called the
+                    <em>Jaccard index</em>, is the single most important metric in object
+                    detection. It measures how well a predicted bounding box aligns with
+                    the ground-truth box.
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Intersection over Union</div>
+                    <div class="formula">
+                        IoU = Area(Predicted &cap; Ground Truth) / Area(Predicted &cup; Ground Truth)
+                    </div>
+                </div>
+
+                <p>
+                    IoU ranges from 0 (no overlap) to 1 (perfect overlap). In practice:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>IoU &ge; 0.50</strong> &mdash; considered a correct detection
+                        in the PASCAL VOC benchmark (the traditional threshold).
+                    </li>
+                    <li>
+                        <strong>IoU &ge; 0.75</strong> &mdash; a "strict" match. The COCO
+                        benchmark averages over IoU thresholds from 0.50 to 0.95 in steps of 0.05.
+                    </li>
+                    <li>
+                        <strong>IoU &lt; 0.50</strong> &mdash; the prediction is considered a
+                        false positive.
+                    </li>
+                </ul>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Imagine you are verifying a surveyor's measurement of a defect area.
+                        You overlay the surveyor's polygon on the true defect outline. IoU is
+                        the ratio of the overlapping area to the total area covered by either
+                        outline. A value of 0.85 means the surveyor captured 85% of the defect
+                        with very little wasted area &mdash; excellent agreement.
+                    </p>
+                </div>
+
+                <h3>Computing IoU Step by Step</h3>
+
+                <ol class="step-list">
+                    <li>
+                        Compute the coordinates of the <strong>intersection rectangle</strong>:
+                        <code>x1 = max(A.x_min, B.x_min)</code>,
+                        <code>y1 = max(A.y_min, B.y_min)</code>,
+                        <code>x2 = min(A.x_max, B.x_max)</code>,
+                        <code>y2 = min(A.y_max, B.y_max)</code>.
+                    </li>
+                    <li>
+                        If <code>x2 &lt; x1</code> or <code>y2 &lt; y1</code>, the boxes do
+                        not overlap and IoU = 0.
+                    </li>
+                    <li>
+                        <strong>Intersection area</strong> = <code>(x2 - x1) &times; (y2 - y1)</code>.
+                    </li>
+                    <li>
+                        <strong>Union area</strong> = Area(A) + Area(B) &minus; Intersection.
+                    </li>
+                    <li>
+                        <strong>IoU</strong> = Intersection / Union.
+                    </li>
+                </ol>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: DEMO — IoU CALCULATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-iou">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: IoU Calculator
+                </h2>
+
+                <p>
+                    Drag the two bounding boxes below to see how IoU changes in real time.
+                    The <span style="color:var(--accent-primary)">teal box</span> represents
+                    the ground truth and the
+                    <span style="color:var(--accent-warm)">amber box</span> represents a
+                    model prediction. Try to maximise the IoU by aligning them, then pull
+                    them apart to see how quickly IoU drops.
+                </p>
+
+                <div class="demo-panel" id="iou-demo-panel">
+                    <div class="iou-canvas-wrapper">
+                        <canvas id="iou-canvas" class="iou-canvas" aria-label="IoU calculator canvas — drag bounding boxes"></canvas>
+                    </div>
+                    <div class="iou-readout">
+                        <div class="metric-box">
+                            <span class="metric-label">IoU</span>
+                            <span class="metric-value" id="iou-value">0.00</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Intersection</span>
+                            <span class="metric-value" id="iou-inter">0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Union</span>
+                            <span class="metric-value" id="iou-union">0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Verdict</span>
+                            <span class="metric-value" id="iou-verdict">Miss</span>
+                        </div>
+                    </div>
+                    <div class="iou-controls">
+                        <button id="iou-reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset Boxes</button>
+                        <button id="iou-overlap-btn"><i class="fa-solid fa-layer-group"></i> Snap to 50% Overlap</button>
+                        <button id="iou-perfect-btn"><i class="fa-solid fa-bullseye"></i> Perfect Overlap</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: NON-MAXIMUM SUPPRESSION
+             ========================================== -->
+        <section class="ch-section" id="nms">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-filter"></i>
+                    Non-Maximum Suppression (NMS)
+                </h2>
+
+                <p>
+                    A detector with thousands of anchor boxes will produce
+                    <em>many</em> overlapping predictions for the same object. Non-Maximum
+                    Suppression (NMS) is the post-processing step that eliminates redundant
+                    boxes and keeps only the best one per object.
+                </p>
+
+                <h3>The NMS Algorithm</h3>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Sort</strong> all predicted boxes by their confidence score
+                        in descending order.
+                    </li>
+                    <li>
+                        <strong>Select</strong> the box with the highest confidence. Add it
+                        to the final output list.
+                    </li>
+                    <li>
+                        <strong>Compare</strong> this box against every remaining box. Remove
+                        any box whose IoU with the selected box exceeds a threshold (commonly
+                        0.45&ndash;0.50).
+                    </li>
+                    <li>
+                        <strong>Repeat</strong> steps 2&ndash;3 on the remaining boxes until
+                        none are left.
+                    </li>
+                </ol>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Tuning the IoU Threshold</h3>
+                        <p>
+                            A <strong>low threshold</strong> (e.g., 0.3) aggressively removes
+                            duplicates but risks suppressing detections of nearby objects
+                            (e.g., two cracks running close together). A <strong>high
+                            threshold</strong> (e.g., 0.7) keeps more boxes but may leave
+                            duplicates. For civil engineering inspection where defects can
+                            cluster, a moderate value around 0.45 works well, with class-wise
+                            tuning for crowded scenes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Soft-NMS</span>
+                    </div>
+                    <p>
+                        Instead of hard-removing overlapping boxes, <strong>Soft-NMS</strong>
+                        decays the confidence score of overlapping boxes using a Gaussian or
+                        linear function of their IoU with the top box. This preserves
+                        detections of nearby objects that share substantial overlap &mdash;
+                        useful when detecting multiple closely-spaced cracks or spalling
+                        patches on a concrete surface.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: DEMO — NMS VISUALIZER
+             ========================================== -->
+        <section class="ch-section" id="demo-nms">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Interactive Demo: NMS Visualizer
+                </h2>
+
+                <p>
+                    Below you see a set of overlapping detection boxes, each with a
+                    confidence score. Press <strong>Run NMS</strong> to watch the algorithm
+                    iteratively remove redundant boxes. Adjust the IoU threshold to see
+                    how it affects the final set of detections.
+                </p>
+
+                <div class="demo-panel" id="nms-demo-panel">
+                    <div class="nms-canvas-wrapper">
+                        <canvas id="nms-canvas" class="nms-canvas" aria-label="NMS visualizer canvas"></canvas>
+                    </div>
+                    <div class="nms-controls">
+                        <label>
+                            <i class="fa-solid fa-sliders"></i> IoU Threshold:
+                            <input type="range" id="nms-threshold" min="0.1" max="0.9" step="0.05" value="0.45">
+                            <span class="range-value" id="nms-threshold-val">0.45</span>
+                        </label>
+                        <button id="nms-run-btn"><i class="fa-solid fa-play"></i> Run NMS</button>
+                        <button id="nms-reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                        <button id="nms-random-btn"><i class="fa-solid fa-shuffle"></i> Randomize</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: TWO-STAGE DETECTORS
+             ========================================== -->
+        <section class="ch-section" id="two-stage">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Two-Stage Detectors
+                </h2>
+
+                <p>
+                    Two-stage detectors split the detection problem into two sequential
+                    steps: first <strong>propose regions</strong> that might contain an
+                    object, then <strong>classify and refine</strong> each region. This
+                    family dominated the field from 2014 to 2016 and still delivers
+                    state-of-the-art accuracy on many benchmarks.
+                </p>
+
+                <h3>R-CNN (2014)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-microscope"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Region-Based CNN</h3>
+                        <p>
+                            The original R-CNN used <strong>Selective Search</strong> to
+                            extract ~2,000 region proposals from an image. Each proposal was
+                            warped to a fixed size, fed through a CNN (AlexNet) to extract
+                            features, and then classified by an SVM. Bounding-box regression
+                            refined the coordinates. R-CNN achieved a dramatic jump in
+                            accuracy on PASCAL VOC but was extremely slow: each image
+                            required ~2,000 forward passes through the CNN.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Fast R-CNN (2015)</h3>
+
+                <p>
+                    Ross Girshick's <strong>Fast R-CNN</strong> eliminated the bottleneck by
+                    running the CNN only <em>once</em> on the entire image to produce a
+                    shared feature map. Region proposals (still from Selective Search) were
+                    then projected onto this feature map, and a small RoI (Region of Interest)
+                    pooling layer extracted fixed-size feature vectors for each proposal.
+                    A single network head performed both classification and box regression.
+                    Training was end-to-end and inference was ~10&times; faster than R-CNN.
+                </p>
+
+                <h3>Faster R-CNN (2015)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Region Proposal Network (RPN)</h3>
+                        <p>
+                            Faster R-CNN replaced the external Selective Search with a
+                            lightweight neural network &mdash; the <strong>Region Proposal
+                            Network</strong> &mdash; that shares convolutional features with
+                            the detection head. The RPN slides a small window over the
+                            feature map and, at each position, predicts whether each anchor
+                            box contains an object (<em>objectness score</em>) and refines
+                            the anchor coordinates. This made proposal generation nearly
+                            cost-free and enabled real-time two-stage detection (~5 FPS on a
+                            GPU).
+                        </p>
+                    </div>
+                </div>
+
+                <table class="detector-table">
+                    <thead>
+                        <tr>
+                            <th>Detector</th>
+                            <th>Proposals</th>
+                            <th>CNN Passes</th>
+                            <th>Speed</th>
+                            <th>mAP (VOC 2007)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="det-badge det-badge--two">R-CNN</span></td>
+                            <td>Selective Search</td>
+                            <td>~2,000</td>
+                            <td>~49 s/img</td>
+                            <td class="highlight-cell">58.5</td>
+                        </tr>
+                        <tr>
+                            <td><span class="det-badge det-badge--two">Fast R-CNN</span></td>
+                            <td>Selective Search</td>
+                            <td>1</td>
+                            <td>~2.3 s/img</td>
+                            <td class="highlight-cell">70.0</td>
+                        </tr>
+                        <tr>
+                            <td><span class="det-badge det-badge--two">Faster R-CNN</span></td>
+                            <td>RPN (learned)</td>
+                            <td>1</td>
+                            <td>~0.2 s/img</td>
+                            <td class="highlight-cell">73.2</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    Notice how each iteration kept the same two-stage philosophy but
+                    eliminated a bottleneck, yielding enormous speed gains without
+                    sacrificing accuracy. Faster R-CNN remains a popular baseline for
+                    civil engineering inspection tasks where accuracy matters more than
+                    real-time speed.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: ONE-STAGE DETECTORS
+             ========================================== -->
+        <section class="ch-section" id="one-stage">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    One-Stage Detectors
+                </h2>
+
+                <p>
+                    One-stage (or <em>single-shot</em>) detectors eliminate the proposal
+                    step entirely. They divide the image into a grid and predict bounding
+                    boxes and class probabilities directly from each grid cell in a single
+                    forward pass. The result: dramatically faster inference at the cost of
+                    some accuracy (though the gap has narrowed considerably).
+                </p>
+
+                <h3>YOLO &mdash; You Only Look Once (2016)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The YOLO Philosophy</h3>
+                        <p>
+                            Joseph Redmon's <strong>YOLO</strong> reframed detection as a
+                            single regression problem. The image is divided into an
+                            S &times; S grid. Each cell predicts B bounding boxes (each with
+                            a confidence score) and C class probabilities. At test time, all
+                            predictions are generated in one pass, making YOLO
+                            extraordinarily fast &mdash; the original version ran at
+                            <strong>45 FPS</strong> and the "Fast YOLO" variant at
+                            <strong>155 FPS</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Subsequent versions &mdash; YOLOv2 (YOLO9000), YOLOv3, YOLOv4, YOLOv5,
+                    YOLOv7, YOLOv8 &mdash; progressively added anchor boxes, multi-scale
+                    feature pyramids, better backbones, and advanced augmentation. Today
+                    YOLOv8 (by Ultralytics) is one of the most widely deployed detectors in
+                    civil engineering research, powering drone-based crack detection, PPE
+                    compliance monitoring, and structural damage surveys.
+                </p>
+
+                <h3>SSD &mdash; Single Shot MultiBox Detector (2016)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Multi-Scale Feature Maps</h3>
+                        <p>
+                            SSD improved on YOLO by making predictions from <em>multiple
+                            feature maps at different resolutions</em>. Early (large) feature
+                            maps detect small objects; later (small) feature maps detect large
+                            objects. Default (anchor) boxes of various aspect ratios are
+                            tiled across each feature map. This multi-scale approach
+                            substantially improved small-object detection &mdash; critical
+                            for spotting hairline cracks or small spalling patches.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Two-Stage vs One-Stage: Summary</h3>
+
+                <table class="detector-table">
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th><span class="det-badge det-badge--two">Two-Stage</span></th>
+                            <th><span class="det-badge det-badge--one">One-Stage</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Pipeline</td>
+                            <td>Propose then classify</td>
+                            <td>Detect in one pass</td>
+                        </tr>
+                        <tr>
+                            <td>Speed</td>
+                            <td>Moderate (~5&ndash;15 FPS)</td>
+                            <td>Fast (~30&ndash;155+ FPS)</td>
+                        </tr>
+                        <tr>
+                            <td>Accuracy</td>
+                            <td class="highlight-cell">Generally higher mAP</td>
+                            <td>Competitive, slightly lower</td>
+                        </tr>
+                        <tr>
+                            <td>Small Objects</td>
+                            <td>Strong (RoI pooling)</td>
+                            <td>SSD/YOLOv3+ improved</td>
+                        </tr>
+                        <tr>
+                            <td>Use Case</td>
+                            <td>Lab analysis, archival</td>
+                            <td>Real-time / edge / drone</td>
+                        </tr>
+                        <tr>
+                            <td>Example</td>
+                            <td>Faster R-CNN, Cascade R-CNN</td>
+                            <td>YOLOv8, SSD, RetinaNet</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Choosing a Detector for Civil Engineering</span>
+                    </div>
+                    <p>
+                        If you are inspecting high-resolution drone imagery offline and
+                        accuracy is paramount, <strong>Faster R-CNN</strong> (or its
+                        successor Cascade R-CNN) is an excellent choice. If you need
+                        real-time detection on a construction site &mdash; for example,
+                        monitoring PPE compliance via a CCTV feed &mdash;
+                        <strong>YOLOv8</strong> running on an edge GPU provides the best
+                        speed-accuracy trade-off.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: mAP METRIC
+             ========================================== -->
+        <section class="ch-section" id="map-metric">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    The mAP Metric
+                </h2>
+
+                <p>
+                    <strong>Mean Average Precision (mAP)</strong> is the standard metric for
+                    evaluating object detectors. Understanding it requires a quick review
+                    of precision, recall, and the precision-recall curve.
+                </p>
+
+                <h3>Precision and Recall</h3>
+
+                <div class="formula-block">
+                    <div class="formula-label">Precision</div>
+                    <div class="formula">Precision = TP / (TP + FP)</div>
+                </div>
+
+                <div class="formula-block">
+                    <div class="formula-label">Recall</div>
+                    <div class="formula">Recall = TP / (TP + FN)</div>
+                </div>
+
+                <p>
+                    A detection is a <strong>True Positive (TP)</strong> if its IoU with
+                    a ground-truth box exceeds the threshold (e.g., 0.50). Otherwise it is a
+                    <strong>False Positive (FP)</strong>. A ground-truth box that no
+                    prediction matches is a <strong>False Negative (FN)</strong>.
+                </p>
+
+                <h3>From PR Curve to AP</h3>
+
+                <p>
+                    For each class, sort all predictions by confidence, compute precision
+                    and recall at each rank, plot the precision-recall curve, and compute
+                    the area under it. This area is the <strong>Average Precision (AP)</strong>
+                    for that class. The <strong>mAP</strong> is the mean AP across all
+                    classes.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ranking-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common mAP Variants</h3>
+                        <p>
+                            <strong>mAP@0.50</strong> (PASCAL VOC style): IoU threshold = 0.50.
+                            Lenient; reports higher numbers.<br>
+                            <strong>mAP@0.75</strong>: strict IoU threshold.<br>
+                            <strong>mAP@[.50:.95]</strong> (COCO style): average mAP across
+                            IoU thresholds 0.50, 0.55, &hellip;, 0.95. The gold-standard
+                            metric that rewards both detection and precise localisation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Think of mAP as a comprehensive quality rating for a surveying
+                        instrument. <strong>Precision</strong> is like the instrument not
+                        reporting false measurements (every measurement it gives is real).
+                        <strong>Recall</strong> is like the instrument not missing any real
+                        features (it finds every crack that exists). mAP combines both into
+                        one number &mdash; a surveying instrument with mAP@0.50 of 0.92
+                        finds 92% of defects with very few false alarms.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    Civil Engineering Applications
+                </h2>
+
+                <p>
+                    Object detection has rapidly moved from the research lab to the job
+                    site. Below are four high-impact applications where detectors trained
+                    on domain-specific data are transforming civil engineering practice.
+                </p>
+
+                <div class="ce-app-grid">
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--crack">
+                            <i class="fa-solid fa-bolt-lightning"></i>
+                        </div>
+                        <h4>Crack Detection</h4>
+                        <p>
+                            YOLOv8 models trained on annotated bridge-deck images can locate
+                            cracks as narrow as 0.1 mm from drone photographs. Detectors
+                            draw bounding boxes around each crack, enabling automatic severity
+                            classification and length estimation. Typical reported
+                            mAP@0.50 values range from 0.82 to 0.94 on concrete surfaces.
+                        </p>
+                    </div>
+
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--spall">
+                            <i class="fa-solid fa-cubes-stacked"></i>
+                        </div>
+                        <h4>Spalling Detection</h4>
+                        <p>
+                            Concrete spalling &mdash; where chunks of cover concrete break
+                            away &mdash; is detected using Faster R-CNN or SSD. Multi-scale
+                            anchors are critical because spalling regions vary from
+                            centimetre-scale chips to metre-scale delaminations. Instance
+                            segmentation (Mask R-CNN) can additionally estimate the area
+                            of each spall.
+                        </p>
+                    </div>
+
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--rebar">
+                            <i class="fa-solid fa-bars"></i>
+                        </div>
+                        <h4>Rebar Exposure</h4>
+                        <p>
+                            When the protective concrete cover erodes, reinforcing steel
+                            becomes visible. Detecting exposed rebar is a high-priority
+                            structural safety task. Detectors are trained to distinguish
+                            rebar from similar linear features (conduit, shadow lines)
+                            using colour and texture cues in the CNN features.
+                        </p>
+                    </div>
+
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--safety">
+                            <i class="fa-solid fa-vest"></i>
+                        </div>
+                        <h4>Safety Equipment (PPE)</h4>
+                        <p>
+                            Real-time YOLO-based systems on construction sites detect
+                            hard hats, high-visibility vests, safety goggles, and harnesses
+                            on workers. Non-compliance triggers an alert. These systems run
+                            on edge GPUs attached to CCTV cameras and must sustain
+                            &ge; 25 FPS to track moving workers.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-database"></i>
+                        <span>Data Challenges in CE Detection</span>
+                    </div>
+                    <p>
+                        Civil engineering detection datasets are far smaller than ImageNet or
+                        COCO. A bridge inspection dataset may contain only 500&ndash;2,000
+                        annotated images. To compensate, practitioners rely heavily on
+                        <strong>transfer learning</strong> (fine-tuning a COCO-pretrained
+                        backbone), <strong>data augmentation</strong> (random crops, flips,
+                        colour jitter), and <strong>synthetic data</strong> (rendering cracks
+                        on 3-D concrete models) to boost effective training set size.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INSTANCE SEGMENTATION PREVIEW
+             ========================================== -->
+        <section class="ch-section" id="instance-segmentation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-draw-polygon"></i>
+                    A Glimpse at Instance Segmentation
+                </h2>
+
+                <p>
+                    Instance segmentation takes detection one step further: instead of a
+                    bounding box, the model predicts a <strong>pixel-level mask</strong>
+                    for each detected object. The landmark architecture here is
+                    <strong>Mask R-CNN</strong>, which extends Faster R-CNN by adding a
+                    small fully convolutional branch that outputs a binary mask for each
+                    Region of Interest.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Mask R-CNN in Brief</h3>
+                        <p>
+                            Mask R-CNN replaces RoI Pooling with <strong>RoI Align</strong>,
+                            which uses bilinear interpolation instead of quantisation to
+                            preserve spatial precision. A parallel mask head &mdash; a small
+                            FCN &mdash; predicts a 28 &times; 28 binary mask per RoI. The
+                            mask, classification, and box regression heads are trained
+                            jointly. This architecture achieves strong results on defect area
+                            estimation tasks where bounding boxes are too coarse.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Instance segmentation is especially valuable in civil engineering when
+                    you need to <em>measure</em> defects, not just locate them. Accurately
+                    tracing the outline of a spalling region lets you compute area, perimeter,
+                    and depth (if combined with depth imagery), feeding directly into
+                    structural assessment models. We will explore semantic segmentation
+                    architectures (U-Net, DeepLab) in the next sub-chapter.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz1">
+                    <div class="quiz-block__header">
+                        <span class="quiz-number">Q1</span>
+                        <p class="quiz-question">
+                            What does IoU measure in the context of object detection?
+                        </p>
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz1')">
+                            <i class="fa-solid fa-a"></i>
+                            The ratio of predicted class probability to ground-truth probability
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz1')">
+                            <i class="fa-solid fa-b"></i>
+                            The ratio of the overlapping area to the total area covered by both boxes
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz1')">
+                            <i class="fa-solid fa-c"></i>
+                            The number of anchor boxes that overlap with the ground truth
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz1')">
+                            <i class="fa-solid fa-d"></i>
+                            The average precision across all detection thresholds
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz1-correct" style="display:none">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <strong>Correct!</strong> IoU = Intersection Area / Union Area. It ranges from 0 (no overlap) to 1 (perfect match).
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz1-wrong" style="display:none">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                        <strong>Not quite.</strong> IoU (Intersection over Union) is the ratio of the overlapping area between two boxes to the total area covered by their union.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz2">
+                    <div class="quiz-block__header">
+                        <span class="quiz-number">Q2</span>
+                        <p class="quiz-question">
+                            What is the primary advantage of one-stage detectors like YOLO over two-stage detectors like Faster R-CNN?
+                        </p>
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz2')">
+                            <i class="fa-solid fa-a"></i>
+                            Higher accuracy on small objects
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz2')">
+                            <i class="fa-solid fa-b"></i>
+                            Fewer training parameters
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz2')">
+                            <i class="fa-solid fa-c"></i>
+                            Much faster inference speed, suitable for real-time applications
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz2')">
+                            <i class="fa-solid fa-d"></i>
+                            They do not require anchor boxes
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz2-correct" style="display:none">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <strong>Correct!</strong> One-stage detectors predict boxes and classes in a single pass, achieving real-time speeds (30&ndash;155+ FPS) versus the moderate speeds of two-stage detectors.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz2-wrong" style="display:none">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                        <strong>Not quite.</strong> The main advantage of one-stage detectors is their speed &mdash; they perform detection in a single forward pass, enabling real-time applications like PPE monitoring on construction sites.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz3">
+                    <div class="quiz-block__header">
+                        <span class="quiz-number">Q3</span>
+                        <p class="quiz-question">
+                            In the context of Non-Maximum Suppression, what happens when the IoU threshold is set very low (e.g., 0.2)?
+                        </p>
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz3')">
+                            <i class="fa-solid fa-a"></i>
+                            More duplicate boxes are kept in the output
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz3')">
+                            <i class="fa-solid fa-b"></i>
+                            Boxes are aggressively removed, risking suppression of nearby distinct objects
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz3')">
+                            <i class="fa-solid fa-c"></i>
+                            The confidence scores of all detections are increased
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz3')">
+                            <i class="fa-solid fa-d"></i>
+                            The algorithm runs faster because fewer comparisons are needed
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz3-correct" style="display:none">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <strong>Correct!</strong> A low IoU threshold means even slightly overlapping boxes are suppressed, which can remove valid detections of closely-spaced objects like adjacent cracks.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz3-wrong" style="display:none">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                        <strong>Not quite.</strong> A low IoU threshold causes aggressive suppression &mdash; even boxes with small overlap are removed, risking the loss of detections for genuinely distinct but nearby objects.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz4">
+                    <div class="quiz-block__header">
+                        <span class="quiz-number">Q4</span>
+                        <p class="quiz-question">
+                            What key innovation did Faster R-CNN introduce compared to Fast R-CNN?
+                        </p>
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz4')">
+                            <i class="fa-solid fa-a"></i>
+                            It used a deeper backbone (ResNet-152 instead of VGG-16)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz4')">
+                            <i class="fa-solid fa-b"></i>
+                            It added a pixel-level mask prediction branch
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz4')">
+                            <i class="fa-solid fa-c"></i>
+                            It replaced external Selective Search with a learned Region Proposal Network (RPN)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz4')">
+                            <i class="fa-solid fa-d"></i>
+                            It introduced multi-scale feature maps for detecting small objects
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz4-correct" style="display:none">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <strong>Correct!</strong> Faster R-CNN's RPN shares convolutional features with the detection head, making region proposal generation nearly free and enabling real-time two-stage detection.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz4-wrong" style="display:none">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                        <strong>Not quite.</strong> Faster R-CNN's breakthrough was replacing the slow Selective Search algorithm with a lightweight Region Proposal Network (RPN) that shares features with the detector and runs inside the network.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: CHAPTER SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Chapter Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul>
+                            <li>
+                                Object detection adds spatial localisation to classification:
+                                the model predicts <em>what</em> and <em>where</em> for every
+                                object in the image.
+                            </li>
+                            <li>
+                                <strong>Anchor boxes</strong> provide reference rectangles that
+                                the network refines via small offsets, making regression easier.
+                            </li>
+                            <li>
+                                <strong>IoU</strong> (Intersection over Union) measures overlap
+                                between predicted and ground-truth boxes; it is the foundation
+                                of mAP evaluation and NMS.
+                            </li>
+                            <li>
+                                <strong>Non-Maximum Suppression</strong> filters redundant
+                                detections by iteratively keeping the highest-confidence box and
+                                removing highly-overlapping alternatives.
+                            </li>
+                            <li>
+                                <strong>Two-stage detectors</strong> (R-CNN, Fast R-CNN, Faster
+                                R-CNN) propose regions first, then classify &mdash; high accuracy,
+                                moderate speed.
+                            </li>
+                            <li>
+                                <strong>One-stage detectors</strong> (YOLO, SSD) predict boxes
+                                and classes in a single pass &mdash; real-time speed, competitive
+                                accuracy.
+                            </li>
+                            <li>
+                                <strong>mAP</strong> averages per-class precision-recall areas
+                                across IoU thresholds; mAP@[.50:.95] is the gold standard.
+                            </li>
+                            <li>
+                                Civil engineering applications include crack detection, spalling,
+                                rebar exposure, and PPE compliance &mdash; all benefit from
+                                transfer learning and domain-specific anchor tuning.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub6.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">4.6 Famous Architectures</div>
+        </a>
+        <a href="sub8.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">4.8 Semantic Segmentation</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    /* ==========================================================
+       SUB 4.7 — PAGE-SPECIFIC SCRIPTS
+       ========================================================== */
+    (function () {
+        'use strict';
+
+        const { $, $$, lerp, rand, clamp, PI, TAU, getColors, initCanvas } = window.ChapterUtils;
+
+        /* ──────────────────────────────────────────────
+           HERO CANVAS — floating bounding-box particles
+           ────────────────────────────────────────────── */
+        (function heroCanvas() {
+            const canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+            let boxes = [];
+
+            function createBoxes() {
+                boxes = [];
+                for (let i = 0; i < 18; i++) {
+                    const bw = rand(30, 100);
+                    const bh = rand(20, 80);
+                    boxes.push({
+                        x: rand(0, w), y: rand(0, h),
+                        w: bw, h: bh,
+                        vx: rand(-0.3, 0.3), vy: rand(-0.2, 0.2),
+                        conf: rand(0.3, 0.99),
+                        alpha: rand(0.08, 0.25),
+                        hue: [0, 1, 2][Math.floor(rand(0, 3))]
+                    });
+                }
+            }
+            createBoxes();
+
+            function draw() {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                const palette = [c.TEAL, c.AMBER, c.CYAN];
+                boxes.forEach(b => {
+                    b.x += b.vx; b.y += b.vy;
+                    if (b.x < -b.w) b.x = w + 10;
+                    if (b.x > w + 20) b.x = -b.w;
+                    if (b.y < -b.h) b.y = h + 10;
+                    if (b.y > h + 20) b.y = -b.h;
+
+                    ctx.strokeStyle = palette[b.hue];
+                    ctx.globalAlpha = b.alpha;
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+                    ctx.setLineDash([]);
+
+                    ctx.font = '10px JetBrains Mono, monospace';
+                    ctx.fillStyle = palette[b.hue];
+                    ctx.fillText(b.conf.toFixed(2), b.x + 3, b.y - 4);
+                });
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                createBoxes();
+            });
+        })();
+
+        /* ──────────────────────────────────────────────
+           DEMO 1: IoU CALCULATOR
+           ────────────────────────────────────────────── */
+        (function iouDemo() {
+            const canvas = document.getElementById('iou-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            /* Box A = ground truth (teal), Box B = prediction (amber) */
+            const defaultA = () => ({ x: w * 0.25, y: h * 0.25, w: w * 0.3, h: h * 0.4 });
+            const defaultB = () => ({ x: w * 0.4, y: h * 0.3, w: w * 0.3, h: h * 0.35 });
+            let boxA = defaultA();
+            let boxB = defaultB();
+            let dragging = null;   /* 'A' | 'B' | null */
+            let dragOff = { x: 0, y: 0 };
+
+            /* readout elements */
+            const elIoU     = document.getElementById('iou-value');
+            const elInter   = document.getElementById('iou-inter');
+            const elUnion   = document.getElementById('iou-union');
+            const elVerdict = document.getElementById('iou-verdict');
+
+            function computeIoU() {
+                const xA = Math.max(boxA.x, boxB.x);
+                const yA = Math.max(boxA.y, boxB.y);
+                const xB = Math.min(boxA.x + boxA.w, boxB.x + boxB.w);
+                const yB = Math.min(boxA.y + boxA.h, boxB.y + boxB.h);
+                const interW = Math.max(0, xB - xA);
+                const interH = Math.max(0, yB - yA);
+                const inter = interW * interH;
+                const areaA = boxA.w * boxA.h;
+                const areaB = boxB.w * boxB.h;
+                const union = areaA + areaB - inter;
+                const iou = union > 0 ? inter / union : 0;
+                return { iou, inter, union };
+            }
+
+            function updateReadout(iou, inter, union) {
+                elIoU.textContent = iou.toFixed(3);
+                elInter.textContent = Math.round(inter);
+                elUnion.textContent = Math.round(union);
+                if (iou >= 0.75) {
+                    elVerdict.textContent = 'Excellent';
+                    elIoU.className = 'metric-value';
+                } else if (iou >= 0.50) {
+                    elVerdict.textContent = 'Good';
+                    elIoU.className = 'metric-value warn';
+                } else {
+                    elVerdict.textContent = iou > 0 ? 'Poor' : 'Miss';
+                    elIoU.className = 'metric-value bad';
+                }
+            }
+
+            function drawGrid() {
+                const c = getColors();
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                const step = 40;
+                for (let x = 0; x < w; x += step) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+                }
+                for (let y = 0; y < h; y += step) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+            }
+
+            function draw() {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+                drawGrid();
+
+                const { iou, inter, union } = computeIoU();
+                updateReadout(iou, inter, union);
+
+                /* Draw intersection fill */
+                if (inter > 0) {
+                    const xA2 = Math.max(boxA.x, boxB.x);
+                    const yA2 = Math.max(boxA.y, boxB.y);
+                    const xB2 = Math.min(boxA.x + boxA.w, boxB.x + boxB.w);
+                    const yB2 = Math.min(boxA.y + boxA.h, boxB.y + boxB.h);
+                    ctx.fillStyle = 'rgba(34,197,94,0.25)';
+                    ctx.fillRect(xA2, yA2, xB2 - xA2, yB2 - yA2);
+                    /* hatch pattern */
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(xA2, yA2, xB2 - xA2, yB2 - yA2);
+                    ctx.clip();
+                    ctx.strokeStyle = 'rgba(34,197,94,0.35)';
+                    ctx.lineWidth = 1;
+                    for (let d = -Math.max(w, h); d < Math.max(w, h); d += 8) {
+                        ctx.beginPath();
+                        ctx.moveTo(d, 0);
+                        ctx.lineTo(d + h, h);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+
+                /* Box A - ground truth */
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([]);
+                ctx.strokeRect(boxA.x, boxA.y, boxA.w, boxA.h);
+                ctx.fillStyle = c.TEAL;
+                ctx.globalAlpha = 0.08;
+                ctx.fillRect(boxA.x, boxA.y, boxA.w, boxA.h);
+                ctx.globalAlpha = 1;
+                /* label */
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.fillText('Ground Truth', boxA.x + 6, boxA.y - 8);
+
+                /* Box B - prediction */
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 4]);
+                ctx.strokeRect(boxB.x, boxB.y, boxB.w, boxB.h);
+                ctx.setLineDash([]);
+                ctx.fillStyle = c.AMBER;
+                ctx.globalAlpha = 0.08;
+                ctx.fillRect(boxB.x, boxB.y, boxB.w, boxB.h);
+                ctx.globalAlpha = 1;
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.fillStyle = c.AMBER;
+                ctx.fillText('Prediction', boxB.x + 6, boxB.y - 8);
+
+                /* IoU text on canvas */
+                ctx.font = 'bold 16px JetBrains Mono, monospace';
+                ctx.fillStyle = iou >= 0.5 ? c.GREEN : c.RED;
+                ctx.textAlign = 'right';
+                ctx.fillText('IoU: ' + iou.toFixed(3), w - 16, 28);
+                ctx.textAlign = 'left';
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            /* ---- pointer interaction ---- */
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const t = e.touches ? e.touches[0] : e;
+                return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+            }
+
+            function hitTest(pos) {
+                if (pos.x >= boxB.x && pos.x <= boxB.x + boxB.w &&
+                    pos.y >= boxB.y && pos.y <= boxB.y + boxB.h) return 'B';
+                if (pos.x >= boxA.x && pos.x <= boxA.x + boxA.w &&
+                    pos.y >= boxA.y && pos.y <= boxA.y + boxA.h) return 'A';
+                return null;
+            }
+
+            function onDown(e) {
+                e.preventDefault();
+                const pos = getPos(e);
+                const hit = hitTest(pos);
+                if (!hit) return;
+                dragging = hit;
+                const box = hit === 'A' ? boxA : boxB;
+                dragOff = { x: pos.x - box.x, y: pos.y - box.y };
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                const box = dragging === 'A' ? boxA : boxB;
+                box.x = clamp(pos.x - dragOff.x, 0, w - box.w);
+                box.y = clamp(pos.y - dragOff.y, 0, h - box.h);
+            }
+            function onUp() { dragging = null; }
+
+            canvas.addEventListener('mousedown', onDown);
+            canvas.addEventListener('mousemove', onMove);
+            canvas.addEventListener('mouseup', onUp);
+            canvas.addEventListener('mouseleave', onUp);
+            canvas.addEventListener('touchstart', onDown, { passive: false });
+            canvas.addEventListener('touchmove', onMove, { passive: false });
+            canvas.addEventListener('touchend', onUp);
+
+            /* ---- control buttons ---- */
+            const resetBtn   = document.getElementById('iou-reset-btn');
+            const overlapBtn = document.getElementById('iou-overlap-btn');
+            const perfectBtn = document.getElementById('iou-perfect-btn');
+
+            if (resetBtn) resetBtn.addEventListener('click', () => {
+                Object.assign(boxA, defaultA());
+                Object.assign(boxB, defaultB());
+            });
+            if (overlapBtn) overlapBtn.addEventListener('click', () => {
+                const cx = w / 2, cy = h / 2;
+                const bw = w * 0.3, bh = h * 0.35;
+                boxA.x = cx - bw * 0.75; boxA.y = cy - bh / 2;
+                boxA.w = bw; boxA.h = bh;
+                boxB.x = cx - bw * 0.25; boxB.y = cy - bh / 2;
+                boxB.w = bw; boxB.h = bh;
+            });
+            if (perfectBtn) perfectBtn.addEventListener('click', () => {
+                const cx = w / 2, cy = h / 2;
+                const bw = w * 0.3, bh = h * 0.35;
+                boxA.x = cx - bw / 2; boxA.y = cy - bh / 2;
+                boxA.w = bw; boxA.h = bh;
+                boxB.x = cx - bw / 2; boxB.y = cy - bh / 2;
+                boxB.w = bw; boxB.h = bh;
+            });
+
+            window.addEventListener('resize', () => {
+                const oldW = w, oldH = h;
+                ({ ctx, w, h } = initCanvas(canvas));
+                const sx = w / oldW, sy = h / oldH;
+                [boxA, boxB].forEach(b => {
+                    b.x *= sx; b.y *= sy; b.w *= sx; b.h *= sy;
+                });
+            });
+        })();
+
+        /* ──────────────────────────────────────────────
+           DEMO 2: NMS VISUALIZER
+           ────────────────────────────────────────────── */
+        (function nmsDemo() {
+            const canvas = document.getElementById('nms-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            const thresholdSlider = document.getElementById('nms-threshold');
+            const thresholdVal    = document.getElementById('nms-threshold-val');
+            const runBtn          = document.getElementById('nms-run-btn');
+            const resetBtn        = document.getElementById('nms-reset-btn');
+            const randomBtn       = document.getElementById('nms-random-btn');
+
+            /* Detection box structure: { x, y, w, h, conf, suppressed, cls } */
+            let detections = [];
+            let animating = false;
+            let animStep = -1;
+            let animQueue = [];
+
+            /* class palette */
+            function clsColor(cls, c) {
+                return [c.TEAL, c.AMBER, c.CYAN, c.RED, c.GREEN][cls % 5];
+            }
+
+            function generateDetections() {
+                detections = [];
+                /* Create 3 clusters of overlapping boxes */
+                const clusters = [
+                    { cx: w * 0.25, cy: h * 0.4, label: 0 },
+                    { cx: w * 0.6,  cy: h * 0.35, label: 1 },
+                    { cx: w * 0.45, cy: h * 0.7, label: 0 }
+                ];
+                clusters.forEach(cl => {
+                    const n = Math.floor(rand(4, 7));
+                    for (let i = 0; i < n; i++) {
+                        const bw = rand(60, 120);
+                        const bh = rand(50, 100);
+                        detections.push({
+                            x: clamp(cl.cx + rand(-40, 40) - bw / 2, 10, w - bw - 10),
+                            y: clamp(cl.cy + rand(-30, 30) - bh / 2, 10, h - bh - 10),
+                            w: bw, h: bh,
+                            conf: parseFloat(rand(0.35, 0.97).toFixed(2)),
+                            suppressed: false,
+                            cls: cl.label
+                        });
+                    }
+                });
+                /* sort desc by confidence */
+                detections.sort((a, b) => b.conf - a.conf);
+                animStep = -1;
+                animQueue = [];
+                animating = false;
+            }
+            generateDetections();
+
+            function computeIoU(a, b) {
+                const x1 = Math.max(a.x, b.x);
+                const y1 = Math.max(a.y, b.y);
+                const x2 = Math.min(a.x + a.w, b.x + b.w);
+                const y2 = Math.min(a.y + a.h, b.y + b.h);
+                const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+                const union = a.w * a.h + b.w * b.h - inter;
+                return union > 0 ? inter / union : 0;
+            }
+
+            /* Run NMS and record steps for animation */
+            function runNMS() {
+                const threshold = parseFloat(thresholdSlider.value);
+                /* Reset suppression */
+                detections.forEach(d => d.suppressed = false);
+                animQueue = [];
+
+                const sorted = detections.slice().sort((a, b) => b.conf - a.conf);
+                const kept = [];
+
+                for (let i = 0; i < sorted.length; i++) {
+                    if (sorted[i].suppressed) continue;
+                    kept.push(sorted[i]);
+                    const suppressedThisStep = [];
+                    for (let j = i + 1; j < sorted.length; j++) {
+                        if (sorted[j].suppressed) continue;
+                        const iou = computeIoU(sorted[i], sorted[j]);
+                        if (iou >= threshold) {
+                            sorted[j].suppressed = true;
+                            suppressedThisStep.push(sorted[j]);
+                        }
+                    }
+                    animQueue.push({ selected: sorted[i], removed: suppressedThisStep });
+                }
+                return animQueue;
+            }
+
+            function drawGrid() {
+                const c = getColors();
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                const step = 40;
+                for (let gx = 0; gx < w; gx += step) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (let gy = 0; gy < h; gy += step) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+            }
+
+            function draw() {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+                drawGrid();
+
+                /* Title */
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.fillStyle = c.MUTED;
+                ctx.textAlign = 'left';
+                const keptCount = detections.filter(d => !d.suppressed).length;
+                const totalCount = detections.length;
+                ctx.fillText('Detections: ' + keptCount + ' / ' + totalCount + ' kept', 14, 24);
+
+                detections.forEach((d, i) => {
+                    const col = clsColor(d.cls, c);
+                    if (d.suppressed) {
+                        /* draw faded / crossed out */
+                        ctx.globalAlpha = 0.15;
+                        ctx.strokeStyle = col;
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([4, 4]);
+                        ctx.strokeRect(d.x, d.y, d.w, d.h);
+                        ctx.setLineDash([]);
+                        /* cross */
+                        ctx.beginPath();
+                        ctx.moveTo(d.x, d.y);
+                        ctx.lineTo(d.x + d.w, d.y + d.h);
+                        ctx.moveTo(d.x + d.w, d.y);
+                        ctx.lineTo(d.x, d.y + d.h);
+                        ctx.strokeStyle = c.RED;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    } else {
+                        /* draw solid */
+                        ctx.strokeStyle = col;
+                        ctx.lineWidth = 2.5;
+                        ctx.strokeRect(d.x, d.y, d.w, d.h);
+                        ctx.fillStyle = col;
+                        ctx.globalAlpha = 0.07;
+                        ctx.fillRect(d.x, d.y, d.w, d.h);
+                        ctx.globalAlpha = 1;
+                        /* confidence label */
+                        ctx.font = 'bold 11px JetBrains Mono, monospace';
+                        ctx.fillStyle = col;
+                        const label = d.conf.toFixed(2);
+                        const tw = ctx.measureText(label).width;
+                        ctx.fillStyle = c.BG;
+                        ctx.fillRect(d.x, d.y - 18, tw + 8, 16);
+                        ctx.fillStyle = col;
+                        ctx.fillText(label, d.x + 4, d.y - 6);
+                    }
+                });
+
+                ctx.textAlign = 'left';
+            }
+            draw();
+
+            /* Animate NMS step by step */
+            function animateNMS() {
+                if (animStep >= animQueue.length - 1) {
+                    animating = false;
+                    if (runBtn) runBtn.innerHTML = '<i class="fa-solid fa-play"></i> Run NMS';
+                    return;
+                }
+                animStep++;
+                const step = animQueue[animStep];
+                /* Apply suppression */
+                step.removed.forEach(d => d.suppressed = true);
+                draw();
+
+                /* Highlight selected box */
+                const c = getColors();
+                const s = step.selected;
+                ctx.strokeStyle = c.GREEN;
+                ctx.lineWidth = 3.5;
+                ctx.setLineDash([]);
+                ctx.strokeRect(s.x - 3, s.y - 3, s.w + 6, s.h + 6);
+
+                setTimeout(() => animateNMS(), 600);
+            }
+
+            /* ---- controls ---- */
+            if (thresholdSlider) {
+                thresholdSlider.addEventListener('input', () => {
+                    thresholdVal.textContent = parseFloat(thresholdSlider.value).toFixed(2);
+                });
+            }
+
+            if (runBtn) runBtn.addEventListener('click', () => {
+                if (animating) return;
+                /* Reset suppression before running */
+                detections.forEach(d => d.suppressed = false);
+                runNMS();
+                animStep = -1;
+                animating = true;
+                runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running...';
+                animateNMS();
+            });
+
+            if (resetBtn) resetBtn.addEventListener('click', () => {
+                animating = false;
+                detections.forEach(d => d.suppressed = false);
+                animStep = -1;
+                animQueue = [];
+                if (runBtn) runBtn.innerHTML = '<i class="fa-solid fa-play"></i> Run NMS';
+                draw();
+            });
+
+            if (randomBtn) randomBtn.addEventListener('click', () => {
+                animating = false;
+                if (runBtn) runBtn.innerHTML = '<i class="fa-solid fa-play"></i> Run NMS';
+                generateDetections();
+                draw();
+            });
+
+            window.addEventListener('resize', () => {
+                const oldW = w, oldH = h;
+                ({ ctx, w, h } = initCanvas(canvas));
+                const sx = w / oldW, sy = h / oldH;
+                detections.forEach(d => {
+                    d.x *= sx; d.y *= sy; d.w *= sx; d.h *= sy;
+                });
+                draw();
+            });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

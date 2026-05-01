@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.2 The Attention Mechanism | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Understand the attention mechanism through a civil engineering lens. Explore Query, Key, Value vectors, scaled dot-product attention, and self-attention with interactive demos and analogies.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-crosshairs"></i> Chapter 5 &mdash; Sub-chapter 5.2
+            </div>
+            <h1 class="chapter-hero__title">The Attention Mechanism</h1>
+            <p class="chapter-hero__subtitle">
+                Not all information deserves equal focus. Just as a structural engineer's eye
+                snaps to the critical load path in a hundred-page report, the attention
+                mechanism teaches neural networks to concentrate on the parts that matter most.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE ATTENTION INTUITION
+             ========================================== -->
+        <section class="ch-section" id="attention-intuition">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Problem of Equal Treatment</h2>
+                        <p>
+                            In the previous sub-chapter we built RNNs that compress an entire
+                            sequence into a single hidden state vector. This works, but there is a
+                            fundamental limitation: by the time the network reaches the end of a
+                            long sequence, the information from early time steps has been repeatedly
+                            transformed and diluted. The hidden state becomes a lossy bottleneck.
+                        </p>
+                        <p>
+                            Imagine reading a 500-page structural analysis report and being asked to
+                            answer a question about the foundation design discussed on page 12. If
+                            your only memory is a single paragraph summarising the entire report
+                            (the final hidden state), you would struggle. What you really need is
+                            the ability to <strong>look back</strong> at page 12 directly.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This is exactly what the <strong>attention mechanism</strong> provides. Instead
+                    of forcing the model to compress everything into a fixed-size vector, attention
+                    allows the network to dynamically <em>focus on different parts</em> of the
+                    input sequence depending on what it currently needs. Some positions receive
+                    high attention (they are highly relevant), while others receive near-zero
+                    attention (they can be safely ignored for the current task).
+                </p>
+
+                <p>
+                    The concept was introduced by Bahdanau et al. in 2014 for machine translation
+                    and has since become the single most important building block in modern deep
+                    learning. It is the foundation upon which the Transformer architecture
+                    (sub-chapter 5.3) is built.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you are comfortable with the RNN concepts from
+                        Sub-chapter 5.1, including hidden states and sequence processing. You
+                        should also be familiar with basic matrix multiplication and the softmax
+                        function from earlier chapters.
+                    </p>
+                </div>
+
+                <h3>Why Attention Matters</h3>
+
+                <p>
+                    Consider three concrete advantages that attention brings over the
+                    bottleneck approach of vanilla RNNs:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>1. Selective Focus</h3>
+                        <p>
+                            Not every part of the input is equally relevant to every output.
+                            When translating a sentence, the word "bridge" in the source might
+                            map strongly to "pont" in French but have zero relevance to the
+                            translation of "today." Attention lets the model assign different
+                            <strong>weights</strong> to different input positions at each output
+                            step.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>2. Direct Information Pathways</h3>
+                        <p>
+                            In a vanilla RNN, information from time step 1 must pass through
+                            every intermediate hidden state to reach time step 100. Each hop
+                            risks losing information. With attention, the model creates a
+                            <strong>shortcut</strong> &mdash; a direct connection from any input
+                            position to the current processing step, regardless of distance.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>3. Interpretability</h3>
+                        <p>
+                            The attention weights themselves form a distribution over input
+                            positions that can be visualised. This reveals <em>what the model
+                            is looking at</em> when producing each output &mdash; a rare window
+                            into the otherwise opaque decision-making of neural networks.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE CORE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Structural Engineer's Report Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Attention is how a structural engineer reads a report.</strong>
+                            Picture a senior structural engineer reviewing a 200-page design
+                            report for a multi-storey building. The report covers foundations,
+                            columns, beams, slabs, lateral systems, connections, material
+                            specifications, load combinations, and construction sequences.
+                        </p>
+                        <p>
+                            The engineer's current task is to verify the adequacy of the
+                            <strong>column-beam connections on Floor 7</strong>. They do not
+                            read every page with equal intensity. Instead, they:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li>Quickly scan page headers and section titles (computing relevance scores)</li>
+                            <li>Assign <strong>high attention</strong> to the section on connection design, the load table for Floor 7, and the steel grade specification</li>
+                            <li>Assign <strong>moderate attention</strong> to adjacent floors and general lateral load assumptions</li>
+                            <li>Assign <strong>near-zero attention</strong> to the foundation design chapter and the construction schedule</li>
+                            <li>Extract and synthesise the high-attention information to form their conclusion</li>
+                        </ul>
+                        <p>
+                            This is precisely what the attention mechanism does: it computes a
+                            <em>relevance score</em> between the current question (Query) and
+                            every section of information (Keys), then uses those scores to create
+                            a weighted combination of the content (Values).
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This analogy maps directly onto the mathematical formulation we are about
+                    to explore. The engineer's question is the <strong>Query</strong>. The
+                    section headers are the <strong>Keys</strong>. The section contents are
+                    the <strong>Values</strong>. The attention weights are how much focus each
+                    section receives.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: QUERY, KEY, VALUE VECTORS
+             ========================================== -->
+        <section class="ch-section" id="qkv-vectors">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-vector-square"></i>
+                    Query, Key, and Value Vectors
+                </h2>
+
+                <p>
+                    The attention mechanism operates on three types of vectors, each derived
+                    from the input through learned linear transformations (matrix
+                    multiplications). Understanding what each represents is the key to
+                    understanding attention.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-question"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Query (Q) &mdash; "What am I looking for?"</h3>
+                        <p>
+                            The Query vector represents the current position's <em>information
+                            need</em>. It encodes what the model is searching for in the rest
+                            of the sequence. In our analogy, it is the engineer's specific
+                            question: "What is the connection capacity at Floor 7?"
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            Q = X &middot; W<sub>Q</sub>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key (K) &mdash; "What do I contain?"</h3>
+                        <p>
+                            The Key vector represents the <em>identity</em> or <em>label</em>
+                            of each position's information. It is designed so that when a Key
+                            matches a Query well (high dot product), the corresponding position
+                            is relevant. In our analogy, Keys are the section headers and
+                            keywords that help the engineer decide where to focus.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            K = X &middot; W<sub>K</sub>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Value (V) &mdash; "What information do I provide?"</h3>
+                        <p>
+                            The Value vector represents the actual <em>content</em> at each
+                            position. Once the model knows which positions are relevant (via
+                            the Query-Key comparison), it extracts information by taking a
+                            weighted sum of the Value vectors. In our analogy, Values are the
+                            detailed technical content within each section.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            V = X &middot; W<sub>V</sub>
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why Separate Q, K, and V?</h3>
+
+                <p>
+                    A natural question is: why not just use the original input vectors directly?
+                    The answer is that the three learned projections (W<sub>Q</sub>,
+                    W<sub>K</sub>, W<sub>V</sub>) give the model the flexibility to represent
+                    the same input differently depending on its role. The same word or sensor
+                    reading might contain different information when acting as a "question"
+                    versus when acting as an "answer."
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Dimensions</span>
+                    </div>
+                    <p>
+                        If the input X has dimension d<sub>model</sub> per position, then
+                        W<sub>Q</sub>, W<sub>K</sub>, and W<sub>V</sub> are matrices of size
+                        d<sub>model</sub> &times; d<sub>k</sub> (for Q and K) and
+                        d<sub>model</sub> &times; d<sub>v</sub> (for V). In the original
+                        Transformer, d<sub>k</sub> = d<sub>v</sub> = d<sub>model</sub> / h,
+                        where h is the number of attention heads. We will explore multi-head
+                        attention in Sub-chapter 5.3.
+                    </p>
+                </div>
+
+                <h3>From Inputs to Q, K, V &mdash; A Concrete Example</h3>
+
+                <p>
+                    Let us trace through a small example with a sequence of 4 tokens. Suppose
+                    each token is represented by a 3-dimensional embedding vector:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Example: 4-Token Sequence</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2.2;">
+                            x<sub>1</sub> = [0.2, &nbsp;0.8, &minus;0.1] &nbsp; ("The")<br>
+                            x<sub>2</sub> = [0.9, &nbsp;0.3, &nbsp;0.5]  &nbsp; ("beam")<br>
+                            x<sub>3</sub> = [0.1, &minus;0.6, &nbsp;0.7] &nbsp; ("deflects")<br>
+                            x<sub>4</sub> = [0.4, &nbsp;0.2, &nbsp;0.9]  &nbsp; ("excessively")
+                        </p>
+                        <p>
+                            Each x<sub>i</sub> is multiplied by W<sub>Q</sub>, W<sub>K</sub>,
+                            and W<sub>V</sub> to produce q<sub>i</sub>, k<sub>i</sub>, and
+                            v<sub>i</sub>. These weight matrices are learned during training
+                            so that the resulting Q, K, V vectors capture the right
+                            relationships for the task at hand.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: SCALED DOT-PRODUCT ATTENTION
+             ========================================== -->
+        <section class="ch-section" id="scaled-dot-product">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-calculator"></i>
+                    Scaled Dot-Product Attention
+                </h2>
+
+                <p>
+                    With Q, K, and V vectors in hand, we can now compute attention. The
+                    procedure follows four clear steps:
+                </p>
+
+                <h3>Step 1: Compute Raw Scores</h3>
+
+                <p>
+                    For each Query, compute the dot product with every Key. The dot product
+                    measures the similarity between the Query and each Key &mdash; high values
+                    mean the Key is relevant to the Query.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Score Computation</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; line-height:2;">
+                            score(Q, K) = Q &middot; K<sup>T</sup>
+                        </p>
+                        <p>
+                            This produces a matrix of scores where entry (i, j) represents how
+                            much position i should attend to position j. For our 4-token
+                            example, this is a 4 &times; 4 matrix.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Step 2: Scale</h3>
+
+                <p>
+                    Divide the raw scores by &radic;d<sub>k</sub>, the square root of the Key
+                    dimension. This scaling is crucial for numerical stability.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why Scale?</h3>
+                        <p>
+                            Without scaling, when d<sub>k</sub> is large, the dot products can
+                            grow very large in magnitude. Large values pushed through softmax
+                            produce distributions that are extremely peaked &mdash; almost all
+                            the weight goes to one position. This creates vanishing gradients
+                            because the softmax derivatives become tiny.
+                        </p>
+                        <p>
+                            Dividing by &radic;d<sub>k</sub> keeps the variance of the scores
+                            at approximately 1, ensuring the softmax operates in a region where
+                            its gradients are well-behaved.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Scaling is like normalising load values before
+                            comparison.</strong> When comparing loads on different structural
+                            members, you normalise them (e.g., by dividing by member capacity)
+                            to get utilisation ratios between 0 and 1. Without normalisation,
+                            a 10,000 kN column load and a 50 kN beam load are hard to compare
+                            meaningfully. Similarly, the &radic;d<sub>k</sub> scaling puts
+                            attention scores in a comparable range regardless of the
+                            dimensionality chosen.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Step 3: Apply Softmax</h3>
+
+                <p>
+                    The scaled scores are passed through the <strong>softmax</strong> function
+                    along each row. Softmax converts each row of raw scores into a probability
+                    distribution &mdash; all values between 0 and 1, summing to 1. The highest
+                    scores become the largest weights, and low scores are pushed toward zero.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Softmax Conversion</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; line-height:2;">
+                            weights = softmax(Q &middot; K<sup>T</sup> / &radic;d<sub>k</sub>)
+                        </p>
+                        <p>
+                            Each row of the resulting weight matrix is a probability distribution
+                            telling position i how much to attend to every other position.
+                            For instance, if position 2 has weights [0.05, 0.10, 0.70, 0.15],
+                            it attends primarily to position 3.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Step 4: Weighted Sum of Values</h3>
+
+                <p>
+                    Finally, multiply the attention weights by the Value matrix. Each output
+                    position becomes a <strong>weighted average</strong> of all Value vectors,
+                    where the weights come from the attention distribution computed above.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Complete Attention Formula</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; line-height:2.2; margin:12px 0;">
+                            Attention(Q, K, V) = softmax(Q &middot; K<sup>T</sup> / &radic;d<sub>k</sub>) &middot; V
+                        </p>
+                        <p>
+                            This single equation captures the entire mechanism: compute
+                            similarity scores between Queries and Keys, normalise them into
+                            a probability distribution, and use that distribution to create
+                            a weighted combination of Values.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Matrix Shape Summary</span>
+                    </div>
+                    <p>
+                        For a sequence of length n with key dimension d<sub>k</sub> and value
+                        dimension d<sub>v</sub>:<br>
+                        <span style="font-family:'JetBrains Mono',monospace; font-size:0.85rem;">
+                        Q: (n &times; d<sub>k</sub>), &nbsp;
+                        K: (n &times; d<sub>k</sub>), &nbsp;
+                        V: (n &times; d<sub>v</sub>), &nbsp;
+                        QK<sup>T</sup>: (n &times; n), &nbsp;
+                        Output: (n &times; d<sub>v</sub>)
+                        </span>
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: SELF-ATTENTION
+             ========================================== -->
+        <section class="ch-section" id="self-attention">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-to-circle"></i>
+                    Self-Attention
+                </h2>
+
+                <p>
+                    In the original sequence-to-sequence attention, the Queries come from the
+                    decoder (the part generating the output) and the Keys and Values come from
+                    the encoder (the part processing the input). The decoder "asks" questions
+                    about the encoded input.
+                </p>
+
+                <p>
+                    <strong>Self-attention</strong> is a special case where Q, K, and V all
+                    come from the <em>same</em> sequence. Each position attends to every other
+                    position within the same sequence, including itself. This allows the model
+                    to capture internal relationships and dependencies.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Self-Attention Captures</h3>
+                        <p>
+                            Consider the sentence: "The beam in Span 3 deflects because the
+                            load on Span 3 exceeds the design limit." Self-attention allows
+                            the word "deflects" to attend strongly to "beam" and "load"
+                            &mdash; the words that explain the cause and subject of the
+                            deflection. Without self-attention, these connections must be
+                            inferred indirectly through positional proximity.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Self-Attention vs. RNN Memory</h3>
+
+                <p>
+                    The critical difference from RNNs is the <strong>path length</strong>.
+                    In an RNN, information from position 1 must pass through every intermediate
+                    hidden state to reach position 100 &mdash; a path of length 99. In
+                    self-attention, the path length between any two positions is always
+                    <strong>1</strong>. Every position can directly attend to every other
+                    position in a single step.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Self-attention is like a round-table design review.</strong>
+                            Imagine all the engineers on a project sitting in a room together:
+                            the structural engineer, the geotechnical engineer, the MEP
+                            designer, the architect, the construction manager, and the cost
+                            estimator. In an RNN-like process, information passes sequentially
+                            around the table &mdash; the architect whispers to the structural
+                            engineer, who whispers to the geotechnical engineer, and so on.
+                            By the time the message reaches the cost estimator, it is garbled.
+                        </p>
+                        <p>
+                            With self-attention, every person can <em>directly</em> hear and
+                            address every other person simultaneously. The cost estimator can
+                            ask the architect a direct question without going through four
+                            intermediaries. This parallel communication is far more efficient
+                            and loses no information along the way.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Computational Cost</h3>
+
+                <p>
+                    The price of this powerful direct access is computational. Self-attention
+                    computes an n &times; n attention matrix, where n is the sequence length.
+                    This means <strong>O(n<sup>2</sup>)</strong> time and memory complexity.
+                    For short sequences (up to a few thousand tokens), this is manageable. For
+                    very long sequences, this quadratic cost becomes a bottleneck &mdash; a
+                    topic addressed by efficient attention variants in later chapters.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>For Civil Engineers</span>
+                    </div>
+                    <p>
+                        In structural health monitoring, sensor sequences of tens of thousands
+                        of time steps are common. The O(n<sup>2</sup>) cost of self-attention
+                        means that processing a 10,000-step sequence requires 100 million
+                        attention score computations. Techniques like windowed attention or
+                        sparse attention (covered later) reduce this to linear cost while
+                        preserving most of the benefit.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: STEP-BY-STEP NUMERICAL WALKTHROUGH
+             ========================================== -->
+        <section class="ch-section" id="numerical-walkthrough">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ol"></i>
+                    Step-by-Step Numerical Walkthrough
+                </h2>
+
+                <p>
+                    Let us trace through the complete attention computation with concrete
+                    numbers. We will use a tiny example: 3 input positions, each with
+                    d<sub>k</sub> = d<sub>v</sub> = 2 for simplicity.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Given: Q, K, V Matrices</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2.2;">
+                            Q = [[1.0, 0.0],&nbsp; &nbsp; K = [[1.0, 1.0],&nbsp; &nbsp; V = [[0.5, 0.2],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.0, 1.0],&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.0, 1.0],&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.8, 0.1],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1.0, 1.0]]&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1.0, 0.0]]&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.3, 0.9]]
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: QK<sup>T</sup> (Raw Scores)</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2.2;">
+                            QK<sup>T</sup> = [[1.0, 0.0, 1.0],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1.0, 1.0, 0.0],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2.0, 1.0, 1.0]]
+                        </p>
+                        <p>
+                            Entry (1,1) = q<sub>1</sub> &middot; k<sub>1</sub> = (1)(1)+(0)(1) = 1.0<br>
+                            Entry (1,3) = q<sub>1</sub> &middot; k<sub>3</sub> = (1)(1)+(0)(0) = 1.0
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Scale by &radic;d<sub>k</sub> = &radic;2 &asymp; 1.414</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2.2;">
+                            Scaled = [[0.707, 0.000, 0.707],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.707, 0.707, 0.000],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1.414, 0.707, 0.707]]
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Softmax (per row)</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2.2;">
+                            Weights = [[0.389, 0.221, 0.389],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.389, 0.389, 0.221],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.506, 0.247, 0.247]]
+                        </p>
+                        <p>Each row sums to 1.0 &mdash; a valid probability distribution.</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-5"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 4: Multiply Weights &times; V</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2.2;">
+                            Output = [[0.523, 0.428],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.572, 0.316],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0.524, 0.348]]
+                        </p>
+                        <p>
+                            Row 1: 0.389&times;[0.5,0.2] + 0.221&times;[0.8,0.1] + 0.389&times;[0.3,0.9]
+                            = [0.523, 0.428]
+                        </p>
+                        <p>
+                            Position 1 attends equally to positions 1 and 3 (weight 0.389
+                            each), and less to position 2 (0.221). Its output blends the
+                            Value vectors accordingly.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: DEMO 1 — ATTENTION WEIGHT HEATMAP
+             ========================================== -->
+        <section class="ch-section" id="demo-attention-heatmap">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Attention Weight Heatmap
+                </h2>
+
+                <p>
+                    The heatmap below visualises the attention weights between tokens in a
+                    sequence. Each cell shows how much a token (row) attends to another token
+                    (column). Brighter cells indicate higher attention. Select different
+                    example sentences or enter your own sensor reading labels to explore how
+                    attention patterns change.
+                </p>
+
+                <div class="demo-panel" id="attention-heatmap-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-grip"></i>
+                        <span>Attention Weight Heatmap &mdash; Token-to-Token Focus</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <select id="heatmap-preset" style="padding:8px 14px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; font-size:0.85rem; cursor:pointer; max-width:320px;">
+                            <option value="sentence1">The beam deflects under heavy load</option>
+                            <option value="sentence2">Sensor A3 detects crack near column base</option>
+                            <option value="sensors">S1:0.4  S2:0.8  S3:0.1  S4:0.9  S5:0.3</option>
+                        </select>
+                        <button id="heatmap-randomise-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-shuffle"></i> Randomise Weights
+                        </button>
+                        <button id="heatmap-uniform-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-equals"></i> Uniform
+                        </button>
+                        <button id="heatmap-diagonal-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-arrows-left-right-to-line"></i> Self-Focus
+                        </button>
+                    </div>
+                    <canvas id="attention-heatmap-canvas" style="width:100%; height:460px; border-radius:8px;"></canvas>
+                    <p id="heatmap-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:20px;">
+                        Hover over cells to see exact attention weights. Brighter = more attention.
+                    </p>
+                </div>
+
+                <p>
+                    Notice how different attention patterns create different information flows.
+                    <strong>Uniform attention</strong> treats all positions equally &mdash;
+                    like reading every page of the report with the same intensity. <strong>
+                    Self-focused (diagonal) attention</strong> means each position mostly
+                    attends to itself. <strong>Randomised patterns</strong> simulate learned
+                    attention distributions where the model has discovered meaningful
+                    relationships between positions.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Interpreting the Heatmap</span>
+                    </div>
+                    <p>
+                        Each row of the heatmap sums to 1.0 (it is a softmax probability
+                        distribution). Row i shows where token i is "looking." If row 3 has
+                        a bright cell in column 1, token 3 is strongly attending to token 1.
+                        In practice, models develop specialised attention patterns &mdash; some
+                        heads focus on adjacent tokens, others on syntactically related tokens
+                        far apart.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 2 — QKV COMPUTATION VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-qkv-computation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: QKV Computation Visualiser
+                </h2>
+
+                <p>
+                    This demo walks you through the attention computation step by step.
+                    Press <strong>Next Step</strong> to advance through the pipeline:
+                    input embeddings, Q/K/V projection, score computation, scaling, softmax,
+                    and the final weighted sum. Each step highlights what is being computed
+                    and shows intermediate values.
+                </p>
+
+                <div class="demo-panel" id="qkv-computation-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-gears"></i>
+                        <span>QKV Computation Pipeline &mdash; Step-by-Step Attention</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <button id="qkv-next-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-forward-step"></i> Next Step
+                        </button>
+                        <button id="qkv-prev-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-backward-step"></i> Previous
+                        </button>
+                        <button id="qkv-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button id="qkv-auto-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-play"></i> Auto Play
+                        </button>
+                        <span id="qkv-step-label" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); margin-left:auto;">
+                            Step 0 / 6
+                        </span>
+                    </div>
+                    <canvas id="qkv-canvas" style="width:100%; height:480px; border-radius:8px;"></canvas>
+                    <p id="qkv-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Press "Next Step" to begin the attention computation pipeline. Each step shows the matrices and operations involved.
+                    </p>
+                </div>
+
+                <p>
+                    By stepping through the computation, you can see that attention is
+                    fundamentally a sequence of matrix operations &mdash; no recurrence, no
+                    loops through time. This is why attention can be computed in
+                    <strong>parallel</strong> for all positions simultaneously, unlike RNNs
+                    which must process one time step at a time. This parallelism is a key
+                    reason for the dominance of attention-based models on modern GPU hardware.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: ATTENTION IN PRACTICE
+             ========================================== -->
+        <section class="ch-section" id="attention-in-practice">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    Attention in Practice for Civil Engineering
+                </h2>
+
+                <p>
+                    The attention mechanism has direct applications across multiple domains
+                    within civil engineering. Here are concrete scenarios where attention
+                    provides a measurable advantage:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Structural Health Monitoring</h3>
+                        <p>
+                            A bridge instrumented with 50 accelerometers generates continuous
+                            time-series data. When detecting an anomaly, attention allows the
+                            model to focus on the specific time window and specific sensors
+                            most relevant to the event. For example, if a truck overload
+                            causes excessive vibration in Span 3, the attention weights will
+                            peak on the sensors in that span during the overload interval
+                            &mdash; automatically identifying the location and timing.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Specification Document Analysis</h3>
+                        <p>
+                            When extracting requirements from a 500-page project specification,
+                            attention-based models can learn to focus on the relevant clauses.
+                            Given a question like "What is the minimum concrete cover for
+                            foundations?", the model attends to the foundation design section
+                            and the durability requirements section while ignoring the
+                            architectural finishes and project timeline sections.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Construction Progress Tracking</h3>
+                        <p>
+                            Using attention over sequences of construction site images or
+                            daily reports, models can identify which activities are on the
+                            critical path and flag delays. The attention mechanism naturally
+                            learns to weigh critical-path activities more heavily than
+                            non-critical activities when predicting schedule outcomes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-temperature-half"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Multi-Sensor Fusion</h3>
+                        <p>
+                            In geotechnical monitoring, piezometers, inclinometers, settlement
+                            markers, and weather stations all provide different types of data
+                            about the same site. Attention can learn which sensor types are
+                            most informative for predicting a specific outcome (e.g., slope
+                            stability) and automatically adjust the weighting as conditions
+                            change &mdash; attending more to piezometers after heavy rainfall
+                            and more to temperature sensors during freeze-thaw cycles.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Attention solves the bottleneck problem</strong> &mdash;
+                                instead of compressing an entire sequence into a single vector,
+                                it allows the model to directly access any position.
+                            </li>
+                            <li>
+                                <strong>Three vectors</strong>: Query (what am I looking for?),
+                                Key (what do I contain?), Value (what information do I provide?).
+                            </li>
+                            <li>
+                                <strong>Scaled dot-product attention</strong>:
+                                softmax(QK<sup>T</sup>/&radic;d<sub>k</sub>) &middot; V &mdash;
+                                the &radic;d<sub>k</sub> scaling prevents softmax saturation.
+                            </li>
+                            <li>
+                                <strong>Self-attention</strong> lets every position attend to
+                                every other position within the same sequence, capturing long-
+                                range dependencies with O(1) path length.
+                            </li>
+                            <li>
+                                <strong>Parallelisable</strong> &mdash; unlike RNNs, attention
+                                can process all positions simultaneously, making it ideal for
+                                modern GPU hardware.
+                            </li>
+                            <li>
+                                <strong>Interpretable</strong> &mdash; attention weights reveal
+                                what the model focuses on, providing transparency for
+                                engineering applications where explainability matters.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In Sub-chapter 5.3, we will see how self-attention becomes the
+                        backbone of the <strong>Transformer architecture</strong> &mdash; the
+                        model behind GPT, BERT, and nearly every modern AI system. We will
+                        explore multi-head attention, positional encoding, and the encoder-
+                        decoder structure that has revolutionised both NLP and increasingly,
+                        engineering applications.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="knowledge-check">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of the attention mechanism with these four
+                    questions. Select the best answer for each.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the primary purpose of dividing the dot-product scores by
+                        &radic;d<sub>k</sub> in scaled dot-product attention?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To reduce the number of parameters in the model
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To prevent the softmax from producing extremely peaked distributions that cause vanishing gradients
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To normalise the Q and K vectors to unit length
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To ensure the output has the same dimensionality as the input
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> When d<sub>k</sub> is large, the dot products
+                        can grow large, pushing softmax into regions where gradients are
+                        extremely small. Dividing by &radic;d<sub>k</sub> keeps the variance of
+                        scores near 1, ensuring the softmax gradient remains healthy.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The scaling factor &radic;d<sub>k</sub>
+                        addresses numerical stability. Without it, large dot products cause
+                        softmax to produce near-one-hot distributions with vanishing gradients,
+                        making training difficult.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In the Query-Key-Value framework, which vector represents the
+                        actual information content that gets extracted and combined?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The Query vector
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The Key vector
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The Value vector
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The score vector (before softmax)
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The Value vectors carry the actual content.
+                        The Query-Key comparison determines the attention weights (how much to
+                        focus on each position), and those weights are used to create a
+                        weighted sum of Value vectors.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Queries and Keys determine relevance scores.
+                        Values carry the content that gets extracted. The attention output is a
+                        weighted combination of Value vectors, with weights derived from the
+                        Query-Key similarity.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the key advantage of self-attention over RNNs for capturing
+                        long-range dependencies in a sequence?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Self-attention uses fewer parameters than an RNN
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Self-attention does not require any training
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> The path length between any two positions is O(1) instead of O(n), enabling direct information flow
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Self-attention always produces more accurate results than RNNs
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> In self-attention, every position can
+                        directly attend to every other position in a single step (O(1) path
+                        length). In an RNN, information must pass through all intermediate
+                        hidden states (O(n) path length), risking degradation of the signal.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The critical advantage is path length.
+                        Self-attention creates direct connections between all positions (O(1)),
+                        while RNNs force information through sequential hidden states (O(n)),
+                        making long-range dependencies hard to learn.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In the civil engineering analogy, a structural engineer reviewing
+                        a design report maps most closely to which component of the
+                        attention mechanism?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The Value vectors &mdash; they contain the report content
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The Key vectors &mdash; they label each report section
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The complete attention process &mdash; the engineer's question is the Query, section headers are Keys, section contents are Values
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The softmax function &mdash; it determines how the engineer allocates reading time
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The analogy maps the full attention pipeline:
+                        the engineer's question is the Query, the section headers/titles are
+                        Keys (used to determine relevance), and the section contents are Values
+                        (the actual information retrieved). The softmax-like relevance scoring
+                        determines how much time each section receives.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The analogy covers the entire pipeline:
+                        Query = engineer's question, Keys = section headers, Values = section
+                        contents. The engineer's focus allocation mirrors softmax normalisation,
+                        and the resulting understanding is the weighted sum of Values.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub1.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 5.1 RNNs
+        </a>
+        <a href="sub3.html" class="chapter-nav__link next">
+            5.3 Transformer Architecture <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+        var lerp = Utils.lerp || function(a,b,t){ return a+(b-a)*t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED ATTENTION BEAMS
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var t = 0;
+
+            /* Generate particles that represent "tokens" */
+            var particles = [];
+            var numParticles = 18;
+            for (var i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: rand(w * 0.1, w * 0.9),
+                    y: rand(h * 0.1, h * 0.9),
+                    vx: rand(-0.3, 0.3),
+                    vy: rand(-0.3, 0.3),
+                    r: rand(3, 7),
+                    phase: rand(0, Math.PI * 2)
+                });
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+                t += 0.008;
+
+                /* Update particle positions */
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+                    p.x = clamp(p.x, 0, w);
+                    p.y = clamp(p.y, 0, h);
+                }
+
+                /* Draw attention beams between particles */
+                for (var i = 0; i < particles.length; i++) {
+                    var focusIdx = Math.floor((Math.sin(t * 0.7 + particles[i].phase) * 0.5 + 0.5) * particles.length);
+                    focusIdx = clamp(focusIdx, 0, particles.length - 1);
+                    if (focusIdx === i) continue;
+                    var a = particles[i];
+                    var b = particles[focusIdx];
+                    var alpha = 0.06 + 0.08 * Math.sin(t * 2 + a.phase);
+                    ctx.strokeStyle = C.TEAL;
+                    ctx.globalAlpha = alpha;
+                    ctx.lineWidth = 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+
+                /* Draw particles */
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    var glow = 0.4 + 0.3 * Math.sin(t * 3 + p.phase);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = C.TEAL;
+                    ctx.globalAlpha = glow;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+
+            window.addEventListener('resize', function () {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1 — ATTENTION WEIGHT HEATMAP
+           ============================================== */
+        (function heatmapDemo() {
+            var canvas = document.getElementById('attention-heatmap-canvas');
+            if (!canvas) return;
+
+            var presets = {
+                sentence1: { tokens: ['The', 'beam', 'deflects', 'under', 'heavy', 'load'] },
+                sentence2: { tokens: ['Sensor', 'A3', 'detects', 'crack', 'near', 'column', 'base'] },
+                sensors:   { tokens: ['S1:0.4', 'S2:0.8', 'S3:0.1', 'S4:0.9', 'S5:0.3'] }
+            };
+
+            var currentTokens = presets.sentence1.tokens;
+            var weights = [];
+            var hoveredCell = null;
+
+            function softmax(arr) {
+                var max = -Infinity;
+                for (var i = 0; i < arr.length; i++) { if (arr[i] > max) max = arr[i]; }
+                var exps = [];
+                var sum = 0;
+                for (var i = 0; i < arr.length; i++) {
+                    exps[i] = Math.exp(arr[i] - max);
+                    sum += exps[i];
+                }
+                for (var i = 0; i < arr.length; i++) exps[i] /= sum;
+                return exps;
+            }
+
+            function generateRandomWeights() {
+                var n = currentTokens.length;
+                weights = [];
+                for (var i = 0; i < n; i++) {
+                    var raw = [];
+                    for (var j = 0; j < n; j++) raw.push(rand(-1, 2));
+                    weights.push(softmax(raw));
+                }
+            }
+
+            function generateUniformWeights() {
+                var n = currentTokens.length;
+                weights = [];
+                for (var i = 0; i < n; i++) {
+                    var row = [];
+                    for (var j = 0; j < n; j++) row.push(1 / n);
+                    weights.push(row);
+                }
+            }
+
+            function generateDiagonalWeights() {
+                var n = currentTokens.length;
+                weights = [];
+                for (var i = 0; i < n; i++) {
+                    var raw = [];
+                    for (var j = 0; j < n; j++) raw.push(i === j ? 4 : rand(-0.5, 0.5));
+                    weights.push(softmax(raw));
+                }
+            }
+
+            function draw() {
+                var C = getColors();
+                var env = initCanvas(canvas);
+                var ctx = env.ctx, w = env.w, h = env.h;
+                var n = currentTokens.length;
+
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Layout */
+                var labelW = Math.min(90, w * 0.14);
+                var labelH = Math.min(40, h * 0.08);
+                var gridX = labelW + 10;
+                var gridY = labelH + 10;
+                var availW = w - gridX - 20;
+                var availH = h - gridY - 40;
+                var cellW = Math.floor(availW / n);
+                var cellH = Math.floor(availH / n);
+                var sz = Math.min(cellW, cellH, 70);
+
+                /* Centre the grid */
+                var totalW = sz * n;
+                var totalH = sz * n;
+                var offX = gridX + (availW - totalW) / 2;
+                var offY = gridY + (availH - totalH) / 2;
+
+                /* Title */
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = C.TEXT;
+                ctx.textAlign = 'center';
+                ctx.fillText('Attention Weights (row = query, column = key)', w / 2, 18);
+
+                /* Column headers (Keys) */
+                ctx.font = '500 11px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                for (var j = 0; j < n; j++) {
+                    ctx.fillStyle = C.CYAN;
+                    ctx.save();
+                    ctx.translate(offX + j * sz + sz / 2, offY - 6);
+                    ctx.rotate(-0.5);
+                    ctx.fillText(currentTokens[j], 0, 0);
+                    ctx.restore();
+                }
+
+                /* Row headers (Queries) */
+                ctx.textAlign = 'right';
+                for (var i = 0; i < n; i++) {
+                    ctx.fillStyle = C.AMBER;
+                    ctx.fillText(currentTokens[i], offX - 8, offY + i * sz + sz / 2 + 4);
+                }
+
+                /* Cells */
+                for (var i = 0; i < n; i++) {
+                    for (var j = 0; j < n; j++) {
+                        var val = weights[i][j];
+                        var cx = offX + j * sz;
+                        var cy = offY + i * sz;
+
+                        /* Cell background: teal intensity proportional to weight */
+                        var r = Math.round(lerp(10, 0, val));
+                        var g = Math.round(lerp(10, 212, val));
+                        var b = Math.round(lerp(15, 170, val));
+                        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+                        ctx.globalAlpha = 0.15 + val * 0.85;
+                        ctx.fillRect(cx + 1, cy + 1, sz - 2, sz - 2);
+                        ctx.globalAlpha = 1;
+
+                        /* Cell border */
+                        ctx.strokeStyle = C.STROKE;
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(cx + 1, cy + 1, sz - 2, sz - 2);
+
+                        /* Value text */
+                        ctx.font = '500 10px "JetBrains Mono", monospace';
+                        ctx.fillStyle = val > 0.4 ? '#000' : C.WHITE;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(val.toFixed(2), cx + sz / 2, cy + sz / 2 + 4);
+
+                        /* Hover highlight */
+                        if (hoveredCell && hoveredCell.i === i && hoveredCell.j === j) {
+                            ctx.strokeStyle = C.TEAL;
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(cx, cy, sz, sz);
+                        }
+                    }
+                }
+
+                /* Legend */
+                var legendX = offX;
+                var legendY = offY + totalH + 16;
+                ctx.font = '400 11px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = C.AMBER;
+                ctx.fillText('Rows = Query tokens', legendX, legendY);
+                ctx.fillStyle = C.CYAN;
+                ctx.fillText('Columns = Key tokens', legendX + 180, legendY);
+                ctx.fillStyle = C.TEAL;
+                ctx.fillText('Brightness = Attention weight', legendX + 360, legendY);
+            }
+
+            /* Mouse tracking for hover */
+            canvas.addEventListener('mousemove', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var n = currentTokens.length;
+                var labelW = Math.min(90, rect.width * 0.14);
+                var labelH = Math.min(40, rect.height * 0.08);
+                var gridX = labelW + 10;
+                var gridY = labelH + 10;
+                var availW = rect.width - gridX - 20;
+                var availH = rect.height - gridY - 40;
+                var sz = Math.min(Math.floor(availW / n), Math.floor(availH / n), 70);
+                var totalW = sz * n;
+                var totalH = sz * n;
+                var offX = gridX + (availW - totalW) / 2;
+                var offY = gridY + (availH - totalH) / 2;
+
+                var ci = Math.floor((my - offY) / sz);
+                var cj = Math.floor((mx - offX) / sz);
+
+                if (ci >= 0 && ci < n && cj >= 0 && cj < n) {
+                    hoveredCell = { i: ci, j: cj };
+                    var info = document.getElementById('heatmap-info');
+                    if (info) {
+                        info.textContent = '"' + currentTokens[ci] + '" attends to "' + currentTokens[cj] + '" with weight ' + weights[ci][cj].toFixed(4);
+                    }
+                } else {
+                    hoveredCell = null;
+                }
+                draw();
+            });
+
+            canvas.addEventListener('mouseleave', function () {
+                hoveredCell = null;
+                draw();
+            });
+
+            /* Controls */
+            document.getElementById('heatmap-preset').addEventListener('change', function () {
+                var key = this.value;
+                currentTokens = presets[key].tokens;
+                generateRandomWeights();
+                draw();
+            });
+
+            document.getElementById('heatmap-randomise-btn').addEventListener('click', function () {
+                generateRandomWeights();
+                draw();
+            });
+
+            document.getElementById('heatmap-uniform-btn').addEventListener('click', function () {
+                generateUniformWeights();
+                draw();
+            });
+
+            document.getElementById('heatmap-diagonal-btn').addEventListener('click', function () {
+                generateDiagonalWeights();
+                draw();
+            });
+
+            /* Init */
+            generateRandomWeights();
+            draw();
+            window.addEventListener('resize', draw);
+        })();
+
+        /* ==============================================
+           DEMO 2 — QKV COMPUTATION VISUALISER
+           ============================================== */
+        (function qkvDemo() {
+            var canvas = document.getElementById('qkv-canvas');
+            if (!canvas) return;
+
+            var currentStep = 0;
+            var totalSteps = 6;
+            var autoInterval = null;
+
+            /* Example data: 3 tokens, d=2 */
+            var X = [[0.8, 0.2], [0.3, 0.9], [0.6, 0.5]];
+            var Wq = [[0.5, 0.1], [0.2, 0.8]];
+            var Wk = [[0.7, 0.3], [0.4, 0.6]];
+            var Wv = [[0.3, 0.9], [0.6, 0.2]];
+            var tokenLabels = ['beam', 'load', 'span'];
+
+            function matMul(A, B) {
+                var rows = A.length, cols = B[0].length, inner = B.length;
+                var R = [];
+                for (var i = 0; i < rows; i++) {
+                    R[i] = [];
+                    for (var j = 0; j < cols; j++) {
+                        var s = 0;
+                        for (var k = 0; k < inner; k++) s += A[i][k] * B[k][j];
+                        R[i][j] = s;
+                    }
+                }
+                return R;
+            }
+
+            function transpose(M) {
+                var rows = M.length, cols = M[0].length;
+                var T = [];
+                for (var j = 0; j < cols; j++) {
+                    T[j] = [];
+                    for (var i = 0; i < rows; i++) T[j][i] = M[i][j];
+                }
+                return T;
+            }
+
+            function softmaxRows(M) {
+                var R = [];
+                for (var i = 0; i < M.length; i++) {
+                    var row = M[i];
+                    var max = -Infinity;
+                    for (var j = 0; j < row.length; j++) { if (row[j] > max) max = row[j]; }
+                    var exps = [];
+                    var sum = 0;
+                    for (var j = 0; j < row.length; j++) {
+                        exps[j] = Math.exp(row[j] - max);
+                        sum += exps[j];
+                    }
+                    R[i] = [];
+                    for (var j = 0; j < row.length; j++) R[i][j] = exps[j] / sum;
+                }
+                return R;
+            }
+
+            /* Precompute all intermediate results */
+            var Q = matMul(X, Wq);
+            var K = matMul(X, Wk);
+            var V = matMul(X, Wv);
+            var KT = transpose(K);
+            var scores = matMul(Q, KT);
+            var dk = 2;
+            var sqrtDk = Math.sqrt(dk);
+            var scaled = scores.map(function (row) {
+                return row.map(function (v) { return v / sqrtDk; });
+            });
+            var attnWeights = softmaxRows(scaled);
+            var output = matMul(attnWeights, V);
+
+            var stepTitles = [
+                'Input Embeddings (X)',
+                'Step 1: Compute Q = X * Wq',
+                'Step 2: Compute K = X * Wk,  V = X * Wv',
+                'Step 3: Scores = Q * K^T',
+                'Step 4: Scale & Softmax',
+                'Step 5: Output = Weights * V',
+                'Complete: Attention Output'
+            ];
+
+            var stepDescriptions = [
+                'Each token is represented as a 2D vector. These are the raw input embeddings before any projection.',
+                'Multiply the input X by the Query weight matrix Wq. Each row of Q represents a token\'s "question" — what information it is looking for.',
+                'Similarly, multiply X by Wk and Wv. Keys represent what each token "offers" as a match. Values represent the actual content to retrieve.',
+                'Compute the dot product of Q with K transposed. Each score(i,j) measures how much Query i matches Key j.',
+                'Divide scores by sqrt(d_k) = ' + sqrtDk.toFixed(3) + ', then apply softmax per row to get attention weights (each row sums to 1).',
+                'Multiply the attention weight matrix by V. Each output row is a weighted combination of all Value vectors.',
+                'The full attention computation is complete. Each token\'s output is a blend of all Values, weighted by learned relevance.'
+            ];
+
+            function fmtMat(M, precision) {
+                if (!precision) precision = 3;
+                return M.map(function (row) {
+                    return '[' + row.map(function (v) { return v.toFixed(precision); }).join(', ') + ']';
+                }).join('\n');
+            }
+
+            function drawMatrix(ctx, M, x, y, cellW, cellH, label, color, C, highlight) {
+                var rows = M.length, cols = M[0].length;
+
+                /* Label */
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.fillText(label, x + (cols * cellW) / 2, y - 8);
+
+                for (var i = 0; i < rows; i++) {
+                    for (var j = 0; j < cols; j++) {
+                        var cx = x + j * cellW;
+                        var cy = y + i * cellH;
+                        var val = M[i][j];
+
+                        /* Cell bg */
+                        ctx.fillStyle = highlight ? color : C.DIM;
+                        ctx.globalAlpha = highlight ? 0.15 : 0.6;
+                        ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+                        ctx.globalAlpha = 1;
+
+                        /* Border */
+                        ctx.strokeStyle = highlight ? color : C.STROKE;
+                        ctx.lineWidth = highlight ? 1.5 : 0.5;
+                        ctx.strokeRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+
+                        /* Value */
+                        ctx.font = '500 10px "JetBrains Mono", monospace';
+                        ctx.fillStyle = C.WHITE;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(val.toFixed(3), cx + cellW / 2, cy + cellH / 2 + 4);
+                    }
+                }
+
+                /* Row labels (token names) */
+                if (tokenLabels && rows === tokenLabels.length) {
+                    ctx.font = '400 9px "JetBrains Mono", monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'right';
+                    for (var i = 0; i < rows; i++) {
+                        ctx.fillText(tokenLabels[i], x - 6, y + i * cellH + cellH / 2 + 3);
+                    }
+                }
+            }
+
+            function draw() {
+                var C = getColors();
+                var env = initCanvas(canvas);
+                var ctx = env.ctx, w = env.w, h = env.h;
+
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var cellW = 60, cellH = 28;
+                var topY = 50;
+
+                /* Step title */
+                ctx.font = '700 15px Inter, sans-serif';
+                ctx.fillStyle = C.TEAL;
+                ctx.textAlign = 'center';
+                ctx.fillText(stepTitles[currentStep], w / 2, 28);
+
+                if (currentStep >= 0) {
+                    /* Always show X */
+                    var xMatX = 60;
+                    drawMatrix(ctx, X, xMatX, topY, cellW, cellH, 'X (Input)', C.WHITE, C, currentStep === 0);
+                }
+
+                if (currentStep >= 1) {
+                    /* Show Q */
+                    var qMatX = 60;
+                    var qMatY = topY + 120;
+                    drawMatrix(ctx, Q, qMatX, qMatY, cellW, cellH, 'Q', C.AMBER, C, currentStep === 1);
+
+                    /* Show Wq */
+                    ctx.font = '400 10px "JetBrains Mono", monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Wq applied', qMatX + cellW * 2 + 20, qMatY + cellH);
+                }
+
+                if (currentStep >= 2) {
+                    /* Show K and V */
+                    var kMatX = w * 0.35;
+                    var vMatX = w * 0.65;
+                    var kvY = topY + 120;
+                    drawMatrix(ctx, K, kMatX, kvY, cellW, cellH, 'K', C.CYAN, C, currentStep === 2);
+                    drawMatrix(ctx, V, vMatX, kvY, cellW, cellH, 'V', C.GREEN, C, currentStep === 2);
+                }
+
+                if (currentStep >= 3) {
+                    /* Show scores matrix */
+                    var scX = 60;
+                    var scY = topY + 250;
+                    drawMatrix(ctx, scores, scX, scY, cellW, cellH, 'QK^T (Scores)', C.RED, C, currentStep === 3);
+
+                    /* Arrow */
+                    ctx.font = '400 11px Inter, sans-serif';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Q * K^T', scX + cellW * 3 + 15, scY + cellH + 4);
+                }
+
+                if (currentStep >= 4) {
+                    /* Show scaled + softmax */
+                    var swX = w * 0.5;
+                    var swY = topY + 250;
+                    drawMatrix(ctx, attnWeights, swX, swY, cellW, cellH, 'Attention Weights', C.TEAL, C, currentStep === 4);
+
+                    ctx.font = '400 10px "JetBrains Mono", monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('softmax(scores / sqrt(' + dk + '))', swX + cellW * 1.5, swY + cellH * 3 + 16);
+                }
+
+                if (currentStep >= 5) {
+                    /* Show output */
+                    var outX = w * 0.35;
+                    var outY = topY + 380;
+                    drawMatrix(ctx, output, outX, outY, cellW, cellH, 'Output', C.TEAL, C, currentStep >= 5);
+
+                    ctx.font = '400 10px "JetBrains Mono", monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Weights * V', outX + cellW, outY + cellH * 3 + 16);
+                }
+
+                /* Step indicator dots */
+                var dotY = h - 16;
+                var dotStartX = w / 2 - (totalSteps * 14) / 2;
+                for (var s = 0; s <= totalSteps; s++) {
+                    ctx.beginPath();
+                    ctx.arc(dotStartX + s * 14, dotY, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = s <= currentStep ? C.TEAL : C.DIM;
+                    ctx.fill();
+                }
+            }
+
+            function updateStepLabel() {
+                var label = document.getElementById('qkv-step-label');
+                if (label) label.textContent = 'Step ' + currentStep + ' / ' + totalSteps;
+
+                var info = document.getElementById('qkv-info');
+                if (info) info.textContent = stepDescriptions[currentStep];
+            }
+
+            function nextStep() {
+                if (currentStep < totalSteps) currentStep++;
+                updateStepLabel();
+                draw();
+            }
+
+            function prevStep() {
+                if (currentStep > 0) currentStep--;
+                updateStepLabel();
+                draw();
+            }
+
+            function resetSteps() {
+                currentStep = 0;
+                if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+                updateStepLabel();
+                draw();
+            }
+
+            function autoPlay() {
+                if (autoInterval) { clearInterval(autoInterval); autoInterval = null; return; }
+                currentStep = 0;
+                updateStepLabel();
+                draw();
+                autoInterval = setInterval(function () {
+                    if (currentStep >= totalSteps) {
+                        clearInterval(autoInterval);
+                        autoInterval = null;
+                        return;
+                    }
+                    nextStep();
+                }, 1800);
+            }
+
+            /* Controls */
+            document.getElementById('qkv-next-btn').addEventListener('click', nextStep);
+            document.getElementById('qkv-prev-btn').addEventListener('click', prevStep);
+            document.getElementById('qkv-reset-btn').addEventListener('click', resetSteps);
+            document.getElementById('qkv-auto-btn').addEventListener('click', autoPlay);
+
+            /* Init */
+            updateStepLabel();
+            draw();
+            window.addEventListener('resize', draw);
+        })();
+
+        /* ==============================================
+           INTERSECTION OBSERVER FOR ANIMATIONS
+           ============================================== */
+        (function initObserver() {
+            var obs = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) e.target.classList.add('visible');
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { obs.observe(el); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

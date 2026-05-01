@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.5 Gradient Descent & Optimization | Civil Engineer's Guide to AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &rarr; AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html" class="nav-link">Home</a></li>
+      <li><a href="../chapter6.html" class="nav-link">Chapter 6</a></li>
+      <li><a href="index.html" class="nav-link">Overview</a></li>
+    </ul>
+    <button class="theme-toggle" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-mountain-sun"></i>
+      <span>Sub-chapter 6.5</span>
+    </div>
+    <h1 class="chapter-hero__title">Gradient Descent &amp; Optimization</h1>
+    <p class="chapter-hero__subtitle">
+      Rolling a ball downhill on a foggy loss landscape &mdash; how neural networks
+      actually learn, one tiny step at a time.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-regular fa-clock"></i> 24 min read</span>
+      <span><i class="fa-solid fa-signal"></i> Intermediate</span>
+      <span><i class="fa-solid fa-flask"></i> 2 Interactive Demos</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+<!-- ============ INTUITION ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-lightbulb"></i>
+      The Intuition: A Ball on a Foggy Hillside
+    </h2>
+    <p class="ch-section__lead">
+      Imagine standing on a vast hillside in dense fog. You can&rsquo;t see the
+      valley below, but you can feel the slope under your boots. To find the
+      bottom, you take a small step in whichever direction feels steepest
+      downhill, then re-check the slope and repeat. That, in one sentence, is
+      <strong>gradient descent</strong> &mdash; the workhorse algorithm that
+      trains every modern neural network.
+    </p>
+
+    <div class="info-card">
+      <div class="info-card__icon">
+        <i class="fa-solid fa-arrow-trend-down"></i>
+      </div>
+      <div class="info-card__body">
+        <h3>What is the gradient?</h3>
+        <p>
+          The <strong>gradient</strong> &nabla;L(&theta;) is a vector that
+          points in the direction of <em>steepest ascent</em> of the loss
+          function. To minimize loss, we move in the opposite direction
+          &mdash; the negative gradient.
+        </p>
+      </div>
+    </div>
+
+    <div class="analogy-block">
+      <div class="analogy-block__header">
+        <i class="fa-solid fa-helmet-safety"></i>
+        <h3>Civil Engineering Analogy</h3>
+      </div>
+      <div class="analogy-block__body">
+        <p>
+          Training a neural network is like surveying a watershed in fog with
+          only a digital level. Every parameter is a coordinate on a
+          topographic map; the loss is the elevation. You can&rsquo;t see the
+          whole basin, but at every spot you can measure the local slope and
+          step downhill.
+        </p>
+        <ul>
+          <li><strong>Loss landscape</strong> = topographic map of a complex watershed</li>
+          <li><strong>Gradient</strong> = direction of steepest uphill (read from the level)</li>
+          <li><strong>Step size (learning rate)</strong> = stride length</li>
+          <li><strong>Momentum</strong> = inertia of a rolling ball that smooths out potholes</li>
+          <li><strong>Adaptive LR</strong> = automatically shortening your stride on rocky ground</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UPDATE RULE ============ -->
+<section class="ch-section ch-section--alt">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-square-root-variable"></i>
+      The Update Rule
+    </h2>
+    <p>
+      All of gradient descent boils down to one beautifully simple equation:
+    </p>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <i class="fa-solid fa-function"></i>
+        <span>Vanilla Gradient Descent</span>
+      </div>
+      <pre><code>&theta;<sub>t+1</sub> &larr; &theta;<sub>t</sub> &minus; &eta; &middot; &nabla;L(&theta;<sub>t</sub>)
+
+where:
+  &theta;        = model parameters (weights, biases)
+  &eta;        = learning rate (step size)
+  &nabla;L(&theta;)  = gradient of the loss with respect to &theta;
+  t        = iteration index</code></pre>
+    </div>
+
+    <p>
+      That&rsquo;s it. Repeat this update a few thousand (or few million)
+      times and a randomly-initialized network will gradually morph into a
+      useful model. Everything else in this sub-chapter &mdash; momentum,
+      Adam, schedules &mdash; is just a clever twist on this single line.
+    </p>
+
+    <div class="tip-box">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>
+        <strong>Why the minus sign?</strong> The gradient points
+        <em>uphill</em>. We want to go downhill, so we subtract. Forget the
+        sign and your loss explodes upward instead of converging &mdash; a
+        classic first-day-on-the-job bug.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LEARNING RATE ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-gauge-high"></i>
+      The Learning Rate &eta;: The Most Important Knob
+    </h2>
+    <p>
+      The learning rate is the single most consequential hyperparameter in
+      deep learning. Get it wrong and nothing else matters.
+    </p>
+
+    <div class="info-card-grid">
+      <div class="info-card">
+        <div class="info-card__icon info-card__icon--danger">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="info-card__body">
+          <h3>Too Large</h3>
+          <p>
+            The ball overshoots the valley, bounces up the opposite wall,
+            overshoots again, and diverges. Loss explodes to NaN.
+          </p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon info-card__icon--success">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+        <div class="info-card__body">
+          <h3>Just Right</h3>
+          <p>
+            Smooth, monotonic descent. Loss curve is a nice clean
+            exponential-looking decay.
+          </p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon info-card__icon--warn">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <div class="info-card__body">
+          <h3>Too Small</h3>
+          <p>
+            Painfully slow. You burn GPU hours making microscopic progress
+            and may never reach a good minimum.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p>
+      Typical starting values: <code>1e-3</code> for Adam, <code>1e-2</code>
+      for SGD with momentum. Always tune on a log scale.
+    </p>
+  </div>
+</section>
+
+<!-- ============ DEMO 1: LR TUNER ============ -->
+<section class="ch-section ch-section--alt">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-sliders"></i>
+      Demo 1: Learning Rate Tuner
+    </h2>
+    <p class="ch-section__lead">
+      Drag the slider and watch a ball descend a simple convex bowl. See
+      first-hand how the learning rate decides whether you converge,
+      oscillate, or fly off into space.
+    </p>
+
+    <div class="demo-panel">
+      <div class="demo-panel__header">
+        <h3><i class="fa-solid fa-flask"></i> Convex Bowl Descent</h3>
+        <span class="demo-panel__badge" id="lr-status">Ready</span>
+      </div>
+
+      <div class="demo-panel__controls">
+        <label class="demo-control">
+          <span>Learning rate &eta;: <strong id="lr-value">0.100</strong></span>
+          <input type="range" id="lr-slider" min="0.001" max="1.2" step="0.001" value="0.1" />
+        </label>
+        <div class="demo-panel__buttons">
+          <button class="btn btn--primary" id="lr-run">
+            <i class="fa-solid fa-play"></i> Run Descent
+          </button>
+          <button class="btn btn--ghost" id="lr-reset">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="demo-panel__canvas-wrap">
+        <canvas id="lr-canvas"></canvas>
+      </div>
+
+      <div class="demo-panel__readout">
+        <div class="readout-item">
+          <span class="readout-item__label">Iterations</span>
+          <span class="readout-item__value" id="lr-iter">0</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label">Current loss</span>
+          <span class="readout-item__value" id="lr-loss">&mdash;</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label">Verdict</span>
+          <span class="readout-item__value" id="lr-verdict">&mdash;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VARIANTS ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-code-branch"></i>
+      Three Flavors: Batch, Stochastic, Mini-batch
+    </h2>
+    <p>
+      How much data should we look at before each step? Three choices, three
+      tradeoffs.
+    </p>
+
+    <div class="info-card">
+      <div class="info-card__icon">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div class="info-card__body">
+        <h3>Batch Gradient Descent</h3>
+        <p>
+          Compute the gradient using the <strong>entire dataset</strong>
+          before each update. Smooth, deterministic, but each step is
+          expensive. With millions of samples it is impractical.
+        </p>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card__icon">
+        <i class="fa-solid fa-shuffle"></i>
+      </div>
+      <div class="info-card__body">
+        <h3>Stochastic Gradient Descent (SGD)</h3>
+        <p>
+          Update after <strong>every single sample</strong>. Extremely fast
+          per step, but noisy &mdash; the path zig-zags wildly. The noise
+          can actually help escape shallow local minima.
+        </p>
+      </div>
+    </div>
+
+    <div class="info-card info-card--highlight">
+      <div class="info-card__icon">
+        <i class="fa-solid fa-star"></i>
+      </div>
+      <div class="info-card__body">
+        <h3>Mini-batch SGD &mdash; The Practical Sweet Spot</h3>
+        <p>
+          Use a small batch (32, 64, 128, 256). Vectorizes nicely on GPUs,
+          gives a smooth-ish gradient estimate, and is what virtually every
+          modern training loop uses. Batch size is itself a tunable
+          hyperparameter.
+        </p>
+      </div>
+    </div>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <i class="fa-brands fa-python"></i>
+        <span>Mini-batch loop, conceptually</span>
+      </div>
+      <pre><code>for epoch in range(num_epochs):
+    for x_batch, y_batch in dataloader:        # batch of 32-256
+        y_pred = model(x_batch)
+        loss   = loss_fn(y_pred, y_batch)
+        loss.backward()                        # compute gradients
+        optimizer.step()                       # apply update rule
+        optimizer.zero_grad()                  # clear for next batch</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MOMENTUM ============ -->
+<section class="ch-section ch-section--alt">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-rocket"></i>
+      Momentum: Giving the Ball Some Inertia
+    </h2>
+    <p>
+      Plain SGD is forgetful &mdash; each step uses only the current
+      gradient. <strong>Momentum</strong> remembers past gradients and
+      builds up velocity, the way a real rolling ball would.
+    </p>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <i class="fa-solid fa-function"></i>
+        <span>SGD with Momentum</span>
+      </div>
+      <pre><code>v<sub>t+1</sub> = &beta; &middot; v<sub>t</sub> + &nabla;L(&theta;<sub>t</sub>)
+&theta;<sub>t+1</sub> = &theta;<sub>t</sub> &minus; &eta; &middot; v<sub>t+1</sub>
+
+  &beta; &asymp; 0.9 (momentum coefficient)
+  v   = velocity (moving average of past gradients)</code></pre>
+    </div>
+
+    <ul class="checklist">
+      <li><i class="fa-solid fa-check"></i> Dampens oscillations across narrow ravines</li>
+      <li><i class="fa-solid fa-check"></i> Accelerates progress along consistent downhill directions</li>
+      <li><i class="fa-solid fa-check"></i> Helps escape shallow local minima and plateaus</li>
+    </ul>
+
+    <div class="info-card">
+      <div class="info-card__icon">
+        <i class="fa-solid fa-eye"></i>
+      </div>
+      <div class="info-card__body">
+        <h3>Nesterov Accelerated Gradient (NAG)</h3>
+        <p>
+          A clever twist: compute the gradient at the <em>lookahead</em>
+          position &theta; &minus; &eta;&beta;v rather than at &theta;
+          itself. Often converges a bit faster than vanilla momentum
+          because it &ldquo;peeks ahead&rdquo; before committing.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ADAPTIVE OPTIMIZERS ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-microchip"></i>
+      Adaptive Optimizers: Per-Parameter Step Sizes
+    </h2>
+    <p>
+      What if some weights need big steps and others tiny ones? Adaptive
+      optimizers maintain a separate effective learning rate for every
+      parameter, automatically.
+    </p>
+
+    <div class="info-card-grid">
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="info-card__body">
+          <h3>Adagrad</h3>
+          <p>
+            Divides the learning rate by the square root of the
+            <em>sum</em> of all past squared gradients. Great for sparse
+            features, but the effective LR decays monotonically and
+            eventually becomes too small to learn.
+          </p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-wave-square"></i></div>
+        <div class="info-card__body">
+          <h3>RMSprop</h3>
+          <p>
+            Fixes Adagrad&rsquo;s decay problem by using an
+            <em>exponentially-weighted moving average</em> of squared
+            gradients instead of a sum. Old gradients are forgotten,
+            recent ones dominate.
+          </p>
+        </div>
+      </div>
+      <div class="info-card info-card--highlight">
+        <div class="info-card__icon"><i class="fa-solid fa-star"></i></div>
+        <div class="info-card__body">
+          <h3>Adam &mdash; The Default</h3>
+          <p>
+            Combines momentum (first moment of gradients) with
+            RMSprop-style adaptive scaling (second moment). Robust,
+            insensitive to hyperparameters, and the default starting
+            point in 2026.
+          </p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-feather"></i></div>
+        <div class="info-card__body">
+          <h3>AdamW</h3>
+          <p>
+            Adam with <em>decoupled weight decay</em>. Fixes a subtle
+            interaction between L2 regularization and adaptive LR. The
+            standard optimizer for Transformers (BERT, GPT, ViT, etc.).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <i class="fa-solid fa-function"></i>
+        <span>Adam, in full</span>
+      </div>
+      <pre><code>m<sub>t</sub> = &beta;<sub>1</sub> m<sub>t-1</sub> + (1-&beta;<sub>1</sub>) &nabla;L           // first moment (momentum)
+v<sub>t</sub> = &beta;<sub>2</sub> v<sub>t-1</sub> + (1-&beta;<sub>2</sub>) (&nabla;L)<sup>2</sup>      // second moment (RMSprop)
+m&#770;<sub>t</sub> = m<sub>t</sub> / (1 - &beta;<sub>1</sub><sup>t</sup>)                // bias correction
+v&#770;<sub>t</sub> = v<sub>t</sub> / (1 - &beta;<sub>2</sub><sup>t</sup>)
+&theta;<sub>t+1</sub> = &theta;<sub>t</sub> - &eta; m&#770;<sub>t</sub> / (&radic;v&#770;<sub>t</sub> + &epsilon;)
+
+defaults:  &beta;<sub>1</sub>=0.9   &beta;<sub>2</sub>=0.999   &epsilon;=1e-8   &eta;=1e-3</code></pre>
+    </div>
+
+    <div class="tip-box">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div>
+        <strong>SGD still wins sometimes.</strong> For computer vision on
+        ResNets and similar, well-tuned SGD with momentum often
+        generalizes better than Adam. Adam converges faster, but the
+        minima it finds can be sharper. Always benchmark both on your
+        task.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEMO 2: OPTIMIZER RACE ============ -->
+<section class="ch-section ch-section--alt">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-flag-checkered"></i>
+      Demo 2: Optimizer Race
+    </h2>
+    <p class="ch-section__lead">
+      Three optimizers, one nasty banana-shaped (Rosenbrock-style) loss
+      surface. Pick a starting point, hit Start, and watch SGD,
+      SGD+Momentum, and Adam race to the minimum simultaneously.
+    </p>
+
+    <div class="demo-panel">
+      <div class="demo-panel__header">
+        <h3><i class="fa-solid fa-trophy"></i> Race on a Banana Valley</h3>
+        <span class="demo-panel__badge" id="race-status">Idle</span>
+      </div>
+
+      <div class="demo-panel__controls">
+        <fieldset class="demo-fieldset">
+          <legend>Optimizers</legend>
+          <label class="demo-check">
+            <input type="checkbox" id="opt-sgd" checked />
+            <span class="swatch swatch--sgd"></span> SGD
+          </label>
+          <label class="demo-check">
+            <input type="checkbox" id="opt-mom" checked />
+            <span class="swatch swatch--mom"></span> SGD + Momentum
+          </label>
+          <label class="demo-check">
+            <input type="checkbox" id="opt-adam" checked />
+            <span class="swatch swatch--adam"></span> Adam
+          </label>
+        </fieldset>
+
+        <fieldset class="demo-fieldset">
+          <legend>Starting point</legend>
+          <label class="demo-radio">
+            <input type="radio" name="start" value="A" checked /> A: (-1.5, 1.8)
+          </label>
+          <label class="demo-radio">
+            <input type="radio" name="start" value="B" /> B: (1.7, -1.2)
+          </label>
+          <label class="demo-radio">
+            <input type="radio" name="start" value="C" /> C: (-1.8, -1.5)
+          </label>
+        </fieldset>
+
+        <div class="demo-panel__buttons">
+          <button class="btn btn--primary" id="race-start">
+            <i class="fa-solid fa-play"></i> Start Race
+          </button>
+          <button class="btn btn--ghost" id="race-reset">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="demo-panel__canvas-wrap">
+        <canvas id="race-canvas"></canvas>
+      </div>
+
+      <div class="demo-panel__readout demo-panel__readout--grid">
+        <div class="readout-item">
+          <span class="readout-item__label"><span class="swatch swatch--sgd"></span> SGD iters</span>
+          <span class="readout-item__value" id="race-sgd-iter">&mdash;</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label"><span class="swatch swatch--sgd"></span> SGD loss</span>
+          <span class="readout-item__value" id="race-sgd-loss">&mdash;</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label"><span class="swatch swatch--mom"></span> Mom iters</span>
+          <span class="readout-item__value" id="race-mom-iter">&mdash;</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label"><span class="swatch swatch--mom"></span> Mom loss</span>
+          <span class="readout-item__value" id="race-mom-loss">&mdash;</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label"><span class="swatch swatch--adam"></span> Adam iters</span>
+          <span class="readout-item__value" id="race-adam-iter">&mdash;</span>
+        </div>
+        <div class="readout-item">
+          <span class="readout-item__label"><span class="swatch swatch--adam"></span> Adam loss</span>
+          <span class="readout-item__value" id="race-adam-loss">&mdash;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCHEDULES ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-calendar-days"></i>
+      Learning Rate Schedules
+    </h2>
+    <p>
+      A constant learning rate is a blunt tool. In practice we
+      <em>schedule</em> &eta; to change over training: large at the start
+      (cover ground fast), small at the end (settle into the minimum).
+    </p>
+
+    <div class="info-card-grid">
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-stairs"></i></div>
+        <div class="info-card__body">
+          <h3>Step Decay</h3>
+          <p>Multiply &eta; by 0.1 every N epochs. Simple, effective, the classic ResNet recipe.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-wave-square"></i></div>
+        <div class="info-card__body">
+          <h3>Cosine Annealing</h3>
+          <p>Smoothly decay &eta; from &eta;<sub>max</sub> to ~0 along a cosine curve. Standard in modern image and language models.</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+        <div class="info-card__body">
+          <h3>Warm Restarts</h3>
+          <p>Cosine anneal, then suddenly reset &eta; back up. Periodic kicks help escape sharp minima (SGDR).</p>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-card__icon"><i class="fa-solid fa-fire"></i></div>
+        <div class="info-card__body">
+          <h3>Warmup</h3>
+          <p>Linearly ramp &eta; from 0 to &eta;<sub>max</sub> over the first ~1000 steps. Essential for Transformers and large-batch training.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <i class="fa-solid fa-lightbulb"></i>
+      <div>
+        The modern recipe for training a Transformer: <strong>linear
+        warmup + cosine decay + AdamW</strong>. Boring, but it works
+        astonishingly well.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LANDSCAPE MYTHS ============ -->
+<section class="ch-section ch-section--alt">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-mountain"></i>
+      Saddle Points, Local Minima &amp; Loss-Landscape Myths
+    </h2>
+    <p>
+      Early deep learning lore worried obsessively about local minima
+      &mdash; tiny dips that aren&rsquo;t the true valley. Modern theory
+      says: stop worrying.
+    </p>
+
+    <div class="info-card">
+      <div class="info-card__icon"><i class="fa-solid fa-circle-question"></i></div>
+      <div class="info-card__body">
+        <h3>The Surprising Truth</h3>
+        <p>
+          In high-dimensional spaces (millions of parameters), the
+          probability that <em>every</em> direction curves upward at a
+          random critical point is essentially zero. Most critical
+          points are <strong>saddle points</strong>, not local minima.
+          And the local minima that do exist tend to have similar loss
+          values &mdash; they&rsquo;re all about equally good.
+        </p>
+      </div>
+    </div>
+
+    <div class="analogy-block">
+      <div class="analogy-block__header">
+        <i class="fa-solid fa-helmet-safety"></i>
+        <h3>CE Analogy: Saddle Points</h3>
+      </div>
+      <div class="analogy-block__body">
+        <p>
+          A saddle point is a mountain pass: downhill in some
+          directions (the trail through the pass), uphill in others
+          (the peaks on either side). A naive ball can stall on a
+          saddle, but momentum and stochastic noise easily knock it
+          loose.
+        </p>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>
+        This is a major reason SGD&rsquo;s built-in noise, and
+        momentum-based methods, are so effective &mdash; they don&rsquo;t
+        get stuck on saddles.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRACTICAL TIPS ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-clipboard-check"></i>
+      Practical Recipes
+    </h2>
+
+    <ul class="checklist checklist--lg">
+      <li><i class="fa-solid fa-check"></i> Start with <strong>AdamW, lr=3e-4</strong>. The famous Karpathy default.</li>
+      <li><i class="fa-solid fa-check"></i> If training is unstable in early steps, add <strong>linear warmup</strong>.</li>
+      <li><i class="fa-solid fa-check"></i> If loss plateaus, try <strong>cosine decay</strong> or step decay.</li>
+      <li><i class="fa-solid fa-check"></i> If you have lots of compute and care about generalization, try well-tuned <strong>SGD + momentum</strong>.</li>
+      <li><i class="fa-solid fa-check"></i> Always plot the loss curve. Diverging? LR too high. Flat? LR too low or stuck on a saddle.</li>
+      <li><i class="fa-solid fa-check"></i> Clip gradients (norm 1.0) for RNNs and Transformers to avoid exploding gradients.</li>
+      <li><i class="fa-solid fa-check"></i> Tune learning rate <em>first</em>, before anything else.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ QUIZ ============ -->
+<section class="ch-section ch-section--alt">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-circle-question"></i>
+      Quick Check
+    </h2>
+
+    <div class="quiz-block" data-answer="b">
+      <h3 class="quiz-block__question">
+        1. Why do we subtract the gradient instead of adding it?
+      </h3>
+      <ul class="quiz-block__options">
+        <li data-choice="a">Because gradients are always negative numbers.</li>
+        <li data-choice="b">The gradient points uphill, and we want to go downhill to minimize the loss.</li>
+        <li data-choice="c">It cancels floating-point rounding errors.</li>
+        <li data-choice="d">Because PyTorch requires it.</li>
+      </ul>
+      <div class="quiz-block__feedback"></div>
+    </div>
+
+    <div class="quiz-block" data-answer="c">
+      <h3 class="quiz-block__question">
+        2. Your training loss explodes to NaN after a few steps. Most likely culprit?
+      </h3>
+      <ul class="quiz-block__options">
+        <li data-choice="a">The dataset is too small.</li>
+        <li data-choice="b">You forgot to call <code>.backward()</code>.</li>
+        <li data-choice="c">Learning rate is too large &mdash; the optimizer is diverging.</li>
+        <li data-choice="d">Adam is incompatible with this model.</li>
+      </ul>
+      <div class="quiz-block__feedback"></div>
+    </div>
+
+    <div class="quiz-block" data-answer="b">
+      <h3 class="quiz-block__question">
+        3. Which statement about Adam is correct?
+      </h3>
+      <ul class="quiz-block__options">
+        <li data-choice="a">Adam computes the exact Hessian of the loss.</li>
+        <li data-choice="b">Adam combines momentum (first moment) with RMSprop-style scaling (second moment).</li>
+        <li data-choice="c">Adam works only on convex problems.</li>
+        <li data-choice="d">Adam doesn&rsquo;t need a learning rate hyperparameter.</li>
+      </ul>
+      <div class="quiz-block__feedback"></div>
+    </div>
+
+    <div class="quiz-block" data-answer="d">
+      <h3 class="quiz-block__question">
+        4. Why is mini-batch SGD preferred over full-batch GD in practice?
+      </h3>
+      <ul class="quiz-block__options">
+        <li data-choice="a">Mini-batches always give a more accurate gradient.</li>
+        <li data-choice="b">Full-batch GD cannot reach a minimum.</li>
+        <li data-choice="c">Mini-batches eliminate the need for a learning rate.</li>
+        <li data-choice="d">Mini-batches are GPU-friendly, fast per step, and the noise helps generalization.</li>
+      </ul>
+      <div class="quiz-block__feedback"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SUMMARY ============ -->
+<section class="ch-section">
+  <div class="section-container">
+    <h2 class="ch-section__title">
+      <i class="fa-solid fa-flag-checkered"></i>
+      Recap
+    </h2>
+    <ul class="checklist checklist--lg">
+      <li><i class="fa-solid fa-check"></i> Gradient descent is the iterative rule &theta; &larr; &theta; &minus; &eta;&nabla;L.</li>
+      <li><i class="fa-solid fa-check"></i> The learning rate is the most important hyperparameter &mdash; tune it first.</li>
+      <li><i class="fa-solid fa-check"></i> Mini-batch SGD is the practical default; batch sizes 32&ndash;256 dominate.</li>
+      <li><i class="fa-solid fa-check"></i> Momentum smooths and accelerates; Adam adds per-parameter adaptive scaling.</li>
+      <li><i class="fa-solid fa-check"></i> AdamW + warmup + cosine decay is the modern Transformer recipe.</li>
+      <li><i class="fa-solid fa-check"></i> Saddle points are the real obstacle in high dimensions, not local minima.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER NAV ============ -->
+<nav class="chapter-nav-footer">
+  <a href="sub4.html" class="chapter-nav__link prev">
+    <i class="fa-solid fa-arrow-left"></i>
+    <span>
+      <small>Previous</small>
+      <strong>6.4 Loss Functions</strong>
+    </span>
+  </a>
+  <a href="sub6.html" class="chapter-nav__link next">
+    <span>
+      <small>Next</small>
+      <strong>6.6 Backpropagation Demystified</strong>
+    </span>
+    <i class="fa-solid fa-arrow-right"></i>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <p>
+      <i class="fa-solid fa-helmet-safety"></i>
+      Civil Engineer&rsquo;s Guide to AI &middot; Chapter 6 &middot; 6.5 Gradient Descent &amp; Optimization
+    </p>
+    <p class="site-footer__sub">
+      Built for engineers who want to understand the machinery, not just the buzzwords.
+    </p>
+  </div>
+</footer>
+
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+
+<script>
+/* ===================================================================
+   DPI-aware canvas helper
+=================================================================== */
+function initCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width  = r.width  * dpr;
+  c.height = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* ===================================================================
+   HERO CANVAS - animated contour map with descending paths
+=================================================================== */
+(function heroCanvas(){
+  const c = document.getElementById('hero-canvas');
+  if(!c) return;
+  let ctx, W, H;
+
+  function resize(){
+    const o = initCanvas(c); ctx = o.ctx; W = o.w; H = o.h;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // simple loss field: two gaussian wells
+  function loss(x, y){
+    const a = Math.exp(-((x-0.35)**2 + (y-0.55)**2)*8);
+    const b = Math.exp(-((x-0.7)**2 + (y-0.4)**2)*12);
+    return 1 - 0.7*a - 0.5*b;
+  }
+
+  // pre-compute paths
+  const paths = [];
+  for(let i=0; i<5; i++){
+    const path = [];
+    let x = 0.05 + Math.random()*0.9;
+    let y = 0.05 + Math.random()*0.9;
+    for(let s=0; s<200; s++){
+      path.push([x,y]);
+      const e = 0.002;
+      const gx = (loss(x+e,y)-loss(x-e,y))/(2*e);
+      const gy = (loss(x,y+e)-loss(x,y-e))/(2*e);
+      x -= 0.01*gx + (Math.random()-0.5)*0.003;
+      y -= 0.01*gy + (Math.random()-0.5)*0.003;
+      x = Math.max(0.02, Math.min(0.98, x));
+      y = Math.max(0.02, Math.min(0.98, y));
+    }
+    paths.push(path);
+  }
+
+  let t0 = performance.now();
+  function draw(t){
+    ctx.clearRect(0,0,W,H);
+
+    // contour bands
+    const step = 6;
+    for(let py=0; py<H; py+=step){
+      for(let px=0; px<W; px+=step){
+        const v = loss(px/W, py/H);
+        const band = Math.floor(v*10) % 2;
+        const shade = 30 + Math.floor(v*60);
+        ctx.fillStyle = band===0
+          ? `rgba(${shade},${shade+20},${shade+50},0.55)`
+          : `rgba(${shade-5},${shade+10},${shade+40},0.55)`;
+        ctx.fillRect(px, py, step, step);
+      }
+    }
+
+    // contour lines
+    ctx.strokeStyle = 'rgba(120,170,255,0.18)';
+    ctx.lineWidth = 1;
+    for(let level=0.1; level<1; level+=0.1){
+      ctx.beginPath();
+      for(let py=0; py<H; py+=4){
+        for(let px=0; px<W; px+=4){
+          const v = loss(px/W, py/H);
+          if(Math.abs(v-level) < 0.01){
+            ctx.rect(px, py, 1, 1);
+          }
+        }
+      }
+      ctx.stroke();
+    }
+
+    // animated descending balls
+    const elapsed = (t - t0)/1000;
+    paths.forEach((path, idx) => {
+      const phase = (elapsed*0.12 + idx*0.2) % 1;
+      const len = Math.floor(phase * path.length);
+      ctx.strokeStyle = `hsla(${200+idx*25}, 80%, 65%, 0.7)`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for(let i=0; i<len; i++){
+        const [x,y] = path[i];
+        if(i===0) ctx.moveTo(x*W, y*H);
+        else ctx.lineTo(x*W, y*H);
+      }
+      ctx.stroke();
+      if(len>0){
+        const [x,y] = path[len-1];
+        ctx.fillStyle = `hsla(${200+idx*25}, 90%, 70%, 1)`;
+        ctx.beginPath();
+        ctx.arc(x*W, y*H, 4, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ===================================================================
+   DEMO 1 - Learning Rate Tuner (convex bowl L = x^2)
+=================================================================== */
+(function lrTuner(){
+  const c = document.getElementById('lr-canvas');
+  if(!c) return;
+
+  const slider = document.getElementById('lr-slider');
+  const lrVal  = document.getElementById('lr-value');
+  const iterEl = document.getElementById('lr-iter');
+  const lossEl = document.getElementById('lr-loss');
+  const verdEl = document.getElementById('lr-verdict');
+  const statEl = document.getElementById('lr-status');
+  const runBtn = document.getElementById('lr-run');
+  const resBtn = document.getElementById('lr-reset');
+
+  let ctx, W, H;
+  function resize(){
+    const o = initCanvas(c); ctx=o.ctx; W=o.w; H=o.h;
+    drawStatic();
+  }
+
+  // map x (parameter, [-1.5, 1.5]) -> screen px
+  const X_MIN = -1.6, X_MAX = 1.6;
+  function xToPx(x){ return (x - X_MIN)/(X_MAX - X_MIN) * W; }
+  function lossToPy(L){
+    const Lmax = X_MAX*X_MAX;
+    return H - 30 - (L / Lmax) * (H - 60);
+  }
+
+  function drawStatic(){
+    ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, H-30); ctx.lineTo(W, H-30);
+    ctx.moveTo(xToPx(0), 0); ctx.lineTo(xToPx(0), H);
+    ctx.stroke();
+
+    // bowl curve L = x^2
+    ctx.strokeStyle = '#5b9bff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let px=0; px<=W; px+=2){
+      const x = X_MIN + (px/W)*(X_MAX-X_MIN);
+      const L = x*x;
+      const py = lossToPy(L);
+      if(px===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // label
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('L(\u03b8) = \u03b8\u00b2', 12, 20);
+    ctx.fillText('\u03b8', W-14, H-12);
+  }
+
+  let path = [];
+  let anim = null;
+
+  function runDescent(){
+    if(anim) cancelAnimationFrame(anim);
+    drawStatic();
+
+    const lr = parseFloat(slider.value);
+    let theta = 1.4;
+    path = [theta];
+    let iters = 0;
+    let diverged = false;
+    let converged = false;
+    let oscillating = false;
+    const maxIters = 200;
+
+    function step(){
+      // gradient of x^2 is 2x
+      const grad = 2 * theta;
+      const next = theta - lr * grad;
+      iters++;
+      path.push(next);
+      theta = next;
+
+      if(Math.abs(theta) > 5){ diverged = true; }
+      if(Math.abs(theta) < 1e-3){ converged = true; }
+      // oscillation: sign flips many times without converging
+      if(iters > 30 && !converged){
+        let flips = 0;
+        for(let i=path.length-20; i<path.length-1; i++){
+          if(path[i]*path[i+1] < 0) flips++;
+        }
+        if(flips > 8 && Math.abs(theta) > 0.05) oscillating = true;
+      }
+
+      drawPath();
+
+      if(!diverged && !converged && iters < maxIters){
+        anim = requestAnimationFrame(step);
+      } else {
+        finish(diverged, converged, oscillating, iters, theta);
+      }
+    }
+    step();
+  }
+
+  function drawPath(){
+    drawStatic();
+    ctx.strokeStyle = 'rgba(255,180,80,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(let i=0; i<path.length; i++){
+      const x = path[i];
+      const px = xToPx(Math.max(X_MIN, Math.min(X_MAX, x)));
+      const py = lossToPy(x*x);
+      if(i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // current ball
+    const last = path[path.length-1];
+    const px = xToPx(Math.max(X_MIN, Math.min(X_MAX, last)));
+    const py = lossToPy(Math.min(X_MAX*X_MAX, last*last));
+    ctx.fillStyle = '#ffb84d';
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI*2);
+    ctx.fill();
+
+    iterEl.textContent = path.length-1;
+    lossEl.textContent = (last*last).toFixed(5);
+  }
+
+  function finish(div, conv, osc, iters, theta){
+    let verdict, status;
+    if(div){ verdict = 'Diverged'; status = 'Diverged'; statEl.className='demo-panel__badge demo-panel__badge--err'; }
+    else if(conv){ verdict = `Converged in ${iters}`; status = 'Converged'; statEl.className='demo-panel__badge demo-panel__badge--ok'; }
+    else if(osc){ verdict = 'Oscillating'; status = 'Oscillating'; statEl.className='demo-panel__badge demo-panel__badge--warn'; }
+    else { verdict = 'Too slow'; status = 'Too slow'; statEl.className='demo-panel__badge demo-panel__badge--warn'; }
+    verdEl.textContent = verdict;
+    statEl.textContent = status;
+  }
+
+  slider.addEventListener('input', () => {
+    lrVal.textContent = parseFloat(slider.value).toFixed(3);
+  });
+
+  runBtn.addEventListener('click', runDescent);
+  resBtn.addEventListener('click', () => {
+    if(anim) cancelAnimationFrame(anim);
+    path = [];
+    iterEl.textContent = '0';
+    lossEl.textContent = '\u2014';
+    verdEl.textContent = '\u2014';
+    statEl.textContent = 'Ready';
+    statEl.className = 'demo-panel__badge';
+    drawStatic();
+  });
+
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+/* ===================================================================
+   DEMO 2 - Optimizer Race on Rosenbrock-like surface
+   f(x,y) = (1 - x)^2 + 5 * (y - x^2)^2
+=================================================================== */
+(function optRace(){
+  const c = document.getElementById('race-canvas');
+  if(!c) return;
+
+  const startBtn = document.getElementById('race-start');
+  const resetBtn = document.getElementById('race-reset');
+  const statEl   = document.getElementById('race-status');
+
+  let ctx, W, H;
+  function resize(){
+    const o = initCanvas(c); ctx=o.ctx; W=o.w; H=o.h;
+    drawSurface();
+  }
+
+  const X_MIN=-2, X_MAX=2, Y_MIN=-2, Y_MAX=2.2;
+  function xToPx(x){ return (x-X_MIN)/(X_MAX-X_MIN)*W; }
+  function yToPy(y){ return H - (y-Y_MIN)/(Y_MAX-Y_MIN)*H; }
+
+  function f(x,y){ return (1-x)*(1-x) + 5*(y - x*x)*(y - x*x); }
+  function grad(x,y){
+    const gx = -2*(1-x) + 5*2*(y - x*x)*(-2*x);
+    const gy = 5*2*(y - x*x);
+    return [gx, gy];
+  }
+
+  function drawSurface(){
+    ctx.clearRect(0,0,W,H);
+    // heatmap
+    const step = 4;
+    for(let py=0; py<H; py+=step){
+      for(let px=0; px<W; px+=step){
+        const x = X_MIN + (px/W)*(X_MAX-X_MIN);
+        const y = Y_MAX - (py/H)*(Y_MAX-Y_MIN);
+        const v = Math.min(40, f(x,y));
+        const t = v/40;
+        const r = Math.floor(20 + 60*(1-t));
+        const g = Math.floor(30 + 80*(1-t));
+        const b = Math.floor(60 + 120*(1-t));
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(px, py, step, step);
+      }
+    }
+    // contour lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    const levels = [0.1, 0.5, 1, 2, 4, 8, 16, 30];
+    for(const L of levels){
+      ctx.beginPath();
+      for(let py=0; py<H; py+=2){
+        for(let px=0; px<W; px+=2){
+          const x = X_MIN + (px/W)*(X_MAX-X_MIN);
+          const y = Y_MAX - (py/H)*(Y_MAX-Y_MIN);
+          if(Math.abs(f(x,y) - L) < 0.08){
+            ctx.rect(px, py, 1, 1);
+          }
+        }
+      }
+      ctx.stroke();
+    }
+    // minimum at (1,1)
+    ctx.fillStyle = '#ffeb6b';
+    ctx.beginPath();
+    ctx.arc(xToPx(1), yToPy(1), 5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('min (1, 1)', xToPx(1)+8, yToPy(1)-6);
+  }
+
+  const COLORS = {
+    sgd:  '#ff6b6b',
+    mom:  '#5b9bff',
+    adam: '#4ade80'
+  };
+
+  let runners = {};
+  let anim = null;
+
+  function startRace(){
+    const useSgd  = document.getElementById('opt-sgd').checked;
+    const useMom  = document.getElementById('opt-mom').checked;
+    const useAdam = document.getElementById('opt-adam').checked;
+
+    const startSel = document.querySelector('input[name="start"]:checked').value;
+    const starts = { A:[-1.5,1.8], B:[1.7,-1.2], C:[-1.8,-1.5] };
+    const [sx,sy] = starts[startSel];
+
+    runners = {};
+    if(useSgd)  runners.sgd  = makeSGD(sx, sy);
+    if(useMom)  runners.mom  = makeMomentum(sx, sy);
+    if(useAdam) runners.adam = makeAdam(sx, sy);
+
+    Object.keys(runners).forEach(k => {
+      document.getElementById(`race-${k}-iter`).textContent = '0';
+      document.getElementById(`race-${k}-loss`).textContent = f(sx,sy).toFixed(3);
+    });
+
+    statEl.textContent = 'Running...';
+    statEl.className = 'demo-panel__badge demo-panel__badge--warn';
+
+    if(anim) cancelAnimationFrame(anim);
+    step();
+  }
+
+  function makeSGD(x,y){
+    return { x, y, path:[[x,y]], iters:0, done:false, lr:0.01,
+      update(){
+        const [gx,gy] = grad(this.x, this.y);
+        this.x -= this.lr * gx;
+        this.y -= this.lr * gy;
+        this.iters++;
+        this.path.push([this.x, this.y]);
+      }
+    };
+  }
+  function makeMomentum(x,y){
+    return { x, y, vx:0, vy:0, path:[[x,y]], iters:0, done:false, lr:0.005, beta:0.9,
+      update(){
+        const [gx,gy] = grad(this.x, this.y);
+        this.vx = this.beta*this.vx + gx;
+        this.vy = this.beta*this.vy + gy;
+        this.x -= this.lr * this.vx;
+        this.y -= this.lr * this.vy;
+        this.iters++;
+        this.path.push([this.x, this.y]);
+      }
+    };
+  }
+  function makeAdam(x,y){
+    return { x, y, mx:0, my:0, vx:0, vy:0, t:0, path:[[x,y]], iters:0, done:false,
+      lr:0.05, b1:0.9, b2:0.999, eps:1e-8,
+      update(){
+        this.t++;
+        const [gx,gy] = grad(this.x, this.y);
+        this.mx = this.b1*this.mx + (1-this.b1)*gx;
+        this.my = this.b1*this.my + (1-this.b1)*gy;
+        this.vx = this.b2*this.vx + (1-this.b2)*gx*gx;
+        this.vy = this.b2*this.vy + (1-this.b2)*gy*gy;
+        const mhx = this.mx/(1-Math.pow(this.b1,this.t));
+        const mhy = this.my/(1-Math.pow(this.b1,this.t));
+        const vhx = this.vx/(1-Math.pow(this.b2,this.t));
+        const vhy = this.vy/(1-Math.pow(this.b2,this.t));
+        this.x -= this.lr * mhx / (Math.sqrt(vhx)+this.eps);
+        this.y -= this.lr * mhy / (Math.sqrt(vhy)+this.eps);
+        this.iters++;
+        this.path.push([this.x, this.y]);
+      }
+    };
+  }
+
+  const MAX_ITERS = 600;
+
+  function step(){
+    let allDone = true;
+    Object.entries(runners).forEach(([k,r]) => {
+      if(r.done) return;
+      // multiple sub-steps per frame for visibility
+      const sub = (k === 'sgd') ? 3 : (k === 'mom' ? 2 : 1);
+      for(let i=0; i<sub; i++){
+        if(r.done) break;
+        r.update();
+        const L = f(r.x, r.y);
+        if(L < 1e-3){ r.done = true; }
+        if(!isFinite(r.x) || !isFinite(r.y) || Math.abs(r.x)>10 || Math.abs(r.y)>10){
+          r.done = true; r.diverged = true;
+        }
+        if(r.iters >= MAX_ITERS) r.done = true;
+      }
+      if(!r.done) allDone = false;
+      const L = f(r.x, r.y);
+      document.getElementById(`race-${k}-iter`).textContent = r.iters;
+      document.getElementById(`race-${k}-loss`).textContent =
+        isFinite(L) ? L.toFixed(4) : 'diverged';
+    });
+
+    drawSurface();
+    Object.entries(runners).forEach(([k,r]) => {
+      ctx.strokeStyle = COLORS[k];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for(let i=0; i<r.path.length; i++){
+        const [x,y] = r.path[i];
+        const px = xToPx(Math.max(X_MIN-0.5, Math.min(X_MAX+0.5, x)));
+        const py = yToPy(Math.max(Y_MIN-0.5, Math.min(Y_MAX+0.5, y)));
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+
+      const [lx,ly] = r.path[r.path.length-1];
+      ctx.fillStyle = COLORS[k];
+      ctx.beginPath();
+      ctx.arc(xToPx(lx), yToPy(ly), 5, 0, Math.PI*2);
+      ctx.fill();
+    });
+
+    if(!allDone){
+      anim = requestAnimationFrame(step);
+    } else {
+      statEl.textContent = 'Finished';
+      statEl.className = 'demo-panel__badge demo-panel__badge--ok';
+    }
+  }
+
+  startBtn.addEventListener('click', startRace);
+  resetBtn.addEventListener('click', () => {
+    if(anim) cancelAnimationFrame(anim);
+    runners = {};
+    drawSurface();
+    ['sgd','mom','adam'].forEach(k => {
+      const ie = document.getElementById(`race-${k}-iter`);
+      const le = document.getElementById(`race-${k}-loss`);
+      if(ie) ie.textContent = '\u2014';
+      if(le) le.textContent = '\u2014';
+    });
+    statEl.textContent = 'Idle';
+    statEl.className = 'demo-panel__badge';
+  });
+
+  resize();
+  window.addEventListener('resize', resize);
+})();
+
+/* ===================================================================
+   QUIZ
+=================================================================== */
+(function quiz(){
+  document.querySelectorAll('.quiz-block').forEach(block => {
+    const answer = block.dataset.answer;
+    const fb = block.querySelector('.quiz-block__feedback');
+    block.querySelectorAll('.quiz-block__options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const choice = li.dataset.choice;
+        block.querySelectorAll('.quiz-block__options li').forEach(o => {
+          o.classList.remove('correct','incorrect');
+        });
+        if(choice === answer){
+          li.classList.add('correct');
+          fb.className = 'quiz-block__feedback quiz-block__feedback--ok';
+          fb.innerHTML = '<i class="fa-solid fa-circle-check"></i> Correct.';
+        } else {
+          li.classList.add('incorrect');
+          fb.className = 'quiz-block__feedback quiz-block__feedback--err';
+          fb.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Not quite &mdash; try again.';
+        }
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

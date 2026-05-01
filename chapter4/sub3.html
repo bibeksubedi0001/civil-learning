@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.3 Pooling &amp; Stride | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Understand pooling layers (max, average, global average) and stride as a downsampling alternative. Interactive demos with civil engineering examples: reducing drone image features while preserving crack information.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.3
+            </div>
+            <h1 class="chapter-hero__title">Pooling &amp; Stride</h1>
+            <p class="chapter-hero__subtitle">
+                Down-sampling feature maps to keep what matters and discard what doesn't &mdash;
+                the key to making CNNs computationally tractable while preserving the structural
+                features a civil engineer cares about most.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 30 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why Shrink a Feature Map?</h2>
+                        <p>
+                            In the previous sub-chapter you saw how convolution transforms a raw
+                            pixel grid into a feature map that highlights edges, textures, and
+                            patterns. But a single convolutional layer on a 4000&times;3000 drone
+                            photograph can produce feature maps with <em>millions</em> of values
+                            &mdash; and a practical CNN may have dozens of such layers stacked in
+                            sequence. Without a mechanism to reduce the spatial dimensions
+                            progressively, the computation quickly becomes unmanageable.
+                        </p>
+                        <p>
+                            Enter <strong>pooling</strong> and <strong>stride</strong>: two
+                            complementary strategies that shrink feature maps while retaining the
+                            most important information. Think of it as reducing a detailed
+                            structural survey into a concise executive summary &mdash; the critical
+                            findings are preserved, but the volume of raw data is drastically cut.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Pooling layers have been a staple of CNN architectures since
+                    LeNet-5 (1998). They sit between convolutional layers and systematically
+                    reduce the height and width of feature maps. Meanwhile, stride &mdash;
+                    which you briefly encountered in the convolution formula &mdash; offers an
+                    alternative approach by simply making the convolutional kernel skip
+                    positions as it slides across the input.
+                </p>
+                <p>
+                    In this sub-chapter we will dissect both techniques. We will explore three
+                    flavours of pooling (max, average, and global average), understand why
+                    pooling promotes <strong>translation invariance</strong>, derive the output
+                    size formula, and examine stride as a modern replacement for pooling in many
+                    architectures. Along the way, two interactive demos will let you see pooling
+                    and stride in action on simulated crack-detection imagery.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds directly on
+                        <strong>Sub-chapter 4.2: The Convolution Operation</strong>. You should
+                        be comfortable with the concept of a sliding kernel, element-wise
+                        multiply-and-sum, and the output size formula for convolution. No
+                        additional mathematics is required.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE NEED FOR DOWNSAMPLING
+             ========================================== -->
+        <section class="ch-section" id="need-for-downsampling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    The Need for Downsampling
+                </h2>
+
+                <p>
+                    Consider a typical drone-based bridge inspection workflow. The camera
+                    captures images at 4000&times;3000 pixels. A first convolutional layer
+                    with 64 filters produces 64 feature maps, each 3998&times;2998 (assuming
+                    a 3&times;3 kernel, stride 1, no padding). That is roughly 767 million
+                    floating-point values &mdash; just from the first layer. Stack ten more
+                    layers at the same resolution and the memory and compute requirements
+                    become prohibitive.
+                </p>
+
+                <p>
+                    Downsampling solves three problems simultaneously:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Three Reasons to Downsample</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Reducing computation</strong> &mdash; Fewer spatial
+                                positions means fewer multiply-add operations in subsequent
+                                convolutional layers. Halving each dimension reduces the
+                                computation by roughly 4&times;.
+                            </li>
+                            <li>
+                                <strong>Reducing memory</strong> &mdash; Smaller feature maps
+                                consume less GPU/CPU RAM, allowing deeper networks or larger
+                                batch sizes.
+                            </li>
+                            <li>
+                                <strong>Translation invariance</strong> &mdash; Small shifts in
+                                the input (e.g. a crack displaced by a few pixels between two
+                                photos) produce the same pooled output, making the network more
+                                robust to slight positional variations.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Downsampling is like creating a project summary from a full
+                            inspection report.</strong> After a detailed site survey, the
+                            inspector writes a 200-page report with readings at every measurement
+                            point. The project manager does not read all 200 pages. Instead, a
+                            summary extracts the <em>maximum severity</em> defect per zone (max
+                            pooling) or the <em>average condition score</em> per zone (average
+                            pooling). The summary is far shorter, yet preserves the critical
+                            findings needed for decision-making.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: MAX POOLING
+             ========================================== -->
+        <section class="ch-section" id="max-pooling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-up-9-1"></i>
+                    Max Pooling
+                </h2>
+
+                <p>
+                    Max pooling is the most widely used pooling operation. It works by sliding
+                    a small window (typically 2&times;2) across the feature map and, at each
+                    position, outputting only the <strong>maximum value</strong> within that
+                    window. The window then moves by its own size (stride&nbsp;=&nbsp;2) so
+                    that the regions do not overlap.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Max Pooling: Step by Step</h3>
+                        <p>
+                            Consider a 4&times;4 feature map with the following values:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:12px 0; line-height:1.8;">
+  1   3   2   4
+  5   6   1   2
+  7   2   8   0
+  3   4   5   1</pre>
+                        <p>
+                            A 2&times;2 max pooling window with stride 2 divides the grid into
+                            four non-overlapping 2&times;2 blocks:
+                        </p>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>Top-left block [1,3,5,6] &rarr; max = <strong>6</strong></li>
+                            <li>Top-right block [2,4,1,2] &rarr; max = <strong>4</strong></li>
+                            <li>Bottom-left block [7,2,3,4] &rarr; max = <strong>7</strong></li>
+                            <li>Bottom-right block [8,0,5,1] &rarr; max = <strong>8</strong></li>
+                        </ul>
+                        <p>
+                            The output is a 2&times;2 feature map:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:12px 0; line-height:1.8;">
+  6   4
+  7   8</pre>
+                        <p>
+                            The spatial dimensions have been halved in each direction (4&rarr;2),
+                            reducing the total number of values from 16 to 4 &mdash; a 4&times;
+                            reduction &mdash; while the <em>strongest activations</em> in each
+                            region are preserved.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why "Max" Works for Feature Detection</h3>
+
+                <p>
+                    After convolution, each value in a feature map represents how strongly a
+                    particular pattern (e.g. a horizontal edge) was detected at that position.
+                    A high value means "strong match"; a low or zero value means "no match".
+                    Max pooling selects the strongest detection in each local neighbourhood,
+                    effectively saying: "I do not care exactly <em>where</em> within this
+                    2&times;2 block the edge was &mdash; only that it <em>was</em> detected."
+                </p>
+
+                <p>
+                    This is the essence of <strong>translation invariance</strong>. If a crack
+                    in a concrete surface shifts one pixel to the right between two photos, the
+                    max value within the pooling window remains the same, so the network
+                    produces the same downstream response.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Max pooling is like a building inspector grading zones.</strong>
+                            Imagine dividing a concrete slab into a grid of zones. For each zone,
+                            the inspector records only the <em>worst</em> (maximum severity)
+                            defect found. It does not matter whether the crack is in the top-left
+                            or bottom-right of the zone &mdash; the zone score is the same. This
+                            is exactly what max pooling does: it collapses each local region into
+                            its single most prominent feature.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: AVERAGE POOLING
+             ========================================== -->
+        <section class="ch-section" id="average-pooling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-calculator"></i>
+                    Average Pooling
+                </h2>
+
+                <p>
+                    Average pooling works identically to max pooling in its sliding-window
+                    mechanics, but instead of taking the maximum value in each window, it
+                    computes the <strong>arithmetic mean</strong> of all values.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-divide"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Average Pooling: Same Grid, Different Result</h3>
+                        <p>
+                            Using the same 4&times;4 feature map from above:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:12px 0; line-height:1.8;">
+  1   3   2   4
+  5   6   1   2
+  7   2   8   0
+  3   4   5   1</pre>
+                        <p>
+                            A 2&times;2 average pooling window with stride 2:
+                        </p>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>Top-left block [1,3,5,6] &rarr; avg = (1+3+5+6)/4 = <strong>3.75</strong></li>
+                            <li>Top-right block [2,4,1,2] &rarr; avg = (2+4+1+2)/4 = <strong>2.25</strong></li>
+                            <li>Bottom-left block [7,2,3,4] &rarr; avg = (7+2+3+4)/4 = <strong>4.00</strong></li>
+                            <li>Bottom-right block [8,0,5,1] &rarr; avg = (8+0+5+1)/4 = <strong>3.50</strong></li>
+                        </ul>
+                        <p>
+                            The output is:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:12px 0; line-height:1.8;">
+  3.75   2.25
+  4.00   3.50</pre>
+                    </div>
+                </div>
+
+                <h3>Max vs. Average: When to Use Which?</h3>
+
+                <p>
+                    In practice, <strong>max pooling</strong> is preferred in most CNN
+                    architectures because feature detection cares about whether a pattern
+                    <em>exists</em> in a region, not the average strength of all patterns.
+                    Max pooling retains the strongest signal and discards weaker ones.
+                </p>
+                <p>
+                    <strong>Average pooling</strong> is sometimes used in later layers where
+                    the feature maps are already quite small and the goal is to smooth
+                    representations rather than detect sharp features. It is also used in
+                    certain specialised architectures for texture classification, where the
+                    overall distribution of features matters more than individual peaks.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Key Takeaway</span>
+                    </div>
+                    <p>
+                        For crack detection and structural defect identification, max pooling is
+                        almost always the better choice. A crack produces a strong local
+                        activation; average pooling would dilute that signal with the surrounding
+                        uniform concrete. Max pooling preserves it.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: GLOBAL AVERAGE POOLING
+             ========================================== -->
+        <section class="ch-section" id="global-average-pooling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-globe"></i>
+                    Global Average Pooling
+                </h2>
+
+                <p>
+                    Global Average Pooling (GAP) is a special case where the pooling window
+                    covers the <em>entire</em> spatial extent of the feature map. If the
+                    feature map is 7&times;7, a GAP layer computes the average of all 49
+                    values and outputs a single number.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress-arrows-alt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Global Average Pooling in Action</h3>
+                        <p>
+                            Suppose the last convolutional layer produces 256 feature maps, each
+                            of size 7&times;7. Global average pooling reduces each 7&times;7 map
+                            to a single value, producing a vector of length 256. This vector is
+                            then fed directly to the final classification layer.
+                        </p>
+                        <p>
+                            Before GAP became popular, networks used <strong>fully connected
+                            (dense) layers</strong> to collapse the spatial dimensions. A 256
+                            &times; 7 &times; 7 = 12,544-dimensional vector was connected to
+                            (say) 4096 neurons, adding over 51 million parameters. GAP replaces
+                            all of that with zero learnable parameters.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Benefits of Global Average Pooling</h3>
+
+                <ul style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>Drastically reduces parameters</strong> &mdash; no dense layers
+                        needed between the last conv layer and the output.
+                    </li>
+                    <li>
+                        <strong>Reduces overfitting</strong> &mdash; fewer parameters means less
+                        capacity to memorise training data.
+                    </li>
+                    <li>
+                        <strong>Spatially agnostic</strong> &mdash; the network learns to
+                        identify "whether a feature exists" rather than "where it exists,"
+                        making it more robust to spatial translations.
+                    </li>
+                </ul>
+
+                <p>
+                    Modern architectures like GoogLeNet (Inception), ResNet, and
+                    EfficientNet all use GAP before their final classification head. In a
+                    civil engineering context, a drone crack-detection model using ResNet-50
+                    relies on GAP to condense its final 2048&times;7&times;7 feature block
+                    into a compact 2048-element vector for classification.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-building"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Global average pooling is like a project-level condition
+                            index.</strong> After the inspector rates individual zones of a
+                            structure, the project manager computes an overall condition score
+                            for the entire structure by averaging all zone scores. This single
+                            number summarises the whole structure and feeds directly into the
+                            rehabilitation decision &mdash; just as GAP produces a single number
+                            per feature channel that feeds into the classifier.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: OUTPUT SIZE FORMULA
+             ========================================== -->
+        <section class="ch-section" id="output-size-formula">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                    Output Size Formula
+                </h2>
+
+                <p>
+                    The output size after pooling follows the same formula you learned for
+                    convolution. For a pooling layer with window size <em>k</em>, stride
+                    <em>s</em>, and padding <em>p</em> applied to an input of size <em>n</em>:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-superscript"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pooling Output Size</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; text-align:center; margin:16px 0;">
+                            output = floor( (n + 2p &minus; k) / s ) + 1
+                        </p>
+                        <p>
+                            For the most common configuration &mdash; 2&times;2 window,
+                            stride 2, no padding:
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; text-align:center; margin:16px 0;">
+                            output = floor( (n &minus; 2) / 2 ) + 1 = n / 2
+                        </p>
+                        <p>
+                            A 224&times;224 feature map becomes 112&times;112. A 112&times;112
+                            becomes 56&times;56. Each pooling layer halves the spatial dimensions,
+                            reducing the total number of values by 4&times;.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Worked Examples</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-pencil"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.92rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Input</th>
+                                    <th style="padding:10px; text-align:left;">Pool Size</th>
+                                    <th style="padding:10px; text-align:left;">Stride</th>
+                                    <th style="padding:10px; text-align:left;">Padding</th>
+                                    <th style="padding:10px; text-align:left;">Output</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">224 &times; 224</td>
+                                    <td style="padding:10px;">2 &times; 2</td>
+                                    <td style="padding:10px;">2</td>
+                                    <td style="padding:10px;">0</td>
+                                    <td style="padding:10px;">112 &times; 112</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">56 &times; 56</td>
+                                    <td style="padding:10px;">2 &times; 2</td>
+                                    <td style="padding:10px;">2</td>
+                                    <td style="padding:10px;">0</td>
+                                    <td style="padding:10px;">28 &times; 28</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">13 &times; 13</td>
+                                    <td style="padding:10px;">3 &times; 3</td>
+                                    <td style="padding:10px;">2</td>
+                                    <td style="padding:10px;">0</td>
+                                    <td style="padding:10px;">6 &times; 6</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">7 &times; 7</td>
+                                    <td style="padding:10px;">7 &times; 7</td>
+                                    <td style="padding:10px;">1</td>
+                                    <td style="padding:10px;">0</td>
+                                    <td style="padding:10px;">1 &times; 1 (GAP)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    Notice the last row: a 7&times;7 pool on a 7&times;7 input is global
+                    average pooling &mdash; it collapses the entire feature map to a single
+                    number.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: STRIDE AS AN ALTERNATIVE
+             ========================================== -->
+        <section class="ch-section" id="stride-alternative">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-forward"></i>
+                    Stride as an Alternative to Pooling
+                </h2>
+
+                <p>
+                    In Sub-chapter 4.2 you learned that the convolution kernel normally slides
+                    one pixel at a time (stride&nbsp;=&nbsp;1). But what happens if the kernel
+                    skips positions &mdash; say, moving two pixels at a time (stride&nbsp;=&nbsp;2)?
+                </p>
+
+                <p>
+                    The answer: the output feature map becomes smaller, just as it would with
+                    a pooling layer. A stride-2 convolution on a 224&times;224 input with a
+                    3&times;3 kernel and padding&nbsp;1 produces a 112&times;112 output &mdash;
+                    exactly the same spatial reduction as a stride-1 convolution followed by
+                    2&times;2 max pooling. But it does so in a single operation, combining
+                    feature extraction and downsampling in one step.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-compare"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pooling vs. Strided Convolution</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.92rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Aspect</th>
+                                    <th style="padding:10px; text-align:left;">Max Pooling</th>
+                                    <th style="padding:10px; text-align:left;">Strided Conv</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Learnable?</td>
+                                    <td style="padding:10px;">No (fixed operation)</td>
+                                    <td style="padding:10px;">Yes (kernel weights are learned)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Parameters</td>
+                                    <td style="padding:10px;">0</td>
+                                    <td style="padding:10px;">k &times; k &times; channels</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Information loss</td>
+                                    <td style="padding:10px;">Discards all non-max values</td>
+                                    <td style="padding:10px;">Learns what to keep/discard</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Computation</td>
+                                    <td style="padding:10px;">Very cheap (comparison only)</td>
+                                    <td style="padding:10px;">More expensive (multiply-add)</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Modern usage</td>
+                                    <td style="padding:10px;">Still common (ResNet, VGG)</td>
+                                    <td style="padding:10px;">Increasingly preferred (all-conv nets)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <h3>The "Striding is All You Need" Argument</h3>
+
+                <p>
+                    The influential 2015 paper <em>"Striving for Simplicity: The All
+                    Convolutional Net"</em> showed that replacing all pooling layers with
+                    strided convolutions produced equal or better accuracy on standard
+                    benchmarks. The key insight: because strided convolutions have learnable
+                    parameters, the network can <em>learn</em> the best way to downsample,
+                    rather than being forced into a fixed max or average operation.
+                </p>
+
+                <p>
+                    Modern architectures often use a mix: strided convolutions for
+                    downsampling within convolutional blocks, and global average pooling just
+                    before the classifier head. Pure pooling-only pipelines (like VGG-16) are
+                    now considered somewhat dated.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-road"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Stride vs. pooling is like choosing between a fixed sampling
+                            protocol and an adaptive one.</strong> A fixed protocol (pooling)
+                            says: "take the worst reading in every 2-metre zone." An adaptive
+                            protocol (strided convolution) says: "let the inspector decide what
+                            combination of readings best represents each zone." The adaptive
+                            protocol requires more training (the inspector needs expertise) but
+                            may capture important nuances that a rigid max-or-average rule misses.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Stride Caveat: Aliasing</span>
+                    </div>
+                    <p>
+                        When stride is used aggressively (e.g. stride 4 or more), fine details
+                        can be lost &mdash; a phenomenon borrowed from signal processing called
+                        <strong>aliasing</strong>. A hairline crack that occupies only a single
+                        pixel might be skipped entirely if the stride is too large. In
+                        crack-detection networks, conservative strides (2 at most) combined with
+                        anti-aliasing convolutions are recommended.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: POOLING & STRIDE IN CONTEXT
+             ========================================== -->
+        <section class="ch-section" id="pooling-in-context">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Pooling in a Full CNN Pipeline
+                </h2>
+
+                <p>
+                    To cement the big picture, let us trace how spatial dimensions evolve through
+                    a simple CNN designed for drone-based crack detection on 224&times;224 images:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Example CNN Dimension Flow</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.82rem; margin:12px 0; line-height:2; overflow-x:auto;">
+Input image            224 x 224 x 3
+Conv1  (3x3, s=1, p=1) 224 x 224 x 32
+MaxPool (2x2, s=2)     112 x 112 x 32      &lt;- halved
+Conv2  (3x3, s=1, p=1) 112 x 112 x 64
+MaxPool (2x2, s=2)      56 x  56 x 64      &lt;- halved
+Conv3  (3x3, s=2, p=1)  28 x  28 x 128     &lt;- strided conv
+Conv4  (3x3, s=1, p=1)  28 x  28 x 128
+Conv5  (3x3, s=2, p=1)  14 x  14 x 256     &lt;- strided conv
+Conv6  (3x3, s=1, p=1)  14 x  14 x 256
+GAP                       1 x   1 x 256     &lt;- global avg pool
+FC  (256 -&gt; 2)            2                  &lt;- crack / no-crack</pre>
+                        <p>
+                            The input shrank from 224&times;224 = 50,176 spatial positions to a
+                            single value per channel. The combination of max pooling and strided
+                            convolutions achieved a 50,176&times; spatial reduction while the
+                            number of channels (feature types) increased from 3 to 256.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This progressive shrink-and-deepen pattern is the hallmark of virtually
+                    every CNN architecture, from AlexNet (2012) to the latest EfficientNet
+                    variants. Early layers have large spatial maps with few channels (capturing
+                    low-level features like edges). Late layers have tiny spatial maps with
+                    many channels (capturing high-level features like "crack" or "spalling").
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helicopter"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Application: Drone Crack Detection</h3>
+                        <p>
+                            A UAV-mounted camera captures a 4000&times;3000 image of a bridge
+                            deck. The image is divided into overlapping 224&times;224 patches.
+                            Each patch passes through the CNN above. Pooling and stride reduce
+                            each patch from 150,528 input values (224&times;224&times;3) to a
+                            2-element output (crack probability, no-crack probability). Without
+                            pooling, the intermediate feature maps alone would consume gigabytes
+                            of memory per patch &mdash; making real-time inspection impossible
+                            even on high-end GPUs.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: TRANSLATION INVARIANCE DEEP DIVE
+             ========================================== -->
+        <section class="ch-section" id="translation-invariance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-up-down-left-right"></i>
+                    Translation Invariance: A Closer Look
+                </h2>
+
+                <p>
+                    Translation invariance means that if the input shifts slightly, the output
+                    remains (approximately) the same. This property is critical for robustness
+                    in real-world applications where the camera position, angle, and distance
+                    vary between shots.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How Pooling Creates Translation Invariance</h3>
+                        <p>
+                            Consider a 1D feature map:
+                            <code style="font-family:'JetBrains Mono',monospace;">[0, 0, 8, 2, 0, 0]</code>.
+                            The "8" represents a detected crack at position 3.
+                        </p>
+                        <p>
+                            After 2&times;1 max pooling with stride 2:
+                            <code style="font-family:'JetBrains Mono',monospace;">[0, 8, 0]</code>.
+                        </p>
+                        <p>
+                            Now shift the input by 1 pixel:
+                            <code style="font-family:'JetBrains Mono',monospace;">[0, 0, 0, 8, 2, 0]</code>.
+                        </p>
+                        <p>
+                            After pooling:
+                            <code style="font-family:'JetBrains Mono',monospace;">[0, 8, 0]</code>.
+                            Same result! The 1-pixel shift was absorbed by the pooling window.
+                        </p>
+                        <p>
+                            Without pooling, the two feature maps differ at every position. With
+                            pooling, the network sees them as identical &mdash; crack detected,
+                            same location at the coarser resolution.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In practice, pooling provides only <em>approximate</em> translation
+                    invariance (up to the size of the pooling window). Larger pooling windows
+                    give more invariance but also lose more spatial precision. This trade-off
+                    is one reason why modern networks favour smaller, more frequent
+                    downsampling steps (stride-2 convolutions) over large pooling windows.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DEMO 1 — POOLING VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-pooling-visualiser">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Interactive Demo 1: Pooling Visualiser
+                </h2>
+
+                <p>
+                    Watch a 2&times;2 pooling window slide across a feature map, selecting
+                    the max or average value at each position. The output grid builds up in
+                    real time. Toggle between max and average pooling to see how the results
+                    differ.
+                </p>
+
+                <div class="demo-panel" id="pooling-viz-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                        <span>Pooling Step-by-Step Visualiser</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <button id="pool-play" class="demo-btn" title="Play animation">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                        <button id="pool-pause" class="demo-btn" title="Pause animation">
+                            <i class="fa-solid fa-pause"></i> Pause
+                        </button>
+                        <button id="pool-step" class="demo-btn" title="Single step forward">
+                            <i class="fa-solid fa-forward-step"></i> Step
+                        </button>
+                        <button id="pool-reset" class="demo-btn" title="Reset to beginning">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <select id="pool-mode-select" class="demo-select" title="Choose pooling type">
+                            <option value="max">Max Pooling</option>
+                            <option value="avg">Average Pooling</option>
+                        </select>
+                        <button id="pool-randomize" class="demo-btn" title="Randomize grid values">
+                            <i class="fa-solid fa-shuffle"></i> Randomize
+                        </button>
+                    </div>
+                    <canvas id="pooling-viz-canvas" style="width:100%; height:440px; border-radius:8px; background:var(--bg-code);"></canvas>
+                    <p id="pooling-viz-info" style="margin-top:12px; font-size:0.9rem; color:var(--text-secondary); min-height:40px;">
+                        Press <strong>Play</strong> to watch the pooling window slide across the
+                        grid, or <strong>Step</strong> to advance one position at a time.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: DEMO 2 — STRIDE VS POOLING
+             ========================================== -->
+        <section class="ch-section" id="demo-stride-vs-pooling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-columns"></i>
+                    Interactive Demo 2: Stride vs. Pooling Comparison
+                </h2>
+
+                <p>
+                    This demo compares the effect of max pooling (centre) against strided
+                    sampling (right) on a simulated concrete surface with a crack. Notice
+                    how max pooling tends to <em>preserve</em> the strongest crack pixels,
+                    while naive strided sampling may skip over fine details.
+                </p>
+
+                <div class="demo-panel" id="stride-vs-pool-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        <span>Stride vs. Pooling &mdash; Side-by-Side</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <button id="svp-regenerate" class="demo-btn" title="Generate new surface">
+                            <i class="fa-solid fa-rotate"></i> New Surface
+                        </button>
+                        <select id="svp-factor" class="demo-select" title="Downsampling factor">
+                            <option value="2">2x downsample</option>
+                            <option value="4">4x downsample</option>
+                        </select>
+                    </div>
+                    <canvas id="svp-canvas" style="width:100%; height:420px; border-radius:8px; background:var(--bg-code);"></canvas>
+                    <p id="svp-info" style="margin-top:12px; font-size:0.9rem; color:var(--text-secondary); min-height:40px;">
+                        <strong>Left:</strong> Original surface &nbsp;|&nbsp;
+                        <strong>Centre:</strong> Max pooled &nbsp;|&nbsp;
+                        <strong>Right:</strong> Stride (subsample). Click <strong>New Surface</strong> to generate a fresh crack pattern.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: NO LEARNABLE PARAMETERS
+             ========================================== -->
+        <section class="ch-section" id="no-parameters">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-lock-open"></i>
+                    Pooling Has No Learnable Parameters
+                </h2>
+
+                <p>
+                    An important detail that often surprises beginners: standard pooling layers
+                    (max, average, GAP) have <strong>zero</strong> learnable parameters. There
+                    are no weights to train, no biases to update. The operation is entirely
+                    fixed &mdash; it is a hard-coded rule ("take the max" or "take the
+                    average") applied identically at every position.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Consequences of Zero Parameters</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                Pooling layers add <strong>no training cost</strong> &mdash; no
+                                gradients to compute for the pooling operation itself (though
+                                gradients still flow through to earlier layers).
+                            </li>
+                            <li>
+                                Pooling layers add <strong>no model size</strong> &mdash; a
+                                network with or without pooling has the same number of stored
+                                weights (though the feature map sizes differ).
+                            </li>
+                            <li>
+                                Pooling is <strong>not adaptive</strong> &mdash; it cannot learn
+                                to downsample differently for cracks vs. spalling. This is the
+                                main argument for strided convolutions instead.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Backpropagation Through Pooling</h3>
+
+                <p>
+                    Even though pooling has no parameters, gradients must still flow backward
+                    through it during training. The rules are simple:
+                </p>
+
+                <ul style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>Max pooling:</strong> the gradient passes only to the position
+                        that had the maximum value. All other positions receive zero gradient.
+                        This is sometimes called a "routing" operation &mdash; the gradient is
+                        routed to the winner.
+                    </li>
+                    <li>
+                        <strong>Average pooling:</strong> the gradient is distributed equally
+                        among all positions in the window. Each position receives
+                        (gradient / window_size).
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: COMMON CONFIGURATIONS
+             ========================================== -->
+        <section class="ch-section" id="common-configs">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Common Pooling Configurations
+                </h2>
+
+                <p>
+                    While 2&times;2 max pooling with stride 2 is by far the most common, you
+                    will encounter a few other configurations in the wild:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Configurations You Will See</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.92rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Architecture</th>
+                                    <th style="padding:10px; text-align:left;">Pool Type</th>
+                                    <th style="padding:10px; text-align:left;">Window</th>
+                                    <th style="padding:10px; text-align:left;">Stride</th>
+                                    <th style="padding:10px; text-align:left;">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">VGG-16</td>
+                                    <td style="padding:10px;">Max</td>
+                                    <td style="padding:10px;">2&times;2</td>
+                                    <td style="padding:10px;">2</td>
+                                    <td style="padding:10px;">5 pooling layers</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">AlexNet</td>
+                                    <td style="padding:10px;">Max</td>
+                                    <td style="padding:10px;">3&times;3</td>
+                                    <td style="padding:10px;">2</td>
+                                    <td style="padding:10px;">Overlapping pooling</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">GoogLeNet</td>
+                                    <td style="padding:10px;">Max + GAP</td>
+                                    <td style="padding:10px;">3&times;3 / global</td>
+                                    <td style="padding:10px;">2 / &mdash;</td>
+                                    <td style="padding:10px;">GAP before classifier</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">ResNet-50</td>
+                                    <td style="padding:10px;">Max + GAP</td>
+                                    <td style="padding:10px;">3&times;3 / global</td>
+                                    <td style="padding:10px;">2 / &mdash;</td>
+                                    <td style="padding:10px;">Also uses strided convs</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">All-Conv Net</td>
+                                    <td style="padding:10px;">None</td>
+                                    <td style="padding:10px;">&mdash;</td>
+                                    <td style="padding:10px;">&mdash;</td>
+                                    <td style="padding:10px;">Strided convs only</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of pooling and stride with these four questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A 6&times;6 feature map undergoes 2&times;2 max pooling with stride 2
+                        and no padding. What is the output size?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 4 &times; 4
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 3 &times; 3
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 2 &times; 2
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 6 &times; 6
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Using the formula: floor((6 &minus; 2) / 2) + 1 = 3.
+                        The output is 3&times;3.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Apply: floor((6 &minus; 2) / 2) + 1 = 3.
+                        A 2&times;2 pool with stride 2 halves each dimension: 6/2 = 3.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        Which pooling method is generally preferred for crack detection and why?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Max pooling &mdash; preserves
+                            the strongest activation (crack signal)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Average pooling &mdash; provides
+                            a smoother representation
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Min pooling &mdash; highlights
+                            the darkest pixels
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Random pooling &mdash; adds
+                            regularisation
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Max pooling retains the strongest feature
+                        response in each region, which is exactly what you want when detecting
+                        sharp, localised features like cracks.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Max pooling is preferred because it preserves
+                        the strongest crack activation. Average pooling would dilute the signal
+                        with surrounding uniform concrete values.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        How many learnable parameters does a 2&times;2 max pooling layer have?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> 4
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> 2
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> 0
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Depends on the number of channels
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Pooling layers have zero learnable parameters.
+                        They apply a fixed operation (max or average) with no weights or biases.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Pooling is a fixed operation &mdash; no
+                        weights, no biases, zero learnable parameters regardless of window size
+                        or number of channels.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the main advantage of using strided convolution instead of
+                        pooling for downsampling?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> It uses less memory
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> It is faster to compute
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> It has learnable parameters,
+                            so the network can learn how to downsample
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> It always produces better
+                            accuracy
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Strided convolutions have learnable kernel
+                        weights, allowing the network to learn the optimal downsampling strategy
+                        from data rather than relying on a fixed max or average rule.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The key advantage is that strided convolutions
+                        have learnable parameters. The network can optimise <em>how</em> it
+                        downsamples, rather than being locked into a fixed max/average operation.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ul"></i>
+                    Chapter Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Max pooling</strong> selects the maximum value in each
+                                window, preserving the strongest feature activation. Ideal for
+                                detecting sharp, localised features like cracks.
+                            </li>
+                            <li>
+                                <strong>Average pooling</strong> computes the mean, providing a
+                                smoother but potentially diluted representation.
+                            </li>
+                            <li>
+                                <strong>Global Average Pooling (GAP)</strong> collapses the
+                                entire spatial map to a single value per channel, eliminating
+                                the need for large fully connected layers.
+                            </li>
+                            <li>
+                                <strong>Pooling reduces computation, memory, and provides
+                                translation invariance</strong> &mdash; small shifts in the
+                                input produce the same pooled output.
+                            </li>
+                            <li>
+                                <strong>Strided convolution</strong> offers a learnable
+                                alternative to pooling. Modern architectures often combine both.
+                            </li>
+                            <li>
+                                Pooling has <strong>zero learnable parameters</strong>. Strided
+                                convolutions add parameters but let the network learn how to
+                                downsample optimally.
+                            </li>
+                            <li>
+                                The <strong>output size formula</strong> is:
+                                floor((n + 2p &minus; k) / s) + 1.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub2.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 4.2 Convolution
+        </a>
+        <a href="sub4.html" class="chapter-nav__link next">
+            4.4 CNN Architecture <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED POOLING GRID
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var cellSize = 32;
+            var gridCols = 0, gridRows = 0;
+            var poolRow = 0, poolCol = 0;
+            var tick = 0;
+            var cells = [];
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                gridCols = Math.ceil(w / cellSize) + 2;
+                gridRows = Math.ceil(h / cellSize) + 2;
+                cells = [];
+                for (var r = 0; r < gridRows; r++) {
+                    cells[r] = [];
+                    for (var c = 0; c < gridCols; c++) {
+                        cells[r][c] = Math.floor(Math.random() * 10);
+                    }
+                }
+                draw();
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Draw grid cells */
+                for (var r = 0; r < gridRows; r++) {
+                    for (var c = 0; c < gridCols; c++) {
+                        var x = c * cellSize;
+                        var y = r * cellSize;
+                        ctx.fillStyle = colors.DIM;
+                        ctx.fillRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+                        ctx.fillStyle = colors.MUTED;
+                        ctx.font = '11px "JetBrains Mono", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(cells[r][c], x + cellSize / 2, y + cellSize / 2);
+                    }
+                }
+
+                /* Highlight 2x2 pooling window */
+                var pr = (poolRow * 2) % (gridRows - 1);
+                var pc = (poolCol * 2) % (gridCols - 1);
+                if (pr + 1 < gridRows && pc + 1 < gridCols) {
+                    ctx.strokeStyle = colors.TEAL;
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeRect(pc * cellSize - 0.5, pr * cellSize - 0.5,
+                        cellSize * 2 + 1, cellSize * 2 + 1);
+
+                    /* Highlight max value */
+                    var vals = [
+                        cells[pr][pc], cells[pr][pc+1],
+                        cells[pr+1][pc], cells[pr+1][pc+1]
+                    ];
+                    var maxVal = Math.max.apply(null, vals);
+                    for (var dr = 0; dr < 2; dr++) {
+                        for (var dc = 0; dc < 2; dc++) {
+                            if (cells[pr + dr][pc + dc] === maxVal) {
+                                ctx.fillStyle = 'rgba(0,212,170,0.2)';
+                                ctx.fillRect((pc + dc) * cellSize, (pr + dr) * cellSize,
+                                    cellSize, cellSize);
+                            }
+                        }
+                    }
+                }
+            }
+
+            function step() {
+                tick++;
+                if (tick % 12 === 0) {
+                    poolCol++;
+                    var maxPoolCols = Math.floor((gridCols - 1) / 2);
+                    if (poolCol >= maxPoolCols) {
+                        poolCol = 0;
+                        poolRow++;
+                        var maxPoolRows = Math.floor((gridRows - 1) / 2);
+                        if (poolRow >= maxPoolRows) {
+                            poolRow = 0;
+                        }
+                    }
+                }
+                draw();
+                requestAnimationFrame(step);
+            }
+
+            var themeObs = new MutationObserver(function () { resize(); });
+            themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            resize();
+            window.addEventListener('resize', resize);
+            requestAnimationFrame(step);
+        })();
+
+        /* ==============================================
+           DEMO 1 — POOLING STEP-BY-STEP VISUALISER
+           ============================================== */
+        (function initPoolingViz() {
+            var canvas = document.getElementById('pooling-viz-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var GRID_SIZE = 6;  /* 6x6 input grid */
+            var POOL_SIZE = 2;
+            var OUT_SIZE = GRID_SIZE / POOL_SIZE; /* 3x3 output */
+            var grid = [];
+            var outputGrid = [];
+            var currentStep = 0;
+            var totalSteps = OUT_SIZE * OUT_SIZE;
+            var playing = false;
+            var animTimer = null;
+            var poolMode = 'max';
+
+            function generateGrid() {
+                grid = [];
+                for (var r = 0; r < GRID_SIZE; r++) {
+                    grid[r] = [];
+                    for (var c = 0; c < GRID_SIZE; c++) {
+                        grid[r][c] = Math.floor(Math.random() * 10);
+                    }
+                }
+                outputGrid = [];
+                for (var r2 = 0; r2 < OUT_SIZE; r2++) {
+                    outputGrid[r2] = [];
+                    for (var c2 = 0; c2 < OUT_SIZE; c2++) {
+                        outputGrid[r2][c2] = null;
+                    }
+                }
+            }
+
+            function computePool(r, c) {
+                var sr = r * POOL_SIZE;
+                var sc = c * POOL_SIZE;
+                var vals = [];
+                for (var dr = 0; dr < POOL_SIZE; dr++) {
+                    for (var dc = 0; dc < POOL_SIZE; dc++) {
+                        vals.push(grid[sr + dr][sc + dc]);
+                    }
+                }
+                if (poolMode === 'max') {
+                    return Math.max.apply(null, vals);
+                } else {
+                    var sum = 0;
+                    for (var i = 0; i < vals.length; i++) sum += vals[i];
+                    return parseFloat((sum / vals.length).toFixed(1));
+                }
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                draw();
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var margin = 30;
+                var gap = 60;
+                var availW = w - margin * 2 - gap;
+                var cellInput = Math.min(Math.floor(availW * 0.55 / GRID_SIZE), Math.floor((h - margin * 2 - 40) / GRID_SIZE), 60);
+                var cellOutput = Math.min(Math.floor(availW * 0.35 / OUT_SIZE), Math.floor((h - margin * 2 - 40) / OUT_SIZE), 70);
+
+                var inputW = cellInput * GRID_SIZE;
+                var outputW = cellOutput * OUT_SIZE;
+                var totalW = inputW + gap + outputW;
+                var startX = (w - totalW) / 2;
+                var inputX = startX;
+                var outputX = startX + inputW + gap;
+                var inputY = margin + 30;
+                var outputY = inputY + (cellInput * GRID_SIZE - cellOutput * OUT_SIZE) / 2;
+
+                /* Title labels */
+                ctx.fillStyle = colors.TEXT;
+                ctx.font = '600 14px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Input (' + GRID_SIZE + 'x' + GRID_SIZE + ')', inputX + inputW / 2, margin + 14);
+                var modeLabel = poolMode === 'max' ? 'Max' : 'Average';
+                ctx.fillText(modeLabel + ' Pooled (' + OUT_SIZE + 'x' + OUT_SIZE + ')', outputX + outputW / 2, margin + 14);
+
+                /* Current step info */
+                var stepRow = Math.floor(currentStep / OUT_SIZE);
+                var stepCol = currentStep % OUT_SIZE;
+
+                /* Draw input grid */
+                for (var r = 0; r < GRID_SIZE; r++) {
+                    for (var c = 0; c < GRID_SIZE; c++) {
+                        var x = inputX + c * cellInput;
+                        var y = inputY + r * cellInput;
+
+                        /* Check if this cell is in the current pooling window */
+                        var inWindow = false;
+                        if (currentStep < totalSteps) {
+                            var wr = stepRow * POOL_SIZE;
+                            var wc = stepCol * POOL_SIZE;
+                            if (r >= wr && r < wr + POOL_SIZE && c >= wc && c < wc + POOL_SIZE) {
+                                inWindow = true;
+                            }
+                        }
+
+                        /* Check if this cell is the max/avg in the current window */
+                        var isWinner = false;
+                        if (inWindow && poolMode === 'max') {
+                            var poolVal = computePool(stepRow, stepCol);
+                            if (grid[r][c] === poolVal) isWinner = true;
+                        }
+
+                        if (isWinner) {
+                            ctx.fillStyle = 'rgba(0,212,170,0.3)';
+                        } else if (inWindow) {
+                            ctx.fillStyle = 'rgba(14,165,233,0.15)';
+                        } else {
+                            ctx.fillStyle = colors.DIM;
+                        }
+                        ctx.fillRect(x + 1, y + 1, cellInput - 2, cellInput - 2);
+
+                        ctx.fillStyle = inWindow ? colors.WHITE : colors.MUTED;
+                        ctx.font = (inWindow ? '700' : '500') + ' ' + Math.min(cellInput * 0.4, 18) + 'px "JetBrains Mono", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(grid[r][c], x + cellInput / 2, y + cellInput / 2);
+                    }
+                }
+
+                /* Draw pooling window border */
+                if (currentStep < totalSteps) {
+                    ctx.strokeStyle = colors.TEAL;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([]);
+                    ctx.strokeRect(
+                        inputX + stepCol * POOL_SIZE * cellInput - 1,
+                        inputY + stepRow * POOL_SIZE * cellInput - 1,
+                        cellInput * POOL_SIZE + 2,
+                        cellInput * POOL_SIZE + 2
+                    );
+                }
+
+                /* Arrow between grids */
+                var arrowX = inputX + inputW + gap / 2;
+                var arrowY = inputY + (cellInput * GRID_SIZE) / 2;
+                ctx.fillStyle = colors.TEAL;
+                ctx.beginPath();
+                ctx.moveTo(arrowX - 14, arrowY - 8);
+                ctx.lineTo(arrowX + 6, arrowY);
+                ctx.lineTo(arrowX - 14, arrowY + 8);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = colors.MUTED;
+                ctx.font = '500 11px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(poolMode === 'max' ? 'MAX' : 'AVG', arrowX - 4, arrowY - 18);
+
+                /* Draw output grid */
+                for (var r2 = 0; r2 < OUT_SIZE; r2++) {
+                    for (var c2 = 0; c2 < OUT_SIZE; c2++) {
+                        var ox = outputX + c2 * cellOutput;
+                        var oy = outputY + r2 * cellOutput;
+                        var isCurrent = (currentStep < totalSteps && r2 === stepRow && c2 === stepCol);
+
+                        if (outputGrid[r2][c2] !== null) {
+                            ctx.fillStyle = isCurrent ? 'rgba(0,212,170,0.25)' : 'rgba(0,212,170,0.1)';
+                        } else {
+                            ctx.fillStyle = colors.DIM;
+                        }
+                        ctx.fillRect(ox + 1, oy + 1, cellOutput - 2, cellOutput - 2);
+
+                        if (outputGrid[r2][c2] !== null) {
+                            ctx.fillStyle = colors.WHITE;
+                            ctx.font = '700 ' + Math.min(cellOutput * 0.35, 20) + 'px "JetBrains Mono", monospace';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(outputGrid[r2][c2], ox + cellOutput / 2, oy + cellOutput / 2);
+                        }
+                    }
+                }
+
+                /* Step counter */
+                ctx.fillStyle = colors.TEXT;
+                ctx.font = '500 13px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Step ' + Math.min(currentStep + 1, totalSteps) + ' / ' + totalSteps,
+                    w / 2, h - 12);
+            }
+
+            function doStep() {
+                if (currentStep >= totalSteps) return;
+                var r = Math.floor(currentStep / OUT_SIZE);
+                var c = currentStep % OUT_SIZE;
+                outputGrid[r][c] = computePool(r, c);
+                currentStep++;
+                draw();
+
+                /* Update info text */
+                var infoEl = document.getElementById('pooling-viz-info');
+                if (infoEl) {
+                    if (currentStep >= totalSteps) {
+                        infoEl.innerHTML = '<i class="fa-solid fa-check-circle" style="color:var(--accent-success);"></i> ' +
+                            '<strong>Pooling complete!</strong> The ' + GRID_SIZE + 'x' + GRID_SIZE +
+                            ' grid has been reduced to ' + OUT_SIZE + 'x' + OUT_SIZE +
+                            ' using <strong>' + (poolMode === 'max' ? 'max' : 'average') + ' pooling</strong>.';
+                        stopPlay();
+                    } else {
+                        var nr = Math.floor(currentStep / OUT_SIZE);
+                        var nc = currentStep % OUT_SIZE;
+                        var vals = [];
+                        for (var dr = 0; dr < POOL_SIZE; dr++)
+                            for (var dc = 0; dc < POOL_SIZE; dc++)
+                                vals.push(grid[nr * POOL_SIZE + dr][nc * POOL_SIZE + dc]);
+                        infoEl.innerHTML = 'Window at row ' + nr + ', col ' + nc +
+                            ': values = [' + vals.join(', ') + ']';
+                    }
+                }
+            }
+
+            function startPlay() {
+                if (playing) return;
+                if (currentStep >= totalSteps) resetViz();
+                playing = true;
+                animTimer = setInterval(doStep, 700);
+            }
+
+            function stopPlay() {
+                playing = false;
+                if (animTimer) { clearInterval(animTimer); animTimer = null; }
+            }
+
+            function resetViz() {
+                stopPlay();
+                currentStep = 0;
+                for (var r = 0; r < OUT_SIZE; r++)
+                    for (var c = 0; c < OUT_SIZE; c++)
+                        outputGrid[r][c] = null;
+                draw();
+                var infoEl = document.getElementById('pooling-viz-info');
+                if (infoEl) {
+                    infoEl.innerHTML = 'Press <strong>Play</strong> to watch the pooling window slide across the grid, or <strong>Step</strong> to advance one position at a time.';
+                }
+            }
+
+            /* Button handlers */
+            var playBtn = document.getElementById('pool-play');
+            var pauseBtn = document.getElementById('pool-pause');
+            var stepBtn = document.getElementById('pool-step');
+            var resetBtn = document.getElementById('pool-reset');
+            var modeSelect = document.getElementById('pool-mode-select');
+            var randBtn = document.getElementById('pool-randomize');
+
+            if (playBtn) playBtn.addEventListener('click', startPlay);
+            if (pauseBtn) pauseBtn.addEventListener('click', stopPlay);
+            if (stepBtn) stepBtn.addEventListener('click', function () { stopPlay(); doStep(); });
+            if (resetBtn) resetBtn.addEventListener('click', resetViz);
+            if (modeSelect) modeSelect.addEventListener('change', function () {
+                poolMode = modeSelect.value;
+                resetViz();
+            });
+            if (randBtn) randBtn.addEventListener('click', function () {
+                generateGrid();
+                resetViz();
+            });
+
+            var themeObs1 = new MutationObserver(function () { resize(); });
+            themeObs1.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            generateGrid();
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           DEMO 2 — STRIDE VS POOLING COMPARISON
+           ============================================== */
+        (function initStrideVsPooling() {
+            var canvas = document.getElementById('svp-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var SRC_SIZE = 16;   /* 16x16 source grid */
+            var sourceGrid = [];
+            var factor = 2;
+
+            function generateSurface() {
+                sourceGrid = [];
+                for (var r = 0; r < SRC_SIZE; r++) {
+                    sourceGrid[r] = [];
+                    for (var c = 0; c < SRC_SIZE; c++) {
+                        /* Base: concrete-like values 140-200 */
+                        sourceGrid[r][c] = 140 + Math.floor(Math.random() * 60);
+                    }
+                }
+
+                /* Add a diagonal crack (high-value "feature activation" line) */
+                var crackStart = Math.floor(Math.random() * 4);
+                for (var i = 0; i < SRC_SIZE; i++) {
+                    var cr = Math.min(crackStart + i, SRC_SIZE - 1);
+                    var cc = i;
+                    if (cr < SRC_SIZE && cc < SRC_SIZE) {
+                        sourceGrid[cr][cc] = 230 + Math.floor(Math.random() * 25);
+                        /* Widen the crack slightly */
+                        if (cc + 1 < SRC_SIZE) sourceGrid[cr][cc + 1] = 210 + Math.floor(Math.random() * 20);
+                    }
+                }
+
+                /* Add a horizontal crack segment */
+                var hRow = Math.floor(SRC_SIZE * 0.3) + Math.floor(Math.random() * 3);
+                for (var hc = Math.floor(SRC_SIZE * 0.4); hc < Math.floor(SRC_SIZE * 0.9); hc++) {
+                    if (hRow < SRC_SIZE && hc < SRC_SIZE) {
+                        sourceGrid[hRow][hc] = 225 + Math.floor(Math.random() * 30);
+                    }
+                }
+            }
+
+            function maxPool(srcGrid, srcSize, f) {
+                var outSize = Math.floor(srcSize / f);
+                var out = [];
+                for (var r = 0; r < outSize; r++) {
+                    out[r] = [];
+                    for (var c = 0; c < outSize; c++) {
+                        var maxV = 0;
+                        for (var dr = 0; dr < f; dr++) {
+                            for (var dc = 0; dc < f; dc++) {
+                                var val = srcGrid[r * f + dr][c * f + dc];
+                                if (val > maxV) maxV = val;
+                            }
+                        }
+                        out[r][c] = maxV;
+                    }
+                }
+                return { data: out, size: outSize };
+            }
+
+            function strideSample(srcGrid, srcSize, f) {
+                var outSize = Math.floor(srcSize / f);
+                var out = [];
+                for (var r = 0; r < outSize; r++) {
+                    out[r] = [];
+                    for (var c = 0; c < outSize; c++) {
+                        out[r][c] = srcGrid[r * f][c * f];
+                    }
+                }
+                return { data: out, size: outSize };
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                draw();
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var pooled = maxPool(sourceGrid, SRC_SIZE, factor);
+                var strided = strideSample(sourceGrid, SRC_SIZE, factor);
+
+                var margin = 20;
+                var gap = 16;
+                var labelH = 30;
+                var availW = w - margin * 2 - gap * 2;
+                var panelW = Math.floor(availW / 3);
+                var availH = h - margin * 2 - labelH;
+
+                /* Source cell size */
+                var srcCell = Math.min(Math.floor(panelW / SRC_SIZE), Math.floor(availH / SRC_SIZE));
+                /* Output cell size — scale up to roughly match source panel height */
+                var outCell = Math.min(Math.floor(panelW / pooled.size), Math.floor(availH / pooled.size));
+
+                var srcW = srcCell * SRC_SIZE;
+                var outW = outCell * pooled.size;
+
+                var totalW = srcW + gap + outW + gap + outW;
+                var startX = (w - totalW) / 2;
+
+                var srcX = startX;
+                var poolX = srcX + srcW + gap;
+                var strideX = poolX + outW + gap;
+                var topY = margin + labelH;
+
+                /* Labels */
+                ctx.fillStyle = colors.TEXT;
+                ctx.font = '600 13px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Original (' + SRC_SIZE + 'x' + SRC_SIZE + ')', srcX + srcW / 2, margin + 16);
+                ctx.fillText('Max Pooled (' + pooled.size + 'x' + pooled.size + ')', poolX + outW / 2, margin + 16);
+                ctx.fillText('Stride ' + factor + ' (' + strided.size + 'x' + strided.size + ')', strideX + outW / 2, margin + 16);
+
+                /* Draw source grid */
+                for (var r = 0; r < SRC_SIZE; r++) {
+                    for (var c = 0; c < SRC_SIZE; c++) {
+                        var val = sourceGrid[r][c];
+                        var brightness = val / 255;
+                        ctx.fillStyle = 'rgb(' + Math.floor(brightness * 255) + ',' +
+                            Math.floor(brightness * 255) + ',' + Math.floor(brightness * 255) + ')';
+                        ctx.fillRect(srcX + c * srcCell, topY + r * srcCell, srcCell - 1, srcCell - 1);
+                    }
+                }
+
+                /* Draw max pooled */
+                for (var r2 = 0; r2 < pooled.size; r2++) {
+                    for (var c2 = 0; c2 < pooled.size; c2++) {
+                        var val2 = pooled.data[r2][c2];
+                        var b2 = val2 / 255;
+                        ctx.fillStyle = 'rgb(' + Math.floor(b2 * 255) + ',' +
+                            Math.floor(b2 * 255) + ',' + Math.floor(b2 * 255) + ')';
+                        ctx.fillRect(poolX + c2 * outCell, topY + r2 * outCell, outCell - 1, outCell - 1);
+                    }
+                }
+
+                /* Draw strided */
+                for (var r3 = 0; r3 < strided.size; r3++) {
+                    for (var c3 = 0; c3 < strided.size; c3++) {
+                        var val3 = strided.data[r3][c3];
+                        var b3 = val3 / 255;
+                        ctx.fillStyle = 'rgb(' + Math.floor(b3 * 255) + ',' +
+                            Math.floor(b3 * 255) + ',' + Math.floor(b3 * 255) + ')';
+                        ctx.fillRect(strideX + c3 * outCell, topY + r3 * outCell, outCell - 1, outCell - 1);
+                    }
+                }
+
+                /* Colour legend at bottom */
+                ctx.fillStyle = colors.MUTED;
+                ctx.font = '400 11px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Brighter = stronger feature activation (crack detected)', w / 2, h - 8);
+            }
+
+            /* Controls */
+            var regenBtn = document.getElementById('svp-regenerate');
+            var factorSel = document.getElementById('svp-factor');
+
+            if (regenBtn) regenBtn.addEventListener('click', function () {
+                generateSurface();
+                draw();
+            });
+            if (factorSel) factorSel.addEventListener('change', function () {
+                factor = parseInt(factorSel.value, 10);
+                draw();
+            });
+
+            var themeObs2 = new MutationObserver(function () { resize(); });
+            themeObs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            generateSurface();
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           SCROLL-TRIGGERED REVEAL ANIMATION
+           ============================================== */
+        (function initRevealAnimations() {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { observer.observe(el); });
+        })();
+
+    })();
+    </script>
+
+    <!-- ============ DEMO BUTTON STYLES (scoped) ============ -->
+    <style>
+        .demo-btn, .demo-select {
+            padding: 8px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--border-active);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .demo-btn:hover, .demo-select:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+        .demo-select {
+            appearance: auto;
+            padding-right: 24px;
+        }
+    </style>
+
+</body>
+</html>

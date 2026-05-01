@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.1 The Perceptron — From Biology to Math | CE Guide to AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE &times; AI</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li><a href="index.html" class="nav-link active"><i class="fa-solid fa-brain"></i> Ch 6</a></li>
+                <li><a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a></li>
+            </ul>
+            <button class="theme-toggle" aria-label="Toggle theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-circle-nodes"></i>
+                <span>Chapter 6 &middot; Sub-chapter 6.1</span>
+            </div>
+            <h1 class="chapter-hero__title">The Perceptron</h1>
+            <p class="chapter-hero__subtitle">From Biology to Math &mdash; the elemental building block that started the neural revolution.</p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-regular fa-clock"></i> 18 min read</span>
+                <span><i class="fa-solid fa-signal"></i> Beginner &rarr; Intermediate</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-square-poll-vertical"></i> 4 quiz questions</span>
+            </div>
+            <div class="chapter-hero__scroll-cue">
+                <i class="fa-solid fa-chevron-down"></i>
+                <span>Scroll to explore</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="chapter-content">
+
+        <!-- ============== SECTION 1 : INTRO ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    A Single Cell That Started It All
+                </h2>
+                <p class="section-lead">
+                    Before deep learning could stack billions of parameters, someone had to model
+                    <em>one</em> neuron. In 1957, Frank Rosenblatt did exactly that &mdash; and called
+                    it the <strong>Perceptron</strong>. It is the simplest possible learning machine,
+                    yet every modern neural network is built from descendants of this single idea.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div class="info-card__content">
+                        <h3>Key Insight</h3>
+                        <p>
+                            A perceptron takes weighted inputs, sums them, adds a bias, and fires
+                            an output if the sum crosses a threshold. That is the entire algorithm.
+                            Everything else in deep learning is a clever stacking, smoothing, or
+                            generalisation of this single primitive.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In this sub-chapter we will trace the perceptron's journey: from the
+                    biological neuron that inspired it, to the mathematical equation that defines
+                    it, to the famous failure (XOR) that almost killed neural networks for two
+                    decades. Along the way we will see how civil engineers can use a perceptron
+                    as a humble &mdash; but instructive &mdash; pass/fail classifier.
+                </p>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 2 : BIOLOGY ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-dna"></i>
+                    From Biology to Mathematics
+                </h2>
+                <p>
+                    The human brain contains roughly 86 billion neurons. Each neuron is a small
+                    decision unit with three functional parts:
+                </p>
+
+                <ul class="feature-list">
+                    <li>
+                        <i class="fa-solid fa-tree"></i>
+                        <div>
+                            <strong>Dendrites</strong> &mdash; branched receivers that collect
+                            chemical signals from thousands of upstream neurons.
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-microchip"></i>
+                        <div>
+                            <strong>Cell body (soma)</strong> &mdash; integrates all incoming
+                            signals; if the integrated voltage exceeds a threshold, the neuron
+                            <em>fires</em>.
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-bolt"></i>
+                        <div>
+                            <strong>Axon &amp; synapses</strong> &mdash; transmit the firing
+                            signal to downstream neurons. Each synapse has a <em>strength</em>
+                            (how much it amplifies or dampens the signal).
+                        </div>
+                    </li>
+                </ul>
+
+                <p>
+                    McCulloch &amp; Pitts (1943) proposed an audacious idea: <em>treat this as
+                    arithmetic</em>. Replace dendrites with input numbers, synapse strengths with
+                    <em>weights</em>, the soma with a <em>sum</em>, and the firing threshold with
+                    a <em>step function</em>. Out comes the artificial neuron.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__body">
+                        <p>
+                            <strong>A perceptron is a beam in elastic analysis.</strong>
+                        </p>
+                        <p>
+                            Imagine a single beam carrying loads from several columns above. Each
+                            column contributes a load $P_i$, and each load reaches the beam through
+                            a tributary factor $w_i$ (think load-distribution coefficient). The total
+                            stress in the beam is:
+                        </p>
+                        <p style="text-align:center;font-family:var(--font-mono);font-size:1.1em;">
+                            &sigma; = &Sigma; (w<sub>i</sub> &middot; P<sub>i</sub>) + &sigma;<sub>0</sub>
+                        </p>
+                        <p>
+                            If &sigma; exceeds the elastic limit, the beam <em>yields</em> &mdash;
+                            it "fires". If not, it stays elastic ("doesn't fire"). Replace stress
+                            with activation, replace yield with threshold, and you have a perceptron.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 3 : THE MATH ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                    The Equation of a Neuron
+                </h2>
+
+                <p>
+                    A perceptron with $n$ inputs computes a single number $y$ as follows:
+                </p>
+
+                <div class="equation-block">
+                    <div class="equation-block__label">Forward equation</div>
+                    <div class="equation-block__math">
+                        y = &phi;( w<sub>1</sub>x<sub>1</sub> + w<sub>2</sub>x<sub>2</sub> + &hellip; + w<sub>n</sub>x<sub>n</sub> + b )
+                    </div>
+                    <div class="equation-block__legend">
+                        <span><strong>x<sub>i</sub></strong> &mdash; input features</span>
+                        <span><strong>w<sub>i</sub></strong> &mdash; learnable weights</span>
+                        <span><strong>b</strong> &mdash; bias (threshold offset)</span>
+                        <span><strong>&phi;</strong> &mdash; activation function</span>
+                    </div>
+                </div>
+
+                <p>
+                    In Rosenblatt's original perceptron, $\phi$ was the <strong>step function</strong>:
+                    output 1 if the sum is positive, 0 (or &minus;1) otherwise. Modern networks use
+                    smoother activations (sigmoid, tanh, ReLU) so we can train them with calculus.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon"><i class="fa-solid fa-vector-square"></i></div>
+                    <div class="info-card__content">
+                        <h3>Geometric Interpretation</h3>
+                        <p>
+                            With two inputs ($x_1, x_2$), the equation $w_1 x_1 + w_2 x_2 + b = 0$
+                            describes a <strong>line</strong> on the plane. The perceptron outputs
+                            "1" on one side of that line and "0" on the other. The line is the
+                            <em>decision boundary</em>. Training the perceptron simply means
+                            <em>rotating and shifting that line</em> until it separates the two
+                            classes correctly.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <span class="code-peek__lang"><i class="fa-brands fa-python"></i> Python</span>
+                        <span>perceptron.py</span>
+                    </div>
+<pre><code>import numpy as np
+
+def perceptron(x, w, b):
+    """One forward pass through a perceptron."""
+    z = np.dot(w, x) + b      # weighted sum
+    return 1 if z &gt;= 0 else 0  # step activation
+
+# Soil-bearing pass/fail (simplified)
+x = np.array([1.4, 0.8])      # [N-value, moisture]
+w = np.array([0.7, -0.5])     # learned weights
+b = -0.3                      # learned bias
+print(perceptron(x, w, b))    # -&gt; 1 (passes)
+</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 4 : DEMO 1 ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Demo 1 &mdash; The Perceptron Playground
+                </h2>
+                <p>
+                    Below is a synthetic dataset of <strong>soil samples</strong>: green dots
+                    passed the bearing-capacity test, red dots failed. Adjust the two weights and
+                    the bias to <em>rotate and shift</em> the decision boundary line until you
+                    classify as many points correctly as possible. Watch live accuracy update.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-flask"></i>
+                        <span>Interactive: Tune a perceptron by hand</span>
+                    </div>
+                    <div class="demo-panel__body">
+                        <div class="demo-panel__canvas-wrap">
+                            <canvas id="playground-canvas"></canvas>
+                        </div>
+                        <div class="demo-panel__controls">
+                            <label class="slider-label">
+                                Weight w<sub>1</sub>: <span id="w1-val">0.50</span>
+                                <input type="range" id="w1" min="-2" max="2" step="0.05" value="0.5">
+                            </label>
+                            <label class="slider-label">
+                                Weight w<sub>2</sub>: <span id="w2-val">0.50</span>
+                                <input type="range" id="w2" min="-2" max="2" step="0.05" value="0.5">
+                            </label>
+                            <label class="slider-label">
+                                Bias b: <span id="b-val">0.00</span>
+                                <input type="range" id="b" min="-2" max="2" step="0.05" value="0">
+                            </label>
+                            <button class="demo-btn" id="auto-fit-btn">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-fit
+                            </button>
+                            <button class="demo-btn demo-btn--secondary" id="reshuffle-btn">
+                                <i class="fa-solid fa-shuffle"></i> New data
+                            </button>
+                        </div>
+                        <div class="demo-panel__info">
+                            <div class="info-stat">
+                                <span class="info-stat__label">Accuracy</span>
+                                <span class="info-stat__value" id="accuracy-val">0%</span>
+                            </div>
+                            <div class="info-stat">
+                                <span class="info-stat__label">Equation</span>
+                                <span class="info-stat__value" id="eq-val">0.50 x<sub>1</sub> + 0.50 x<sub>2</sub> + 0.00 = 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Try this</span>
+                    </div>
+                    <p>
+                        Set $w_1 = 1$, $w_2 = 1$, $b = -1$. The line $x_1 + x_2 = 1$ should split
+                        most points cleanly. Now hit <em>Auto-fit</em> &mdash; the perceptron
+                        learning rule iteratively nudges the weights until the boundary separates
+                        the classes.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 5 : ROSENBLATT HISTORY ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    1957: Rosenblatt &amp; the Mark I
+                </h2>
+                <p>
+                    Frank Rosenblatt, a psychologist at Cornell Aeronautical Laboratory, built the
+                    <strong>Mark I Perceptron</strong> &mdash; a room-sized analog machine with
+                    400 photocells, weights stored as the resistances of motorised potentiometers,
+                    and learning implemented by literally turning physical knobs.
+                </p>
+                <p>
+                    The <em>New York Times</em> famously reported in 1958 that the perceptron was
+                    "the embryo of an electronic computer that the Navy expects will be able to
+                    walk, talk, see, write, reproduce itself and be conscious of its existence."
+                    The hype, as ever, raced ahead of the technology.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon"><i class="fa-solid fa-bullseye"></i></div>
+                    <div class="info-card__content">
+                        <h3>The Perceptron Learning Rule</h3>
+                        <p>
+                            For each training example $(x, y_{\text{true}})$:
+                        </p>
+                        <p style="text-align:center;font-family:var(--font-mono);">
+                            w<sub>i</sub> &larr; w<sub>i</sub> + &eta; (y<sub>true</sub> &minus; y<sub>pred</sub>) x<sub>i</sub>
+                        </p>
+                        <p>
+                            where $\eta$ is the learning rate. Rosenblatt proved this rule
+                            <em>always converges</em> &mdash; <strong>provided the data is
+                            linearly separable.</strong> That last clause is the crucial one.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 6 : XOR PROBLEM ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    The Fatal Flaw &mdash; XOR
+                </h2>
+                <p>
+                    Consider the simplest non-trivial Boolean function: <strong>exclusive OR
+                    (XOR)</strong>.
+                </p>
+
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>x<sub>1</sub></th><th>x<sub>2</sub></th><th>XOR</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>0</td><td>0</td><td>0</td></tr>
+                            <tr><td>0</td><td>1</td><td>1</td></tr>
+                            <tr><td>1</td><td>0</td><td>1</td></tr>
+                            <tr><td>1</td><td>1</td><td>0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>
+                    Plot these four points on a plane. The two "1" points sit on one diagonal; the
+                    two "0" points sit on the other. <strong>No straight line</strong> can separate
+                    them. The perceptron, being nothing more than a line in disguise, is therefore
+                    mathematically incapable of learning XOR. This is not a training-difficulty
+                    issue &mdash; it is an impossibility.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Demo 2: Watch a perceptron fail XOR</span>
+                    </div>
+                    <div class="demo-panel__body">
+                        <div class="demo-panel__canvas-wrap">
+                            <canvas id="xor-canvas"></canvas>
+                        </div>
+                        <div class="demo-panel__controls">
+                            <button class="demo-btn" id="xor-train-btn">
+                                <i class="fa-solid fa-play"></i> Train perceptron
+                            </button>
+                            <button class="demo-btn" id="xor-stop-btn">
+                                <i class="fa-solid fa-stop"></i> Stop
+                            </button>
+                            <button class="demo-btn demo-btn--secondary" id="xor-hidden-btn">
+                                <i class="fa-solid fa-layer-group"></i> Add hidden layer
+                            </button>
+                            <button class="demo-btn demo-btn--secondary" id="xor-reset-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </button>
+                        </div>
+                        <div class="demo-panel__info">
+                            <div class="info-stat">
+                                <span class="info-stat__label">Epoch</span>
+                                <span class="info-stat__value" id="xor-epoch">0</span>
+                            </div>
+                            <div class="info-stat">
+                                <span class="info-stat__label">Accuracy</span>
+                                <span class="info-stat__value" id="xor-acc">25%</span>
+                            </div>
+                            <div class="info-stat">
+                                <span class="info-stat__label">Status</span>
+                                <span class="info-stat__value" id="xor-status">idle</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p>
+                    Click <em>Train perceptron</em> and watch the boundary line <strong>oscillate
+                    forever</strong> &mdash; it never settles, because no settling position exists.
+                    Then click <em>Add hidden layer</em>: a tiny 2-neuron hidden layer instantly
+                    bends the boundary into a curve and solves XOR. This is a sneak preview of
+                    sub-chapter 6.2.
+                </p>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 7 : AI WINTER ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-snowflake"></i>
+                    1969 &mdash; Minsky, Papert &amp; the First AI Winter
+                </h2>
+                <p>
+                    In 1969, Marvin Minsky and Seymour Papert published <em>Perceptrons</em>, a
+                    rigorous mathematical critique. They proved formally that single-layer
+                    perceptrons could not solve XOR &mdash; nor any problem that wasn't
+                    linearly separable. They also (somewhat speculatively) suggested the same
+                    limitations might apply to multi-layer networks.
+                </p>
+                <p>
+                    Funding evaporated. Research labs shuttered their neural network programs.
+                    The field entered a <strong>decade-long winter</strong> from which it only
+                    emerged in the mid-1980s with the rediscovery of backpropagation and the
+                    practical training of multi-layer networks.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-quote-left"></i>
+                        <span>Historical irony</span>
+                    </div>
+                    <p>
+                        Minsky and Papert were <em>correct</em> about single perceptrons but
+                        <em>wrong</em> about multi-layer networks. The very limitation they
+                        highlighted is what motivated the architectures that now power GPT,
+                        AlphaFold, and self-driving cars.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 8 : CE APPLICATIONS ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    Where Civil Engineers Meet Perceptrons
+                </h2>
+                <p>
+                    A single perceptron is too weak for most real engineering problems &mdash;
+                    but it is perfect for <strong>linearly-separable binary checks</strong>, of
+                    which civil engineering has many:
+                </p>
+
+                <div class="card-grid">
+                    <div class="info-card">
+                        <div class="info-card__icon"><i class="fa-solid fa-mound"></i></div>
+                        <div class="info-card__content">
+                            <h3>Soil bearing pass/fail</h3>
+                            <p>
+                                Inputs: SPT N-value, moisture content, fines percentage.
+                                Output: meets allowable bearing pressure (yes/no).
+                            </p>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card__icon"><i class="fa-solid fa-cube"></i></div>
+                        <div class="info-card__content">
+                            <h3>Concrete cube test</h3>
+                            <p>
+                                Inputs: 7-day strength, slump, w/c ratio.
+                                Output: accept or reject the batch.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card__icon"><i class="fa-solid fa-road"></i></div>
+                        <div class="info-card__content">
+                            <h3>Pavement crack flag</h3>
+                            <p>
+                                Inputs: crack width, depth, density per m&sup2;.
+                                Output: needs structural repair (yes/no).
+                            </p>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card__icon"><i class="fa-solid fa-water"></i></div>
+                        <div class="info-card__content">
+                            <h3>Water quality screening</h3>
+                            <p>
+                                Inputs: turbidity, pH, conductivity.
+                                Output: potable or not (preliminary screen).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        <span>Why this matters</span>
+                    </div>
+                    <div class="analogy-block__body">
+                        <p>
+                            Many CE decisions are coded in <em>tables of allowables</em> from IS
+                            456, IS 2911, AASHTO, etc. Each allowable is essentially a hand-tuned
+                            perceptron: a weighted sum of measurements compared against a
+                            threshold. AI didn't invent this style of reasoning &mdash; civil
+                            engineering has been doing it for a century. AI just learns the
+                            weights from data instead of from committee consensus.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 9 : QUIZ ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-square-poll-vertical"></i>
+                    Check Your Understanding
+                </h2>
+
+                <div class="quiz-block" data-correct="2">
+                    <div class="quiz-block__header"><i class="fa-solid fa-circle-question"></i> Question 1 of 4</div>
+                    <div class="quiz-block__question">
+                        Which equation describes a single perceptron's output?
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-idx="1"><span class="quiz-option__marker">A</span> y = &Sigma; w<sub>i</sub> &middot; x<sub>i</sub><sup>2</sup></button>
+                        <button class="quiz-option" data-idx="2"><span class="quiz-option__marker">B</span> y = &phi;( &Sigma; w<sub>i</sub> x<sub>i</sub> + b )</button>
+                        <button class="quiz-option" data-idx="3"><span class="quiz-option__marker">C</span> y = max(x<sub>1</sub>, x<sub>2</sub>, &hellip;)</button>
+                        <button class="quiz-option" data-idx="4"><span class="quiz-option__marker">D</span> y = &prod; x<sub>i</sub> / &Sigma; w<sub>i</sub></button>
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--correct">
+                        <i class="fa-solid fa-check"></i> Correct &mdash; the canonical neuron equation: weighted sum, plus bias, through an activation.
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--wrong">
+                        <i class="fa-solid fa-xmark"></i> Not quite &mdash; the perceptron is <em>linear</em> in its inputs.
+                    </div>
+                </div>
+
+                <div class="quiz-block" data-correct="3">
+                    <div class="quiz-block__header"><i class="fa-solid fa-circle-question"></i> Question 2 of 4</div>
+                    <div class="quiz-block__question">
+                        Why can a single perceptron not learn XOR?
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-idx="1"><span class="quiz-option__marker">A</span> Because XOR has too many inputs.</button>
+                        <button class="quiz-option" data-idx="2"><span class="quiz-option__marker">B</span> Because the learning rate is always too high.</button>
+                        <button class="quiz-option" data-idx="3"><span class="quiz-option__marker">C</span> Because XOR is not linearly separable &mdash; no single straight line separates the classes.</button>
+                        <button class="quiz-option" data-idx="4"><span class="quiz-option__marker">D</span> Because XOR requires negative weights.</button>
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--correct">
+                        <i class="fa-solid fa-check"></i> Exactly. A perceptron is geometrically a line; XOR's classes interlock diagonally.
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--wrong">
+                        <i class="fa-solid fa-xmark"></i> Try again &mdash; think about the <em>geometry</em> of XOR.
+                    </div>
+                </div>
+
+                <div class="quiz-block" data-correct="1">
+                    <div class="quiz-block__header"><i class="fa-solid fa-circle-question"></i> Question 3 of 4</div>
+                    <div class="quiz-block__question">
+                        In the CE analogy, the perceptron's bias <em>b</em> corresponds most closely to:
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-idx="1"><span class="quiz-option__marker">A</span> A baseline / threshold offset, like a residual stress or yield-strength threshold.</button>
+                        <button class="quiz-option" data-idx="2"><span class="quiz-option__marker">B</span> The unit weight of concrete.</button>
+                        <button class="quiz-option" data-idx="3"><span class="quiz-option__marker">C</span> The Young's modulus of steel.</button>
+                        <button class="quiz-option" data-idx="4"><span class="quiz-option__marker">D</span> The seismic zone factor.</button>
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--correct">
+                        <i class="fa-solid fa-check"></i> Spot on &mdash; bias shifts the decision threshold up or down, just like residual stress shifts the yield point.
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--wrong">
+                        <i class="fa-solid fa-xmark"></i> Not quite &mdash; bias is what you add to the sum <em>before</em> the activation.
+                    </div>
+                </div>
+
+                <div class="quiz-block" data-correct="4">
+                    <div class="quiz-block__header"><i class="fa-solid fa-circle-question"></i> Question 4 of 4</div>
+                    <div class="quiz-block__question">
+                        What event triggered the first AI winter?
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-idx="1"><span class="quiz-option__marker">A</span> The collapse of Cornell's funding in 1962.</button>
+                        <button class="quiz-option" data-idx="2"><span class="quiz-option__marker">B</span> The launch of Sputnik.</button>
+                        <button class="quiz-option" data-idx="3"><span class="quiz-option__marker">C</span> The invention of the transistor.</button>
+                        <button class="quiz-option" data-idx="4"><span class="quiz-option__marker">D</span> Minsky &amp; Papert's 1969 book <em>Perceptrons</em> proved single-layer perceptrons couldn't solve XOR.</button>
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--correct">
+                        <i class="fa-solid fa-check"></i> Correct &mdash; the book's mathematical critique froze neural-network funding for over a decade.
+                    </div>
+                    <div class="quiz-block__feedback quiz-block__feedback--wrong">
+                        <i class="fa-solid fa-xmark"></i> Not quite &mdash; the trigger was a published mathematical proof.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SECTION 10 : RECAP ============== -->
+        <section class="ch-section">
+            <div class="section-container">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    Recap
+                </h2>
+                <ul class="recap-list">
+                    <li><i class="fa-solid fa-check"></i> A perceptron computes $y = \phi(\sum w_i x_i + b)$ &mdash; a weighted sum through an activation.</li>
+                    <li><i class="fa-solid fa-check"></i> It is geometrically a <strong>line</strong> (or hyperplane) that splits input space in two.</li>
+                    <li><i class="fa-solid fa-check"></i> Rosenblatt's 1957 learning rule converges if &mdash; and only if &mdash; the data is linearly separable.</li>
+                    <li><i class="fa-solid fa-check"></i> XOR is the canonical example of <em>not</em> linearly separable; a single perceptron cannot solve it.</li>
+                    <li><i class="fa-solid fa-check"></i> Stacking perceptrons into hidden layers (next sub-chapter) breaks the XOR barrier and unlocks deep learning.</li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="info-card__content">
+                        <h3>Coming up in 6.2</h3>
+                        <p>
+                            How do we connect perceptrons into <em>multi-layer networks</em>? What
+                            do "hidden layers" actually compute? And how does the famous
+                            backpropagation algorithm let us train networks that are far more
+                            powerful than any single neuron?
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== FOOTER NAV ============== -->
+        <nav class="chapter-nav-footer">
+            <a href="../chapter5/index.html" class="chapter-nav__link prev">
+                <i class="fa-solid fa-arrow-left"></i>
+                <div>
+                    <span class="chapter-nav__label">Previous</span>
+                    <span class="chapter-nav__title">Chapter 5: Large Language Models</span>
+                </div>
+            </a>
+            <a href="sub2.html" class="chapter-nav__link next">
+                <div>
+                    <span class="chapter-nav__label">Next</span>
+                    <span class="chapter-nav__title">6.2 Multi-Layer Networks</span>
+                </div>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </nav>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-helmet-safety"></i>
+                A Civil Engineer's Guide to AI &mdash; Chapter 6 &middot; Sub-chapter 6.1
+            </p>
+            <p class="footer-meta">
+                Built with curiosity, equations, and a respectful nod to Frank Rosenblatt (1928&ndash;1971).
+            </p>
+        </div>
+    </footer>
+
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+    <script>
+    // ============================================================
+    //  Sub-chapter 6.1 — The Perceptron : interactive demos
+    // ============================================================
+
+    function initCanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width  = rect.width  * dpr;
+        canvas.height = rect.height * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, w: rect.width, h: rect.height };
+    }
+
+    // ------------------------------------------------------------
+    //  HERO CANVAS — animated single neuron with pulsing inputs
+    // ------------------------------------------------------------
+    (function heroNeuron() {
+        const canvas = document.getElementById('hero-canvas');
+        if (!canvas) return;
+        let { ctx, w, h } = initCanvas(canvas);
+
+        window.addEventListener('resize', () => {
+            ({ ctx, w, h } = initCanvas(canvas));
+        });
+
+        const inputs = [
+            { y: 0.25, label: 'x₁' },
+            { y: 0.42, label: 'x₂' },
+            { y: 0.58, label: 'x₃' },
+            { y: 0.75, label: 'x₄' }
+        ];
+
+        let t = 0;
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+
+            const cx = w * 0.62;
+            const cy = h * 0.5;
+            const r  = Math.min(w, h) * 0.07;
+
+            // connections
+            inputs.forEach((inp, i) => {
+                const ix = w * 0.18;
+                const iy = h * inp.y;
+                const pulse = (Math.sin(t * 0.04 + i) + 1) * 0.5;
+
+                const grad = ctx.createLinearGradient(ix, iy, cx, cy);
+                grad.addColorStop(0, `rgba(99, 179, 237, ${0.15 + pulse * 0.5})`);
+                grad.addColorStop(1, `rgba(159, 122, 234, ${0.15 + pulse * 0.5})`);
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 1.2 + pulse * 1.4;
+                ctx.beginPath();
+                ctx.moveTo(ix, iy);
+                ctx.lineTo(cx, cy);
+                ctx.stroke();
+
+                // travelling pulse
+                const pt = ((t * 0.012 + i * 0.25) % 1);
+                const px = ix + (cx - ix) * pt;
+                const py = iy + (cy - iy) * pt;
+                ctx.fillStyle = `rgba(255,255,255,${0.7 - pt * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // input node
+                ctx.fillStyle = '#1a2332';
+                ctx.strokeStyle = '#63b3ed';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(ix, iy, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#cbd5e0';
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(inp.label, ix, iy);
+            });
+
+            // central neuron with pulsing glow
+            const glow = (Math.sin(t * 0.05) + 1) * 0.5;
+            ctx.shadowColor = 'rgba(159, 122, 234, 0.6)';
+            ctx.shadowBlur = 20 + glow * 25;
+            ctx.fillStyle = '#9f7aea';
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${r * 0.7}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Σ', cx, cy);
+
+            // output line
+            ctx.strokeStyle = 'rgba(99, 179, 237, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + r, cy);
+            ctx.lineTo(w * 0.9, cy);
+            ctx.stroke();
+
+            // arrowhead
+            ctx.fillStyle = 'rgba(99, 179, 237, 0.85)';
+            ctx.beginPath();
+            ctx.moveTo(w * 0.9, cy);
+            ctx.lineTo(w * 0.9 - 10, cy - 5);
+            ctx.lineTo(w * 0.9 - 10, cy + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#cbd5e0';
+            ctx.font = '12px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('y', w * 0.92, cy - 8);
+
+            t++;
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+
+    // ------------------------------------------------------------
+    //  DEMO 1 — Perceptron Playground
+    // ------------------------------------------------------------
+    (function playground() {
+        const canvas = document.getElementById('playground-canvas');
+        if (!canvas) return;
+        let { ctx, w, h } = initCanvas(canvas);
+
+        const w1El = document.getElementById('w1');
+        const w2El = document.getElementById('w2');
+        const bEl  = document.getElementById('b');
+        const w1V  = document.getElementById('w1-val');
+        const w2V  = document.getElementById('w2-val');
+        const bV   = document.getElementById('b-val');
+        const accV = document.getElementById('accuracy-val');
+        const eqV  = document.getElementById('eq-val');
+        const fitBtn = document.getElementById('auto-fit-btn');
+        const shufBtn = document.getElementById('reshuffle-btn');
+
+        let points = [];
+
+        function generatePoints() {
+            points = [];
+            // True boundary: 0.8 x1 + 0.6 x2 - 0.5 = 0  (with noise)
+            for (let i = 0; i < 60; i++) {
+                const x1 = Math.random() * 2 - 1;
+                const x2 = Math.random() * 2 - 1;
+                const truth = 0.8 * x1 + 0.6 * x2 - 0.2;
+                const noise = (Math.random() - 0.5) * 0.25;
+                const label = (truth + noise) > 0 ? 1 : 0;
+                points.push({ x1, x2, label });
+            }
+        }
+        generatePoints();
+
+        function toScreen(x1, x2) {
+            const padding = 30;
+            const sx = padding + ((x1 + 1) / 2) * (w - 2 * padding);
+            const sy = h - (padding + ((x2 + 1) / 2) * (h - 2 * padding));
+            return [sx, sy];
+        }
+
+        function draw() {
+            const w1 = parseFloat(w1El.value);
+            const w2 = parseFloat(w2El.value);
+            const b  = parseFloat(bEl.value);
+
+            w1V.textContent = w1.toFixed(2);
+            w2V.textContent = w2.toFixed(2);
+            bV.textContent  = b.toFixed(2);
+            eqV.innerHTML = `${w1.toFixed(2)} x<sub>1</sub> + ${w2.toFixed(2)} x<sub>2</sub> + ${b.toFixed(2)} = 0`;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = (i / 10) * w;
+                const y = (i / 10) * h;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+
+            // axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 1;
+            const [zx, zy] = toScreen(0, 0);
+            ctx.beginPath(); ctx.moveTo(0, zy); ctx.lineTo(w, zy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(zx, 0); ctx.lineTo(zx, h); ctx.stroke();
+
+            // shaded half-planes
+            ctx.save();
+            ctx.globalAlpha = 0.06;
+            ctx.fillStyle = '#48bb78';
+            ctx.beginPath();
+            for (let px = 0; px <= w; px += 6) {
+                for (let py = 0; py <= h; py += 6) {
+                    // sample
+                }
+            }
+            ctx.restore();
+
+            // decision boundary line
+            // w1*x1 + w2*x2 + b = 0  =>  x2 = -(w1*x1 + b)/w2
+            ctx.strokeStyle = '#9f7aea';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            if (Math.abs(w2) > 1e-6) {
+                const xa = -1.2, xb = 1.2;
+                const ya = -(w1 * xa + b) / w2;
+                const yb = -(w1 * xb + b) / w2;
+                const [sxa, sya] = toScreen(xa, ya);
+                const [sxb, syb] = toScreen(xb, yb);
+                ctx.moveTo(sxa, sya); ctx.lineTo(sxb, syb);
+            } else if (Math.abs(w1) > 1e-6) {
+                const xv = -b / w1;
+                const [sx1, sy1] = toScreen(xv, -1.2);
+                const [sx2, sy2] = toScreen(xv, 1.2);
+                ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2);
+            }
+            ctx.stroke();
+
+            // points
+            let correct = 0;
+            points.forEach(p => {
+                const z = w1 * p.x1 + w2 * p.x2 + b;
+                const pred = z >= 0 ? 1 : 0;
+                if (pred === p.label) correct++;
+                const [sx, sy] = toScreen(p.x1, p.x2);
+                ctx.beginPath();
+                ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+                ctx.fillStyle = p.label === 1 ? '#48bb78' : '#f56565';
+                ctx.globalAlpha = pred === p.label ? 1 : 0.35;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = pred === p.label ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            const acc = Math.round((correct / points.length) * 100);
+            accV.textContent = `${acc}%`;
+
+            // legend
+            ctx.font = '11px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#48bb78'; ctx.fillRect(10, 10, 10, 10);
+            ctx.fillStyle = '#cbd5e0'; ctx.fillText('passed', 25, 19);
+            ctx.fillStyle = '#f56565'; ctx.fillRect(10, 25, 10, 10);
+            ctx.fillStyle = '#cbd5e0'; ctx.fillText('failed', 25, 34);
+        }
+
+        [w1El, w2El, bEl].forEach(el => el.addEventListener('input', draw));
+
+        // perceptron auto-fit (Rosenblatt rule)
+        let fitTimer = null;
+        fitBtn.addEventListener('click', () => {
+            if (fitTimer) { clearInterval(fitTimer); fitTimer = null; }
+            let w1 = parseFloat(w1El.value);
+            let w2 = parseFloat(w2El.value);
+            let b  = parseFloat(bEl.value);
+            const lr = 0.05;
+            let step = 0;
+            fitTimer = setInterval(() => {
+                let updated = false;
+                for (const p of points) {
+                    const z = w1 * p.x1 + w2 * p.x2 + b;
+                    const pred = z >= 0 ? 1 : 0;
+                    const err = p.label - pred;
+                    if (err !== 0) {
+                        w1 += lr * err * p.x1;
+                        w2 += lr * err * p.x2;
+                        b  += lr * err;
+                        updated = true;
+                    }
+                }
+                w1El.value = Math.max(-2, Math.min(2, w1));
+                w2El.value = Math.max(-2, Math.min(2, w2));
+                bEl.value  = Math.max(-2, Math.min(2, b));
+                draw();
+                step++;
+                if (!updated || step > 60) { clearInterval(fitTimer); fitTimer = null; }
+            }, 80);
+        });
+
+        shufBtn.addEventListener('click', () => { generatePoints(); draw(); });
+
+        window.addEventListener('resize', () => {
+            ({ ctx, w, h } = initCanvas(canvas));
+            draw();
+        });
+
+        draw();
+    })();
+
+    // ------------------------------------------------------------
+    //  DEMO 2 — XOR failure (and hidden-layer rescue)
+    // ------------------------------------------------------------
+    (function xorDemo() {
+        const canvas = document.getElementById('xor-canvas');
+        if (!canvas) return;
+        let { ctx, w, h } = initCanvas(canvas);
+
+        const trainBtn = document.getElementById('xor-train-btn');
+        const stopBtn  = document.getElementById('xor-stop-btn');
+        const hiddenBtn = document.getElementById('xor-hidden-btn');
+        const resetBtn = document.getElementById('xor-reset-btn');
+        const epochEl  = document.getElementById('xor-epoch');
+        const accEl    = document.getElementById('xor-acc');
+        const statusEl = document.getElementById('xor-status');
+
+        const data = [
+            { x1: 0, x2: 0, y: 0 },
+            { x1: 0, x2: 1, y: 1 },
+            { x1: 1, x2: 0, y: 1 },
+            { x1: 1, x2: 1, y: 0 }
+        ];
+
+        let state = {
+            w1: 0.3, w2: -0.2, b: 0.1,
+            epoch: 0,
+            mode: 'perceptron', // or 'hidden'
+            timer: null,
+            // hidden layer params (manually set to a known XOR solution)
+            h1: { w1: 1, w2: 1, b: -0.5 },     // OR
+            h2: { w1: 1, w2: 1, b: -1.5 },     // AND
+            out: { w1: 1, w2: -1, b: -0.5 }    // OR AND-NOT AND
+        };
+
+        function toScreen(x1, x2) {
+            const pad = 40;
+            const sx = pad + (x1 + 0.3) / 1.6 * (w - 2 * pad);
+            const sy = h - (pad + (x2 + 0.3) / 1.6 * (h - 2 * pad));
+            return [sx, sy];
+        }
+
+        function step(z) { return z >= 0 ? 1 : 0; }
+        function sig(z)  { return 1 / (1 + Math.exp(-z)); }
+
+        function predictPerceptron(x1, x2) {
+            return step(state.w1 * x1 + state.w2 * x2 + state.b);
+        }
+
+        function predictHidden(x1, x2) {
+            const a1 = step(state.h1.w1 * x1 + state.h1.w2 * x2 + state.h1.b);
+            const a2 = step(state.h2.w1 * x1 + state.h2.w2 * x2 + state.h2.b);
+            return step(state.out.w1 * a1 + state.out.w2 * a2 + state.out.b);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+
+            // background classification heat-map
+            const cell = 8;
+            for (let px = 0; px < w; px += cell) {
+                for (let py = 0; py < h; py += cell) {
+                    const pad = 40;
+                    const x1 = (px - pad) / (w - 2 * pad) * 1.6 - 0.3;
+                    const x2 = ((h - py) - pad) / (h - 2 * pad) * 1.6 - 0.3;
+                    let p;
+                    if (state.mode === 'perceptron') {
+                        const z = state.w1 * x1 + state.w2 * x2 + state.b;
+                        p = sig(z * 4);
+                    } else {
+                        const a1 = sig((state.h1.w1 * x1 + state.h1.w2 * x2 + state.h1.b) * 4);
+                        const a2 = sig((state.h2.w1 * x1 + state.h2.w2 * x2 + state.h2.b) * 4);
+                        p = sig((state.out.w1 * a1 + state.out.w2 * a2 + state.out.b) * 4);
+                    }
+                    ctx.fillStyle = p > 0.5
+                        ? `rgba(72, 187, 120, ${(p - 0.5) * 0.5})`
+                        : `rgba(245, 101, 101, ${(0.5 - p) * 0.5})`;
+                    ctx.fillRect(px, py, cell, cell);
+                }
+            }
+
+            // axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            const [ox, oy] = toScreen(0, 0);
+            const [ex, ey] = toScreen(1, 1);
+            ctx.beginPath(); ctx.moveTo(ox - 20, oy); ctx.lineTo(ex + 20, oy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ox, oy + 20); ctx.lineTo(ox, ey - 20); ctx.stroke();
+
+            // axis labels
+            ctx.fillStyle = '#cbd5e0';
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('x₁', w - 20, oy + 4);
+            ctx.fillText('x₂', ox, 18);
+
+            // 4 XOR points
+            let correct = 0;
+            data.forEach(p => {
+                const pred = state.mode === 'perceptron'
+                    ? predictPerceptron(p.x1, p.x2)
+                    : predictHidden(p.x1, p.x2);
+                if (pred === p.y) correct++;
+                const [sx, sy] = toScreen(p.x1, p.x2);
+                ctx.beginPath();
+                ctx.arc(sx, sy, 12, 0, Math.PI * 2);
+                ctx.fillStyle = p.y === 1 ? '#48bb78' : '#f56565';
+                ctx.fill();
+                ctx.strokeStyle = pred === p.y ? '#fff' : '#fbd38d';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.y.toString(), sx, sy);
+            });
+            accEl.textContent = `${Math.round(correct / data.length * 100)}%`;
+            epochEl.textContent = state.epoch;
+
+            // mode banner
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(8, h - 28, 200, 22);
+            ctx.fillStyle = '#cbd5e0';
+            ctx.textAlign = 'left';
+            ctx.font = '11px Inter';
+            ctx.fillText(state.mode === 'perceptron'
+                ? 'Single perceptron (will fail)'
+                : 'With hidden layer (XOR solved!)', 14, h - 13);
+        }
+
+        function trainStep() {
+            const lr = 0.1;
+            for (const p of data) {
+                const pred = predictPerceptron(p.x1, p.x2);
+                const err = p.y - pred;
+                state.w1 += lr * err * p.x1;
+                state.w2 += lr * err * p.x2;
+                state.b  += lr * err;
+            }
+            state.epoch++;
+            draw();
+        }
+
+        trainBtn.addEventListener('click', () => {
+            if (state.timer) return;
+            state.mode = 'perceptron';
+            statusEl.textContent = 'oscillating…';
+            state.timer = setInterval(trainStep, 120);
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (state.timer) { clearInterval(state.timer); state.timer = null; }
+            statusEl.textContent = 'stopped';
+        });
+
+        hiddenBtn.addEventListener('click', () => {
+            if (state.timer) { clearInterval(state.timer); state.timer = null; }
+            state.mode = 'hidden';
+            statusEl.textContent = 'XOR solved';
+            draw();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (state.timer) { clearInterval(state.timer); state.timer = null; }
+            state.w1 = Math.random() * 0.4 - 0.2;
+            state.w2 = Math.random() * 0.4 - 0.2;
+            state.b  = Math.random() * 0.4 - 0.2;
+            state.epoch = 0;
+            state.mode = 'perceptron';
+            statusEl.textContent = 'idle';
+            draw();
+        });
+
+        window.addEventListener('resize', () => {
+            ({ ctx, w, h } = initCanvas(canvas));
+            draw();
+        });
+
+        draw();
+    })();
+
+    // ------------------------------------------------------------
+    //  QUIZ HANDLER
+    // ------------------------------------------------------------
+    document.querySelectorAll('.quiz-block').forEach(block => {
+        const correct = parseInt(block.dataset.correct, 10);
+        const opts = block.querySelectorAll('.quiz-option');
+        const okFb = block.querySelector('.quiz-block__feedback--correct');
+        const noFb = block.querySelector('.quiz-block__feedback--wrong');
+        opts.forEach(opt => {
+            opt.addEventListener('click', () => {
+                const idx = parseInt(opt.dataset.idx, 10);
+                opts.forEach(o => o.classList.remove('selected', 'correct', 'wrong'));
+                if (idx === correct) {
+                    opt.classList.add('correct');
+                    if (okFb) okFb.classList.add('show');
+                    if (noFb) noFb.classList.remove('show');
+                } else {
+                    opt.classList.add('wrong');
+                    if (noFb) noFb.classList.add('show');
+                    if (okFb) okFb.classList.remove('show');
+                }
+            });
+        });
+    });
+
+    // ------------------------------------------------------------
+    //  SCROLL PROGRESS BAR
+    // ------------------------------------------------------------
+    (function scrollProg() {
+        const bar = document.getElementById('scroll-progress');
+        if (!bar) return;
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement;
+            const pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+            bar.style.width = `${pct}%`;
+        });
+    })();
+    </script>
+</body>
+</html>

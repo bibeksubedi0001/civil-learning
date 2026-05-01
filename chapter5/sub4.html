@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.4 BERT &amp; Encoder Models | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore BERT and encoder-only Transformer models through a civil engineering lens. Learn masked language modelling, next sentence prediction, fine-tuning, tokenization, and variants like RoBERTa, ALBERT, and DistilBERT with interactive demos.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-microchip"></i> Chapter 5 &mdash; Sub-chapter 5.4
+            </div>
+            <h1 class="chapter-hero__title">BERT &amp; Encoder Models</h1>
+            <p class="chapter-hero__subtitle">
+                In 2018, Google introduced BERT &mdash; Bidirectional Encoder
+                Representations from Transformers &mdash; and shattered every NLP
+                benchmark simultaneously. By reading text in <strong>both
+                directions</strong> and learning deep contextual representations, BERT
+                demonstrated that a single pre-trained model could be fine-tuned for
+                virtually any language-understanding task, from document classification
+                to named entity recognition.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY BERT MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-bert-matters">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scroll"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Paper That Redefined NLP (2018)</h2>
+                        <p>
+                            In October 2018, Devlin et al. at Google AI published
+                            <em>"BERT: Pre-training of Deep Bidirectional Transformers for
+                            Language Understanding."</em> The central insight was deceptively
+                            simple: take the Transformer encoder (which we explored in
+                            Sub-chapter 5.3), train it on massive unlabelled text with two
+                            clever self-supervised tasks, and then <strong>fine-tune</strong>
+                            the same model for dozens of downstream tasks with minimal
+                            task-specific architecture changes.
+                        </p>
+                        <p>
+                            BERT achieved state-of-the-art results on 11 NLP benchmarks
+                            simultaneously, some by enormous margins. It was the beginning
+                            of the <strong>"pre-train, then fine-tune"</strong> paradigm
+                            that now dominates modern AI.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Before BERT, NLP models were typically trained from scratch for each
+                    task. A sentiment classifier was a different model from a named entity
+                    recogniser, which was different from a question-answering system. BERT
+                    changed this: one <strong>general-purpose language understanding
+                    model</strong> could be adapted to all of these tasks, much as a
+                    well-educated civil engineer can apply their fundamental knowledge to
+                    structural design, geotechnical analysis, or project management.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with the Transformer encoder
+                        architecture from Sub-chapter 5.3: multi-head self-attention,
+                        feed-forward layers, residual connections, and layer normalisation.
+                        BERT is built entirely from Transformer encoder layers &mdash; it
+                        discards the decoder.
+                    </p>
+                </div>
+
+                <h3>Why BERT Matters for Civil Engineers</h3>
+
+                <p>
+                    BERT and its variants power the NLP tools that are increasingly
+                    entering the construction industry. Automated classification of
+                    construction documents (specifications, RFIs, submittals, daily
+                    reports), extraction of named entities from engineering texts (material
+                    names, structural members, code references), and sentiment analysis of
+                    safety reports all rely on encoder-based models. Understanding how BERT
+                    works allows you to evaluate these tools, anticipate their limitations,
+                    and communicate effectively with the data science teams deploying them
+                    on your projects.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE CE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Pre-Trained Inspector Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>BERT is like a highly experienced construction
+                            inspector who has spent years reading every type of engineering
+                            document.</strong> During their career (pre-training), this
+                            inspector has read hundreds of thousands of specifications,
+                            inspection reports, RFIs, change orders, safety plans, and
+                            design drawings. They have never been told what to look for
+                            specifically &mdash; they have simply developed a deep
+                            understanding of engineering language, technical vocabulary,
+                            document structure, and how different concepts relate.
+                        </p>
+                        <p>
+                            When you assign this inspector to a new project (fine-tuning),
+                            you do not need to teach them engineering from scratch. You
+                            simply say: "On this project, I need you to flag safety
+                            violations" (a classification task) or "I need you to identify
+                            every concrete mix reference" (a named entity recognition task).
+                            With just a brief orientation and a few examples, the inspector
+                            can apply their deep general knowledge to the specific task.
+                        </p>
+                        <p>
+                            The <strong>bidirectional</strong> nature of BERT means the
+                            inspector reads each sentence considering both the words that
+                            come before <em>and</em> after the current word. When they
+                            encounter the word "column" in a sentence, they look both left
+                            and right to determine whether it refers to a structural column,
+                            a column in a spreadsheet, or a column of text.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This analogy captures the two-phase nature of BERT: an expensive,
+                    one-time pre-training phase (the inspector's years of experience), and
+                    a cheap, fast fine-tuning phase (the project-specific orientation).
+                    The pre-training captures general language understanding; fine-tuning
+                    directs it towards a specific task.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: ENCODER-ONLY ARCHITECTURE
+             ========================================== -->
+        <section class="ch-section" id="encoder-only">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    The Encoder-Only Architecture
+                </h2>
+
+                <p>
+                    In Sub-chapter 5.3 we saw that the original Transformer has both an
+                    encoder and a decoder. BERT makes a decisive architectural choice: it
+                    <strong>uses only the encoder stack</strong>. The decoder, with its
+                    masked self-attention and autoregressive generation, is discarded
+                    entirely.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bars-stacked"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>BERT Architecture Summary</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>BERT-Base:</strong> 12 encoder layers, 768 hidden dimensions, 12 attention heads, 110M parameters</li>
+                            <li><strong>BERT-Large:</strong> 24 encoder layers, 1024 hidden dimensions, 16 attention heads, 340M parameters</li>
+                            <li><strong>Maximum sequence length:</strong> 512 tokens</li>
+                            <li><strong>Vocabulary size:</strong> 30,522 tokens (WordPiece)</li>
+                            <li><strong>Positional embeddings:</strong> Learned (not sinusoidal)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    The lack of a decoder means BERT cannot generate text autoregressively
+                    (that is GPT's domain, covered in Sub-chapter 5.5). Instead, BERT
+                    excels at <strong>understanding</strong> tasks: reading a piece of text
+                    and producing a rich representation of its meaning. Every token in the
+                    input receives a contextualised embedding that captures its meaning
+                    <em>within the context of the entire sequence</em>.
+                </p>
+
+                <h3>Why Encoder-Only?</h3>
+
+                <p>
+                    The critical advantage is <strong>bidirectionality</strong>. The
+                    encoder's self-attention has no causal mask &mdash; every token can
+                    attend to every other token in the sequence, both left and right. This
+                    means BERT can use the <em>full context</em> when representing any
+                    word. Compare this to a left-to-right decoder (like GPT), where each
+                    token can only see the tokens that came before it.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Bidirectional attention is like reading a construction
+                            specification with the full document open in front of you.</strong>
+                            When you encounter a reference to "the reinforcement described in
+                            Section 3.2," you can flip forward to Section 3.2 to understand it.
+                            A unidirectional model would be like reading the spec one page at
+                            a time, with all future pages hidden &mdash; you would have to
+                            guess what Section 3.2 says until you reached it.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: INPUT REPRESENTATION
+             ========================================== -->
+        <section class="ch-section" id="input-representation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-keyboard"></i>
+                    Input Representation &amp; Special Tokens
+                </h2>
+
+                <p>
+                    BERT's input format is carefully designed to handle both single
+                    sentences and sentence pairs. Every input sequence begins with a
+                    special <code>[CLS]</code> (classification) token and sentence
+                    boundaries are marked with <code>[SEP]</code> (separator) tokens.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-brackets-curly"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The [CLS] Token</h3>
+                        <p>
+                            The <code>[CLS]</code> token is prepended to every input
+                            sequence. After passing through all encoder layers, the final
+                            hidden state of <code>[CLS]</code> serves as the
+                            <strong>aggregate sequence representation</strong> for
+                            classification tasks. Because self-attention allows
+                            <code>[CLS]</code> to attend to every other token in the
+                            sequence, its final representation captures information from
+                            the entire input.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Input Embeddings</h3>
+
+                <p>
+                    BERT's input representation is the sum of three embeddings:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Three-Part Embedding</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Token Embedding:</strong> A learned vector for each token in the vocabulary (30,522 tokens via WordPiece tokenization)</li>
+                            <li><strong>Segment Embedding:</strong> Indicates whether the token belongs to Sentence A or Sentence B (for sentence-pair tasks). All tokens in the first sentence get embedding E<sub>A</sub>, all tokens in the second get E<sub>B</sub></li>
+                            <li><strong>Position Embedding:</strong> A learned embedding for each position (0 to 511), unlike the sinusoidal encoding in the original Transformer</li>
+                        </ol>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:12px;">
+                            Input = TokenEmbed + SegmentEmbed + PositionEmbed
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Example Input Format</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Single Sentence</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2; margin:8px 0; word-break:break-all;">
+                            [CLS] The concrete compressive strength is 40 MPa [SEP]
+                        </p>
+                        <h3 style="margin-top:16px;">Sentence Pair</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:2; margin:8px 0; word-break:break-all;">
+                            [CLS] The beam span is 12 metres [SEP] The deflection limit is L/250 [SEP]
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: WORDPIECE TOKENIZATION
+             ========================================== -->
+        <section class="ch-section" id="wordpiece">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scissors"></i>
+                    WordPiece Tokenization
+                </h2>
+
+                <p>
+                    BERT does not operate on words directly. Instead, it uses
+                    <strong>WordPiece tokenization</strong>, a subword tokenization
+                    algorithm that breaks text into a mix of whole words and word
+                    fragments. This gives BERT a fixed vocabulary of 30,522 tokens while
+                    still being able to represent any word &mdash; even rare technical
+                    terms it has never seen.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How WordPiece Works</h3>
+                        <p>
+                            Common words remain as single tokens. Rare or compound words
+                            are split into subword pieces, with continuation pieces prefixed
+                            by <code>##</code>.
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>"concrete"</strong> &rarr; <code>concrete</code> (common word, single token)</li>
+                            <li><strong>"prestressed"</strong> &rarr; <code>pre</code> <code>##stressed</code> (split into subwords)</li>
+                            <li><strong>"geotechnical"</strong> &rarr; <code>ge</code> <code>##ote</code> <code>##ch</code> <code>##nic</code> <code>##al</code> (rare term, multiple pieces)</li>
+                            <li><strong>"MPa"</strong> &rarr; <code>mp</code> <code>##a</code> (engineering unit)</li>
+                        </ul>
+                        <p>
+                            The <code>##</code> prefix signals that this piece should be
+                            attached to the previous token when reconstructing the original
+                            word. This approach balances vocabulary size with coverage:
+                            BERT can represent any text using a manageable vocabulary.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>WordPiece is like a standardised parts catalogue for
+                            prefabricated construction.</strong> Common components (beams,
+                            columns, slabs) are stocked as single units. Unusual components
+                            are assembled from standard sub-parts. You do not need to stock
+                            every possible beam size &mdash; you keep a fixed set of
+                            standard sections and combine them as needed. Similarly,
+                            WordPiece keeps a fixed vocabulary but can represent any word
+                            by combining subword pieces.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Tokenization Trade-off</span>
+                    </div>
+                    <p>
+                        When BERT splits a rare technical term into many subword pieces,
+                        each piece consumes one of the 512 available positions. A heavily
+                        jargon-laden construction document may exhaust the sequence length
+                        faster than general text. This is one reason why domain-specific
+                        BERT variants (like SciBERT or construction-domain models) use
+                        vocabularies better suited to technical text.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: PRE-TRAINING TASK 1 — MLM
+             ========================================== -->
+        <section class="ch-section" id="masked-language-modelling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mask"></i>
+                    Pre-Training Task 1: Masked Language Modelling (MLM)
+                </h2>
+
+                <p>
+                    The first and most important pre-training task is <strong>Masked
+                    Language Modelling</strong> (MLM). During pre-training, BERT randomly
+                    selects 15% of the input tokens and replaces them with a special
+                    <code>[MASK]</code> token. The model must then predict the original
+                    token at each masked position, using the surrounding context in both
+                    directions.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>MLM Procedure</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>Randomly select 15% of tokens in the input</li>
+                            <li>Of those selected:
+                                <ul style="padding-left:20px; margin-top:4px;">
+                                    <li>80% are replaced with <code>[MASK]</code></li>
+                                    <li>10% are replaced with a random token</li>
+                                    <li>10% are left unchanged</li>
+                                </ul>
+                            </li>
+                            <li>The model predicts the <strong>original</strong> token at each selected position</li>
+                            <li>Loss is computed only on the selected positions, not the entire sequence</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h3>Why the 80/10/10 Split?</h3>
+
+                <p>
+                    If BERT only ever saw <code>[MASK]</code> tokens during pre-training,
+                    it would learn representations optimised for masked inputs. But during
+                    fine-tuning and inference, there are no <code>[MASK]</code> tokens.
+                    The 10% random replacement and 10% unchanged tokens force BERT to
+                    maintain good representations for <em>all</em> tokens, not just masked
+                    ones, reducing the mismatch between pre-training and fine-tuning.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>MLM Example &mdash; Construction Context</h3>
+                        <p style="margin:8px 0; line-height:2;">
+                            <strong>Original:</strong>
+                            <span style="font-family:'JetBrains Mono',monospace; font-size:0.85rem;">
+                                The steel reinforcement shall have a minimum yield strength of 500 MPa
+                            </span>
+                        </p>
+                        <p style="margin:8px 0; line-height:2;">
+                            <strong>Masked:</strong>
+                            <span style="font-family:'JetBrains Mono',monospace; font-size:0.85rem;">
+                                The steel [MASK] shall have a minimum [MASK] strength of 500 MPa
+                            </span>
+                        </p>
+                        <p>
+                            BERT must predict "reinforcement" and "yield" from the
+                            surrounding context. To do this correctly, it must understand
+                            construction vocabulary, typical specification phrasing, and the
+                            relationship between steel, reinforcement, yield strength, and
+                            units.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>MLM is like a cloze test for engineering
+                            students.</strong> Imagine covering random words in a
+                            structural design calculation and asking a student to fill in
+                            the blanks. A student who has studied extensively can fill in
+                            "moment" when they see "___ = wL&sup2;/8" or "deflection" when
+                            they see "the maximum ___ shall not exceed L/250." The ability
+                            to fill these blanks demonstrates deep understanding of the
+                            subject matter, not just memorisation.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: PRE-TRAINING TASK 2 — NSP
+             ========================================== -->
+        <section class="ch-section" id="next-sentence-prediction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    Pre-Training Task 2: Next Sentence Prediction (NSP)
+                </h2>
+
+                <p>
+                    The second pre-training task is <strong>Next Sentence Prediction</strong>
+                    (NSP). Many NLP tasks (question answering, natural language inference)
+                    require understanding the <em>relationship between two sentences</em>.
+                    MLM alone captures token-level context but not inter-sentence
+                    relationships.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>NSP Procedure</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>Take a pair of sentences (A, B) from the training corpus</li>
+                            <li>50% of the time, B is the <strong>actual next sentence</strong> after A (label: <code>IsNext</code>)</li>
+                            <li>50% of the time, B is a <strong>random sentence</strong> from the corpus (label: <code>NotNext</code>)</li>
+                            <li>The model uses the [CLS] token representation to predict whether B follows A</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>NSP Example &mdash; Construction Context</h3>
+                        <p style="margin:8px 0; line-height:2;">
+                            <strong>IsNext (positive):</strong><br>
+                            <span style="font-family:'JetBrains Mono',monospace; font-size:0.82rem;">
+                                A: "The foundation shall be designed for a bearing capacity of 200 kPa."<br>
+                                B: "Plate load tests shall be conducted to verify the design assumptions."
+                            </span>
+                        </p>
+                        <p style="margin:8px 0; line-height:2;">
+                            <strong>NotNext (negative):</strong><br>
+                            <span style="font-family:'JetBrains Mono',monospace; font-size:0.82rem;">
+                                A: "The foundation shall be designed for a bearing capacity of 200 kPa."<br>
+                                B: "Traffic signal timing shall comply with local authority requirements."
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>NSP Controversy</span>
+                    </div>
+                    <p>
+                        Later research (notably RoBERTa) showed that NSP may actually
+                        <strong>hurt</strong> performance on some tasks. The issue is that
+                        the "NotNext" examples are too easy &mdash; randomly sampled
+                        sentences are usually from completely different topics, so the model
+                        learns to detect topic shifts rather than logical coherence. RoBERTa
+                        removes NSP entirely and achieves better results. We discuss this
+                        in the Variants section below.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: PRE-TRAINING DATA & PROCEDURE
+             ========================================== -->
+        <section class="ch-section" id="pretraining-data">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-database"></i>
+                    Pre-Training Data &amp; Procedure
+                </h2>
+
+                <p>
+                    BERT was pre-trained on two large text corpora:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Training Corpora</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>BooksCorpus:</strong> 800M words from unpublished books (diverse writing styles and long-form text)</li>
+                            <li><strong>English Wikipedia:</strong> 2,500M words (factual, structured, encyclopaedic text)</li>
+                        </ul>
+                        <p>
+                            Combined: approximately 3.3 billion words of English text.
+                            Pre-training BERT-Large took <strong>4 days on 64 TPUs</strong>
+                            &mdash; a computational expense that few organisations could
+                            afford in 2018. This is why the pre-train/fine-tune paradigm is
+                            so powerful: Google bears the pre-training cost once, and
+                            everyone benefits by fine-tuning.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Pre-Training Configuration</h3>
+
+                <p>
+                    BERT was trained for 1,000,000 steps with a batch size of 256
+                    sequences, each up to 512 tokens. The learning rate was warmed up over
+                    the first 10,000 steps, then linearly decayed. The Adam optimiser was
+                    used with weight decay regularisation. The total pre-training loss is
+                    the sum of the MLM loss and the NSP loss.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Pre-training is like a civil engineering degree
+                            programme.</strong> The university (Google) invests enormous
+                            resources to teach fundamental principles: structural mechanics,
+                            soil mechanics, fluid dynamics, materials science. No specific
+                            project is in mind &mdash; the goal is to produce a broadly
+                            competent engineer. Fine-tuning is the first six months on a
+                            real project, where the engineer quickly adapts their general
+                            knowledge to the specific project's context, codes, and
+                            requirements.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: FINE-TUNING
+             ========================================== -->
+        <section class="ch-section" id="fine-tuning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Fine-Tuning for Downstream Tasks
+                </h2>
+
+                <p>
+                    Fine-tuning is remarkably simple. You take the pre-trained BERT model,
+                    add a small task-specific output layer on top, and train the
+                    <strong>entire model</strong> (BERT + output layer) on your labelled
+                    data for a few epochs. The pre-trained weights provide excellent
+                    initialisation, so fine-tuning is fast and requires relatively little
+                    data.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Fine-Tuning Tasks</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li>
+                                <strong>Sequence Classification</strong> (e.g., document type):
+                                Use [CLS] hidden state &rarr; linear layer &rarr; softmax over classes
+                            </li>
+                            <li>
+                                <strong>Token Classification / NER</strong> (e.g., entity extraction):
+                                Use each token's hidden state &rarr; linear layer &rarr; label per token
+                            </li>
+                            <li>
+                                <strong>Sentence Pair Classification</strong> (e.g., textual entailment):
+                                Input both sentences with [SEP] &rarr; [CLS] hidden state &rarr; classify relationship
+                            </li>
+                            <li>
+                                <strong>Question Answering</strong> (extractive):
+                                Input question + passage &rarr; predict start and end positions of the answer span
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Fine-Tuning Hyperparameters</h3>
+
+                <p>
+                    The BERT paper recommends these hyperparameter ranges for fine-tuning:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Recommended Ranges</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Learning rate:</strong> 2e-5, 3e-5, or 5e-5</li>
+                            <li><strong>Batch size:</strong> 16 or 32</li>
+                            <li><strong>Epochs:</strong> 2, 3, or 4</li>
+                            <li><strong>Warm-up:</strong> 10% of total steps</li>
+                        </ul>
+                        <p>
+                            Fine-tuning typically takes <strong>minutes to hours</strong> on
+                            a single GPU, compared to the days on 64 TPUs required for
+                            pre-training. This dramatic asymmetry is the key practical
+                            benefit of the transfer learning approach.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building"></i>
+                    Civil Engineering Applications
+                </h2>
+
+                <p>
+                    BERT-based models are already being applied to construction and civil
+                    engineering tasks. Here are three practical applications that
+                    demonstrate the power of encoder models in the built environment.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Application 1: Document Classification</h3>
+                        <p>
+                            Construction projects generate thousands of documents:
+                            specifications, shop drawings, RFIs (Requests for Information),
+                            submittals, daily reports, change orders, safety reports, and
+                            meeting minutes. A BERT-based classifier can automatically
+                            categorise incoming documents by type, routing them to the
+                            correct team member.
+                        </p>
+                        <p>
+                            <strong>How it works:</strong> Fine-tune BERT for sequence
+                            classification. The [CLS] token's final hidden state is fed
+                            through a linear layer with as many outputs as document types.
+                            A softmax produces a probability distribution over categories.
+                            With just a few hundred labelled examples per category, the
+                            model achieves high accuracy because the pre-trained
+                            representations already understand document structure and
+                            engineering vocabulary.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Application 2: Named Entity Recognition (NER)</h3>
+                        <p>
+                            Extracting structured information from unstructured construction
+                            text is a major pain point. BERT-based NER can identify and
+                            classify entities such as:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Materials:</strong> "Grade 60 rebar", "C40/50 concrete", "S355 steel"</li>
+                            <li><strong>Structural members:</strong> "Column C-14", "Beam B-2A", "Pile P-07"</li>
+                            <li><strong>Dimensions:</strong> "12.5 metres", "300 mm diameter", "25 kN/m"</li>
+                            <li><strong>Code references:</strong> "ACI 318-19", "Eurocode 2", "IS 456:2000"</li>
+                            <li><strong>Locations:</strong> "Level 3", "Grid Line F", "North abutment"</li>
+                        </ul>
+                        <p>
+                            Each token in the input receives a label (e.g., B-Material,
+                            I-Material, O for outside). The BIO tagging scheme is used:
+                            B = beginning of entity, I = inside entity, O = outside any
+                            entity.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Application 3: Sentiment / Safety Analysis</h3>
+                        <p>
+                            Safety reports, incident logs, and toolbox talk records contain
+                            valuable signals about site safety culture. A BERT model
+                            fine-tuned for sentiment analysis can classify the tone and
+                            urgency of safety reports:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Critical:</strong> "Worker fell from scaffolding without harness"</li>
+                            <li><strong>Warning:</strong> "Multiple workers observed without hard hats in zone B"</li>
+                            <li><strong>Positive:</strong> "Excellent compliance with fall protection protocols this week"</li>
+                            <li><strong>Neutral:</strong> "Weekly safety inspection completed on schedule"</li>
+                        </ul>
+                        <p>
+                            By processing hundreds of daily reports, the model can track
+                            safety sentiment trends over time, flagging periods of
+                            declining safety culture before incidents occur.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: DEMO 1 — MASKED LANGUAGE MODEL SIMULATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-mlm">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Masked Language Model Simulator
+                </h2>
+
+                <p>
+                    The demo below simulates the Masked Language Model (MLM) task. Select a
+                    sentence from the construction domain, see which words are masked, and
+                    watch the model's predictions. You can also click individual words to
+                    mask or unmask them manually.
+                </p>
+
+                <div class="demo-panel" id="mlm-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-mask"></i>
+                        <span>Masked Language Model &mdash; Click words to mask/unmask</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Sentence:</label>
+                        <select id="mlm-sentence-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer; max-width:400px;">
+                            <option value="0">The steel reinforcement shall have a minimum yield strength of 500 MPa</option>
+                            <option value="1">Concrete cover to the reinforcement shall be 40 mm for exposed conditions</option>
+                            <option value="2">The beam deflection shall not exceed span divided by 250 under service loads</option>
+                            <option value="3">Foundation piles shall be driven to a minimum depth of 15 metres below ground level</option>
+                            <option value="4">All structural welds shall be inspected using ultrasonic testing methods</option>
+                            <option value="5">The compressive strength of concrete shall reach 30 MPa at 28 days</option>
+                        </select>
+                        <button id="mlm-random-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-shuffle"></i> Random Mask
+                        </button>
+                        <button id="mlm-predict-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Predict
+                        </button>
+                    </div>
+                    <canvas id="mlm-canvas" style="width:100%; height:380px; border-radius:8px;"></canvas>
+                    <p id="mlm-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Click on words to mask/unmask them, or press "Random Mask" to randomly mask ~15% of tokens. Then press "Predict" to see the model's top predictions.
+                    </p>
+                </div>
+
+                <p>
+                    Notice how the predictions are context-dependent. The word predicted
+                    for a masked position depends on <em>all</em> the surrounding words
+                    &mdash; both to the left and to the right. This is the power of
+                    bidirectional context.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: BERT VARIANTS
+             ========================================== -->
+        <section class="ch-section" id="variants">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-branch"></i>
+                    BERT Variants
+                </h2>
+
+                <p>
+                    After BERT's release, researchers quickly developed improved variants
+                    that addressed its limitations. Understanding these variants helps you
+                    choose the right model for your application.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>RoBERTa (Robustly Optimised BERT)</h3>
+                        <p>
+                            Facebook AI's RoBERTa (2019) showed that BERT was significantly
+                            <strong>undertrained</strong>. By making four key changes,
+                            RoBERTa outperformed BERT-Large on every benchmark:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Remove NSP:</strong> The next sentence prediction task was found to hurt performance</li>
+                            <li><strong>Dynamic masking:</strong> Generate a new random mask for each training example each epoch, instead of using a fixed mask</li>
+                            <li><strong>More data:</strong> Train on 160GB of text (10x BERT's data)</li>
+                            <li><strong>Longer training:</strong> Train for more steps with larger batches</li>
+                        </ul>
+                        <p>
+                            The lesson: the Transformer architecture was not the bottleneck
+                            &mdash; BERT's original training recipe was simply not
+                            aggressive enough.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>ALBERT (A Lite BERT)</h3>
+                        <p>
+                            Google's ALBERT (2019) tackled the <strong>parameter
+                            efficiency</strong> problem. BERT-Large has 340M parameters,
+                            making it expensive to deploy. ALBERT introduces two
+                            innovations:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Factorised embedding parameters:</strong> Instead of projecting directly from vocabulary size (30K) to hidden size (768/1024), ALBERT uses a smaller embedding dimension (128) and then projects up. This reduces embedding parameters from 30K &times; 1024 to 30K &times; 128 + 128 &times; 1024</li>
+                            <li><strong>Cross-layer parameter sharing:</strong> All encoder layers share the same parameters. The model has the depth of 12 (or 24) layers but the parameter count of a single layer</li>
+                        </ul>
+                        <p>
+                            ALBERT-xxlarge achieves better results than BERT-Large with
+                            70% fewer parameters. It also replaces NSP with a harder
+                            <strong>Sentence Order Prediction</strong> (SOP) task: predict
+                            whether two consecutive sentences are in the correct order or
+                            swapped.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-feather"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>DistilBERT (Distilled BERT)</h3>
+                        <p>
+                            Hugging Face's DistilBERT (2019) uses <strong>knowledge
+                            distillation</strong> to create a smaller, faster model that
+                            retains most of BERT's performance:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>6 layers</strong> instead of 12 (50% of the architecture)</li>
+                            <li><strong>66M parameters</strong> (60% of BERT-Base's 110M)</li>
+                            <li><strong>60% faster</strong> inference</li>
+                            <li>Retains <strong>97% of BERT's performance</strong> on GLUE benchmarks</li>
+                        </ul>
+                        <p>
+                            Knowledge distillation works by training the smaller "student"
+                            model to mimic the probability distributions produced by the
+                            larger "teacher" model (BERT), rather than learning from hard
+                            labels alone. The teacher's soft probability distributions
+                            contain richer information (dark knowledge) than simple one-hot
+                            labels.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Comparison Table</h3>
+
+                <div style="overflow-x:auto; margin:24px 0;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border-active);">
+                                <th style="text-align:left; padding:12px 16px; color:var(--accent-primary);">Model</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Layers</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Hidden</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">Params</th>
+                                <th style="text-align:center; padding:12px 16px; color:var(--accent-primary);">NSP?</th>
+                                <th style="text-align:left; padding:12px 16px; color:var(--accent-primary);">Key Innovation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                <td style="padding:10px 16px; font-weight:600;">BERT-Base</td>
+                                <td style="padding:10px 16px; text-align:center;">12</td>
+                                <td style="padding:10px 16px; text-align:center;">768</td>
+                                <td style="padding:10px 16px; text-align:center;">110M</td>
+                                <td style="padding:10px 16px; text-align:center;">Yes</td>
+                                <td style="padding:10px 16px;">Bidirectional pre-training</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid var(--border-subtle);">
+                                <td style="padding:10px 16px; font-weight:600;">BERT-Large</td>
+                                <td style="padding:10px 16px; text-align:center;">24</td>
+                                <td style="padding:10px 16px; text-align:center;">1024</td>
+                                <td style="padding:10px 16px; text-align:center;">340M</td>
+                                <td style="padding:10px 16px; text-align:center;">Yes</td>
+                                <td style="padding:10px 16px;">Scale up BERT-Base</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                <td style="padding:10px 16px; font-weight:600;">RoBERTa</td>
+                                <td style="padding:10px 16px; text-align:center;">24</td>
+                                <td style="padding:10px 16px; text-align:center;">1024</td>
+                                <td style="padding:10px 16px; text-align:center;">355M</td>
+                                <td style="padding:10px 16px; text-align:center;">No</td>
+                                <td style="padding:10px 16px;">Better training recipe</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid var(--border-subtle);">
+                                <td style="padding:10px 16px; font-weight:600;">ALBERT-xxl</td>
+                                <td style="padding:10px 16px; text-align:center;">12</td>
+                                <td style="padding:10px 16px; text-align:center;">4096</td>
+                                <td style="padding:10px 16px; text-align:center;">235M</td>
+                                <td style="padding:10px 16px; text-align:center;">SOP</td>
+                                <td style="padding:10px 16px;">Shared params, factorised embed</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                <td style="padding:10px 16px; font-weight:600;">DistilBERT</td>
+                                <td style="padding:10px 16px; text-align:center;">6</td>
+                                <td style="padding:10px 16px; text-align:center;">768</td>
+                                <td style="padding:10px 16px; text-align:center;">66M</td>
+                                <td style="padding:10px 16px; text-align:center;">No</td>
+                                <td style="padding:10px 16px;">Knowledge distillation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: DEMO 2 — FINE-TUNING VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-finetune">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Fine-Tuning Visualiser
+                </h2>
+
+                <p>
+                    The visualiser below shows how a pre-trained BERT model is adapted for
+                    a <strong>document classification</strong> task. Watch how the encoder
+                    layers process an input document and the classification head produces a
+                    prediction. Use the controls to step through training epochs and observe
+                    how the model's confidence evolves.
+                </p>
+
+                <div class="demo-panel" id="finetune-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Fine-Tuning Visualiser &mdash; BERT for Document Classification</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Document:</label>
+                        <select id="ft-doc-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer; max-width:340px;">
+                            <option value="0">Specification (concrete mix design)</option>
+                            <option value="1">Daily Report (site progress)</option>
+                            <option value="2">RFI (reinforcement detail query)</option>
+                            <option value="3">Safety Report (fall protection incident)</option>
+                        </select>
+                        <label style="font-size:0.85rem; color:var(--text-secondary); margin-left:8px;">Epoch:</label>
+                        <input type="range" id="ft-epoch-slider" min="0" max="4" value="0" style="width:120px; cursor:pointer;">
+                        <span id="ft-epoch-label" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); min-width:14px;">0</span>
+                        <button id="ft-animate-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600; margin-left:auto;">
+                            <i class="fa-solid fa-play"></i> Animate
+                        </button>
+                    </div>
+                    <canvas id="ft-canvas" style="width:100%; height:440px; border-radius:8px;"></canvas>
+                    <p id="ft-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Epoch 0 = pre-trained model (no fine-tuning). Slide to higher epochs to see the classification head's confidence improve as the model fine-tunes.
+                    </p>
+                </div>
+
+                <p>
+                    Key observations: at Epoch 0 (no fine-tuning), the model's predictions
+                    are essentially random across the four document types. By Epoch 2-3,
+                    the model has learned to map the [CLS] representation to the correct
+                    class with high confidence. The pre-trained encoder layers change only
+                    slightly during fine-tuning &mdash; most of the adaptation happens in
+                    the new classification head.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: LIMITATIONS
+             ========================================== -->
+        <section class="ch-section" id="limitations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Limitations of BERT
+                </h2>
+
+                <p>
+                    Despite its transformative impact, BERT has important limitations that
+                    you should understand as a practitioner.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Limitations</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li>
+                                <strong>512-token limit:</strong> BERT cannot process
+                                sequences longer than 512 tokens. A typical construction
+                                specification section can easily exceed this. Longer
+                                documents must be chunked and processed in pieces, losing
+                                cross-chunk context.
+                            </li>
+                            <li>
+                                <strong>No text generation:</strong> BERT is an encoder
+                                &mdash; it produces representations, not text. It cannot
+                                write specifications, generate reports, or answer questions
+                                in natural language. For generation, you need decoder models
+                                like GPT (Sub-chapter 5.5).
+                            </li>
+                            <li>
+                                <strong>Pre-training/fine-tuning mismatch:</strong> The
+                                <code>[MASK]</code> token appears during pre-training but
+                                never during fine-tuning or inference. The 80/10/10 strategy
+                                mitigates this but does not eliminate it.
+                            </li>
+                            <li>
+                                <strong>Independence assumption in MLM:</strong> BERT
+                                predicts each masked token independently. If two masked
+                                tokens are "New" and "York," BERT might predict "New Delhi"
+                                and "New York" for the two positions independently, because
+                                it does not model the joint probability.
+                            </li>
+                            <li>
+                                <strong>Domain gap:</strong> BERT was pre-trained on
+                                Wikipedia and books &mdash; not on construction documents,
+                                engineering standards, or technical specifications. Its
+                                vocabulary and learned representations may not capture
+                                domain-specific nuances without additional pre-training or
+                                fine-tuning on in-domain data.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Domain-Specific Models</span>
+                    </div>
+                    <p>
+                        To address the domain gap, researchers have pre-trained BERT
+                        variants on domain-specific corpora: SciBERT (scientific text),
+                        BioBERT (biomedical), LegalBERT (legal documents), and
+                        ConstructBERT-style models for the construction industry. These
+                        models learn domain-specific vocabulary and relationships that
+                        general BERT misses.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of BERT and encoder models with these four
+                    questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What percentage of input tokens does BERT randomly select for
+                            masking during the Masked Language Modelling (MLM) pre-training
+                            task?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>5%</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz1" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>15%</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>25%</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>50%</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> BERT randomly selects 15% of the
+                            input tokens. Of those, 80% are replaced with [MASK], 10% with
+                            a random token, and 10% are left unchanged. This 80/10/10
+                            strategy helps reduce the mismatch between pre-training and
+                            fine-tuning.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            Which BERT variant demonstrated that removing the Next Sentence
+                            Prediction (NSP) task and training longer with more data leads
+                            to better performance?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>ALBERT</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>DistilBERT</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz2" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>RoBERTa</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>GPT-2</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> RoBERTa (Robustly Optimised BERT
+                            Pretraining Approach) by Facebook AI showed that BERT was
+                            undertrained. By removing NSP, using dynamic masking, training
+                            on 10x more data, and training longer, RoBERTa outperformed
+                            BERT-Large on every benchmark.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            In a BERT-based document classification system for construction,
+                            which token's final hidden state is typically used as the input
+                            to the classification head?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz3" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>The [CLS] token</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>The [SEP] token</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>The last token in the sequence</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>The average of all token hidden states</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: A.</strong> The [CLS] token is prepended to
+                            every input and its final hidden state serves as the aggregate
+                            sequence representation. Because self-attention allows [CLS] to
+                            attend to every other token, it captures information from the
+                            entire input, making it suitable for sequence-level classification
+                            tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            DistilBERT retains approximately what percentage of BERT-Base's
+                            performance while being 60% faster?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>80%</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>90%</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz4" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>97%</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>100%</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> DistilBERT retains 97% of
+                            BERT-Base's performance on GLUE benchmarks while using only
+                            6 layers (vs. 12), 66M parameters (vs. 110M), and achieving
+                            60% faster inference. This makes it practical for deployment
+                            on resource-constrained systems common in construction site
+                            environments.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li>
+                                <strong>BERT</strong> is an encoder-only Transformer that
+                                reads text bidirectionally, producing deep contextualised
+                                representations for every token.
+                            </li>
+                            <li>
+                                <strong>Pre-training</strong> uses two self-supervised
+                                tasks: Masked Language Modelling (MLM) and Next Sentence
+                                Prediction (NSP), training on billions of words of
+                                unlabelled text.
+                            </li>
+                            <li>
+                                <strong>Fine-tuning</strong> adds a thin task-specific
+                                layer on top and trains the entire model on labelled data,
+                                achieving strong results with small datasets and minimal
+                                computation.
+                            </li>
+                            <li>
+                                The <strong>[CLS] token</strong> provides an aggregate
+                                sequence representation for classification, while individual
+                                token representations are used for token-level tasks like
+                                NER.
+                            </li>
+                            <li>
+                                <strong>WordPiece tokenization</strong> breaks rare words
+                                into subword pieces, allowing a fixed vocabulary to
+                                represent any text.
+                            </li>
+                            <li>
+                                <strong>Variants</strong> improve on BERT: RoBERTa (better
+                                training), ALBERT (fewer parameters), DistilBERT (faster
+                                inference via distillation).
+                            </li>
+                            <li>
+                                <strong>Civil engineering applications</strong> include
+                                document classification, named entity recognition in
+                                construction documents, and safety report analysis.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In the next sub-chapter, we turn to the other half of the Transformer:
+                    <strong>GPT and decoder-only models</strong>, which sacrifice
+                    bidirectionality for the ability to generate text autoregressively.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub3.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">5.3 Transformer</div>
+        </a>
+        <a href="index.html" class="chapter-nav-footer__link chapter-nav-footer__link--index">
+            <i class="fa-solid fa-list"></i>
+            <span>All Sub-chapters</span>
+        </a>
+        <a href="sub5.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">5.5 GPT</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa', PINK:'#f472b6', ORANGE:'#fb923c',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a + (b - a) * t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random() * (b - a) + a; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED BERT NODES
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var t = 0;
+
+            var nodes = [];
+            var numNodes = 30;
+            for (var i = 0; i < numNodes; i++) {
+                nodes.push({
+                    x: rand(w * 0.05, w * 0.95),
+                    y: rand(h * 0.05, h * 0.95),
+                    r: rand(3, 8),
+                    vx: rand(-0.3, 0.3),
+                    vy: rand(-0.2, 0.2),
+                    phase: rand(0, Math.PI * 2),
+                    color: ['#2dd4bf','#22d3ee','#a78bfa','#fbbf24','#f472b6','#22c55e'][Math.floor(rand(0,6))]
+                });
+            }
+
+            /* Central BERT text particles */
+            var letters = ['B','E','R','T'];
+            var letterParticles = [];
+            for (var li = 0; li < letters.length; li++) {
+                letterParticles.push({
+                    x: w * (0.3 + li * 0.12),
+                    y: h * 0.5,
+                    letter: letters[li],
+                    phase: li * 0.8
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                t += 0.005;
+
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    n.x += n.vx; n.y += n.vy;
+                    if (n.x < n.r || n.x > w - n.r) n.vx *= -1;
+                    if (n.y < n.r || n.y > h - n.r) n.vy *= -1;
+                    n.x = clamp(n.x, n.r, w - n.r);
+                    n.y = clamp(n.y, n.r, h - n.r);
+                }
+
+                /* Draw connections */
+                for (var i = 0; i < nodes.length; i++) {
+                    for (var j = i + 1; j < nodes.length; j++) {
+                        var a = nodes[i], b = nodes[j];
+                        var dx = a.x - b.x, dy = a.y - b.y;
+                        var dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 120) {
+                            var alpha = (1 - dist / 120) * 0.1;
+                            ctx.strokeStyle = '#2dd4bf';
+                            ctx.globalAlpha = alpha;
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(a.x, a.y);
+                            ctx.lineTo(b.x, b.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                /* Draw nodes */
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    var glow = 0.15 + 0.15 * Math.sin(t * 3 + n.phase);
+                    ctx.fillStyle = n.color;
+                    ctx.globalAlpha = glow;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = glow + 0.1;
+                    ctx.strokeStyle = n.color;
+                    ctx.lineWidth = 0.6;
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+
+                /* Draw floating BERT letters */
+                for (var li = 0; li < letterParticles.length; li++) {
+                    var lp = letterParticles[li];
+                    var ly = lp.y + Math.sin(t * 2 + lp.phase) * 8;
+                    ctx.fillStyle = '#2dd4bf';
+                    ctx.globalAlpha = 0.06 + 0.03 * Math.sin(t * 1.5 + lp.phase);
+                    ctx.font = 'bold 80px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(lp.letter, lp.x, ly);
+                }
+                ctx.globalAlpha = 1;
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function () {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                for (var li = 0; li < letterParticles.length; li++) {
+                    letterParticles[li].x = w * (0.3 + li * 0.12);
+                    letterParticles[li].y = h * 0.5;
+                }
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1 — MASKED LANGUAGE MODEL SIMULATOR
+           ============================================== */
+        (function mlmDemo() {
+            var canvas = document.getElementById('mlm-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var selectEl = document.getElementById('mlm-sentence-select');
+            var randomBtn = document.getElementById('mlm-random-btn');
+            var predictBtn = document.getElementById('mlm-predict-btn');
+            var infoEl = document.getElementById('mlm-info');
+
+            var sentences = [
+                { tokens: ['The','steel','reinforcement','shall','have','a','minimum','yield','strength','of','500','MPa'], predictions: {'reinforcement':['reinforcement','rebar','bars','material','wire'],'yield':['yield','tensile','compressive','ultimate','bond'],'steel':['steel','main','longitudinal','shear','mild'],'strength':['strength','stress','capacity','resistance','value'],'minimum':['minimum','specified','required','nominal','design'],'500':['500','400','420','250','600'],'MPa':['MPa','N/mm\u00B2','ksi','psi','MPa']} },
+                { tokens: ['Concrete','cover','to','the','reinforcement','shall','be','40','mm','for','exposed','conditions'], predictions: {'Concrete':['Concrete','Minimum','Clear','Nominal','Required'],'cover':['cover','depth','thickness','protection','clearance'],'reinforcement':['reinforcement','steel','rebar','bars','tendons'],'40':['40','50','25','30','75'],'mm':['mm','millimetres','cm','inches','mm'],'exposed':['exposed','severe','aggressive','marine','external'],'conditions':['conditions','environments','exposure','surfaces','elements']} },
+                { tokens: ['The','beam','deflection','shall','not','exceed','span','divided','by','250','under','service','loads'], predictions: {'beam':['beam','member','element','slab','girder'],'deflection':['deflection','displacement','deformation','movement','sag'],'exceed':['exceed','surpass','be','reach','go'],'span':['span','length','L','depth','height'],'250':['250','360','180','240','300'],'service':['service','working','design','live','imposed'],'loads':['loads','loading','conditions','actions','forces']} },
+                { tokens: ['Foundation','piles','shall','be','driven','to','a','minimum','depth','of','15','metres','below','ground','level'], predictions: {'Foundation':['Foundation','Bearing','Driven','Bored','Concrete'],'piles':['piles','shafts','caissons','columns','footings'],'driven':['driven','installed','bored','placed','embedded'],'depth':['depth','penetration','length','embedment','level'],'15':['15','12','20','10','18'],'metres':['metres','meters','m','feet','ft'],'ground':['ground','existing','natural','finished','original']} },
+                { tokens: ['All','structural','welds','shall','be','inspected','using','ultrasonic','testing','methods'], predictions: {'structural':['structural','critical','full','butt','fillet'],'welds':['welds','connections','joints','splices','members'],'inspected':['inspected','tested','examined','verified','checked'],'ultrasonic':['ultrasonic','non-destructive','radiographic','magnetic','visual'],'testing':['testing','inspection','examination','evaluation','techniques'],'methods':['methods','procedures','techniques','equipment','standards']} },
+                { tokens: ['The','compressive','strength','of','concrete','shall','reach','30','MPa','at','28','days'], predictions: {'compressive':['compressive','characteristic','cube','cylinder','specified'],'strength':['strength','resistance','capacity','value','stress'],'concrete':['concrete','the','grout','mortar','mix'],'reach':['reach','achieve','attain','exceed','meet'],'30':['30','25','40','35','20'],'28':['28','7','56','14','90'],'days':['days','d','day','hours','weeks']} }
+            ];
+
+            var currentSentence = 0;
+            var tokens = [];
+            var masked = [];
+            var predictions = {};
+            var showPredictions = false;
+            var hoveredToken = -1;
+            var mouseX = -1, mouseY = -1;
+
+            function loadSentence(idx) {
+                currentSentence = idx;
+                var s = sentences[idx];
+                tokens = s.tokens.slice();
+                predictions = s.predictions;
+                masked = new Array(tokens.length).fill(false);
+                showPredictions = false;
+                hoveredToken = -1;
+                render();
+                infoEl.textContent = 'Click on words to mask/unmask them, or press "Random Mask" to randomly mask ~15% of tokens. Then press "Predict" to see the model\'s top predictions.';
+            }
+
+            function randomMask() {
+                masked = new Array(tokens.length).fill(false);
+                var numToMask = Math.max(1, Math.round(tokens.length * 0.15));
+                var indices = [];
+                for (var i = 0; i < tokens.length; i++) indices.push(i);
+                /* Shuffle */
+                for (var i = indices.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+                }
+                for (var i = 0; i < numToMask; i++) masked[indices[i]] = true;
+                showPredictions = false;
+                render();
+                var count = masked.filter(function(m){ return m; }).length;
+                infoEl.textContent = count + ' token(s) masked. Press "Predict" to see BERT\'s predictions.';
+            }
+
+            function predict() {
+                var anyMasked = masked.some(function(m){ return m; });
+                if (!anyMasked) {
+                    infoEl.textContent = 'No tokens are masked. Click on words or press "Random Mask" first.';
+                    return;
+                }
+                showPredictions = true;
+                render();
+                infoEl.textContent = 'Hover over masked tokens to see the top-5 predictions. The top prediction is highlighted in green.';
+            }
+
+            function getTokenRects() {
+                var rects = [];
+                var C = getColors();
+                var padL = 30, padTop = 30;
+                var tokenH = 40, tokenGap = 10;
+                var maxRowW = w - padL * 2;
+                var x = padL, y = padTop;
+
+                ctx.font = '500 14px JetBrains Mono, monospace';
+                for (var i = 0; i < tokens.length; i++) {
+                    var label = masked[i] ? '[MASK]' : tokens[i];
+                    var tw = ctx.measureText(label).width + 24;
+                    if (x + tw > maxRowW + padL && i > 0) {
+                        x = padL;
+                        y += tokenH + tokenGap;
+                    }
+                    rects.push({ x: x, y: y, w: tw, h: tokenH, idx: i });
+                    x += tw + tokenGap;
+                }
+                return rects;
+            }
+
+            function render() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Background */
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Title bar */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('INPUT TOKENS  (click to mask/unmask)', 30, 18);
+
+                var rects = getTokenRects();
+
+                /* Draw tokens */
+                for (var i = 0; i < rects.length; i++) {
+                    var r = rects[i];
+                    var isMasked = masked[r.idx];
+                    var isHovered = (r.idx === hoveredToken);
+
+                    /* Token background */
+                    if (isMasked) {
+                        ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+                        ctx.strokeStyle = '#ef4444';
+                    } else {
+                        ctx.fillStyle = isHovered ? C.DIM : 'transparent';
+                        ctx.strokeStyle = C.STROKE;
+                    }
+                    ctx.lineWidth = isMasked ? 2 : 1;
+                    ctx.beginPath();
+                    ctx.roundRect(r.x, r.y, r.w, r.h, 6);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    /* Token text */
+                    ctx.font = '500 13px JetBrains Mono, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    if (isMasked) {
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillText('[MASK]', r.x + r.w / 2, r.y + r.h / 2);
+                    } else {
+                        ctx.fillStyle = C.TEXT;
+                        ctx.fillText(tokens[r.idx], r.x + r.w / 2, r.y + r.h / 2);
+                    }
+                }
+
+                /* Predictions section */
+                if (showPredictions) {
+                    var predY = (rects.length > 0 ? rects[rects.length - 1].y + rects[rects.length - 1].h : 80) + 50;
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '500 11px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('PREDICTIONS  (top-5 for each masked token)', 30, predY - 10);
+
+                    var px = 30;
+                    var predTokenH = 36;
+                    var predGap = 8;
+                    var colW = 160;
+                    var col = 0;
+                    var maxCols = Math.max(1, Math.floor((w - 60) / colW));
+
+                    for (var i = 0; i < tokens.length; i++) {
+                        if (!masked[i]) continue;
+                        var token = tokens[i];
+                        var preds = predictions[token] || [token, '???', '???', '???', '???'];
+
+                        var cx = 30 + col * colW;
+                        var cy = predY + 6;
+
+                        /* Original token label */
+                        ctx.fillStyle = '#ef4444';
+                        ctx.font = '600 11px JetBrains Mono, monospace';
+                        ctx.textAlign = 'left';
+                        ctx.fillText('Position: "' + token + '"', cx, cy);
+                        cy += 18;
+
+                        for (var p = 0; p < preds.length; p++) {
+                            var conf = Math.max(0.05, 0.95 - p * 0.2 + rand(-0.02, 0.02));
+                            var barW = (colW - 60) * conf;
+
+                            /* Confidence bar */
+                            ctx.fillStyle = p === 0 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255,255,255,0.04)';
+                            ctx.fillRect(cx, cy, colW - 20, predTokenH - 6);
+
+                            ctx.fillStyle = p === 0 ? C.GREEN : C.CYAN;
+                            ctx.globalAlpha = p === 0 ? 0.6 : 0.3;
+                            ctx.fillRect(cx, cy, barW, predTokenH - 6);
+                            ctx.globalAlpha = 1;
+
+                            /* Prediction text */
+                            ctx.fillStyle = p === 0 ? C.GREEN : C.TEXT;
+                            ctx.font = (p === 0 ? '600' : '400') + ' 11px JetBrains Mono, monospace';
+                            ctx.textAlign = 'left';
+                            ctx.fillText(preds[p], cx + 6, cy + (predTokenH - 6) / 2 + 1);
+
+                            /* Confidence */
+                            ctx.fillStyle = C.MUTED;
+                            ctx.font = '400 10px JetBrains Mono, monospace';
+                            ctx.textAlign = 'right';
+                            ctx.fillText((conf * 100).toFixed(0) + '%', cx + colW - 24, cy + (predTokenH - 6) / 2 + 1);
+
+                            cy += predTokenH;
+                        }
+
+                        col++;
+                        if (col >= maxCols) {
+                            col = 0;
+                            predY += 18 + preds.length * predTokenH + 16;
+                        }
+                    }
+                }
+
+                /* Draw [CLS] and [SEP] indicators */
+                var firstRect = rects[0];
+                var lastRect = rects[rects.length - 1];
+                if (firstRect) {
+                    ctx.fillStyle = C.TEAL;
+                    ctx.globalAlpha = 0.5;
+                    ctx.font = '600 9px JetBrains Mono, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('[CLS]', firstRect.x - 2, firstRect.y + firstRect.h + 14);
+                    ctx.fillText('[SEP]', lastRect.x + lastRect.w + 2, lastRect.y + lastRect.h + 14);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            function hitTest(mx, my) {
+                var rects = getTokenRects();
+                for (var i = 0; i < rects.length; i++) {
+                    var r = rects[i];
+                    if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+                        return r.idx;
+                    }
+                }
+                return -1;
+            }
+
+            loadSentence(0);
+
+            selectEl.addEventListener('change', function() {
+                loadSentence(parseInt(this.value));
+            });
+
+            randomBtn.addEventListener('click', randomMask);
+            predictBtn.addEventListener('click', predict);
+
+            canvas.addEventListener('click', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var idx = hitTest(mx, my);
+                if (idx >= 0) {
+                    masked[idx] = !masked[idx];
+                    showPredictions = false;
+                    render();
+                    var count = masked.filter(function(m){ return m; }).length;
+                    infoEl.textContent = count + ' token(s) masked. Press "Predict" to see BERT\'s predictions.';
+                }
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+                var idx = hitTest(mouseX, mouseY);
+                if (idx !== hoveredToken) {
+                    hoveredToken = idx;
+                    canvas.style.cursor = idx >= 0 ? 'pointer' : 'default';
+                    render();
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                hoveredToken = -1;
+                mouseX = -1; mouseY = -1;
+                render();
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var observer = new MutationObserver(function() { render(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2 — FINE-TUNING VISUALISER
+           ============================================== */
+        (function finetuneDemo() {
+            var canvas = document.getElementById('ft-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var docSelect = document.getElementById('ft-doc-select');
+            var epochSlider = document.getElementById('ft-epoch-slider');
+            var epochLabel = document.getElementById('ft-epoch-label');
+            var animateBtn = document.getElementById('ft-animate-btn');
+            var infoEl = document.getElementById('ft-info');
+
+            var documents = [
+                {
+                    label: 'Specification',
+                    text: 'Concrete mix shall conform to C40/50 grade with max w/c ratio 0.45...',
+                    trueClass: 0,
+                    color: '#2dd4bf'
+                },
+                {
+                    label: 'Daily Report',
+                    text: 'Poured 45 m\u00B3 of concrete on Level 3 slab. 12 workers on site...',
+                    trueClass: 1,
+                    color: '#22d3ee'
+                },
+                {
+                    label: 'RFI',
+                    text: 'Requesting clarification on rebar spacing at beam-column joint B2-C3...',
+                    trueClass: 2,
+                    color: '#a78bfa'
+                },
+                {
+                    label: 'Safety Report',
+                    text: 'Near-miss incident: unsecured scaffolding board fell from Level 5...',
+                    trueClass: 3,
+                    color: '#fbbf24'
+                }
+            ];
+
+            var classNames = ['Spec', 'Report', 'RFI', 'Safety'];
+            var classColors = ['#2dd4bf', '#22d3ee', '#a78bfa', '#fbbf24'];
+
+            var currentDoc = 0;
+            var currentEpoch = 0;
+            var animating = false;
+            var animFrame = null;
+
+            /* Simulated confidence progression per epoch for each doc */
+            function getConfidences(docIdx, epoch) {
+                var trueClass = documents[docIdx].trueClass;
+                var base = [0.25, 0.25, 0.25, 0.25];
+                if (epoch === 0) return base;
+
+                var t = epoch / 4;
+                var result = [];
+                var trueConf = 0.25 + 0.70 * t;
+                var remaining = 1.0 - trueConf;
+
+                /* Distribute remaining among other classes with some noise */
+                var seeds = [];
+                for (var i = 0; i < 4; i++) {
+                    if (i === trueClass) seeds.push(0);
+                    else seeds.push(0.5 + (i * 0.17 + docIdx * 0.13) % 0.5);
+                }
+                var seedSum = 0;
+                for (var i = 0; i < 4; i++) seedSum += seeds[i];
+
+                for (var i = 0; i < 4; i++) {
+                    if (i === trueClass) result.push(trueConf);
+                    else result.push(remaining * seeds[i] / seedSum);
+                }
+                return result;
+            }
+
+            function render() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var doc = documents[currentDoc];
+                var confidences = getConfidences(currentDoc, currentEpoch);
+
+                var padL = 30, padR = 30, padT = 20;
+                var layerH = 28;
+                var layerGap = 6;
+                var numLayers = 12;
+                var encoderW = Math.min(340, w * 0.42);
+                var encoderX = padL;
+                var classX = encoderX + encoderW + 60;
+                var classW = Math.min(280, w - classX - padR);
+
+                /* --- SECTION: Input --- */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 10px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('INPUT DOCUMENT', encoderX, padT);
+
+                /* Document text box */
+                var textBoxY = padT + 10;
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(encoderX, textBoxY, encoderW, 50, 6);
+                ctx.fill();
+                ctx.strokeStyle = C.STROKE;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = doc.color;
+                ctx.font = '600 12px JetBrains Mono, monospace';
+                ctx.fillText('[CLS] ' + doc.label, encoderX + 10, textBoxY + 20);
+                ctx.fillStyle = C.TEXT;
+                ctx.font = '400 10px JetBrains Mono, monospace';
+                var truncText = doc.text.length > 50 ? doc.text.substring(0, 50) + '...' : doc.text;
+                ctx.fillText(truncText, encoderX + 10, textBoxY + 38);
+
+                /* --- SECTION: Encoder Stack --- */
+                var stackTop = textBoxY + 66;
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 10px Inter, sans-serif';
+                ctx.fillText('BERT ENCODER (12 layers)', encoderX, stackTop - 4);
+
+                for (var layer = 0; layer < numLayers; layer++) {
+                    var ly = stackTop + layer * (layerH + layerGap);
+                    var progress = currentEpoch / 4;
+
+                    /* Layer background — slight color shift during fine-tuning */
+                    var baseAlpha = 0.06 + layer * 0.005;
+                    var ftAlpha = baseAlpha + progress * 0.03;
+                    ctx.fillStyle = 'rgba(0, 212, 170, ' + ftAlpha + ')';
+                    ctx.beginPath();
+                    ctx.roundRect(encoderX, ly, encoderW, layerH, 4);
+                    ctx.fill();
+
+                    ctx.strokeStyle = 'rgba(0, 212, 170, ' + (0.15 + progress * 0.15) + ')';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    /* Layer label */
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '400 10px JetBrains Mono, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Layer ' + (layer + 1), encoderX + 10, ly + layerH / 2 + 3);
+
+                    /* Self-attention + FFN labels */
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 9px Inter, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText('Self-Attn + FFN', encoderX + encoderW - 10, ly + layerH / 2 + 3);
+
+                    /* Arrows between layers */
+                    if (layer < numLayers - 1) {
+                        var arrowY = ly + layerH + layerGap / 2;
+                        ctx.strokeStyle = C.STROKE;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(encoderX + encoderW / 2, ly + layerH);
+                        ctx.lineTo(encoderX + encoderW / 2, ly + layerH + layerGap);
+                        ctx.stroke();
+                    }
+                }
+
+                /* --- SECTION: [CLS] Output --- */
+                var clsY = stackTop + numLayers * (layerH + layerGap) + 6;
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 10px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('[CLS] HIDDEN STATE', encoderX, clsY);
+
+                var clsBoxY = clsY + 8;
+                ctx.fillStyle = 'rgba(0, 212, 170, 0.12)';
+                ctx.beginPath();
+                ctx.roundRect(encoderX, clsBoxY, encoderW, 30, 6);
+                ctx.fill();
+                ctx.strokeStyle = C.TEAL;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.fillStyle = C.TEAL;
+                ctx.font = '500 11px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('[CLS] \u2192 768-dim vector', encoderX + encoderW / 2, clsBoxY + 18);
+
+                /* --- Arrow from [CLS] to classifier --- */
+                var arrowStartX = encoderX + encoderW;
+                var arrowEndX = classX;
+                var arrowMidY = clsBoxY + 15;
+
+                ctx.strokeStyle = C.TEAL;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(arrowStartX + 4, arrowMidY);
+                ctx.lineTo(arrowEndX - 4, arrowMidY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                /* Arrowhead */
+                ctx.fillStyle = C.TEAL;
+                ctx.beginPath();
+                ctx.moveTo(arrowEndX - 4, arrowMidY - 5);
+                ctx.lineTo(arrowEndX - 4, arrowMidY + 5);
+                ctx.lineTo(arrowEndX + 2, arrowMidY);
+                ctx.closePath();
+                ctx.fill();
+
+                /* --- SECTION: Classification Head --- */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 10px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('CLASSIFICATION HEAD (new, trainable)', classX, padT);
+
+                /* Linear + Softmax box */
+                var headBoxY = padT + 10;
+                ctx.fillStyle = 'rgba(251, 191, 11, 0.08)';
+                ctx.beginPath();
+                ctx.roundRect(classX, headBoxY, classW, 46, 6);
+                ctx.fill();
+                ctx.strokeStyle = C.AMBER;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = C.AMBER;
+                ctx.font = '500 11px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Linear (768 \u2192 4)', classX + classW / 2, headBoxY + 18);
+                ctx.fillText('Softmax', classX + classW / 2, headBoxY + 36);
+
+                /* --- SECTION: Output Probabilities --- */
+                var probY = headBoxY + 64;
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 10px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('OUTPUT PROBABILITIES  (Epoch ' + currentEpoch + ')', classX, probY - 6);
+
+                var barH = 32;
+                var barGap = 8;
+                var maxBarW = classW - 80;
+
+                for (var c = 0; c < 4; c++) {
+                    var by = probY + c * (barH + barGap);
+                    var conf = confidences[c];
+                    var isTrue = (c === doc.trueClass);
+
+                    /* Bar background */
+                    ctx.fillStyle = C.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(classX + 60, by, maxBarW, barH, 4);
+                    ctx.fill();
+
+                    /* Bar fill */
+                    ctx.fillStyle = isTrue ? classColors[c] : 'rgba(255,255,255,0.15)';
+                    ctx.globalAlpha = isTrue ? 0.7 : 0.4;
+                    ctx.beginPath();
+                    ctx.roundRect(classX + 60, by, maxBarW * conf, barH, 4);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    /* Highlight border for true class */
+                    if (isTrue && currentEpoch > 0) {
+                        ctx.strokeStyle = classColors[c];
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.roundRect(classX + 60, by, maxBarW, barH, 4);
+                        ctx.stroke();
+                    }
+
+                    /* Class label */
+                    ctx.fillStyle = isTrue ? classColors[c] : C.TEXT;
+                    ctx.font = (isTrue ? '600' : '400') + ' 11px JetBrains Mono, monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(classNames[c], classX + 54, by + barH / 2 + 4);
+
+                    /* Confidence value */
+                    ctx.fillStyle = isTrue ? classColors[c] : C.MUTED;
+                    ctx.font = '500 11px JetBrains Mono, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText((conf * 100).toFixed(1) + '%', classX + 60 + maxBarW + 6, by + barH / 2 + 4);
+                }
+
+                /* Prediction label */
+                var predIdx = 0;
+                var predMax = confidences[0];
+                for (var c = 1; c < 4; c++) {
+                    if (confidences[c] > predMax) { predMax = confidences[c]; predIdx = c; }
+                }
+                var predY2 = probY + 4 * (barH + barGap) + 10;
+                ctx.fillStyle = predIdx === doc.trueClass ? C.GREEN : C.RED;
+                ctx.font = '600 12px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                var icon = predIdx === doc.trueClass ? '\u2713' : '\u2717';
+                ctx.fillText(icon + ' Predicted: ' + classNames[predIdx] + (predIdx === doc.trueClass ? ' (correct)' : ' (incorrect)'), classX, predY2);
+
+                /* Epoch indicator */
+                var epochBarY = h - 30;
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Training Progress', w / 2, epochBarY - 8);
+
+                var epBarW = Math.min(400, w - 80);
+                var epBarX = (w - epBarW) / 2;
+
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(epBarX, epochBarY, epBarW, 8, 4);
+                ctx.fill();
+
+                ctx.fillStyle = C.TEAL;
+                ctx.beginPath();
+                ctx.roundRect(epBarX, epochBarY, epBarW * (currentEpoch / 4), 8, 4);
+                ctx.fill();
+
+                for (var e = 0; e <= 4; e++) {
+                    var ex = epBarX + (e / 4) * epBarW;
+                    ctx.fillStyle = e <= currentEpoch ? C.TEAL : C.MUTED;
+                    ctx.beginPath();
+                    ctx.arc(ex, epochBarY + 4, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 9px JetBrains Mono, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('E' + e, ex, epochBarY + 20);
+                }
+            }
+
+            render();
+
+            docSelect.addEventListener('change', function() {
+                currentDoc = parseInt(this.value);
+                render();
+                updateInfo();
+            });
+
+            epochSlider.addEventListener('input', function() {
+                currentEpoch = parseInt(this.value);
+                epochLabel.textContent = currentEpoch;
+                render();
+                updateInfo();
+            });
+
+            function updateInfo() {
+                var confidences = getConfidences(currentDoc, currentEpoch);
+                var doc = documents[currentDoc];
+                var predIdx = 0, predMax = confidences[0];
+                for (var c = 1; c < 4; c++) {
+                    if (confidences[c] > predMax) { predMax = confidences[c]; predIdx = c; }
+                }
+                if (currentEpoch === 0) {
+                    infoEl.textContent = 'Epoch 0: Pre-trained BERT with random classification head. Predictions are ~25% each (uniform).';
+                } else {
+                    infoEl.textContent = 'Epoch ' + currentEpoch + ': ' + classNames[doc.trueClass] + ' confidence = ' + (confidences[doc.trueClass] * 100).toFixed(1) + '%. The model ' + (predIdx === doc.trueClass ? 'correctly' : 'incorrectly') + ' predicts "' + classNames[predIdx] + '".';
+                }
+            }
+
+            animateBtn.addEventListener('click', function() {
+                if (animating) return;
+                animating = true;
+                currentEpoch = 0;
+                epochSlider.value = 0;
+                epochLabel.textContent = '0';
+                render();
+                updateInfo();
+
+                var step = 0;
+                function tick() {
+                    step++;
+                    if (step > 4) {
+                        animating = false;
+                        animateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate';
+                        return;
+                    }
+                    currentEpoch = step;
+                    epochSlider.value = step;
+                    epochLabel.textContent = step;
+                    render();
+                    updateInfo();
+                    animFrame = setTimeout(tick, 900);
+                }
+                animateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Training...';
+                animFrame = setTimeout(tick, 700);
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var observer = new MutationObserver(function() { render(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

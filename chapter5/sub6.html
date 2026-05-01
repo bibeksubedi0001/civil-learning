@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.6 Tokenization &amp; Embeddings | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn how text is broken into tokens and mapped to numerical vectors. Explore BPE, WordPiece, SentencePiece, Word2Vec, GloVe, contextual embeddings, positional encodings, and context windows with interactive demos and civil engineering analogies.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-puzzle-piece"></i> Chapter 5 &mdash; Sub-chapter 5.6
+            </div>
+            <h1 class="chapter-hero__title">Tokenization &amp; Embeddings</h1>
+            <p class="chapter-hero__subtitle">
+                Before a Transformer can process a single word, that word must be
+                broken into numerical pieces and mapped to a high-dimensional vector.
+                Tokenization decides <strong>what</strong> the pieces are;
+                embeddings decide <strong>what they mean</strong>. Together, they form
+                the critical bridge between human language and the linear algebra
+                that drives every modern language model.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY TOKENIZATION MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-tokenization">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scissors"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The First Step Every Model Takes</h2>
+                        <p>
+                            Neural networks operate on numbers, not words. When you type
+                            "The beam deflection exceeds the serviceability limit" into a
+                            language model, the very first operation is
+                            <strong>tokenization</strong> &mdash; splitting that sentence
+                            into discrete pieces called <em>tokens</em> and assigning each
+                            token a unique integer ID from a fixed vocabulary.
+                        </p>
+                        <p>
+                            The way text is split has profound consequences. A poor
+                            tokenization scheme wastes the model's limited context window
+                            on redundant or meaningless fragments. A good scheme balances
+                            vocabulary size, coverage of rare words, and computational
+                            efficiency. Getting this step right is not optional &mdash; it
+                            determines the upper bound of everything the model can do.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Tokenization is often treated as a mundane preprocessing detail, but
+                    it is anything but. The choice of tokenization algorithm directly
+                    affects model performance on rare technical terms (like
+                    "prestressed" or "geosynthetic"), multilingual text, numerical
+                    values, and code. For civil engineers who work with domain-specific
+                    vocabulary, understanding tokenization is essential for diagnosing
+                    when and why a language model struggles with engineering text.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with the Transformer
+                        architecture from Sub-chapter 5.3 and the GPT/BERT models from
+                        Sub-chapters 5.4 and 5.5. We will frequently reference attention
+                        mechanisms, context windows, and pre-training objectives.
+                    </p>
+                </div>
+
+                <h3>Why Civil Engineers Should Care</h3>
+
+                <p>
+                    When you paste a 200-page structural calculation into a language model
+                    and it truncates at page 40, the culprit is tokenization: your
+                    document consumed more tokens than the model's context window allows.
+                    When GPT misspells "geotechnical" as "ge" + "ot" + "echnical" and
+                    assigns confused meanings to the fragments, that is also tokenization.
+                    When a model cannot parse the number "28,000 kPa" correctly, the
+                    tokenizer likely split it into ["28", ",", "000", " k", "Pa"] &mdash;
+                    five tokens that individually carry no engineering meaning.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE CE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy-tokenization">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Material Breakdown Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Tokenization is like breaking down a composite
+                            construction material into its constituent
+                            components.</strong> Consider concrete: to a layperson, it is
+                            a single grey substance. But a civil engineer knows that
+                            concrete = cement + sand + water + coarse aggregate (+ optional
+                            admixtures). Each constituent has its own properties &mdash;
+                            particle size distribution, specific gravity, chemical
+                            reactivity &mdash; and the mix design (proportions) determines
+                            the final performance of the composite.
+                        </p>
+                        <p>
+                            Similarly, a tokenizer breaks down a sentence into sub-units.
+                            <strong>Word-level tokenization</strong> is like treating each
+                            bag of pre-mixed concrete as a single item &mdash; simple but
+                            inflexible. <strong>Character-level tokenization</strong> is
+                            like decomposing everything down to individual chemical
+                            elements &mdash; maximally flexible but losing all practical
+                            structure. <strong>Subword tokenization</strong> (BPE,
+                            WordPiece) strikes the balance: cement, sand, water, aggregate.
+                            Each piece is meaningful on its own and combines to form the
+                            whole.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Embeddings are like material property
+                            vectors.</strong> In civil engineering, every material is
+                            characterised by a set of numerical properties: compressive
+                            strength, tensile strength, elastic modulus, density, thermal
+                            conductivity, Poisson's ratio, and so on. These properties form
+                            a <em>vector</em> that uniquely describes the material and
+                            allows engineers to compare, group, and reason about materials
+                            quantitatively.
+                        </p>
+                        <p>
+                            Word embeddings work identically. Each token is mapped to a
+                            dense numerical vector (typically 256&ndash;4096 dimensions)
+                            that captures its semantic properties. Just as steel and
+                            aluminium have similar property vectors (high strength, high
+                            modulus, metallic) compared to timber (lower strength, lower
+                            modulus, organic), the embeddings for "beam" and "girder" will
+                            be close together in vector space while "beam" and "rainfall"
+                            will be far apart.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: WORD-LEVEL TOKENIZATION
+             ========================================== -->
+        <section class="ch-section" id="word-level">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-font"></i>
+                    Word-Level Tokenization
+                </h2>
+
+                <p>
+                    The simplest tokenization strategy splits text on whitespace and
+                    punctuation. Each unique word in the training corpus gets its own
+                    vocabulary entry and integer ID:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Word-Level Example</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
+                            Input: "The beam deflects under load"<br>
+                            Tokens: ["The", "beam", "deflects", "under", "load"]<br>
+                            IDs: [1, 4821, 19304, 73, 2917]
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This approach is intuitive and works well for common words. But it
+                    suffers from a fatal flaw: the <strong>out-of-vocabulary (OOV)
+                    problem</strong>. Any word not seen during training &mdash; a
+                    misspelling, a rare technical term, a foreign word &mdash; is replaced
+                    with a generic &lt;UNK&gt; token, destroying its meaning entirely.
+                </p>
+
+                <h3>The Vocabulary Explosion</h3>
+
+                <p>
+                    English alone has over a million distinct word forms when you include
+                    technical jargon, proper nouns, and morphological variants
+                    ("deflect", "deflects", "deflected", "deflecting", "deflection",
+                    "deflections"). A word-level vocabulary that covers even common
+                    engineering text would need 200,000+ entries. Each entry requires its
+                    own embedding vector, so a 200,000-word vocabulary with 768-dimensional
+                    embeddings means 153 million parameters just for the embedding
+                    table &mdash; before the model has processed a single token.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Limitations of Word-Level Tokenization</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>OOV problem:</strong> Rare words like "geosynthetic" or "prestressing" may not be in the vocabulary</li>
+                            <li><strong>Vocabulary size:</strong> Must be very large to cover morphological variants</li>
+                            <li><strong>No subword sharing:</strong> "deflect" and "deflection" are treated as completely unrelated tokens</li>
+                            <li><strong>Poor generalisation:</strong> Cannot handle novel word formations or compound technical terms</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: CHARACTER-LEVEL TOKENIZATION
+             ========================================== -->
+        <section class="ch-section" id="character-level">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-a"></i>
+                    Character-Level Tokenization
+                </h2>
+
+                <p>
+                    At the opposite extreme, character-level tokenization treats every
+                    individual character (letter, digit, punctuation mark) as a separate
+                    token. The vocabulary becomes tiny &mdash; perhaps 256 entries for
+                    ASCII plus Unicode characters &mdash; and the OOV problem vanishes
+                    entirely.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-spell-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Character-Level Example</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
+                            Input: "beam"<br>
+                            Tokens: ["b", "e", "a", "m"]<br>
+                            IDs: [98, 101, 97, 109]
+                        </p>
+                        <p>
+                            A 20-word engineering sentence might become 100+ character
+                            tokens &mdash; consuming 5x more of the model's context
+                            window than necessary.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The problem is <strong>sequence length</strong>. A sentence that
+                    requires 20 word-level tokens might need 100 character-level tokens.
+                    Since Transformers have quadratic attention complexity
+                    (O(n<sup>2</sup>)), this 5x increase in sequence length results in a
+                    25x increase in attention computation. Worse, the model must learn to
+                    compose characters into meaningful units entirely from scratch, which
+                    requires far more training data and compute.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: SUBWORD TOKENIZATION
+             ========================================== -->
+        <section class="ch-section" id="subword">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Subword Tokenization: The Sweet Spot
+                </h2>
+
+                <p>
+                    Subword tokenization finds the middle ground. Common words like "the",
+                    "beam", and "load" are kept intact as single tokens, while rare or
+                    compound words are split into meaningful subword units. The word
+                    "geotechnical" might become ["geo", "technical"], and "prestressed"
+                    might become ["pre", "stressed"]. Each subword is itself meaningful,
+                    and the model can compose them.
+                </p>
+
+                <p>
+                    This approach provides a fixed, manageable vocabulary (typically
+                    32,000 to 100,000 tokens) while being able to represent
+                    <em>any</em> text &mdash; even words never seen during training.
+                    Three major subword algorithms dominate modern NLP.
+                </p>
+
+                <h3>BPE (Byte-Pair Encoding)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How BPE Works</h3>
+                        <p>
+                            BPE was originally a data compression algorithm, repurposed for
+                            NLP by Sennrich et al. (2016). The training process:
+                        </p>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Start</strong> with a vocabulary of all individual characters in the training corpus</li>
+                            <li><strong>Count</strong> all adjacent character pairs (bigrams) in the corpus</li>
+                            <li><strong>Merge</strong> the most frequent pair into a new single token</li>
+                            <li><strong>Repeat</strong> steps 2&ndash;3 until the vocabulary reaches the desired size</li>
+                        </ol>
+                        <p>
+                            For example, if "d" + "e" is the most frequent pair, merge
+                            them into "de". Then if "de" + "f" is next, merge into "def".
+                            Then "def" + "l" into "defl", and so on. Frequent words like
+                            "deflection" will eventually be merged into a single token,
+                            while rare words are composed of smaller learned subwords.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    GPT-2, GPT-3, GPT-4, and LLaMA all use variants of BPE. The GPT-2
+                    tokenizer has a vocabulary of 50,257 tokens. GPT-4's tokenizer
+                    (cl100k_base) uses approximately 100,000 tokens, which is more
+                    efficient at encoding technical text, mathematical notation, and
+                    non-English languages.
+                </p>
+
+                <h3>WordPiece</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>WordPiece Algorithm</h3>
+                        <p>
+                            WordPiece, developed by Google for BERT, is similar to BPE but
+                            uses a different merge criterion. Instead of merging the most
+                            <em>frequent</em> pair, it merges the pair that maximises the
+                            <strong>likelihood</strong> of the training data under a
+                            language model. Subword pieces that are not the start of a word
+                            are prefixed with "##".
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
+                            "geotechnical" &rarr; ["geo", "##tech", "##nical"]<br>
+                            "deflection"   &rarr; ["deflection"] (common enough to be a single token)<br>
+                            "prestressed"  &rarr; ["pre", "##stre", "##ssed"]
+                        </p>
+                    </div>
+                </div>
+
+                <h3>SentencePiece</h3>
+
+                <p>
+                    SentencePiece (Kudo &amp; Richardson, 2018) treats the input as a raw
+                    byte stream, making it <strong>language-agnostic</strong>. It does
+                    not require pre-tokenization (splitting on whitespace first) and can
+                    handle any language, including those without explicit word boundaries
+                    like Chinese and Japanese. SentencePiece can implement either BPE or a
+                    Unigram model internally. Models like T5, ALBERT, and XLNet use
+                    SentencePiece.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison of Tokenization Approaches</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-active);">
+                                    <th style="text-align:left; padding:8px; color:var(--text-secondary);">Method</th>
+                                    <th style="text-align:left; padding:8px; color:var(--text-secondary);">Vocab Size</th>
+                                    <th style="text-align:left; padding:8px; color:var(--text-secondary);">OOV?</th>
+                                    <th style="text-align:left; padding:8px; color:var(--text-secondary);">Used By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-active);">
+                                    <td style="padding:8px;">Word-level</td>
+                                    <td style="padding:8px;">100K&ndash;200K+</td>
+                                    <td style="padding:8px;">Yes</td>
+                                    <td style="padding:8px;">Early models (Word2Vec, GloVe)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-active);">
+                                    <td style="padding:8px;">Character</td>
+                                    <td style="padding:8px;">~256</td>
+                                    <td style="padding:8px;">No</td>
+                                    <td style="padding:8px;">Some specialised tasks</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-active);">
+                                    <td style="padding:8px;">BPE</td>
+                                    <td style="padding:8px;">32K&ndash;100K</td>
+                                    <td style="padding:8px;">No</td>
+                                    <td style="padding:8px;">GPT-2/3/4, LLaMA, Mistral</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-active);">
+                                    <td style="padding:8px;">WordPiece</td>
+                                    <td style="padding:8px;">30K&ndash;50K</td>
+                                    <td style="padding:8px;">No</td>
+                                    <td style="padding:8px;">BERT, DistilBERT, ELECTRA</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">SentencePiece</td>
+                                    <td style="padding:8px;">32K&ndash;256K</td>
+                                    <td style="padding:8px;">No</td>
+                                    <td style="padding:8px;">T5, ALBERT, XLNet, LLaMA</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: VOCABULARY SIZE TRADEOFFS
+             ========================================== -->
+        <section class="ch-section" id="vocab-tradeoffs">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Vocabulary Size Tradeoffs
+                </h2>
+
+                <p>
+                    Choosing the vocabulary size is an engineering decision with direct
+                    parallels to choosing a mesh density in finite element analysis. A
+                    finer mesh (larger vocabulary) captures more detail but costs more
+                    memory and computation. A coarser mesh (smaller vocabulary) is
+                    efficient but may miss important features.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Vocabulary Size Spectrum</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Too small (e.g., 8K):</strong> Common words are split into many subword pieces, sequences become very long, context windows fill quickly, and the model struggles to learn word-level semantics</li>
+                            <li><strong>Sweet spot (32K&ndash;100K):</strong> Common words are single tokens, rare words are composed of 2&ndash;4 meaningful subwords, and the embedding table is manageable</li>
+                            <li><strong>Too large (e.g., 500K):</strong> Many tokens are rarely seen during training, leading to poorly trained embeddings. The embedding table becomes a significant fraction of total parameters</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    GPT-2's vocabulary of ~50K tokens uses roughly 38 million embedding
+                    parameters (50,257 tokens x 768 dimensions). GPT-4's ~100K vocabulary
+                    with higher-dimensional embeddings uses significantly more. The
+                    tradeoff is always the same: more tokens mean shorter sequences
+                    (good for context length) but a larger embedding matrix (more
+                    parameters to train).
+                </p>
+
+                <h3>Impact on Engineering Text</h3>
+
+                <p>
+                    Engineering text is particularly sensitive to vocabulary design.
+                    Technical terms like "prestressed", "geosynthetic", "shotcrete", and
+                    "formwork" may not appear frequently enough in general web text to
+                    earn their own token. A model with a 32K vocabulary might tokenize
+                    "shotcrete" as ["shot", "cre", "te"] (3 tokens), while a 100K
+                    vocabulary might represent it as ["shot", "crete"] (2 tokens) or even
+                    a single token. Fewer tokens per word means more words fit in the
+                    context window and the model can attend to them as coherent units.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: WORD EMBEDDINGS
+             ========================================== -->
+        <section class="ch-section" id="word-embeddings">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-vector-square"></i>
+                    Word Embeddings: From IDs to Meaning
+                </h2>
+
+                <p>
+                    A token ID like 4821 is just an index. It tells the model nothing
+                    about meaning, similarity, or relationships. The
+                    <strong>embedding layer</strong> transforms each token ID into a
+                    dense numerical vector &mdash; a list of floating-point numbers that
+                    encodes the token's semantic properties.
+                </p>
+
+                <h3>Word2Vec</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Word2Vec (Mikolov et al., 2013)</h3>
+                        <p>
+                            Word2Vec was a breakthrough: a simple neural network trained on
+                            the task of predicting a word from its context (CBOW) or
+                            predicting context from a word (Skip-gram). The hidden layer
+                            weights, after training, become the word embeddings.
+                        </p>
+                        <p>
+                            The famous result: vector arithmetic captures semantic
+                            relationships. "king" &minus; "man" + "woman" &asymp; "queen".
+                            In a civil engineering embedding space, you might find:
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
+                            "beam" &minus; "bending" + "torsion" &asymp; "shaft"<br>
+                            "concrete" &minus; "compression" + "tension" &asymp; "steel"<br>
+                            "foundation" + "deep" &asymp; "pile"
+                        </p>
+                    </div>
+                </div>
+
+                <h3>GloVe</h3>
+
+                <p>
+                    GloVe (Global Vectors for Word Representation, Pennington et al.,
+                    2014) takes a different approach. Instead of training a neural network,
+                    it constructs a global word co-occurrence matrix from the entire corpus
+                    and factorises it to produce embeddings. The key insight: the
+                    <em>ratio</em> of co-occurrence probabilities encodes meaning.
+                    If "ice" co-occurs frequently with "solid" but not "gas", and "steam"
+                    co-occurs frequently with "gas" but not "solid", then the ratio of
+                    co-occurrences distinguishes their meanings.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Word2Vec vs. GloVe</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Word2Vec:</strong> Local context windows (5&ndash;10 words), trained via stochastic gradient descent, captures local syntactic patterns well</li>
+                            <li><strong>GloVe:</strong> Global co-occurrence statistics, matrix factorisation, captures broader semantic relationships</li>
+                            <li><strong>Both:</strong> Produce static embeddings &mdash; a word has the same vector regardless of context. "bank" (river) and "bank" (financial) share one vector</li>
+                            <li><strong>Limitation:</strong> No contextual sensitivity. This is the fundamental gap that contextual embeddings (ELMo, BERT) address</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CONTEXTUAL EMBEDDINGS
+             ========================================== -->
+        <section class="ch-section" id="contextual-embeddings">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-rotate"></i>
+                    Contextual Embeddings
+                </h2>
+
+                <p>
+                    Static embeddings (Word2Vec, GloVe) assign one fixed vector per word.
+                    But words change meaning in context: "bearing" in "bearing capacity"
+                    (geotechnical) vs. "bearing" in "roller bearing" (mechanical) vs.
+                    "load-bearing wall" (structural). Contextual embeddings solve this by
+                    producing a <strong>different vector for each occurrence</strong> of a
+                    word, conditioned on its surrounding context.
+                </p>
+
+                <h3>ELMo (Embeddings from Language Models)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>ELMo (Peters et al., 2018)</h3>
+                        <p>
+                            ELMo was the first widely successful contextual embedding
+                            method. It trains a deep bidirectional LSTM language model and
+                            extracts embeddings by taking a weighted combination of all
+                            LSTM layers' hidden states. Lower layers capture syntax;
+                            higher layers capture semantics.
+                        </p>
+                        <p>
+                            ELMo showed that "bearing" in "bearing capacity" and "bearing"
+                            in "roller bearing" would receive different vectors because the
+                            LSTM processes the surrounding context before producing each
+                            word's representation.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>BERT Embeddings</h3>
+
+                <p>
+                    BERT (Sub-chapter 5.4) produces contextual embeddings as a byproduct
+                    of its masked language model training. The output vector for each
+                    token at each layer is a contextual embedding. BERT embeddings are
+                    generally more powerful than ELMo because Transformers capture
+                    longer-range dependencies than LSTMs, and bidirectional attention
+                    (seeing both left and right context simultaneously) produces richer
+                    representations.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-timeline"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Embedding Evolution</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>2013 &mdash; Word2Vec:</strong> Static embeddings, one vector per word, 100&ndash;300 dimensions</li>
+                            <li><strong>2014 &mdash; GloVe:</strong> Static embeddings from global co-occurrence, 50&ndash;300 dimensions</li>
+                            <li><strong>2018 &mdash; ELMo:</strong> Contextual embeddings from bidirectional LSTMs, ~1024 dimensions</li>
+                            <li><strong>2018 &mdash; BERT:</strong> Contextual embeddings from bidirectional Transformers, 768&ndash;1024 dimensions</li>
+                            <li><strong>2020+ &mdash; GPT-3/4:</strong> Contextual embeddings from decoder Transformers, 4096&ndash;12288+ dimensions</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: EMBEDDING DIMENSIONS
+             ========================================== -->
+        <section class="ch-section" id="embedding-dimensions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                    Embedding Dimensions
+                </h2>
+
+                <p>
+                    The <strong>dimensionality</strong> of an embedding vector determines
+                    how much information it can encode. A 2D embedding can only place
+                    words on a flat plane; a 768D embedding can capture hundreds of
+                    independent semantic features.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Do Dimensions Represent?</h3>
+                        <p>
+                            Individual embedding dimensions do not have human-interpretable
+                            meanings (unlike material properties where dimension 1 =
+                            compressive strength, dimension 2 = density, etc.). Instead,
+                            each dimension captures a <em>distributed</em> feature.
+                            Meaning emerges from the pattern across all dimensions
+                            simultaneously.
+                        </p>
+                        <p>
+                            Research has shown that certain directions in embedding space
+                            do correspond to interpretable concepts: there are directions
+                            for gender, tense, formality, and even domain (structural vs.
+                            geotechnical vs. hydraulic engineering). But these directions
+                            are not aligned with individual axes &mdash; they are diagonal
+                            directions through the high-dimensional space.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Typical Embedding Dimensions by Model</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Word2Vec / GloVe:</strong> 50, 100, 200, or 300 dimensions</li>
+                            <li><strong>BERT-base:</strong> 768 dimensions</li>
+                            <li><strong>BERT-large:</strong> 1024 dimensions</li>
+                            <li><strong>GPT-2:</strong> 768 (small) to 1600 (XL) dimensions</li>
+                            <li><strong>GPT-3:</strong> 12,288 dimensions</li>
+                            <li><strong>LLaMA-2 70B:</strong> 8,192 dimensions</li>
+                        </ul>
+                        <p>
+                            Higher dimensions allow the model to represent more nuanced
+                            distinctions, but at the cost of more parameters, more memory,
+                            and more computation. Diminishing returns apply: going from
+                            100 to 300 dimensions dramatically improves quality, but going
+                            from 4096 to 8192 provides only incremental gains.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: POSITIONAL ENCODINGS
+             ========================================== -->
+        <section class="ch-section" id="positional-encodings">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-map-pin"></i>
+                    Positional Encodings
+                </h2>
+
+                <p>
+                    Transformers process all tokens in parallel, with no inherent notion
+                    of order. Without positional information, the model would see "The dog
+                    bit the man" and "The man bit the dog" as identical &mdash; the same
+                    set of tokens, just rearranged. <strong>Positional encodings</strong>
+                    inject information about each token's position in the sequence so the
+                    model can distinguish order.
+                </p>
+
+                <h3>Sinusoidal Positional Encoding</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wave-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Original Transformer Approach</h3>
+                        <p>
+                            Vaswani et al. (2017) used sine and cosine functions of
+                            different frequencies to encode positions:
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
+                            PE(pos, 2i)   = sin(pos / 10000^(2i/d))<br>
+                            PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
+                        </p>
+                        <p>
+                            where <em>pos</em> is the token position, <em>i</em> is the
+                            dimension index, and <em>d</em> is the embedding dimension.
+                            Each dimension uses a sinusoid of a different frequency,
+                            creating a unique "fingerprint" for each position.
+                        </p>
+                        <p>
+                            The key property: relative positions can be expressed as linear
+                            functions. The encoding for position <em>pos + k</em> can be
+                            computed from the encoding at position <em>pos</em> via a
+                            fixed linear transformation, regardless of <em>pos</em>.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Learned Positional Embeddings</h3>
+
+                <p>
+                    An alternative approach, used by GPT and BERT, is to <strong>learn</strong>
+                    positional embeddings during training. Each position (0, 1, 2, ...,
+                    max_length-1) gets its own trainable embedding vector that is added
+                    to the token embedding. The model discovers the optimal positional
+                    representation through gradient descent.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-compare"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sinusoidal vs. Learned Positional Encodings</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Sinusoidal:</strong> No parameters to train, can theoretically generalise to unseen sequence lengths, used in the original Transformer</li>
+                            <li><strong>Learned:</strong> Slightly better empirical performance, but limited to the maximum length seen during training (e.g., 512 for BERT, 2048 for GPT-2)</li>
+                            <li><strong>RoPE (Rotary):</strong> A modern alternative used by LLaMA and others, encodes relative positions via rotation matrices. Enables extrapolation to longer sequences</li>
+                            <li><strong>ALiBi:</strong> Used by BLOOM, adds a linear bias to attention scores based on distance. Simple and effective for length generalisation</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Positional encodings are like chainage markers along a
+                            road alignment.</strong> The chainage tells you exactly where
+                            you are along the route (position 0+000, 0+100, 0+200, etc.).
+                            Without chainage, you have a set of cross-sections but no idea
+                            how they are ordered or spaced. The road design is meaningless
+                            without position. Similarly, a Transformer without positional
+                            encodings sees tokens as an unordered bag of words &mdash; the
+                            sequence structure is invisible.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: TOKEN LIMITS & CONTEXT WINDOWS
+             ========================================== -->
+        <section class="ch-section" id="context-windows">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-expand"></i>
+                    Token Limits &amp; Context Windows
+                </h2>
+
+                <p>
+                    Every Transformer model has a maximum <strong>context window</strong>
+                    &mdash; the total number of tokens it can process at once. This limit
+                    is architectural: the attention mechanism computes pairwise
+                    interactions between all tokens, and the positional encoding system
+                    must support the sequence length.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-window-maximize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Context Window Sizes</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>BERT:</strong> 512 tokens (~400 words, ~1 page)</li>
+                            <li><strong>GPT-2:</strong> 1,024 tokens (~750 words, ~2 pages)</li>
+                            <li><strong>GPT-3:</strong> 4,096 tokens (~3,000 words, ~8 pages)</li>
+                            <li><strong>GPT-4:</strong> 8,192 or 32,768 tokens (~25,000 words, ~60 pages)</li>
+                            <li><strong>GPT-4 Turbo:</strong> 128,000 tokens (~96,000 words, ~240 pages)</li>
+                            <li><strong>Claude 3:</strong> 200,000 tokens (~150,000 words, ~375 pages)</li>
+                            <li><strong>Gemini 1.5:</strong> 1,000,000+ tokens</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    For civil engineers, context window limits are a practical constraint.
+                    A full structural calculation report (100+ pages) may exceed even
+                    GPT-4's context window. A complete design code like Eurocode 2 runs
+                    to ~300 pages. Understanding how many tokens your document consumes
+                    helps you decide whether to summarise, chunk, or use a model with a
+                    larger window.
+                </p>
+
+                <h3>Token Counting Rules of Thumb</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Estimating Token Counts</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>English text:</strong> ~1 token per 0.75 words (or ~1.33 tokens per word)</li>
+                            <li><strong>Code:</strong> ~1 token per 2&ndash;3 characters (more tokens per line than prose)</li>
+                            <li><strong>Numbers:</strong> Each digit or group may be a separate token. "28,000" = 3&ndash;5 tokens</li>
+                            <li><strong>Engineering symbols:</strong> Special characters (MPa, m<sup>2</sup>, &deg;C) often split into multiple tokens</li>
+                            <li><strong>One page of text:</strong> ~400&ndash;500 tokens</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: DEMO 1 — INTERACTIVE TOKENIZER
+             ========================================== -->
+        <section class="ch-section" id="demo-tokenizer">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Interactive BPE Tokenizer
+                </h2>
+
+                <p>
+                    Type or paste any civil engineering text into the input below and
+                    watch it get split into BPE-style subword tokens. Each token is
+                    highlighted with a unique colour and assigned a simulated token ID.
+                    Notice how common words remain intact while rare technical terms are
+                    split into subword pieces.
+                </p>
+
+                <div class="demo-panel" id="tokenizer-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-scissors"></i>
+                        <span>BPE Tokenizer &mdash; See how text becomes tokens</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Input text:</label>
+                        <input type="text" id="tok-input" placeholder="Type a sentence, e.g. 'The prestressed concrete beam deflects under load'" style="flex:1; min-width:260px; padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; font-family:'Inter',sans-serif;" value="The prestressed concrete beam deflects under serviceability loads">
+                        <button id="tok-run-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                            <i class="fa-solid fa-play"></i> Tokenize
+                        </button>
+                    </div>
+                    <canvas id="tok-canvas" style="width:100%; height:380px; border-radius:8px;"></canvas>
+                    <p id="tok-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Press "Tokenize" to see the BPE token breakdown with token IDs. Try engineering terms like "geosynthetic" or "shotcrete".
+                    </p>
+                </div>
+
+                <p>
+                    Observe how the tokenizer handles different types of input:
+                    common English words ("the", "under") are single tokens, standard
+                    engineering terms ("concrete", "beam") are also single tokens, but
+                    rarer compound terms ("prestressed", "serviceability") may be split
+                    into subword pieces. Numbers and units can be particularly surprising
+                    &mdash; try "28,000 kPa" or "f'c = 40 MPa".
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: DEMO 2 — EMBEDDING SIMILARITY
+             ========================================== -->
+        <section class="ch-section" id="demo-embeddings">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 2: Embedding Similarity Scatter
+                </h2>
+
+                <p>
+                    This 2D scatter plot visualises word embeddings for civil
+                    engineering terms, projected from high-dimensional space using
+                    simulated t-SNE reduction. Words that are semantically similar
+                    cluster together. Notice how structural, geotechnical, and hydraulic
+                    terms form distinct clusters, reflecting the model's learned
+                    understanding of engineering sub-domains.
+                </p>
+
+                <div class="demo-panel" id="embedding-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-braille"></i>
+                        <span>Embedding Similarity &mdash; 2D scatter of CE word embeddings</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Highlight cluster:</label>
+                        <select id="emb-cluster-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer;">
+                            <option value="all">All clusters</option>
+                            <option value="structural">Structural</option>
+                            <option value="geotechnical">Geotechnical</option>
+                            <option value="hydraulic">Hydraulic</option>
+                        </select>
+                        <button id="emb-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset View
+                        </button>
+                    </div>
+                    <canvas id="emb-canvas" style="width:100%; height:440px; border-radius:8px;"></canvas>
+                    <p id="emb-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Hover over points to see word labels and cosine similarity to neighbours. Select a cluster to highlight a specific engineering domain.
+                    </p>
+                </div>
+
+                <p>
+                    The clustering structure demonstrates a fundamental property of
+                    embeddings: words that appear in similar contexts end up near each
+                    other in vector space. "Beam", "column", "slab", and "truss" are all
+                    structural elements that co-occur with words like "load", "moment",
+                    "deflection", and "reinforcement". The embedding space captures this
+                    co-occurrence structure automatically, without any engineering
+                    knowledge being explicitly programmed.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: PUTTING IT TOGETHER
+             ========================================== -->
+        <section class="ch-section" id="putting-together">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-link"></i>
+                    The Full Pipeline: Text to Vectors
+                </h2>
+
+                <p>
+                    Let us trace the complete journey of a civil engineering sentence
+                    through the tokenization and embedding pipeline:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step-by-Step Pipeline</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.4;">
+                            <li><strong>Raw text:</strong> "The beam deflection is 12mm"</li>
+                            <li><strong>Tokenization (BPE):</strong> ["The", " beam", " defl", "ection", " is", " 12", "mm"]</li>
+                            <li><strong>Token IDs:</strong> [464, 16577, 3979, 2379, 318, 1105, 3020]</li>
+                            <li><strong>Token embeddings:</strong> Look up each ID in the embedding matrix &rarr; 7 vectors of dimension <em>d</em></li>
+                            <li><strong>Positional encodings:</strong> Add position-specific vectors to encode order (position 0, 1, 2, ...)</li>
+                            <li><strong>Combined input:</strong> Token embedding + positional encoding = the input to the first Transformer layer</li>
+                        </ol>
+                        <p>
+                            The output of step 6 is a matrix of shape [7, d] &mdash; seven
+                            <em>d</em>-dimensional vectors, one for each token, ready for
+                            the self-attention mechanism. From here, the Transformer layers
+                            process these vectors to produce the model's final output.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Every word of every prompt you have ever sent to ChatGPT, Claude, or
+                    any other LLM has gone through exactly this pipeline. Understanding
+                    it demystifies the model's behaviour: if "12mm" is tokenized as
+                    ["12", "mm"], the model must learn from context that these two tokens
+                    together represent a physical measurement. If the tokenizer had a
+                    dedicated "12mm" token, this learning would be unnecessary.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of tokenization and embeddings with these
+                    four questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What is the main advantage of subword tokenization (BPE /
+                            WordPiece) over word-level tokenization?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>It produces shorter token sequences for all inputs</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz1" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>It can represent any word (including unseen ones) with a fixed-size vocabulary by composing subword pieces</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>It requires no training data to build the vocabulary</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>It produces contextual embeddings rather than static ones</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> Subword tokenization eliminates
+                            the out-of-vocabulary (OOV) problem by splitting rare or unseen
+                            words into known subword pieces. A fixed vocabulary of
+                            32K&ndash;100K subword tokens can represent any text, including
+                            novel technical terms, by composing them from smaller units.
+                            Word-level tokenization must assign an &lt;UNK&gt; token to any
+                            word not in its vocabulary.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What fundamental limitation do Word2Vec and GloVe embeddings
+                            share that contextual embeddings (ELMo, BERT) solve?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>They cannot handle vocabularies larger than 10,000 words</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>They require supervised labels for training</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz2" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>They assign the same vector to a word regardless of its context (e.g., "bearing" always has one vector)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>They cannot capture any semantic relationships between words</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Word2Vec and GloVe produce
+                            <em>static</em> embeddings: each word has one fixed vector
+                            regardless of context. The word "bearing" gets the same vector
+                            whether it appears in "bearing capacity" (geotechnical) or
+                            "roller bearing" (mechanical). Contextual embeddings like ELMo
+                            and BERT produce different vectors for each occurrence, conditioned
+                            on the surrounding text.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            Why are positional encodings necessary in Transformer models?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>To reduce the vocabulary size of the tokenizer</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>To compress the embedding dimensions for efficiency</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>To enable the model to process multiple languages</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz3" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Because Transformers process all tokens in parallel and have no inherent sense of token order</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: D.</strong> Unlike RNNs, which process
+                            tokens sequentially and thus inherently know position,
+                            Transformers use self-attention that is permutation-invariant:
+                            it treats the input as an unordered set. Without positional
+                            encodings, "The dog bit the man" and "The man bit the dog"
+                            would produce identical representations. Positional encodings
+                            (sinusoidal, learned, or rotary) inject position information
+                            into each token's embedding.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            A civil engineer pastes a 100-page structural report into a
+                            language model with a 4,096-token context window. Roughly how
+                            many pages can the model process?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>All 100 pages &mdash; the model compresses text automatically</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz4" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Approximately 8&ndash;10 pages (at ~450 tokens per page)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Approximately 50 pages (the model uses half for input, half for output)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Exactly 4,096 pages (one token per page)</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> A typical page of English text
+                            contains approximately 400&ndash;500 tokens (about 300&ndash;375
+                            words, where each word averages ~1.33 tokens). With a 4,096-token
+                            context window, the model can process roughly 8&ndash;10 pages.
+                            The remaining 90+ pages are simply truncated. This is why context
+                            window size is a critical practical consideration for engineering
+                            applications involving long documents.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Tokenization:</strong> The process of splitting text into discrete units (tokens) and mapping them to integer IDs. The choice of algorithm directly affects model performance on rare and technical text</li>
+                            <li><strong>Word-level:</strong> Simple but suffers from out-of-vocabulary problems and vocabulary explosion</li>
+                            <li><strong>Character-level:</strong> No OOV issues but produces extremely long sequences</li>
+                            <li><strong>Subword (BPE / WordPiece / SentencePiece):</strong> The dominant modern approach. Fixed vocabulary size, no OOV, meaningful subword units</li>
+                            <li><strong>Vocabulary size tradeoff:</strong> Larger vocabularies = shorter sequences but more parameters; 32K&ndash;100K is the sweet spot</li>
+                            <li><strong>Static embeddings (Word2Vec, GloVe):</strong> One fixed vector per word, cannot handle polysemy</li>
+                            <li><strong>Contextual embeddings (ELMo, BERT):</strong> Different vectors for different contexts, capturing polysemy and nuance</li>
+                            <li><strong>Positional encodings:</strong> Inject order information into Transformers (sinusoidal, learned, or rotary)</li>
+                            <li><strong>Context windows:</strong> The maximum token count a model can process, ranging from 512 (BERT) to 1M+ (Gemini)</li>
+                            <li><strong>CE analogy:</strong> Tokenization = material breakdown (concrete into cement, sand, water, aggregate); embeddings = material property vectors</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In the next sub-chapter, we will explore <strong>Fine-Tuning &amp;
+                    Prompt Engineering</strong> &mdash; how to adapt pre-trained models
+                    to specific civil engineering tasks through parameter updates
+                    (fine-tuning) or clever input design (prompting), and the tradeoffs
+                    between these two approaches.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub5.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">5.5 GPT &amp; Decoder Models</div>
+        </a>
+        <a href="index.html" class="chapter-nav-footer__link chapter-nav-footer__link--index">
+            <i class="fa-solid fa-list"></i>
+            <span>All Sub-chapters</span>
+        </a>
+        <a href="sub7.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">5.7 Fine-Tuning &amp; Prompt Engineering</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa', PINK:'#f472b6', ORANGE:'#fb923c',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a + (b - a) * t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random() * (b - a) + a; };
+
+        /* ==============================================
+           HERO CANVAS — FLOATING TOKEN FRAGMENTS
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var t = 0;
+
+            var fragments = [];
+            var labels = [
+                'The','beam','##defl','ection','is','12','mm',
+                'pre','stressed','geo','technical','con','crete',
+                '[CLS]','[SEP]','load','##ing','found','##ation',
+                'rein','##force','##ment','slab','column','pile'
+            ];
+            var numFragments = 30;
+            for (var i = 0; i < numFragments; i++) {
+                fragments.push({
+                    x: rand(w * 0.05, w * 0.95),
+                    y: rand(h * 0.05, h * 0.95),
+                    vx: rand(-0.4, 0.4),
+                    vy: rand(-0.4, 0.4),
+                    label: labels[i % labels.length],
+                    alpha: rand(0.15, 0.5),
+                    size: rand(9, 14)
+                });
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+                t += 0.008;
+
+                for (var i = 0; i < numFragments; i++) {
+                    var f = fragments[i];
+                    f.x += f.vx;
+                    f.y += f.vy;
+                    if (f.x < 0 || f.x > w) f.vx *= -1;
+                    if (f.y < 0 || f.y > h) f.vy *= -1;
+                    f.x = clamp(f.x, 0, w);
+                    f.y = clamp(f.y, 0, h);
+
+                    /* Draw connections between nearby fragments */
+                    for (var j = i + 1; j < numFragments; j++) {
+                        var dx = fragments[j].x - f.x;
+                        var dy = fragments[j].y - f.y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.strokeStyle = C.TEAL;
+                            ctx.globalAlpha = (1 - dist / 120) * 0.12;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(f.x, f.y);
+                            ctx.lineTo(fragments[j].x, fragments[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                    ctx.globalAlpha = 1;
+
+                    /* Token chip */
+                    ctx.font = '500 ' + f.size + 'px JetBrains Mono, monospace';
+                    var tw = ctx.measureText(f.label).width + 14;
+                    var th = f.size + 10;
+                    var rx = f.x - tw / 2;
+                    var ry = f.y - th / 2;
+
+                    ctx.globalAlpha = f.alpha * 0.25;
+                    ctx.fillStyle = f.label.startsWith('##') ? C.AMBER : C.TEAL;
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, tw, th, 4);
+                    ctx.fill();
+
+                    ctx.globalAlpha = f.alpha;
+                    ctx.fillStyle = f.label.startsWith('##') ? C.AMBER : C.TEAL;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(f.label, f.x, f.y);
+                    ctx.globalAlpha = 1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: INTERACTIVE BPE TOKENIZER
+           ============================================== */
+        (function tokenizerDemo() {
+            var canvas = document.getElementById('tok-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var inputEl = document.getElementById('tok-input');
+            var runBtn = document.getElementById('tok-run-btn');
+            var infoEl = document.getElementById('tok-info');
+
+            /* Simulated BPE vocabulary — common subword pieces */
+            var vocab = {
+                'the':1, 'The':464, 'a':64, 'an':272, 'is':318, 'are':389,
+                'of':286, 'in':287, 'to':284, 'for':329, 'and':290, 'with':351,
+                'under':739, 'over':625, 'not':407, 'be':307, 'has':468, 'was':373,
+                'at':379, 'on':319, 'by':416, 'from':422, 'this':428, 'that':326,
+                ' the':262, ' a':257, ' is':318, ' of':286, ' in':287, ' to':284,
+                ' and':290, ' for':329, ' with':351, ' under':739, ' on':319,
+                ' be':307, ' from':422, ' not':407, ' at':379,
+                'beam':16577, ' beam':16577, 'load':2220, ' load':2220,
+                'concrete':1673, ' concrete':1673, 'steel':7803, ' steel':7803,
+                'stress':6905, ' stress':6905, 'strain':10485, ' strain':10485,
+                'column':5721, ' column':5721, 'slab':17784, ' slab':17784,
+                'foundation':8977, ' foundation':8977, 'pile':23163, ' pile':23163,
+                'moment':4289, ' moment':4289, 'shear':25254, ' shear':25254,
+                'force':3174, ' force':3174, 'pressure':5765, ' pressure':5765,
+                'strength':4402, ' strength':4402, 'design':3486, ' design':3486,
+                'deflection':36275, ' deflection':36275,
+                'reinforced':26722, ' reinforced':26722,
+                'structural':14784, ' structural':14784,
+                'analysis':5765, ' analysis':5765,
+                'engineer':8858, ' engineer':8858,
+                'construction':5765, ' construction':5765,
+                'service':3223, ' service':3223,
+                'ability':1799, 'ing':278, 'tion':653, 'ment':434,
+                'pre':3866, 'un':403, 'de':2934, 're':260,
+                'ed':276, 'er':263, 'al':282, 'ly':306,
+                'con':1102, 'com':785, 'str':2536, 'st':301,
+                'fl':2704, 'ect':478, 'ion':295, 'ness':1108,
+                'ess':408, 'ure':495, 'ate':378, 'ite':578,
+                'geo':24708, 'tech':13670, 'nical':21624,
+                'shot':9442, 'crete':23137, 'form':687, 'work':1818,
+                'soil':5765, ' soil':5765, 'water':3624, ' water':3624,
+                'flow':5765, ' flow':5765, 'dam':14265, ' dam':14265,
+                'bridge':7277, ' bridge':7277, 'tunnel':23688, ' tunnel':23688,
+                'rein':7512, 'forced':15385, 'cement':40296, ' cement':40296,
+                'aggregate':41255, ' aggregate':41255,
+                'tensile':52719, ' tensile':52719,
+                'compressive':48976, ' compressive':48976,
+                'modulus':47543, ' modulus':47543,
+                'elastic':39726, ' elastic':39726,
+                'sand':8645, ' sand':8645,
+                'clay':21906, ' clay':21906,
+                'rock':4679, ' rock':4679,
+                'gravel':35921, ' gravel':35921,
+                'excavation':42851, ' excavation':42851,
+                'retaining':42067, ' retaining':42067,
+                'wall':2050, ' wall':2050,
+                'footing':48773, ' footing':48773,
+                'loads':15989, ' loads':15989,
+                'defl':3979, ' defl':3979,
+                'stressed':13566, 'stresses':30322, ' stresses':30322
+            };
+
+            /* Simple seed-based pseudo-random for consistent IDs */
+            function hashStr(s) {
+                var h = 5381;
+                for (var i = 0; i < s.length; i++) {
+                    h = ((h << 5) + h + s.charCodeAt(i)) & 0x7fffffff;
+                }
+                return h;
+            }
+
+            /* Greedy longest-match BPE simulation */
+            function tokenize(text) {
+                var tokens = [];
+                var i = 0;
+                while (i < text.length) {
+                    var best = null;
+                    var bestLen = 0;
+                    /* Try longest match first */
+                    for (var len = Math.min(15, text.length - i); len >= 1; len--) {
+                        var piece = text.substring(i, i + len);
+                        if (vocab[piece] !== undefined) {
+                            best = piece;
+                            bestLen = len;
+                            break;
+                        }
+                    }
+                    if (best !== null) {
+                        tokens.push({ text: best, id: vocab[best] });
+                        i += bestLen;
+                    } else {
+                        /* Fall back to single character */
+                        var ch = text[i];
+                        tokens.push({ text: ch, id: hashStr(ch) % 50000 + 256 });
+                        i += 1;
+                    }
+                }
+                return tokens;
+            }
+
+            /* Colour palette for tokens */
+            var tokenColors = [
+                '#2dd4bf','#22d3ee','#fbbf24','#a78bfa','#f472b6',
+                '#fb923c','#22c55e','#60a5fa','#e879f9','#34d399',
+                '#f87171','#facc15','#818cf8','#38bdf8','#c084fc'
+            ];
+
+            var currentTokens = null;
+
+            function render() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Grid */
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                var padX = 24, padY = 24;
+
+                if (!currentTokens || currentTokens.length === 0) {
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 14px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Enter text above and press "Tokenize" to see BPE token breakdown', w / 2, h / 2);
+                    return;
+                }
+
+                /* Title */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('Tokenized Output (' + currentTokens.length + ' tokens)', padX, padY);
+
+                /* Draw token chips in a flow layout */
+                var chipY = padY + 36;
+                var chipX = padX;
+                var chipH = 34;
+                var chipGap = 6;
+                var lineGap = 10;
+
+                for (var ti = 0; ti < currentTokens.length; ti++) {
+                    var tok = currentTokens[ti];
+                    var color = tokenColors[ti % tokenColors.length];
+                    var displayText = tok.text.replace(/ /g, '\u2581');
+
+                    ctx.font = '500 12px JetBrains Mono, monospace';
+                    var tw = ctx.measureText(displayText).width + 18;
+                    tw = Math.max(tw, 28);
+
+                    /* Wrap to next line */
+                    if (chipX + tw > w - padX && chipX > padX) {
+                        chipX = padX;
+                        chipY += chipH + lineGap;
+                    }
+
+                    if (chipY + chipH > h - 80) break;
+
+                    /* Chip background */
+                    ctx.globalAlpha = 0.15;
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.roundRect(chipX, chipY, tw, chipH, 6);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    /* Chip border */
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5;
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.roundRect(chipX, chipY, tw, chipH, 6);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+
+                    /* Token text */
+                    ctx.fillStyle = color;
+                    ctx.font = '600 12px JetBrains Mono, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(displayText, chipX + tw / 2, chipY + chipH / 2 - 1);
+
+                    chipX += tw + chipGap;
+                }
+
+                /* Token ID row */
+                var idY = chipY + chipH + 30;
+                if (idY < h - 40) {
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '500 11px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText('Token IDs:', padX, idY);
+
+                    var idRowY = idY + 20;
+                    var idX = padX;
+                    ctx.font = '400 11px JetBrains Mono, monospace';
+
+                    for (var idi = 0; idi < currentTokens.length; idi++) {
+                        var idStr = String(currentTokens[idi].id);
+                        var idW = ctx.measureText(idStr).width + 10;
+
+                        if (idX + idW > w - padX && idX > padX) {
+                            idX = padX;
+                            idRowY += 20;
+                        }
+                        if (idRowY > h - 20) break;
+
+                        ctx.fillStyle = tokenColors[idi % tokenColors.length];
+                        ctx.globalAlpha = 0.7;
+                        ctx.fillText(idStr, idX, idRowY);
+                        ctx.globalAlpha = 1;
+                        idX += idW + 6;
+                    }
+                }
+
+                /* Mapping visualization — draw arrows from tokens to IDs */
+                /* (visual connection is implied by matching colours) */
+            }
+
+            runBtn.addEventListener('click', function() {
+                var text = inputEl.value.trim();
+                if (!text) return;
+                currentTokens = tokenize(text);
+                var pieces = currentTokens.map(function(t) {
+                    return '"' + t.text.replace(/ /g, '\u2581') + '"';
+                });
+                infoEl.textContent = currentTokens.length + ' tokens: [' + pieces.join(', ') + ']';
+                render();
+            });
+
+            /* Auto-tokenize on load */
+            if (inputEl.value.trim()) {
+                currentTokens = tokenize(inputEl.value.trim());
+                render();
+            } else {
+                render();
+            }
+
+            inputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    runBtn.click();
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var obs1 = new MutationObserver(function() { render(); });
+            obs1.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2: EMBEDDING SIMILARITY SCATTER
+           ============================================== */
+        (function embeddingDemo() {
+            var canvas = document.getElementById('emb-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var clusterSelect = document.getElementById('emb-cluster-select');
+            var resetBtn = document.getElementById('emb-reset-btn');
+            var infoEl = document.getElementById('emb-info');
+
+            /* Simulated 2D embedding positions (t-SNE-like projection) */
+            var words = [
+                /* Structural cluster (top-left) */
+                { word: 'beam',          x: 0.18, y: 0.22, cluster: 'structural' },
+                { word: 'column',        x: 0.15, y: 0.30, cluster: 'structural' },
+                { word: 'slab',          x: 0.22, y: 0.18, cluster: 'structural' },
+                { word: 'truss',         x: 0.25, y: 0.27, cluster: 'structural' },
+                { word: 'girder',        x: 0.20, y: 0.25, cluster: 'structural' },
+                { word: 'moment',        x: 0.28, y: 0.20, cluster: 'structural' },
+                { word: 'deflection',    x: 0.14, y: 0.35, cluster: 'structural' },
+                { word: 'reinforcement', x: 0.22, y: 0.33, cluster: 'structural' },
+                { word: 'shear',         x: 0.30, y: 0.30, cluster: 'structural' },
+                { word: 'bending',       x: 0.26, y: 0.15, cluster: 'structural' },
+                { word: 'prestressed',   x: 0.12, y: 0.27, cluster: 'structural' },
+                { word: 'steel',         x: 0.32, y: 0.22, cluster: 'structural' },
+
+                /* Geotechnical cluster (bottom-left) */
+                { word: 'soil',          x: 0.18, y: 0.65, cluster: 'geotechnical' },
+                { word: 'clay',          x: 0.14, y: 0.72, cluster: 'geotechnical' },
+                { word: 'sand',          x: 0.22, y: 0.70, cluster: 'geotechnical' },
+                { word: 'gravel',        x: 0.20, y: 0.75, cluster: 'geotechnical' },
+                { word: 'foundation',    x: 0.25, y: 0.62, cluster: 'geotechnical' },
+                { word: 'pile',          x: 0.28, y: 0.68, cluster: 'geotechnical' },
+                { word: 'bearing',       x: 0.15, y: 0.68, cluster: 'geotechnical' },
+                { word: 'settlement',    x: 0.30, y: 0.73, cluster: 'geotechnical' },
+                { word: 'excavation',    x: 0.24, y: 0.78, cluster: 'geotechnical' },
+                { word: 'retaining',     x: 0.12, y: 0.62, cluster: 'geotechnical' },
+                { word: 'footing',       x: 0.32, y: 0.65, cluster: 'geotechnical' },
+                { word: 'rock',          x: 0.26, y: 0.80, cluster: 'geotechnical' },
+
+                /* Hydraulic cluster (right) */
+                { word: 'flow',          x: 0.72, y: 0.42, cluster: 'hydraulic' },
+                { word: 'discharge',     x: 0.68, y: 0.48, cluster: 'hydraulic' },
+                { word: 'velocity',      x: 0.75, y: 0.38, cluster: 'hydraulic' },
+                { word: 'pressure',      x: 0.78, y: 0.45, cluster: 'hydraulic' },
+                { word: 'dam',           x: 0.65, y: 0.55, cluster: 'hydraulic' },
+                { word: 'reservoir',     x: 0.70, y: 0.55, cluster: 'hydraulic' },
+                { word: 'pipe',          x: 0.80, y: 0.50, cluster: 'hydraulic' },
+                { word: 'drainage',      x: 0.73, y: 0.58, cluster: 'hydraulic' },
+                { word: 'flood',         x: 0.82, y: 0.40, cluster: 'hydraulic' },
+                { word: 'channel',       x: 0.76, y: 0.52, cluster: 'hydraulic' },
+                { word: 'runoff',        x: 0.68, y: 0.35, cluster: 'hydraulic' },
+                { word: 'hydraulic',     x: 0.85, y: 0.48, cluster: 'hydraulic' }
+            ];
+
+            var clusterColors = {
+                structural:   '#2dd4bf',
+                geotechnical: '#fbbf24',
+                hydraulic:    '#60a5fa'
+            };
+
+            var hoveredIdx = -1;
+            var activeCluster = 'all';
+
+            function render() {
+                var C = getColors();
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Grid */
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                var padX = 40, padY = 40;
+                var plotW = w - padX * 2;
+                var plotH = h - padY * 2;
+
+                /* Axes labels */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '400 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('t-SNE Dimension 1', w / 2, h - 8);
+
+                ctx.save();
+                ctx.translate(12, h / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textBaseline = 'top';
+                ctx.fillText('t-SNE Dimension 2', 0, 0);
+                ctx.restore();
+
+                /* Title */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('CE Word Embedding Space (simulated t-SNE projection)', padX, 12);
+
+                /* Legend */
+                var legendX = w - 160;
+                var legendY = 16;
+                var clusters = ['structural', 'geotechnical', 'hydraulic'];
+                for (var ci = 0; ci < clusters.length; ci++) {
+                    var cName = clusters[ci];
+                    ctx.fillStyle = clusterColors[cName];
+                    ctx.globalAlpha = activeCluster === 'all' || activeCluster === cName ? 1 : 0.25;
+                    ctx.beginPath();
+                    ctx.arc(legendX, legendY + ci * 20 + 6, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '400 11px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(cName.charAt(0).toUpperCase() + cName.slice(1), legendX + 12, legendY + ci * 20 + 6);
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Draw intra-cluster connections */
+                for (var i = 0; i < words.length; i++) {
+                    for (var j = i + 1; j < words.length; j++) {
+                        if (words[i].cluster !== words[j].cluster) continue;
+                        var x1 = padX + words[i].x * plotW;
+                        var y1 = padY + words[i].y * plotH;
+                        var x2 = padX + words[j].x * plotW;
+                        var y2 = padY + words[j].y * plotH;
+                        var dx = x2 - x1, dy = y2 - y1;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            var isActive = activeCluster === 'all' || activeCluster === words[i].cluster;
+                            ctx.strokeStyle = clusterColors[words[i].cluster];
+                            ctx.globalAlpha = isActive ? (1 - dist / 120) * 0.15 : 0.03;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+
+                /* Draw points and labels */
+                for (var pi = 0; pi < words.length; pi++) {
+                    var wd = words[pi];
+                    var px = padX + wd.x * plotW;
+                    var py = padY + wd.y * plotH;
+                    var isActive = activeCluster === 'all' || activeCluster === wd.cluster;
+                    var isHovered = pi === hoveredIdx;
+                    var radius = isHovered ? 7 : 5;
+
+                    /* Point */
+                    ctx.fillStyle = clusterColors[wd.cluster];
+                    ctx.globalAlpha = isActive ? (isHovered ? 1 : 0.85) : 0.15;
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    /* Glow on hover */
+                    if (isHovered) {
+                        ctx.strokeStyle = clusterColors[wd.cluster];
+                        ctx.lineWidth = 2;
+                        ctx.globalAlpha = 0.5;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 12, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    /* Label */
+                    ctx.globalAlpha = isActive ? (isHovered ? 1 : 0.7) : 0.12;
+                    ctx.fillStyle = isActive ? C.TEXT : C.MUTED;
+                    ctx.font = isHovered ? '600 12px Inter, sans-serif' : '400 10px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(wd.word, px + radius + 4, py);
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Hover info panel */
+                if (hoveredIdx >= 0) {
+                    var hw = words[hoveredIdx];
+                    /* Find nearest neighbours in same cluster */
+                    var neighbours = [];
+                    for (var ni = 0; ni < words.length; ni++) {
+                        if (ni === hoveredIdx) continue;
+                        var ddx = words[ni].x - hw.x;
+                        var ddy = words[ni].y - hw.y;
+                        var dd = Math.sqrt(ddx * ddx + ddy * ddy);
+                        neighbours.push({ word: words[ni].word, dist: dd, cluster: words[ni].cluster });
+                    }
+                    neighbours.sort(function(a, b) { return a.dist - b.dist; });
+                    var top3 = neighbours.slice(0, 3);
+
+                    var panelX = padX;
+                    var panelY = h - 65;
+                    ctx.fillStyle = C.BG;
+                    ctx.globalAlpha = 0.9;
+                    ctx.fillRect(panelX, panelY, w - padX * 2, 50);
+                    ctx.globalAlpha = 1;
+
+                    ctx.strokeStyle = clusterColors[hw.cluster];
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(panelX, panelY, w - padX * 2, 50);
+
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '600 12px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText('"' + hw.word + '" [' + hw.cluster + ']', panelX + 12, panelY + 8);
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 11px Inter, sans-serif';
+                    var nnText = 'Nearest: ' + top3.map(function(n) {
+                        return n.word + ' (cos~' + (1 - n.dist).toFixed(2) + ')';
+                    }).join(', ');
+                    ctx.fillText(nnText, panelX + 12, panelY + 28);
+                }
+            }
+
+            render();
+
+            /* Mouse hover detection */
+            canvas.addEventListener('mousemove', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var padX = 40, padY = 40;
+                var plotW = (rect.width) - padX * 2;
+                var plotH = (rect.height) - padY * 2;
+
+                var newHovered = -1;
+                var minDist = 20;
+                for (var i = 0; i < words.length; i++) {
+                    var px = padX + words[i].x * plotW;
+                    var py = padY + words[i].y * plotH;
+                    var dx = mx - px, dy = my - py;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        newHovered = i;
+                    }
+                }
+                if (newHovered !== hoveredIdx) {
+                    hoveredIdx = newHovered;
+                    render();
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                hoveredIdx = -1;
+                render();
+            });
+
+            clusterSelect.addEventListener('change', function() {
+                activeCluster = this.value;
+                render();
+            });
+
+            resetBtn.addEventListener('click', function() {
+                activeCluster = 'all';
+                clusterSelect.value = 'all';
+                hoveredIdx = -1;
+                render();
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var obs2 = new MutationObserver(function() { render(); });
+            obs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

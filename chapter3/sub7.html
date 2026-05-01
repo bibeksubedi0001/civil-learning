@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.7 Anomaly Detection | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn statistical and machine-learning anomaly detection methods including z-score, IQR, Isolation Forest, Local Outlier Factor, and autoencoders. Explore interactive demos for detecting sensor malfunctions, unusual settlement, and structural response anomalies in civil engineering.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.7
+            </div>
+            <h1 class="chapter-hero__title">Anomaly Detection</h1>
+            <p class="chapter-hero__subtitle">
+                Every sensor tells a story &mdash; but sometimes the story is a lie.
+                Anomaly detection algorithms sift through millions of readings to
+                find the handful that scream &ldquo;something is wrong,&rdquo;
+                whether it is a malfunctioning accelerometer, unexpected foundation
+                settlement, or the early signature of structural damage hidden in
+                vibration data.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 50 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY ANOMALY DETECTION MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-anomaly-detection">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why Anomaly Detection Matters</h2>
+                        <p>
+                            A modern instrumented bridge may stream data from 200+
+                            sensors &mdash; accelerometers, strain gauges, displacement
+                            transducers, thermocouples, tilt sensors, GPS receivers.
+                            Every second, thousands of numbers flow into a database.
+                            Buried in that torrent of normal readings are the rare
+                            signals that matter most: a sudden strain spike indicating
+                            a cracked girder, a gradual drift in a displacement sensor
+                            revealing foundation settlement, or a flat-line from a
+                            failed accelerometer feeding false confidence into a
+                            monitoring dashboard.
+                        </p>
+                        <p>
+                            Manual inspection of every reading is impossible at scale.
+                            Simple threshold-based alarms (e.g., &ldquo;flag if strain
+                            exceeds 500 micro-strain&rdquo;) miss subtle, multivariate
+                            anomalies and drown operators in false positives from
+                            normal environmental variation. What you need are algorithms
+                            that <strong>learn what normal looks like</strong> and
+                            automatically flag deviations &mdash; that is anomaly
+                            detection.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Types of Anomalies in Civil Engineering</h3>
+                        <p>
+                            Understanding the taxonomy helps choose the right algorithm:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Point anomalies</strong> &mdash; A single reading
+                                deviates drastically. Example: a strain gauge suddenly
+                                reporting 10,000 micro-strain while all neighbours report
+                                200. Often caused by sensor malfunction or a sudden
+                                structural event.
+                            </li>
+                            <li>
+                                <strong>Contextual anomalies</strong> &mdash; A reading is
+                                normal in one context but anomalous in another. Example:
+                                a bridge deck temperature of 45 &deg;C is normal in August
+                                but alarming in January. The value itself is not extreme;
+                                the <em>context</em> makes it anomalous.
+                            </li>
+                            <li>
+                                <strong>Collective anomalies</strong> &mdash; A sequence of
+                                individually normal readings that together form an abnormal
+                                pattern. Example: accelerometer readings that individually
+                                stay within limits but whose frequency spectrum shifts
+                                over weeks, indicating progressive stiffness degradation.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of anomaly detection like a site safety inspector
+                            who has watched thousands of concrete pours. She instantly
+                            notices when the slump is off, the colour is wrong, or the
+                            vibration pattern during compaction sounds different &mdash;
+                            not because she memorised every possible failure mode, but
+                            because she has an internal model of &ldquo;normal&rdquo;
+                            and flags anything that deviates from it. Anomaly detection
+                            algorithms build the same internal model, but from data
+                            instead of experience.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds on Sub-chapter 3.5 (PCA) and 3.6
+                        (t-SNE &amp; UMAP). Familiarity with basic statistics (mean,
+                        standard deviation, quartiles) is assumed. Knowledge of neural
+                        networks (Chapter 2) helps for the autoencoder section but is
+                        not strictly required &mdash; we develop the intuition from
+                        first principles.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: STATISTICAL METHODS - Z-SCORE
+             ========================================== -->
+        <section class="ch-section" id="z-score">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Statistical Methods: Z-Score
+                </h2>
+
+                <p>
+                    The simplest anomaly detector asks: &ldquo;How many standard
+                    deviations is this point from the mean?&rdquo; That number is the
+                    <strong>z-score</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Definition and Formula</h3>
+                        <p>
+                            Given a dataset with mean &mu; and standard deviation &sigma;,
+                            the z-score of a value <em>x</em> is:
+                        </p>
+                        <div class="formula-block" style="margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.95rem; overflow-x:auto;">
+                            z = (x &minus; &mu;) / &sigma;
+                        </div>
+                        <p>
+                            A common rule flags any observation with |z| &gt; 3 as an
+                            anomaly. For normally distributed data, only 0.27 % of points
+                            fall beyond 3&sigma;, so a reading at |z| = 4 or 5 is
+                            extremely unlikely under the normal model.
+                        </p>
+                        <p>
+                            <strong>Civil engineering example:</strong> A strain gauge on
+                            a steel girder reports readings with &mu; = 180 &mu;&epsilon;
+                            and &sigma; = 25 &mu;&epsilon; under routine traffic. A reading
+                            of 310 &mu;&epsilon; gives z = (310 &minus; 180) / 25 = 5.2
+                            &mdash; far beyond the 3&sigma; threshold, triggering an
+                            immediate alert for potential overload or sensor fault.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Strengths and Limitations</h3>
+                        <ul>
+                            <li>
+                                <i class="fa-solid fa-check" style="color:var(--accent-success);"></i>
+                                <strong>Simple and fast</strong> &mdash; requires only
+                                &mu; and &sigma;, computable in O(n).
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check" style="color:var(--accent-success);"></i>
+                                <strong>Interpretable</strong> &mdash; engineers understand
+                                &ldquo;5 standard deviations from the mean.&rdquo;
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-xmark" style="color:var(--accent-danger);"></i>
+                                <strong>Assumes normality</strong> &mdash; sensor data is
+                                often skewed or multimodal (e.g., different traffic regimes).
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-xmark" style="color:var(--accent-danger);"></i>
+                                <strong>Sensitive to outliers in training data</strong>
+                                &mdash; a few extreme values inflate &sigma;, masking
+                                future anomalies.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-xmark" style="color:var(--accent-danger);"></i>
+                                <strong>Univariate only</strong> &mdash; checks one feature
+                                at a time; cannot detect multivariate anomalies where each
+                                individual feature is normal but the combination is unusual.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: STATISTICAL METHODS - IQR
+             ========================================== -->
+        <section class="ch-section" id="iqr-method">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    Statistical Methods: IQR (Interquartile Range)
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The IQR Approach</h3>
+                        <p>
+                            The Interquartile Range is a robust alternative that does
+                            <em>not</em> assume normality. It uses the 25th percentile
+                            (Q1) and 75th percentile (Q3) to define a &ldquo;normal
+                            box&rdquo;:
+                        </p>
+                        <div class="formula-block" style="margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.95rem; overflow-x:auto;">
+                            IQR = Q3 &minus; Q1<br>
+                            Lower fence = Q1 &minus; 1.5 &times; IQR<br>
+                            Upper fence = Q3 + 1.5 &times; IQR
+                        </div>
+                        <p>
+                            Any point below the lower fence or above the upper fence
+                            is flagged as an outlier. The factor 1.5 is Tukey's classic
+                            choice; using 3.0 yields &ldquo;extreme outliers.&rdquo;
+                        </p>
+                        <p>
+                            <strong>Civil engineering example:</strong> Foundation
+                            settlement measurements over 50 monitoring points show
+                            Q1 = 2.1 mm, Q3 = 4.8 mm, so IQR = 2.7 mm. The fences
+                            are [2.1 &minus; 4.05, 4.8 + 4.05] = [&minus;1.95, 8.85] mm.
+                            A point settling 12 mm exceeds the upper fence and is flagged
+                            for investigation &mdash; possible void formation or
+                            differential settlement.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why IQR is Robust</h3>
+                        <p>
+                            Unlike the z-score, the IQR method is based on
+                            <strong>order statistics</strong> (percentiles), which are
+                            not pulled by extreme values. Even if 5 % of your strain
+                            gauge readings are corrupted by electrical spikes, Q1 and Q3
+                            remain stable because they depend on the central 50 % of the
+                            data. This makes IQR ideal as a first-pass filter for noisy
+                            field sensor data.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            The IQR method is like a structural engineer who judges
+                            concrete cube test results by looking at the middle 50 % of
+                            all tests, rather than computing the average. If one cube was
+                            accidentally tested wet and gave a wildly low strength, the
+                            median-based assessment barely notices, whereas a mean-based
+                            z-score would be dragged down, potentially masking a genuinely
+                            weak batch that follows.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: Z-SCORE vs IQR COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="zscore-vs-iqr">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Z-Score vs. IQR: When to Use Each
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison Table</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:0.92rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-primary);">
+                                        <th style="text-align:left; padding:10px;">Criterion</th>
+                                        <th style="text-align:left; padding:10px;">Z-Score</th>
+                                        <th style="text-align:left; padding:10px;">IQR</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-secondary);">
+                                        <td style="padding:10px;">Distribution assumption</td>
+                                        <td style="padding:10px;">Normal (Gaussian)</td>
+                                        <td style="padding:10px;">None</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-secondary);">
+                                        <td style="padding:10px;">Robustness to existing outliers</td>
+                                        <td style="padding:10px;">Low &mdash; mean and &sigma; are pulled</td>
+                                        <td style="padding:10px;">High &mdash; percentiles resist contamination</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-secondary);">
+                                        <td style="padding:10px;">Best suited for</td>
+                                        <td style="padding:10px;">Clean, Gaussian data</td>
+                                        <td style="padding:10px;">Skewed, heavy-tailed, or noisy data</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-secondary);">
+                                        <td style="padding:10px;">Multivariate extension</td>
+                                        <td style="padding:10px;">Mahalanobis distance</td>
+                                        <td style="padding:10px;">Not straightforward</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:10px;">Typical CE use case</td>
+                                        <td style="padding:10px;">Lab test results (well-controlled)</td>
+                                        <td style="padding:10px;">Field sensor data (noisy, variable)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: ISOLATION FOREST
+             ========================================== -->
+        <section class="ch-section" id="isolation-forest">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-tree"></i>
+                    Isolation Forest
+                </h2>
+
+                <p>
+                    Statistical methods work on individual features. But real
+                    engineering anomalies are often <em>multivariate</em> &mdash; each
+                    sensor reading looks normal alone, but their combination is
+                    unusual. Isolation Forest is a tree-based algorithm designed
+                    specifically for multivariate anomaly detection.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sitemap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Core Intuition</h3>
+                        <p>
+                            The key insight is elegant: <strong>anomalies are easy to
+                            isolate</strong>. If you randomly select a feature and a
+                            random split value, an anomalous point (sitting far from the
+                            crowd) will be isolated in fewer splits than a normal point
+                            (embedded deep in a dense cluster).
+                        </p>
+                        <p>
+                            The algorithm builds many random binary trees (an
+                            &ldquo;isolation forest&rdquo;). For each tree:
+                        </p>
+                        <ol>
+                            <li>Randomly select a feature from the dataset.</li>
+                            <li>Randomly select a split value between the feature's
+                                minimum and maximum.</li>
+                            <li>Split the data into left (below split) and right
+                                (above split).</li>
+                            <li>Recurse on each side until every point is isolated or
+                                a maximum depth is reached.</li>
+                        </ol>
+                        <p>
+                            The <strong>anomaly score</strong> of a point is the average
+                            path length across all trees, normalised by the expected
+                            path length for the dataset size. Points with short average
+                            paths are anomalies; points with long average paths are
+                            normal.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Application: SHM Sensor Validation</h3>
+                        <p>
+                            Consider a bridge SHM system recording 10 features per
+                            time step: 3 accelerations, 2 strains, temperature,
+                            humidity, wind speed, traffic load, and cable tension. An
+                            Isolation Forest trained on 6 months of normal operation
+                            data will learn the multivariate relationships &mdash; for
+                            example, that high wind speed correlates with increased cable
+                            tension and specific vibration patterns.
+                        </p>
+                        <p>
+                            When a cable tension sensor begins drifting due to a loose
+                            connection, its readings might still be within the
+                            univariate normal range, but the <em>combination</em> of
+                            low wind speed with unusually high cable tension becomes
+                            easy to isolate. The Isolation Forest catches what z-scores
+                            and IQR miss.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Hyperparameters</h3>
+                        <ul>
+                            <li>
+                                <strong>n_estimators</strong> &mdash; Number of trees in
+                                the forest. Typically 100&ndash;300. More trees give
+                                stabler scores but increase computation.
+                            </li>
+                            <li>
+                                <strong>max_samples</strong> &mdash; Number of samples
+                                drawn to build each tree. Smaller subsets speed up
+                                training and can improve anomaly detection by reducing
+                                swamping (normal points masking anomalies).
+                            </li>
+                            <li>
+                                <strong>contamination</strong> &mdash; Expected fraction
+                                of anomalies. Sets the decision threshold automatically.
+                                In SHM, typical values are 0.01&ndash;0.05 (1&ndash;5 %
+                                anomaly rate).
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine sorting a pile of mixed aggregate by randomly
+                            splitting it with dividers. A large, oddly shaped boulder
+                            (anomaly) sitting on top of the pile gets separated in just
+                            one or two splits. But a typical-sized pebble (normal point)
+                            buried in the middle of a dense pile needs many splits before
+                            it is isolated. The Isolation Forest counts these splits.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: LOCAL OUTLIER FACTOR
+             ========================================== -->
+        <section class="ch-section" id="lof">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                    Local Outlier Factor (LOF)
+                </h2>
+
+                <p>
+                    Isolation Forest treats the entire dataset uniformly. But real
+                    sensor data often has regions of different density &mdash;
+                    daytime traffic creates a dense cluster of high-acceleration
+                    readings, while nighttime readings form a sparser cluster of
+                    low-acceleration values. A point at the edge of the daytime
+                    cluster might be perfectly normal, but the same point appearing
+                    at the edge of the nighttime cluster could be anomalous. LOF
+                    captures this by considering <strong>local density</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-scatter"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How LOF Works</h3>
+                        <p>
+                            For each point <em>p</em>, LOF computes a score comparing
+                            the local density around <em>p</em> with the local densities
+                            of its neighbours:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>k-distance:</strong> Find the distance to the
+                                k-th nearest neighbour of <em>p</em>.
+                            </li>
+                            <li>
+                                <strong>Reachability distance:</strong> For each neighbour
+                                <em>o</em>, compute
+                                reach-dist<sub>k</sub>(p, o) = max(k-dist(o), dist(p, o)).
+                                This smooths out small fluctuations in very dense regions.
+                            </li>
+                            <li>
+                                <strong>Local reachability density (LRD):</strong> The
+                                inverse of the average reachability distance from <em>p</em>
+                                to its k nearest neighbours.
+                            </li>
+                            <li>
+                                <strong>LOF score:</strong> The average ratio of the
+                                LRDs of <em>p</em>'s neighbours to the LRD of <em>p</em>.
+                            </li>
+                        </ol>
+                        <p>
+                            A LOF score near <strong>1.0</strong> means the point has
+                            similar density to its neighbours (normal). Scores
+                            <strong>significantly greater than 1.0</strong> indicate that
+                            the point lives in a much sparser region than its neighbours
+                            &mdash; it is a local outlier.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Application: Detecting Unusual Settlement Patterns</h3>
+                        <p>
+                            In a highway embankment monitoring project, settlement
+                            readings cluster into two natural groups: fast-consolidating
+                            clay sections and slow-consolidating sand sections. A reading
+                            that is moderate in absolute terms but falls between these
+                            two clusters &mdash; too fast for sand, too slow for clay
+                            &mdash; is a local outlier. LOF detects it because its local
+                            density is much lower than either cluster. This could
+                            indicate an unexpected soil transition or drainage problem.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Choosing k (Number of Neighbours)</h3>
+                        <p>
+                            The parameter <em>k</em> controls the scale of
+                            &ldquo;local&rdquo;:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Small k (5&ndash;10):</strong> Very local view.
+                                Sensitive to micro-clusters but prone to noise.
+                            </li>
+                            <li>
+                                <strong>Large k (50&ndash;100):</strong> Broader view.
+                                More stable but may miss anomalies in small, dense
+                                sub-clusters.
+                            </li>
+                            <li>
+                                <strong>Rule of thumb:</strong> Start with k = 20 and
+                                check the LOF score distribution. If scores cluster
+                                tightly near 1.0 with clear outliers above 1.5, the
+                                choice is working.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: AUTOENCODERS FOR ANOMALY DETECTION
+             ========================================== -->
+        <section class="ch-section" id="autoencoders">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-network-wired"></i>
+                    Autoencoders for Anomaly Detection
+                </h2>
+
+                <p>
+                    When the number of features grows into the hundreds and the
+                    relationships between them are highly non-linear, statistical
+                    methods and tree-based approaches can struggle. Autoencoders
+                    &mdash; a type of neural network &mdash; offer a powerful
+                    alternative by learning a compressed representation of normal
+                    data and flagging anything that cannot be reconstructed well.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Architecture Overview</h3>
+                        <p>
+                            An autoencoder has two halves:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Encoder:</strong> Compresses the input
+                                (e.g., 200 sensor features) through progressively
+                                smaller hidden layers into a low-dimensional
+                                <em>bottleneck</em> (e.g., 10 dimensions).
+                            </li>
+                            <li>
+                                <strong>Decoder:</strong> Reconstructs the original
+                                200-dimensional input from the 10-dimensional
+                                bottleneck.
+                            </li>
+                        </ul>
+                        <p>
+                            The network is trained on <strong>normal data only</strong>,
+                            minimising the <em>reconstruction error</em> (typically
+                            mean squared error between input and output). After
+                            training, the autoencoder can faithfully reconstruct any
+                            input that resembles normal operation. When an anomalous
+                            input arrives &mdash; say, a pattern of sensor readings
+                            never seen during normal operation &mdash; the bottleneck
+                            cannot encode it properly, and the reconstruction error
+                            spikes. A threshold on this error flags anomalies.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Example Architecture for SHM</h3>
+                        <div class="formula-block" style="margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.88rem; overflow-x:auto; line-height:1.7;">
+                            Input (200 sensors)<br>
+                            &nbsp;&nbsp;&rarr; Dense(128, ReLU)<br>
+                            &nbsp;&nbsp;&rarr; Dense(64, ReLU)<br>
+                            &nbsp;&nbsp;&rarr; Dense(16, ReLU) &nbsp; [bottleneck]<br>
+                            &nbsp;&nbsp;&rarr; Dense(64, ReLU)<br>
+                            &nbsp;&nbsp;&rarr; Dense(128, ReLU)<br>
+                            &nbsp;&nbsp;&rarr; Dense(200, linear) &nbsp; [reconstruction]
+                        </div>
+                        <p>
+                            The bottleneck of 16 dimensions forces the network to learn
+                            the most important correlations among the 200 sensors. If
+                            sensor 47 always tracks sensor 112 (because they are on the
+                            same girder), the bottleneck learns this dependency. When
+                            sensor 47 suddenly stops tracking sensor 112, the
+                            reconstruction error for both channels increases.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Setting the Reconstruction Error Threshold</h3>
+                        <p>
+                            After training, compute the reconstruction error for all
+                            samples in the <em>validation</em> set (normal data). The
+                            threshold is typically set at the 95th or 99th percentile
+                            of these errors:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>95th percentile:</strong> More sensitive, catches
+                                subtle anomalies but generates more false alarms. Good
+                                for safety-critical structures.
+                            </li>
+                            <li>
+                                <strong>99th percentile:</strong> Less sensitive, fewer
+                                false alarms but may miss subtle early-stage damage.
+                                Suitable for routine monitoring.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Application: Structural Response Anomalies</h3>
+                        <p>
+                            A high-rise building instrumented with floor-level
+                            accelerometers during an earthquake generates a complex
+                            multivariate time series. An autoencoder trained on
+                            wind-induced vibration data (normal operation) will produce
+                            low reconstruction error for typical wind events. During a
+                            seismic event, the completely different vibration pattern
+                            yields high reconstruction error across all channels &mdash;
+                            correctly flagging the event as anomalous.
+                        </p>
+                        <p>
+                            More importantly, <em>after</em> the earthquake, if the
+                            building's response to subsequent wind events changes (due
+                            to structural damage altering stiffness), the autoencoder
+                            will detect the shift because the new normal no longer
+                            matches the learned patterns. This enables automated
+                            post-event structural assessment.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-landmark"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            An autoencoder is like a skilled draughtsman who has drawn
+                            the same bridge elevation a thousand times. Give him a photo
+                            of the bridge, and he can reproduce it almost perfectly from
+                            memory, filling in small gaps. But show him a photo of a
+                            <em>different</em> bridge, or the same bridge with a buckled
+                            member, and his reproduction will have obvious errors &mdash;
+                            the reconstruction error reveals that something does not
+                            match his learned template.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: METHOD COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="method-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    Choosing the Right Method
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Decision Flowchart</h3>
+                        <p>
+                            Selecting an anomaly detection method depends on the data
+                            characteristics and engineering requirements:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Single sensor, clean data, quick check</strong>
+                                &rarr; <em>Z-score</em>. Fastest to implement, easy to
+                                explain in a report.
+                            </li>
+                            <li>
+                                <strong>Single sensor, noisy or skewed data</strong>
+                                &rarr; <em>IQR</em>. Robust to outlier contamination
+                                in training data.
+                            </li>
+                            <li>
+                                <strong>Multiple sensors, tabular data, moderate
+                                dimensionality (5&ndash;50 features)</strong>
+                                &rarr; <em>Isolation Forest</em>. Handles multivariate
+                                relationships, fast, scalable.
+                            </li>
+                            <li>
+                                <strong>Multiple sensors, varying density clusters</strong>
+                                &rarr; <em>LOF</em>. Captures local density variations
+                                that Isolation Forest may miss.
+                            </li>
+                            <li>
+                                <strong>High-dimensional (100+ sensors), complex
+                                non-linear correlations, large training set available</strong>
+                                &rarr; <em>Autoencoder</em>. Most powerful but requires
+                                more data and tuning.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Ensemble Approach in Practice</h3>
+                        <p>
+                            In production SHM systems, engineers often stack multiple
+                            methods. A common pipeline:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Layer 1 (Pre-filter):</strong> IQR on each
+                                sensor individually &mdash; catches obvious sensor
+                                faults (stuck readings, spikes, out-of-range values)
+                                cheaply.
+                            </li>
+                            <li>
+                                <strong>Layer 2 (Multivariate):</strong> Isolation Forest
+                                on the cleaned multi-sensor feature vector &mdash;
+                                catches unusual <em>combinations</em> of readings.
+                            </li>
+                            <li>
+                                <strong>Layer 3 (Deep patterns):</strong> Autoencoder on
+                                windowed time-series features &mdash; catches subtle
+                                changes in dynamic behaviour over time.
+                            </li>
+                        </ol>
+                        <p>
+                            Each layer catches different types of anomalies, and the
+                            combined false-positive rate is lower than any single method
+                            alone because obvious faults are removed before they reach
+                            the more sensitive methods.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: DEMO 1 - ANOMALY DETECTION SANDBOX
+             ========================================== -->
+        <section class="ch-section" id="demo-sandbox">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Anomaly Detection Sandbox
+                </h2>
+
+                <p>
+                    Click on the canvas to place data points. Use the controls to
+                    switch between adding <strong>normal</strong> or
+                    <strong>anomalous</strong> points. Then select an algorithm
+                    and hit <em>Detect</em> to see which points are flagged and
+                    the decision boundary the algorithm draws.
+                </p>
+
+                <div class="demo-panel" id="demo1-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-crosshairs"></i>
+                        <span>Anomaly Detection Sandbox</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="point-type" value="normal" checked>
+                            <span style="color:var(--accent-primary); font-weight:600;">
+                                <i class="fa-solid fa-circle" style="font-size:0.6em;"></i> Normal
+                            </span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="point-type" value="anomaly">
+                            <span style="color:var(--accent-danger); font-weight:600;">
+                                <i class="fa-solid fa-diamond" style="font-size:0.6em;"></i> Anomaly
+                            </span>
+                        </label>
+                        <select id="demo1-algo" style="padding:6px 12px; border-radius:6px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-primary); font-family:inherit;">
+                            <option value="zscore">Z-Score (2D)</option>
+                            <option value="iqr">IQR (per axis)</option>
+                            <option value="iforest" selected>Isolation Forest</option>
+                            <option value="lof">Local Outlier Factor</option>
+                        </select>
+                        <button id="demo1-detect" style="padding:6px 18px; border-radius:6px; background:var(--accent-primary); color:#000; border:none; font-weight:600; cursor:pointer;">
+                            <i class="fa-solid fa-play"></i> Detect
+                        </button>
+                        <button id="demo1-clear" style="padding:6px 18px; border-radius:6px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-primary); cursor:pointer;">
+                            <i class="fa-solid fa-trash-can"></i> Clear
+                        </button>
+                        <button id="demo1-sample" style="padding:6px 18px; border-radius:6px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-primary); cursor:pointer;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Sample Data
+                        </button>
+                    </div>
+                    <div style="position:relative; width:100%; aspect-ratio:16/10; background:var(--bg-secondary); border-radius:8px; overflow:hidden; border:1px solid var(--border-primary);">
+                        <canvas id="demo1-canvas" style="width:100%; height:100%; cursor:crosshair;"></canvas>
+                    </div>
+                    <div id="demo1-stats" style="margin-top:10px; font-size:0.85rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace;">
+                        Points: 0 normal, 0 anomalous | Click canvas to add points
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DEMO 2 - TIME-SERIES ANOMALY DETECTOR
+             ========================================== -->
+        <section class="ch-section" id="demo-timeseries">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wave-square"></i>
+                    Demo 2: Time-Series Anomaly Detector
+                </h2>
+
+                <p>
+                    This demo simulates a strain gauge sensor on a bridge girder.
+                    The signal contains normal cyclic traffic loading with injected
+                    anomalies &mdash; sensor spikes, drift, and flat-line events.
+                    Adjust the sensitivity threshold and watch the detector flag
+                    anomalous segments in real time.
+                </p>
+
+                <div class="demo-panel" id="demo2-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-signal"></i>
+                        <span>Strain Gauge Anomaly Detector</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.88rem; display:flex; align-items:center; gap:6px;">
+                            Threshold (&sigma;):
+                            <input type="range" id="demo2-threshold" min="1.5" max="5" step="0.1" value="2.5" style="width:120px;">
+                            <span id="demo2-threshold-label" style="font-family:'JetBrains Mono',monospace; min-width:30px;">2.5</span>
+                        </label>
+                        <label style="font-size:0.88rem; display:flex; align-items:center; gap:6px;">
+                            Anomaly type:
+                            <select id="demo2-anomaly-type" style="padding:4px 10px; border-radius:6px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-primary); font-family:inherit;">
+                                <option value="spike">Spikes</option>
+                                <option value="drift">Sensor Drift</option>
+                                <option value="flatline">Flat-line</option>
+                                <option value="mixed" selected>Mixed</option>
+                            </select>
+                        </label>
+                        <button id="demo2-generate" style="padding:6px 18px; border-radius:6px; background:var(--accent-primary); color:#000; border:none; font-weight:600; cursor:pointer;">
+                            <i class="fa-solid fa-rotate"></i> Generate Signal
+                        </button>
+                    </div>
+                    <div style="position:relative; width:100%; aspect-ratio:20/7; background:var(--bg-secondary); border-radius:8px; overflow:hidden; border:1px solid var(--border-primary);">
+                        <canvas id="demo2-canvas" style="width:100%; height:100%;"></canvas>
+                    </div>
+                    <div id="demo2-stats" style="margin-top:10px; font-size:0.85rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace;">
+                        Press "Generate Signal" to start
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: PRACTICAL CONSIDERATIONS
+             ========================================== -->
+        <section class="ch-section" id="practical-considerations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    Practical Considerations for Civil Engineers
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Data Quality and Pre-processing</h3>
+                        <p>
+                            Anomaly detection is only as good as your definition of
+                            &ldquo;normal.&rdquo; Before training:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Remove known events</strong> &mdash; earthquake
+                                records, planned load tests, and maintenance periods
+                                should be excluded from the training set, or the model
+                                learns to treat damage-like signals as normal.
+                            </li>
+                            <li>
+                                <strong>Account for seasonality</strong> &mdash; bridge
+                                sensor data varies with temperature, traffic patterns
+                                (weekday vs. weekend), and humidity. Train on a full
+                                annual cycle or normalise by environmental variables.
+                            </li>
+                            <li>
+                                <strong>Handle missing data</strong> &mdash; sensor
+                                dropouts are common. Impute short gaps with interpolation;
+                                flag long gaps as missing rather than zero-filling.
+                            </li>
+                            <li>
+                                <strong>Feature engineering</strong> &mdash; raw readings
+                                often benefit from derived features: rolling means, rolling
+                                standard deviations, frequency-domain features (FFT peaks),
+                                and cross-sensor correlation coefficients.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-unbalanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The False Positive Problem</h3>
+                        <p>
+                            In SHM, false positives are expensive. Each alarm triggers
+                            an investigation: an engineer reviews data, possibly sends
+                            an inspection team to a remote bridge site. If the system
+                            generates 50 false alarms per week, operators quickly learn
+                            to ignore alerts &mdash; the &ldquo;alarm fatigue&rdquo;
+                            problem &mdash; and real anomalies get missed.
+                        </p>
+                        <p>
+                            Strategies to reduce false positives:
+                        </p>
+                        <ul>
+                            <li>
+                                Use a <strong>confirmation window</strong> &mdash; flag an
+                                anomaly only if it persists for N consecutive readings.
+                            </li>
+                            <li>
+                                Require <strong>multiple methods to agree</strong> &mdash;
+                                ensemble approach (IQR + Isolation Forest).
+                            </li>
+                            <li>
+                                Implement <strong>tiered alerts</strong> &mdash; Advisory
+                                (low confidence), Warning (moderate), Critical (high
+                                confidence, multiple sensors confirm).
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-spin"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Model Retraining and Concept Drift</h3>
+                        <p>
+                            Structures change over time. Concrete creeps, foundations
+                            settle, repairs alter stiffness, and new traffic patterns
+                            emerge. An anomaly detection model trained in 2020 may
+                            generate increasing false positives by 2025 because
+                            &ldquo;normal&rdquo; has shifted.
+                        </p>
+                        <p>
+                            Best practices:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Periodic retraining</strong> on verified-normal
+                                recent data (e.g., quarterly updates).
+                            </li>
+                            <li>
+                                <strong>Monitoring the anomaly score distribution</strong>
+                                &mdash; if the baseline distribution drifts upward, the
+                                model may need updating.
+                            </li>
+                            <li>
+                                <strong>Human-in-the-loop:</strong> All flagged anomalies
+                                should be reviewed by an engineer and labelled as true or
+                                false positive, building a feedback loop for continuous
+                                improvement.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A strain gauge on a steel bridge reports &mu; = 200 &mu;&epsilon;
+                        and &sigma; = 30 &mu;&epsilon; under normal traffic. A reading of
+                        320 &mu;&epsilon; arrives. What is the z-score and should it be
+                        flagged (using |z| &gt; 3 threshold)?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> z = 2.0; do not flag
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> z = 3.0; borderline, do not flag
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> z = 4.0; flag as anomaly
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> z = 6.0; flag as critical anomaly
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct!
+                        z = (320 &minus; 200) / 30 = 4.0. Since |z| = 4.0 &gt; 3, the
+                        reading is flagged as anomalous. This could indicate overload,
+                        impact damage, or sensor malfunction requiring investigation.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Calculate:
+                        z = (320 &minus; 200) / 30 = <strong>4.0</strong>. Since
+                        4.0 &gt; 3, the reading should be flagged as an anomaly.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        Why is Isolation Forest effective at detecting multivariate
+                        anomalies that z-score and IQR methods miss?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> It uses deeper mathematical formulas
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> It randomly splits across all features simultaneously, isolating unusual combinations
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> It requires labelled anomaly examples for training
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> It computes the z-score for every feature pair
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Isolation Forest
+                        builds random trees that split across <em>all features</em>. An
+                        observation where each individual feature looks normal but the
+                        <em>combination</em> is unusual will still be isolated quickly
+                        because random splits across multiple axes can separate it from
+                        the dense normal cloud. Z-score and IQR check one feature at a
+                        time and miss these multivariate patterns.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key is that
+                        Isolation Forest performs <strong>random splits across all
+                        features</strong>, which naturally captures unusual
+                        <em>combinations</em> of values. It is an unsupervised method
+                        that does not require labelled anomaly examples.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        An autoencoder-based anomaly detector for a bridge SHM system
+                        has a reconstruction error threshold set at the 95th percentile
+                        of normal data. After a minor earthquake, the reconstruction
+                        error for wind-induced vibration data rises above this threshold
+                        even though no visible damage is found. What is the most likely
+                        explanation?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> The autoencoder has forgotten its training
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> The sensors are malfunctioning after the earthquake
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> The earthquake may have caused subtle stiffness changes that alter the vibration pattern
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The threshold was set too low and should be raised to 99th percentile
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Even without
+                        visible damage, earthquakes can cause micro-cracking in concrete,
+                        loosening of connections, or changes in boundary conditions that
+                        subtly alter the structure's dynamic stiffness. The autoencoder
+                        detects this shift because the vibration pattern no longer
+                        matches the pre-earthquake &ldquo;normal.&rdquo; This is exactly
+                        the kind of early-warning capability that makes autoencoders
+                        valuable for SHM.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The most likely
+                        explanation is that the earthquake caused <strong>subtle
+                        structural changes</strong> (micro-cracking, connection
+                        loosening) that altered the vibration pattern. The autoencoder
+                        correctly detects this shift. Raising the threshold would mask
+                        a potentially important structural change.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        In an LOF analysis of foundation settlement data, a monitoring
+                        point has an LOF score of 3.8. What does this mean in practical
+                        terms?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> The settlement is exactly 3.8 times the average
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> The point has 3.8 neighbours in its local cluster
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> The point's local density is roughly 3.8 times lower than its neighbours' average local density
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> The point is 3.8 standard deviations from the mean
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! An LOF score of
+                        3.8 means the average density of the point's neighbours is 3.8
+                        times higher than the density around the point itself. In other
+                        words, this monitoring point sits in a much sparser region of the
+                        feature space compared to its neighbours &mdash; it is a strong
+                        local outlier that warrants investigation for potential issues
+                        like unexpected soil conditions or drainage problems.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The LOF score
+                        is a <strong>density ratio</strong>: it compares the local density
+                        around the point to the average local density of its neighbours.
+                        A score of 3.8 means the point's neighbourhood is roughly
+                        3.8&times; sparser than its neighbours' neighbourhoods, making it
+                        a strong local outlier.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul>
+                            <li>
+                                <strong>Z-score</strong> flags points beyond a
+                                &sigma;-threshold. Simple, fast, interpretable, but
+                                assumes normality and is univariate only.
+                            </li>
+                            <li>
+                                <strong>IQR</strong> uses percentile-based fences and is
+                                robust to outlier contamination and non-normal
+                                distributions. Ideal for noisy field sensor data.
+                            </li>
+                            <li>
+                                <strong>Isolation Forest</strong> uses random partitioning
+                                to isolate anomalies in fewer splits. Handles multivariate
+                                data, scales well, and requires no density estimation.
+                            </li>
+                            <li>
+                                <strong>LOF</strong> compares local density to neighbours'
+                                densities. Excels when data has clusters of varying
+                                density &mdash; e.g., different soil types or traffic
+                                regimes.
+                            </li>
+                            <li>
+                                <strong>Autoencoders</strong> learn to reconstruct normal
+                                data; high reconstruction error flags anomalies. Best for
+                                high-dimensional data with complex non-linear correlations.
+                            </li>
+                            <li>
+                                In production SHM, <strong>ensemble approaches</strong>
+                                (layering IQR &rarr; Isolation Forest &rarr; Autoencoder)
+                                reduce false positives and catch different anomaly types.
+                            </li>
+                            <li>
+                                <strong>Data quality, seasonality, and concept drift</strong>
+                                require careful handling. Periodic retraining and
+                                human-in-the-loop review are essential.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-forward"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Comes Next</h3>
+                        <p>
+                            In Sub-chapter 3.8 (Association Rules), you will learn how
+                            to discover co-occurrence patterns in categorical engineering
+                            data &mdash; for example, which combinations of material
+                            properties, construction methods, and environmental conditions
+                            tend to appear together in defect reports. Association rules
+                            mine &ldquo;if X and Y, then Z&rdquo; patterns from large
+                            inspection databases.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub6.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.6 t-SNE &amp; UMAP
+        </a>
+        <a href="sub8.html" class="chapter-nav__link next">
+            3.8 Association Rules <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ============================================
+           UTILITY REFERENCES
+           ============================================ */
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var d = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:   d ? '#2dd4bf' : '#059669',
+                CYAN:   d ? '#22d3ee' : '#0284c7',
+                AMBER:  d ? '#fbbf24' : '#d97706',
+                RED:    d ? '#ef4444' : '#dc2626',
+                GREEN:  d ? '#22c55e' : '#16a34a',
+                BG:     d ? '#0a0a0f' : '#f8f9fc',
+                TEXT:   d ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:    d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:   d ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE:   d ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                STROKE: d ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE:  d ? '#fff' : '#1a1a2e',
+                MUTED:  d ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var dpr = window.devicePixelRatio || 1;
+            var rect = c.getBoundingClientRect();
+            c.width  = rect.width  * dpr;
+            c.height = rect.height * dpr;
+            var ctx = c.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx: ctx, w: rect.width, h: rect.height };
+        };
+
+        /* ============================================
+           HERO CANVAS ANIMATION
+           ============================================ */
+        (function heroAnimation() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            var particles = [];
+            var NUM = 60;
+            for (var i = 0; i < NUM; i++) {
+                var isAnomaly = Math.random() < 0.12;
+                particles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 0.6,
+                    vy: (Math.random() - 0.5) * 0.6,
+                    r: isAnomaly ? 4 + Math.random() * 3 : 2 + Math.random() * 2,
+                    anomaly: isAnomaly,
+                    pulse: Math.random() * Math.PI * 2
+                });
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                /* connections between normal particles */
+                ctx.lineWidth = 0.5;
+                for (var i = 0; i < NUM; i++) {
+                    if (particles[i].anomaly) continue;
+                    for (var j = i + 1; j < NUM; j++) {
+                        if (particles[j].anomaly) continue;
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.strokeStyle = c.DIM;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                /* draw particles */
+                for (var i = 0; i < NUM; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > W) p.vx *= -1;
+                    if (p.y < 0 || p.y > H) p.vy *= -1;
+                    p.pulse += 0.03;
+
+                    if (p.anomaly) {
+                        var glow = 0.5 + 0.5 * Math.sin(p.pulse);
+                        ctx.fillStyle = c.RED;
+                        ctx.globalAlpha = 0.3 + 0.4 * glow;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r * (1.2 + 0.3 * glow), 0, Math.PI * 2);
+                        ctx.fill();
+                        /* warning ring */
+                        ctx.strokeStyle = c.RED;
+                        ctx.lineWidth = 1;
+                        ctx.globalAlpha = 0.15 + 0.25 * glow;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r * 3 * (0.8 + 0.4 * glow), 0, Math.PI * 2);
+                        ctx.stroke();
+                    } else {
+                        ctx.fillStyle = c.TEAL;
+                        ctx.globalAlpha = 0.35;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function() {
+                var info2 = initCanvas(canvas);
+                W = info2.w;
+                H = info2.h;
+                ctx = info2.ctx;
+            });
+        })();
+
+        /* ============================================
+           DEMO 1: ANOMALY DETECTION SANDBOX
+           ============================================ */
+        (function demo1() {
+            var canvas = document.getElementById('demo1-canvas');
+            if (!canvas) return;
+
+            var points = [];       /* { x:0-1, y:0-1, type:'normal'|'anomaly' } */
+            var detections = null; /* { flagged:[], boundary:null } */
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            function toScreen(p) { return { x: p.x * W, y: (1 - p.y) * H }; }
+            function fromScreen(sx, sy) { return { x: sx / W, y: 1 - sy / H }; }
+
+            /* --- Drawing --- */
+            function draw() {
+                var c = getColors();
+                info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+
+                ctx.clearRect(0, 0, W, H);
+
+                /* grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx <= 10; gx++) {
+                    var xp = (gx / 10) * W;
+                    ctx.beginPath(); ctx.moveTo(xp, 0); ctx.lineTo(xp, H); ctx.stroke();
+                }
+                for (var gy = 0; gy <= 10; gy++) {
+                    var yp = (gy / 10) * H;
+                    ctx.beginPath(); ctx.moveTo(0, yp); ctx.lineTo(W, yp); ctx.stroke();
+                }
+
+                /* decision boundary (pixel-level heatmap) */
+                if (detections && detections.scoreFunc) {
+                    var step = 6;
+                    for (var px = 0; px < W; px += step) {
+                        for (var py = 0; py < H; py += step) {
+                            var pt = fromScreen(px + step / 2, py + step / 2);
+                            var score = detections.scoreFunc(pt.x, pt.y);
+                            if (score > 0) {
+                                ctx.fillStyle = c.RED;
+                                ctx.globalAlpha = Math.min(score * 0.25, 0.18);
+                                ctx.fillRect(px, py, step, step);
+                            }
+                        }
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                /* draw points */
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    var sp = toScreen(p);
+                    var isFlagged = detections && detections.flagged && detections.flagged[i];
+
+                    if (p.type === 'anomaly') {
+                        /* diamond */
+                        ctx.save();
+                        ctx.translate(sp.x, sp.y);
+                        ctx.rotate(Math.PI / 4);
+                        ctx.fillStyle = c.RED;
+                        ctx.globalAlpha = 0.9;
+                        ctx.fillRect(-5, -5, 10, 10);
+                        ctx.restore();
+                    } else {
+                        ctx.fillStyle = c.TEAL;
+                        ctx.globalAlpha = 0.85;
+                        ctx.beginPath();
+                        ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    /* flag ring */
+                    if (isFlagged) {
+                        ctx.strokeStyle = c.AMBER;
+                        ctx.lineWidth = 2.5;
+                        ctx.globalAlpha = 0.9;
+                        ctx.beginPath();
+                        ctx.arc(sp.x, sp.y, 12, 0, Math.PI * 2);
+                        ctx.stroke();
+                        /* cross */
+                        ctx.beginPath();
+                        ctx.moveTo(sp.x - 8, sp.y - 8);
+                        ctx.lineTo(sp.x + 8, sp.y + 8);
+                        ctx.moveTo(sp.x + 8, sp.y - 8);
+                        ctx.lineTo(sp.x - 8, sp.y + 8);
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                updateStats();
+            }
+
+            function updateStats() {
+                var nn = 0, na = 0, nf = 0;
+                for (var i = 0; i < points.length; i++) {
+                    if (points[i].type === 'normal') nn++; else na++;
+                    if (detections && detections.flagged && detections.flagged[i]) nf++;
+                }
+                var s = 'Points: ' + nn + ' normal, ' + na + ' anomalous';
+                if (detections) s += ' | Flagged: ' + nf;
+                document.getElementById('demo1-stats').textContent = s;
+            }
+
+            /* --- Click handler --- */
+            canvas.addEventListener('click', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                var sx = e.clientX - rect.left;
+                var sy = e.clientY - rect.top;
+                var pt = fromScreen(sx, sy);
+                var type = document.querySelector('input[name="point-type"]:checked').value;
+                points.push({ x: pt.x, y: pt.y, type: type });
+                detections = null;
+                draw();
+            });
+
+            /* --- Sample data --- */
+            document.getElementById('demo1-sample').addEventListener('click', function() {
+                points = [];
+                detections = null;
+                /* normal cluster 1 */
+                for (var i = 0; i < 40; i++) {
+                    points.push({ x: 0.35 + randn() * 0.08, y: 0.55 + randn() * 0.08, type: 'normal' });
+                }
+                /* normal cluster 2 */
+                for (var i = 0; i < 30; i++) {
+                    points.push({ x: 0.7 + randn() * 0.06, y: 0.35 + randn() * 0.06, type: 'normal' });
+                }
+                /* anomalies */
+                points.push({ x: 0.1, y: 0.9, type: 'anomaly' });
+                points.push({ x: 0.9, y: 0.85, type: 'anomaly' });
+                points.push({ x: 0.5, y: 0.1, type: 'anomaly' });
+                points.push({ x: 0.15, y: 0.2, type: 'anomaly' });
+                points.push({ x: 0.85, y: 0.7, type: 'anomaly' });
+                draw();
+            });
+
+            /* --- Clear --- */
+            document.getElementById('demo1-clear').addEventListener('click', function() {
+                points = [];
+                detections = null;
+                draw();
+            });
+
+            /* --- Gaussian random --- */
+            function randn() {
+                var u = 0, v = 0;
+                while (u === 0) u = Math.random();
+                while (v === 0) v = Math.random();
+                return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+            }
+
+            /* --- Detection algorithms --- */
+            function detectZScore() {
+                if (points.length < 3) return;
+                var mx = 0, my = 0;
+                for (var i = 0; i < points.length; i++) { mx += points[i].x; my += points[i].y; }
+                mx /= points.length; my /= points.length;
+                var sx = 0, sy = 0;
+                for (var i = 0; i < points.length; i++) {
+                    sx += (points[i].x - mx) * (points[i].x - mx);
+                    sy += (points[i].y - my) * (points[i].y - my);
+                }
+                sx = Math.sqrt(sx / points.length); sy = Math.sqrt(sy / points.length);
+                if (sx === 0) sx = 0.001; if (sy === 0) sy = 0.001;
+
+                var flagged = [];
+                for (var i = 0; i < points.length; i++) {
+                    var zx = Math.abs((points[i].x - mx) / sx);
+                    var zy = Math.abs((points[i].y - my) / sy);
+                    flagged.push(Math.max(zx, zy) > 2.5);
+                }
+                detections = {
+                    flagged: flagged,
+                    scoreFunc: function(x, y) {
+                        var zx2 = Math.abs((x - mx) / sx);
+                        var zy2 = Math.abs((y - my) / sy);
+                        var z = Math.max(zx2, zy2);
+                        return z > 2.5 ? (z - 2.5) / 3 : 0;
+                    }
+                };
+            }
+
+            function detectIQR() {
+                if (points.length < 5) return;
+                var xs = points.map(function(p) { return p.x; }).sort(function(a,b){return a-b;});
+                var ys = points.map(function(p) { return p.y; }).sort(function(a,b){return a-b;});
+                function quartile(arr, q) {
+                    var pos = (arr.length - 1) * q;
+                    var lo = Math.floor(pos), hi = Math.ceil(pos);
+                    return arr[lo] + (arr[hi] - arr[lo]) * (pos - lo);
+                }
+                var q1x = quartile(xs, 0.25), q3x = quartile(xs, 0.75);
+                var q1y = quartile(ys, 0.25), q3y = quartile(ys, 0.75);
+                var iqrx = q3x - q1x, iqry = q3y - q1y;
+                if (iqrx === 0) iqrx = 0.01; if (iqry === 0) iqry = 0.01;
+                var lx = q1x - 1.5 * iqrx, ux = q3x + 1.5 * iqrx;
+                var ly = q1y - 1.5 * iqry, uy = q3y + 1.5 * iqry;
+
+                var flagged = [];
+                for (var i = 0; i < points.length; i++) {
+                    flagged.push(points[i].x < lx || points[i].x > ux || points[i].y < ly || points[i].y > uy);
+                }
+                detections = {
+                    flagged: flagged,
+                    scoreFunc: function(x, y) {
+                        var ox = 0, oy = 0;
+                        if (x < lx) ox = (lx - x) / iqrx;
+                        else if (x > ux) ox = (x - ux) / iqrx;
+                        if (y < ly) oy = (ly - y) / iqry;
+                        else if (y > uy) oy = (y - uy) / iqry;
+                        return Math.max(ox, oy);
+                    }
+                };
+            }
+
+            function detectIsolationForest() {
+                if (points.length < 5) return;
+                /* Simplified Isolation Forest */
+                var nTrees = 100;
+                var maxDepth = Math.ceil(Math.log2(points.length)) + 2;
+                var pathLengths = new Array(points.length);
+                for (var i = 0; i < points.length; i++) pathLengths[i] = 0;
+
+                for (var t = 0; t < nTrees; t++) {
+                    /* subsample */
+                    var sample = [];
+                    var sampleSize = Math.min(points.length, Math.max(8, Math.floor(points.length * 0.8)));
+                    var indices = [];
+                    for (var i = 0; i < points.length; i++) indices.push(i);
+                    for (var i = indices.length - 1; i > 0; i--) {
+                        var j = Math.floor(Math.random() * (i + 1));
+                        var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+                    }
+                    for (var i = 0; i < sampleSize; i++) {
+                        sample.push({ x: points[indices[i]].x, y: points[indices[i]].y, idx: indices[i] });
+                    }
+
+                    function buildTree(data, depth) {
+                        if (data.length <= 1 || depth >= maxDepth) {
+                            for (var k = 0; k < data.length; k++) pathLengths[data[k].idx] += depth;
+                            return;
+                        }
+                        var feat = Math.random() < 0.5 ? 'x' : 'y';
+                        var vals = data.map(function(d) { return d[feat]; });
+                        var mn = Math.min.apply(null, vals), mx2 = Math.max.apply(null, vals);
+                        if (mn === mx2) {
+                            for (var k = 0; k < data.length; k++) pathLengths[data[k].idx] += depth;
+                            return;
+                        }
+                        var split = mn + Math.random() * (mx2 - mn);
+                        var left = [], right = [];
+                        for (var k = 0; k < data.length; k++) {
+                            if (data[k][feat] < split) left.push(data[k]); else right.push(data[k]);
+                        }
+                        buildTree(left, depth + 1);
+                        buildTree(right, depth + 1);
+                    }
+                    buildTree(sample, 0);
+                }
+
+                /* average path length */
+                for (var i = 0; i < points.length; i++) pathLengths[i] /= nTrees;
+
+                /* expected path length for dataset size */
+                var n = points.length;
+                var cn = (n > 2) ? 2 * (Math.log(n - 1) + 0.5772) - 2 * (n - 1) / n : 1;
+                if (cn <= 0) cn = 1;
+
+                /* anomaly scores */
+                var scores = [];
+                for (var i = 0; i < points.length; i++) {
+                    scores.push(Math.pow(2, -pathLengths[i] / cn));
+                }
+
+                /* threshold: flag top scores */
+                var sortedScores = scores.slice().sort(function(a,b){return b-a;});
+                var threshold = sortedScores[Math.max(0, Math.floor(points.length * 0.12))] || 0.6;
+                threshold = Math.max(threshold, 0.55);
+
+                var flagged = [];
+                for (var i = 0; i < points.length; i++) {
+                    flagged.push(scores[i] >= threshold);
+                }
+
+                /* score function for boundary visualisation */
+                detections = {
+                    flagged: flagged,
+                    scoreFunc: function(qx, qy) {
+                        /* approximate by computing isolation for query point */
+                        var avgPath = 0;
+                        for (var t = 0; t < 30; t++) {
+                            var depth = 0;
+                            var dpts = points.slice();
+                            while (dpts.length > 1 && depth < maxDepth) {
+                                var feat = Math.random() < 0.5 ? 'x' : 'y';
+                                var vals = dpts.map(function(d){ return d[feat]; });
+                                var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+                                if (mn === mx) break;
+                                var split = mn + Math.random() * (mx - mn);
+                                var qval = feat === 'x' ? qx : qy;
+                                dpts = dpts.filter(function(d){ return qval < split ? d[feat] < split : d[feat] >= split; });
+                                depth++;
+                            }
+                            avgPath += depth;
+                        }
+                        avgPath /= 30;
+                        var s = Math.pow(2, -avgPath / cn);
+                        return s > threshold ? (s - threshold) * 3 : 0;
+                    }
+                };
+            }
+
+            function detectLOF() {
+                if (points.length < 5) return;
+                var k = Math.min(10, Math.floor(points.length / 2));
+
+                function dist(a, b) {
+                    var dx = a.x - b.x, dy = a.y - b.y;
+                    return Math.sqrt(dx * dx + dy * dy);
+                }
+
+                /* k-nearest neighbours */
+                var knn = [];
+                var kdists = [];
+                for (var i = 0; i < points.length; i++) {
+                    var dists = [];
+                    for (var j = 0; j < points.length; j++) {
+                        if (i === j) continue;
+                        dists.push({ idx: j, d: dist(points[i], points[j]) });
+                    }
+                    dists.sort(function(a,b){return a.d - b.d;});
+                    knn.push(dists.slice(0, k));
+                    kdists.push(dists[k - 1].d);
+                }
+
+                /* reachability distance */
+                function reachDist(i, j) {
+                    return Math.max(kdists[j], dist(points[i], points[j]));
+                }
+
+                /* local reachability density */
+                var lrd = [];
+                for (var i = 0; i < points.length; i++) {
+                    var sum = 0;
+                    for (var n2 = 0; n2 < knn[i].length; n2++) {
+                        sum += reachDist(i, knn[i][n2].idx);
+                    }
+                    lrd.push(knn[i].length / (sum || 0.0001));
+                }
+
+                /* LOF scores */
+                var lofScores = [];
+                for (var i = 0; i < points.length; i++) {
+                    var sum = 0;
+                    for (var n2 = 0; n2 < knn[i].length; n2++) {
+                        sum += lrd[knn[i][n2].idx];
+                    }
+                    lofScores.push((sum / knn[i].length) / (lrd[i] || 0.0001));
+                }
+
+                /* threshold */
+                var sortedLOF = lofScores.slice().sort(function(a,b){return b-a;});
+                var lofThreshold = sortedLOF[Math.max(0, Math.floor(points.length * 0.12))] || 1.5;
+                lofThreshold = Math.max(lofThreshold, 1.4);
+
+                var flagged = [];
+                for (var i = 0; i < points.length; i++) {
+                    flagged.push(lofScores[i] >= lofThreshold);
+                }
+
+                detections = {
+                    flagged: flagged,
+                    scoreFunc: function(qx, qy) {
+                        /* approximate LOF for query point */
+                        var qPt = { x: qx, y: qy };
+                        var dists = [];
+                        for (var j = 0; j < points.length; j++) {
+                            dists.push({ idx: j, d: dist(qPt, points[j]) });
+                        }
+                        dists.sort(function(a,b){return a.d - b.d;});
+                        var qknn = dists.slice(0, k);
+                        var qkdist = qknn[k - 1].d;
+                        var sum = 0;
+                        for (var n2 = 0; n2 < qknn.length; n2++) {
+                            sum += Math.max(kdists[qknn[n2].idx], qknn[n2].d);
+                        }
+                        var qlrd = qknn.length / (sum || 0.0001);
+                        var lofSum = 0;
+                        for (var n2 = 0; n2 < qknn.length; n2++) {
+                            lofSum += lrd[qknn[n2].idx];
+                        }
+                        var qlof = (lofSum / qknn.length) / (qlrd || 0.0001);
+                        return qlof > lofThreshold ? (qlof - lofThreshold) / 3 : 0;
+                    }
+                };
+            }
+
+            /* --- Detect button --- */
+            document.getElementById('demo1-detect').addEventListener('click', function() {
+                if (points.length < 3) return;
+                var algo = document.getElementById('demo1-algo').value;
+                if (algo === 'zscore') detectZScore();
+                else if (algo === 'iqr') detectIQR();
+                else if (algo === 'iforest') detectIsolationForest();
+                else if (algo === 'lof') detectLOF();
+                draw();
+            });
+
+            /* --- Resize --- */
+            var resizeTimer1;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer1);
+                resizeTimer1 = setTimeout(draw, 200);
+            });
+
+            draw();
+        })();
+
+        /* ============================================
+           DEMO 2: TIME-SERIES ANOMALY DETECTOR
+           ============================================ */
+        (function demo2() {
+            var canvas = document.getElementById('demo2-canvas');
+            if (!canvas) return;
+
+            var signal = [];
+            var anomalyRegions = [];
+            var detected = [];
+
+            var thresholdSlider = document.getElementById('demo2-threshold');
+            var thresholdLabel  = document.getElementById('demo2-threshold-label');
+            var anomalySelect   = document.getElementById('demo2-anomaly-type');
+            var generateBtn     = document.getElementById('demo2-generate');
+            var statsEl         = document.getElementById('demo2-stats');
+
+            thresholdSlider.addEventListener('input', function() {
+                thresholdLabel.textContent = parseFloat(thresholdSlider.value).toFixed(1);
+                if (signal.length > 0) runDetection();
+            });
+
+            function generateSignal() {
+                signal = [];
+                anomalyRegions = [];
+                var N = 500;
+                var anomalyType = anomalySelect.value;
+
+                /* base signal: cyclic traffic load with noise */
+                for (var i = 0; i < N; i++) {
+                    var t = i / N;
+                    var base = 200 + 30 * Math.sin(2 * Math.PI * t * 5) +
+                               15 * Math.sin(2 * Math.PI * t * 13) +
+                               8 * Math.sin(2 * Math.PI * t * 23);
+                    base += (Math.random() - 0.5) * 20;
+                    signal.push(base);
+                }
+
+                /* inject anomalies */
+                function injectSpike(pos) {
+                    var len = 3 + Math.floor(Math.random() * 5);
+                    var magnitude = 80 + Math.random() * 60;
+                    var dir = Math.random() < 0.5 ? 1 : -1;
+                    for (var i = pos; i < Math.min(pos + len, N); i++) {
+                        signal[i] += dir * magnitude * Math.exp(-0.5 * Math.pow((i - pos) / 1.5, 2));
+                    }
+                    anomalyRegions.push({ start: pos, end: Math.min(pos + len, N - 1), type: 'spike' });
+                }
+
+                function injectDrift(pos) {
+                    var len = 40 + Math.floor(Math.random() * 30);
+                    var rate = (Math.random() < 0.5 ? 1 : -1) * (1.5 + Math.random() * 1.5);
+                    for (var i = pos; i < Math.min(pos + len, N); i++) {
+                        signal[i] += rate * (i - pos);
+                    }
+                    anomalyRegions.push({ start: pos, end: Math.min(pos + len, N - 1), type: 'drift' });
+                }
+
+                function injectFlatline(pos) {
+                    var len = 15 + Math.floor(Math.random() * 20);
+                    var val = signal[pos];
+                    for (var i = pos; i < Math.min(pos + len, N); i++) {
+                        signal[i] = val;
+                    }
+                    anomalyRegions.push({ start: pos, end: Math.min(pos + len, N - 1), type: 'flatline' });
+                }
+
+                var spots = [80, 180, 300, 400];
+                for (var s = 0; s < spots.length; s++) {
+                    var spot = spots[s] + Math.floor(Math.random() * 20 - 10);
+                    if (anomalyType === 'spike') injectSpike(spot);
+                    else if (anomalyType === 'drift') injectDrift(spot);
+                    else if (anomalyType === 'flatline') injectFlatline(spot);
+                    else {
+                        /* mixed */
+                        var r = Math.random();
+                        if (r < 0.33) injectSpike(spot);
+                        else if (r < 0.66) injectDrift(spot);
+                        else injectFlatline(spot);
+                    }
+                }
+
+                runDetection();
+            }
+
+            function runDetection() {
+                detected = [];
+                if (signal.length === 0) return;
+
+                var threshold = parseFloat(thresholdSlider.value);
+
+                /* rolling window z-score */
+                var winSize = 30;
+                for (var i = 0; i < signal.length; i++) {
+                    var start = Math.max(0, i - winSize);
+                    var end = Math.min(signal.length, i + winSize);
+                    var sum = 0, count = 0;
+                    for (var j = start; j < end; j++) {
+                        /* exclude the point itself for leave-one-out */
+                        if (j === i) continue;
+                        sum += signal[j];
+                        count++;
+                    }
+                    var mean = sum / count;
+                    var variance = 0;
+                    for (var j = start; j < end; j++) {
+                        if (j === i) continue;
+                        variance += (signal[j] - mean) * (signal[j] - mean);
+                    }
+                    variance /= count;
+                    var std = Math.sqrt(variance);
+                    if (std < 1) std = 1;
+
+                    var z = Math.abs(signal[i] - mean) / std;
+                    detected.push(z > threshold);
+                }
+
+                drawTimeSeries();
+            }
+
+            function drawTimeSeries() {
+                var c = getColors();
+                var info = initCanvas(canvas);
+                var ctx2 = info.ctx, W2 = info.w, H2 = info.h;
+
+                ctx2.clearRect(0, 0, W2, H2);
+
+                if (signal.length === 0) {
+                    ctx2.fillStyle = c.MUTED;
+                    ctx2.font = '14px Inter, sans-serif';
+                    ctx2.textAlign = 'center';
+                    ctx2.fillText('Press "Generate Signal" to start', W2 / 2, H2 / 2);
+                    return;
+                }
+
+                var N = signal.length;
+                var minV = Infinity, maxV = -Infinity;
+                for (var i = 0; i < N; i++) {
+                    if (signal[i] < minV) minV = signal[i];
+                    if (signal[i] > maxV) maxV = signal[i];
+                }
+                var range = maxV - minV || 1;
+                var pad = 20;
+
+                function toX(i) { return pad + (i / (N - 1)) * (W2 - 2 * pad); }
+                function toY(v) { return H2 - pad - ((v - minV) / range) * (H2 - 2 * pad); }
+
+                /* anomaly region highlights */
+                for (var r = 0; r < anomalyRegions.length; r++) {
+                    var reg = anomalyRegions[r];
+                    var x1 = toX(reg.start);
+                    var x2 = toX(reg.end);
+                    ctx2.fillStyle = c.RED;
+                    ctx2.globalAlpha = 0.08;
+                    ctx2.fillRect(x1, pad, x2 - x1, H2 - 2 * pad);
+                    ctx2.globalAlpha = 1;
+                }
+
+                /* grid lines */
+                ctx2.strokeStyle = c.GRID;
+                ctx2.lineWidth = 1;
+                for (var g = 0; g <= 4; g++) {
+                    var yy = pad + (g / 4) * (H2 - 2 * pad);
+                    ctx2.beginPath();
+                    ctx2.moveTo(pad, yy);
+                    ctx2.lineTo(W2 - pad, yy);
+                    ctx2.stroke();
+                }
+
+                /* signal line */
+                ctx2.beginPath();
+                ctx2.strokeStyle = c.TEAL;
+                ctx2.lineWidth = 1.5;
+                ctx2.moveTo(toX(0), toY(signal[0]));
+                for (var i = 1; i < N; i++) {
+                    ctx2.lineTo(toX(i), toY(signal[i]));
+                }
+                ctx2.stroke();
+
+                /* detected anomaly markers */
+                for (var i = 0; i < N; i++) {
+                    if (detected[i]) {
+                        ctx2.fillStyle = c.AMBER;
+                        ctx2.globalAlpha = 0.85;
+                        ctx2.beginPath();
+                        ctx2.arc(toX(i), toY(signal[i]), 3, 0, Math.PI * 2);
+                        ctx2.fill();
+                        ctx2.globalAlpha = 1;
+                    }
+                }
+
+                /* axes labels */
+                ctx2.fillStyle = c.MUTED;
+                ctx2.font = '11px "JetBrains Mono", monospace';
+                ctx2.textAlign = 'left';
+                ctx2.fillText(Math.round(maxV) + ' \u03BC\u03B5', 2, pad + 10);
+                ctx2.fillText(Math.round(minV) + ' \u03BC\u03B5', 2, H2 - pad);
+                ctx2.textAlign = 'center';
+                ctx2.fillText('Time \u2192', W2 / 2, H2 - 3);
+
+                /* legend */
+                ctx2.textAlign = 'right';
+                ctx2.font = '11px Inter, sans-serif';
+                ctx2.fillStyle = c.TEAL;
+                ctx2.fillText('\u2014 Signal', W2 - pad, pad + 12);
+                ctx2.fillStyle = c.AMBER;
+                ctx2.fillText('\u25CF Detected', W2 - pad, pad + 26);
+                ctx2.fillStyle = c.RED;
+                ctx2.globalAlpha = 0.5;
+                ctx2.fillText('\u2588 True anomaly region', W2 - pad, pad + 40);
+                ctx2.globalAlpha = 1;
+
+                /* stats */
+                var tp = 0, fp = 0, fn = 0;
+                for (var i = 0; i < N; i++) {
+                    var isTrue = false;
+                    for (var r = 0; r < anomalyRegions.length; r++) {
+                        if (i >= anomalyRegions[r].start && i <= anomalyRegions[r].end) {
+                            isTrue = true;
+                            break;
+                        }
+                    }
+                    if (detected[i] && isTrue) tp++;
+                    else if (detected[i] && !isTrue) fp++;
+                    else if (!detected[i] && isTrue) fn++;
+                }
+                var precision = tp + fp > 0 ? (tp / (tp + fp) * 100).toFixed(1) : '0.0';
+                var recall = tp + fn > 0 ? (tp / (tp + fn) * 100).toFixed(1) : '0.0';
+                statsEl.textContent = 'Threshold: ' + parseFloat(thresholdSlider.value).toFixed(1) +
+                    '\u03C3 | TP: ' + tp + ' | FP: ' + fp + ' | FN: ' + fn +
+                    ' | Precision: ' + precision + '% | Recall: ' + recall + '%';
+            }
+
+            generateBtn.addEventListener('click', generateSignal);
+
+            /* Resize */
+            var resizeTimer2;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer2);
+                resizeTimer2 = setTimeout(function() {
+                    if (signal.length > 0) drawTimeSeries();
+                }, 200);
+            });
+
+            drawTimeSeries();
+        })();
+
+        /* ============================================
+           QUIZ HANDLER
+           ============================================ */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var options = block.querySelectorAll('.quiz-option');
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+
+            /* Disable all options */
+            for (var i = 0; i < options.length; i++) {
+                options[i].disabled = true;
+                options[i].style.pointerEvents = 'none';
+                if (options[i].getAttribute('data-correct') === 'true') {
+                    options[i].style.borderColor = 'var(--accent-success)';
+                    options[i].style.background = 'rgba(34,197,94,0.1)';
+                }
+            }
+
+            if (!isCorrect) {
+                btn.style.borderColor = 'var(--accent-danger)';
+                btn.style.background = 'rgba(239,68,68,0.1)';
+            }
+
+            var correctFb = document.getElementById(quizId + '-correct');
+            var wrongFb   = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctFb) correctFb.style.display = 'block';
+            if (!isCorrect && wrongFb)  wrongFb.style.display = 'block';
+        };
+
+    })();
+    </script>
+
+</body>
+</html>

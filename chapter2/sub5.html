@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.5 Logistic Regression | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master logistic regression for civil engineering applications. Understand the sigmoid function, log-odds, probability thresholds, binary cross-entropy loss, multi-class softmax, and real-world CE applications such as failure prediction and dam safety classification.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.5
+            </div>
+            <h1 class="chapter-hero__title">Logistic Regression</h1>
+            <p class="chapter-hero__subtitle">
+                When the question is not "how much?" but "what is the probability?" &mdash;
+                logistic regression turns linear algebra into calibrated probabilities. From
+                predicting whether a concrete beam will crack under load to classifying dam
+                safety risk levels, this algorithm is the workhorse of probabilistic
+                classification in engineering practice.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge-water"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Beyond Yes or No &mdash; How Likely?</h2>
+                        <p>
+                            A structural inspector does not simply declare a bridge "safe" or
+                            "unsafe." They assess the <strong>probability</strong> that a
+                            component will fail within its design life. A dam safety engineer
+                            quantifies the <strong>likelihood</strong> that an embankment will
+                            overtop during a 100-year flood event. These are not binary questions
+                            &mdash; they are questions about probability.
+                        </p>
+                        <p>
+                            Logistic regression is the first algorithm you will encounter that
+                            outputs a <strong>calibrated probability</strong> rather than a raw
+                            class label. It sits at the boundary between regression and
+                            classification: it uses a linear equation internally (just like the
+                            linear regression you mastered in Sub-chapter 2.2) but passes the
+                            result through a special function &mdash; the <em>sigmoid</em>
+                            &mdash; that squashes the output into the range [0, 1]. The result
+                            is a probability estimate that you can threshold into a decision.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In Sub-chapter 2.4, you learned the fundamentals of classification: binary
+                    vs. multi-class problems, decision boundaries, confusion matrices, and
+                    evaluation metrics like precision, recall, and the F1-score. Logistic
+                    regression is the natural next step &mdash; it is the simplest algorithm
+                    that produces probability-based classifications, and understanding it deeply
+                    will prepare you for every advanced classifier that follows.
+                </p>
+
+                <p>
+                    We will cover:
+                </p>
+
+                <ul>
+                    <li>The sigmoid function and why it maps any real number to a probability</li>
+                    <li>Log-odds (logit) &mdash; the linear core inside logistic regression</li>
+                    <li>Probability thresholds and how they control precision-recall trade-offs</li>
+                    <li>Binary cross-entropy &mdash; the loss function that trains the model</li>
+                    <li>Multi-class extension via the softmax function</li>
+                    <li>Civil engineering applications: failure prediction and dam safety classification</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds on Sub-chapters 2.2 (Linear Regression) and 2.4
+                        (Classification Basics). You should be comfortable with the idea of a
+                        linear equation, the concept of a loss function, and the confusion matrix
+                        with its derived metrics (precision, recall, F1).
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHY NOT LINEAR REGRESSION?
+             ========================================== -->
+        <section class="ch-section" id="why-not-linear">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-ban"></i>
+                    Why Linear Regression Fails for Classification
+                </h2>
+
+                <p>
+                    Imagine you want to predict whether a concrete cylinder will fail a quality
+                    test based on its water-cement (W/C) ratio. You have historical data:
+                    cylinders with low W/C ratios tend to pass, cylinders with high W/C ratios
+                    tend to fail. The natural first thought is to use the linear regression you
+                    already know.
+                </p>
+
+                <p>
+                    The problem is that linear regression predicts any real number from
+                    negative infinity to positive infinity. But a probability must stay between
+                    0 and 1. If you fit a straight line to your pass/fail data:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> The Problem with Linear Regression for Binary Outcomes
+                    </div>
+                    <pre><code>y = w * x + b
+
+For W/C = 0.30 (very good concrete):   y = -0.35   (negative probability?!)
+For W/C = 0.55 (borderline):           y =  0.50   (reasonable)
+For W/C = 0.85 (very high W/C):        y =  1.30   (probability > 1?!)</code></pre>
+                </div>
+
+                <p>
+                    Predictions below 0 or above 1 are meaningless as probabilities. You
+                    could clamp them, but this introduces hard thresholds and wastes
+                    information from the extreme data points. We need a function that
+                    <strong>naturally</strong> constrains the output to [0, 1] no matter what
+                    the input is. Enter the sigmoid function.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>A Civil Engineering Analogy</h3>
+                        <p>
+                            Think of it like a safety factor analysis. A safety factor can
+                            theoretically range from 0 to infinity, but what the engineer really
+                            wants is a <strong>probability of failure</strong> &mdash; a value
+                            between 0 and 1. Converting a safety factor into a failure probability
+                            requires a non-linear transformation, much like the sigmoid function
+                            converts a linear score into a probability.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: THE SIGMOID FUNCTION
+             ========================================== -->
+        <section class="ch-section" id="sigmoid-function">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wave-square"></i>
+                    The Sigmoid Function
+                </h2>
+
+                <p>
+                    The sigmoid function (also called the logistic function) is the
+                    mathematical heart of logistic regression. It takes any real number and
+                    maps it to a value between 0 and 1:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Sigmoid Definition
+                    </div>
+                    <pre><code>                    1
+sigma(z) = ----------------
+            1 + exp(-z)
+
+Where:
+  z = w * x + b       (the linear combination, same as linear regression)
+  exp(-z) = e^(-z)    (the exponential function)
+  sigma(z) is always in (0, 1)</code></pre>
+                </div>
+
+                <p>
+                    The sigmoid has several elegant properties that make it perfect for
+                    probability estimation:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Bounded Output</h3>
+                        <p>
+                            No matter how large or small <em>z</em> becomes, sigma(z) is always
+                            strictly between 0 and 1. As z approaches positive infinity,
+                            sigma(z) approaches 1. As z approaches negative infinity,
+                            sigma(z) approaches 0. This makes it a natural probability function.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Smooth S-Shape</h3>
+                        <p>
+                            The function transitions gradually from 0 to 1, centred at z = 0
+                            where sigma(0) = 0.5. This smoothness is crucial &mdash; it means
+                            the function is differentiable everywhere, which allows gradient-based
+                            optimisation to train the model efficiently.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Monotonically Increasing</h3>
+                        <p>
+                            A higher linear score always produces a higher probability. This makes
+                            the model interpretable: if the weight for W/C ratio is negative, then
+                            increasing the W/C ratio always <em>decreases</em> the probability of
+                            passing &mdash; which aligns with engineering intuition.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Symmetry</h3>
+                        <p>
+                            sigma(-z) = 1 - sigma(z). This symmetry means the function treats
+                            the two classes equally &mdash; the curve is symmetric about the point
+                            (0, 0.5). In our concrete example, a W/C ratio equally far below the
+                            decision boundary is just as "confident pass" as one equally far above
+                            is "confident fail."
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Application: Crack Probability in RC Beams</h3>
+                        <p>
+                            Consider predicting whether a reinforced concrete beam will develop
+                            visible cracks under service load. Your features might include the
+                            reinforcement ratio, concrete cover depth, span-to-depth ratio, and
+                            applied load intensity. The sigmoid function wraps these into a single
+                            probability:
+                        </p>
+                        <p>
+                            <strong>P(crack) = sigma(w1 * reinforcement_ratio + w2 * cover +
+                            w3 * span_depth + w4 * load + b)</strong>
+                        </p>
+                        <p>
+                            If P(crack) = 0.82, the model is 82% confident that cracking will
+                            occur &mdash; a much more informative statement than a binary "yes"
+                            or "no."
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: LOG-ODDS (LOGIT)
+             ========================================== -->
+        <section class="ch-section" id="log-odds">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-right-left"></i>
+                    Log-Odds: The Linear Core
+                </h2>
+
+                <p>
+                    The sigmoid function maps a linear score to a probability, but the
+                    <strong>logit function</strong> does the reverse &mdash; it maps a
+                    probability back to a real number. Understanding this inverse is key to
+                    interpreting logistic regression coefficients.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> The Logit (Inverse Sigmoid)
+                    </div>
+                    <pre><code>logit(p) = ln( p / (1 - p) )
+
+Where:
+  p         = probability of the positive class (e.g., P(fail))
+  p/(1-p)   = the "odds" of the event
+  ln(...)   = natural logarithm
+
+Example:
+  If P(fail) = 0.80,  odds = 0.80/0.20 = 4.0,   logit = ln(4.0) = 1.39
+  If P(fail) = 0.50,  odds = 0.50/0.50 = 1.0,   logit = ln(1.0) = 0.00
+  If P(fail) = 0.20,  odds = 0.20/0.80 = 0.25,  logit = ln(0.25) = -1.39</code></pre>
+                </div>
+
+                <p>
+                    This reveals something elegant: logistic regression models the
+                    <strong>log-odds</strong> as a linear function of the features. While
+                    the probability itself follows an S-shaped curve, the log-odds are
+                    perfectly linear. This is why it is called <em>logistic</em> regression
+                    &mdash; it is regression on the logit (log-odds) scale.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> The Logistic Regression Model
+                    </div>
+                    <pre><code>Step 1: Compute the log-odds (linear part)
+  z = w1*x1 + w2*x2 + ... + wn*xn + b
+
+Step 2: Convert to probability (sigmoid part)
+  P(class = 1) = 1 / (1 + exp(-z))
+
+Step 3: Classify (threshold part)
+  If P(class = 1) >= threshold:  predict class 1 (e.g., "fail")
+  If P(class = 1) <  threshold:  predict class 0 (e.g., "pass")</code></pre>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interpreting Coefficients</h3>
+                        <p>
+                            Each weight in logistic regression has a direct interpretation on the
+                            log-odds scale: <strong>a one-unit increase in feature x_i changes
+                            the log-odds by w_i</strong>. Equivalently, it multiplies the odds
+                            by exp(w_i).
+                        </p>
+                        <p>
+                            Example: if the weight for W/C ratio is w = 8.5, then increasing W/C
+                            by 0.01 increases the log-odds of failure by 0.085, which multiplies
+                            the odds of failure by exp(0.085) = 1.089 &mdash; roughly a 9% increase
+                            in the odds. This kind of interpretability is invaluable when
+                            explaining model predictions to project stakeholders.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: PROBABILITY THRESHOLD
+             ========================================== -->
+        <section class="ch-section" id="threshold">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    The Probability Threshold
+                </h2>
+
+                <p>
+                    Logistic regression outputs a probability, but many applications require a
+                    definitive decision: pass or fail, safe or unsafe, accept or reject. The
+                    <strong>probability threshold</strong> (also called the decision threshold
+                    or cut-off) is the value above which you classify a sample as positive.
+                </p>
+
+                <p>
+                    The default threshold is 0.5 &mdash; if P(positive) >= 0.5, predict
+                    positive. But this is <em>not always the best choice</em>, especially in
+                    civil engineering where the cost of different errors varies dramatically.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Safety-Critical Thresholds</h3>
+                        <p>
+                            Consider a model predicting whether a bridge girder has hidden
+                            corrosion damage. With a threshold of 0.5, you only flag girders that
+                            are more likely than not to be damaged. But in a safety-critical
+                            context, you might <strong>lower the threshold to 0.2</strong> &mdash;
+                            flag any girder with even a 20% estimated probability of damage.
+                        </p>
+                        <p>
+                            This means more false positives (unnecessary inspections) but far fewer
+                            false negatives (missed damage). The cost of an extra inspection is
+                            trivial compared to the cost of a structural failure. The threshold
+                            encodes your engineering judgement about acceptable risk.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Adjusting the threshold is equivalent to sliding along the
+                    <strong>precision-recall curve</strong>. As you lower the threshold:
+                </p>
+
+                <ul>
+                    <li><strong>Recall increases</strong> &mdash; you catch more true positives</li>
+                    <li><strong>Precision decreases</strong> &mdash; more of your positive predictions are wrong</li>
+                    <li><strong>False positive rate increases</strong> &mdash; more false alarms</li>
+                </ul>
+
+                <p>
+                    As you raise the threshold:
+                </p>
+
+                <ul>
+                    <li><strong>Precision increases</strong> &mdash; when you flag something, you are more confident</li>
+                    <li><strong>Recall decreases</strong> &mdash; you miss more true positives</li>
+                    <li><strong>False positive rate decreases</strong> &mdash; fewer false alarms</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>The Right Threshold Depends on the Context</span>
+                    </div>
+                    <p>
+                        There is no universally correct threshold. For structural safety, err on the
+                        side of recall (low threshold). For routine quality control where re-testing
+                        is expensive, balance precision and recall (moderate threshold). For spam
+                        filtering in a project management system, err on the side of precision
+                        (high threshold) to avoid losing important emails. The engineering context
+                        determines the optimal operating point.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: BINARY CROSS-ENTROPY LOSS
+             ========================================== -->
+        <section class="ch-section" id="bce-loss">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Binary Cross-Entropy: The Loss Function
+                </h2>
+
+                <p>
+                    In linear regression, we trained the model by minimising the Mean Squared
+                    Error (MSE) &mdash; the average squared difference between predictions and
+                    actual values. For logistic regression, we use a different loss function
+                    called <strong>binary cross-entropy</strong> (also known as log loss).
+                </p>
+
+                <p>
+                    Why not use MSE for logistic regression? Because the sigmoid function
+                    creates a non-convex MSE surface with many local minima, making
+                    optimisation unreliable. Binary cross-entropy, by contrast, produces a
+                    <strong>convex</strong> loss surface with a single global minimum &mdash;
+                    gradient descent is guaranteed to find the best solution.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Binary Cross-Entropy Formula
+                    </div>
+                    <pre><code>For a single sample:
+  L = -[ y * ln(p) + (1 - y) * ln(1 - p) ]
+
+Where:
+  y = true label (0 or 1)
+  p = predicted probability (from sigmoid)
+  ln = natural logarithm
+
+For the full dataset (N samples):
+  J = -(1/N) * SUM[ yi * ln(pi) + (1 - yi) * ln(1 - pi) ]</code></pre>
+                </div>
+
+                <p>
+                    The intuition behind binary cross-entropy is beautifully simple:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="process-step__content">
+                        <h3>When y = 1 (actual positive, e.g., "fail")</h3>
+                        <p>
+                            The loss is -ln(p). If the model predicts p = 0.95 (confident and
+                            correct), the loss is -ln(0.95) = 0.05, very small. If the model
+                            predicts p = 0.05 (confident and <em>wrong</em>), the loss is
+                            -ln(0.05) = 3.0, very large. The function <strong>heavily penalises
+                            confident wrong predictions</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number"><i class="fa-solid fa-circle-xmark"></i></div>
+                    <div class="process-step__content">
+                        <h3>When y = 0 (actual negative, e.g., "pass")</h3>
+                        <p>
+                            The loss is -ln(1 - p). If the model predicts p = 0.05 (correctly low),
+                            the loss is -ln(0.95) = 0.05, very small. If the model predicts
+                            p = 0.95 (wrongly high), the loss is -ln(0.05) = 3.0, very large.
+                            Again, confident mistakes are expensive.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hammer"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Analogy: Cost of Mistakes</h3>
+                        <p>
+                            Binary cross-entropy mirrors how engineering errors are penalised in
+                            practice. A small deviation from the specification is a minor issue.
+                            But a catastrophically wrong assessment &mdash; declaring a failing
+                            component safe with high confidence &mdash; incurs enormous cost.
+                            The logarithmic penalty naturally captures this escalating risk:
+                            the worse the prediction, the <em>disproportionately</em> higher the
+                            penalty.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: TRAINING PROCESS
+             ========================================== -->
+        <section class="ch-section" id="training-process">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    How Training Works
+                </h2>
+
+                <p>
+                    Training a logistic regression model means finding the weights (w) and
+                    bias (b) that minimise the binary cross-entropy loss across all training
+                    samples. The algorithm uses <strong>gradient descent</strong>, the same
+                    optimisation technique used in linear regression.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Initialise</h3>
+                        <p>
+                            Start with random (or zero) weights. The model's initial predictions
+                            will be essentially random &mdash; around 50% probability for
+                            everything.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Forward Pass</h3>
+                        <p>
+                            For each training sample, compute z = w*x + b, then apply the sigmoid
+                            to get the predicted probability p. Compare p to the true label y
+                            using binary cross-entropy to get the loss.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Compute Gradients</h3>
+                        <p>
+                            Calculate how the loss changes with respect to each weight. Thanks to
+                            the sigmoid and cross-entropy combination, the gradient has a
+                            remarkably clean form: dL/dw = (p - y) * x. The error signal is
+                            simply the difference between prediction and truth, scaled by the
+                            input feature.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Update Weights</h3>
+                        <p>
+                            Adjust each weight in the direction that reduces the loss:
+                            w = w - learning_rate * gradient. Repeat steps 2-4 for many
+                            iterations (epochs) until the loss converges.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Convergence Guarantee</span>
+                    </div>
+                    <p>
+                        Because the binary cross-entropy loss for logistic regression is convex,
+                        gradient descent is guaranteed to find the global minimum (given a
+                        sufficiently small learning rate). This is a significant advantage over
+                        more complex models like neural networks, where you can get stuck in
+                        local minima. For civil engineering applications where reliability
+                        and reproducibility matter, this guarantee is reassuring.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DECISION BOUNDARY
+             ========================================== -->
+        <section class="ch-section" id="decision-boundary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-border-all"></i>
+                    The Decision Boundary
+                </h2>
+
+                <p>
+                    The decision boundary is the set of points where the predicted probability
+                    is exactly equal to the threshold (typically 0.5). For a two-feature model,
+                    this boundary is a <strong>straight line</strong> (or hyperplane in higher
+                    dimensions), because logistic regression is a linear classifier.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Decision Boundary Equation (threshold = 0.5)
+                    </div>
+                    <pre><code>At the boundary:  P(class = 1) = 0.5
+                  sigma(z) = 0.5
+                  z = 0
+Therefore:        w1*x1 + w2*x2 + b = 0
+
+This is a straight line in 2D feature space.
+Points above the line: z > 0, P > 0.5 => predict class 1
+Points below the line: z < 0, P < 0.5 => predict class 0</code></pre>
+                </div>
+
+                <p>
+                    The linearity of the decision boundary is both a strength and a limitation.
+                    It makes the model simple, interpretable, and fast. But it cannot capture
+                    complex, curved boundaries between classes. If the true boundary between
+                    "safe" and "unsafe" in your feature space is non-linear, logistic regression
+                    will find the best linear approximation &mdash; which may not be good enough.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Example: Pavement Condition Classification</h3>
+                        <p>
+                            Suppose you classify pavement sections as "needs repair" or
+                            "acceptable" based on two features: International Roughness Index
+                            (IRI) and pavement age. The logistic regression decision boundary is
+                            a line in the IRI-vs-Age plane. Sections above and to the right of
+                            the line (high IRI, old pavement) are classified as needing repair.
+                            In reality, the deterioration pattern might be non-linear &mdash;
+                            pavement degrades slowly at first, then rapidly after a threshold.
+                            But the linear boundary still captures the general trend and provides
+                            a useful first-pass screening tool.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATION - FAILURE PREDICTION
+             ========================================== -->
+        <section class="ch-section" id="ce-failure-prediction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building-circle-exclamation"></i>
+                    CE Application: Predicting Structural Failure Probability
+                </h2>
+
+                <p>
+                    One of the most impactful applications of logistic regression in civil
+                    engineering is predicting the probability that a structural component will
+                    fail under specified conditions. This goes beyond traditional factor-of-safety
+                    approaches by providing a <strong>probabilistic assessment</strong> that
+                    accounts for uncertainty in material properties and loading conditions.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Case Study: Concrete Column Failure Under Eccentric Loading</h3>
+                        <p>
+                            A dataset of 500 reinforced concrete column tests records:
+                        </p>
+                        <ul>
+                            <li><strong>Features:</strong> column height (mm), cross-section area
+                                (mm&sup2;), reinforcement ratio (%), eccentricity (mm),
+                                concrete strength f'c (MPa), applied load (kN)</li>
+                            <li><strong>Label:</strong> 0 = survived (no failure), 1 = failed
+                                (buckling, crushing, or combined failure)</li>
+                        </ul>
+                        <p>
+                            After training, the model learns coefficients that allow it to
+                            estimate P(failure) for any new column configuration. An engineer
+                            designing a column can input the planned dimensions and expected
+                            loading to get a failure probability estimate &mdash; then iterate
+                            on the design until P(failure) is acceptably low.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Benefit</span>
+                    </div>
+                    <p>
+                        Unlike a binary pass/fail check, logistic regression tells you <em>how
+                        close</em> a design is to the failure boundary. A column with P(failure)
+                        = 0.03 has a comfortable margin. One with P(failure) = 0.45 is dangerously
+                        close. This granularity helps engineers prioritise which designs need the
+                        most attention and where to invest in additional safety measures.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 1 - SIGMOID VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-sigmoid">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Sigmoid Function Visualiser
+                </h2>
+
+                <p>
+                    Explore how the sigmoid function transforms a linear score into a
+                    probability. Adjust the <strong>weight</strong> (slope) and
+                    <strong>bias</strong> (horizontal shift) sliders to see how the S-curve
+                    changes. Hover over the curve to read off probability values at specific
+                    input values.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-sigmoid">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-wave-square"></i> Sigmoid Curve: sigma(z) = 1 / (1 + exp(-z))</h3>
+                        <p>
+                            The weight controls the <strong>steepness</strong> of the curve. A
+                            higher weight makes the transition sharper. The bias shifts the curve
+                            <strong>left or right</strong>, moving the 50% probability point.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls" style="flex-wrap:wrap; gap:12px;">
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text-secondary);">
+                            Weight (w)
+                            <input type="range" id="sig-weight" min="0.2" max="5" step="0.1" value="1" style="width:140px;">
+                            <span id="sig-weight-val" style="min-width:36px; font-family:'JetBrains Mono',monospace;">1.0</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text-secondary);">
+                            Bias (b)
+                            <input type="range" id="sig-bias" min="-5" max="5" step="0.1" value="0" style="width:140px;">
+                            <span id="sig-bias-val" style="min-width:36px; font-family:'JetBrains Mono',monospace;">0.0</span>
+                        </label>
+                        <button id="sig-reset" class="demo-btn" title="Reset to defaults">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="sigmoid-canvas" style="width:100%; height:420px; border-radius:8px;"></canvas>
+                    <div id="sig-info" style="margin-top:12px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        Adjust sliders to change the sigmoid shape. Hover over the canvas to read probability values.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: MULTI-CLASS EXTENSION (SOFTMAX)
+             ========================================== -->
+        <section class="ch-section" id="softmax">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Multi-Class Extension: Softmax Regression
+                </h2>
+
+                <p>
+                    Standard logistic regression handles <strong>binary</strong> classification
+                    &mdash; two classes. But many engineering problems have more than two
+                    categories. Soil classification (clay, silt, sand, gravel), damage severity
+                    (none, minor, moderate, severe), structural condition rating (A through E)
+                    &mdash; all require multi-class classification.
+                </p>
+
+                <p>
+                    The multi-class extension of logistic regression replaces the sigmoid with
+                    the <strong>softmax function</strong>. Instead of computing a single
+                    probability, softmax computes a probability for <em>each</em> class, and
+                    these probabilities sum to 1.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Softmax Function
+                    </div>
+                    <pre><code>For K classes, each with its own weight vector:
+  z_k = w_k * x + b_k          (one linear score per class)
+
+                 exp(z_k)
+P(class = k) = -----------
+               SUM exp(z_j)
+               j=1..K
+
+Properties:
+  - Each P(class = k) is in (0, 1)
+  - Sum of all K probabilities = 1
+  - When K = 2, softmax reduces to the sigmoid</code></pre>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mountain-sun"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Application: Dam Safety Risk Classification</h3>
+                        <p>
+                            Dam safety regulations often require classifying dam condition into
+                            risk categories: <strong>Low</strong>, <strong>Moderate</strong>,
+                            <strong>High</strong>, and <strong>Critical</strong>. Features might
+                            include:
+                        </p>
+                        <ul>
+                            <li>Seepage rate (litres/min)</li>
+                            <li>Settlement rate (mm/year)</li>
+                            <li>Pore water pressure ratio (u/gamma*h)</li>
+                            <li>Years since last major rehabilitation</li>
+                            <li>Peak ground acceleration at site (g)</li>
+                        </ul>
+                        <p>
+                            A softmax model outputs four probabilities: P(Low) = 0.05,
+                            P(Moderate) = 0.15, P(High) = 0.65, P(Critical) = 0.15. The dam
+                            is classified as "High Risk" (the class with the highest probability),
+                            but the full distribution tells the engineer that there is a
+                            non-trivial 15% chance the situation is actually critical &mdash;
+                            information that a simple label would hide.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Cross-Entropy Generalises Too</span>
+                    </div>
+                    <p>
+                        The loss function for multi-class logistic regression is
+                        <strong>categorical cross-entropy</strong> &mdash; a natural extension
+                        of binary cross-entropy. Instead of comparing one probability to one
+                        label, it compares the full predicted probability distribution to the
+                        true class (represented as a one-hot vector). The mathematics are
+                        analogous; only the bookkeeping expands.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: REGULARISATION
+             ========================================== -->
+        <section class="ch-section" id="regularisation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Regularisation: Preventing Overconfidence
+                </h2>
+
+                <p>
+                    Like linear regression, logistic regression can overfit when there are many
+                    features relative to the number of training samples. Overfitting manifests
+                    as extreme weight values that produce near-0 or near-1 probabilities for
+                    almost every sample &mdash; the model becomes <em>overconfident</em>.
+                </p>
+
+                <p>
+                    Regularisation adds a penalty term to the loss function that discourages
+                    large weights:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Regularised Loss
+                    </div>
+                    <pre><code>L2 Regularisation (Ridge):
+  J_reg = J + (lambda / 2) * SUM(wi^2)
+
+L1 Regularisation (Lasso):
+  J_reg = J + lambda * SUM(|wi|)
+
+Where:
+  J       = original binary cross-entropy loss
+  lambda  = regularisation strength (hyperparameter)
+  wi      = model weights</code></pre>
+                </div>
+
+                <p>
+                    In civil engineering terms, regularisation embodies the principle of
+                    <strong>parsimony</strong> &mdash; prefer the simplest model that
+                    adequately explains the data. A heavily regularised model produces more
+                    moderate probability estimates, which is often more realistic for
+                    engineering applications where absolute certainty is rare.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: ASSUMPTIONS AND LIMITATIONS
+             ========================================== -->
+        <section class="ch-section" id="assumptions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Assumptions and Limitations
+                </h2>
+
+                <p>
+                    Logistic regression is powerful but not magic. Understanding its assumptions
+                    helps you know when to use it and when to reach for more complex models.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Linear Decision Boundary</h3>
+                        <p>
+                            The boundary between classes is a straight line (or hyperplane). If
+                            the true boundary is curved &mdash; for example, concrete fails at
+                            both very low <em>and</em> very high cement content &mdash; logistic
+                            regression alone cannot capture this. You can mitigate this by adding
+                            polynomial features (e.g., x&sup2;), but this increases model
+                            complexity.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Independence of Observations</h3>
+                        <p>
+                            Each training sample should be independent. Test results from the same
+                            concrete batch, the same structure, or the same site may be correlated,
+                            violating this assumption. In practice, this is often handled by
+                            careful data collection rather than by changing the algorithm.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>No Severe Multicollinearity</h3>
+                        <p>
+                            Features should not be highly correlated with each other. If cement
+                            content and water content are nearly perfectly correlated (because
+                            W/C ratio is fixed), the model cannot reliably determine individual
+                            feature effects. Feature engineering and domain knowledge help
+                            identify and resolve such issues.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Sufficient Sample Size</h3>
+                        <p>
+                            As a rule of thumb, logistic regression needs at least 10-20
+                            observations per feature, and at least 10 events (positive cases) per
+                            feature. In civil engineering, where data collection is expensive,
+                            this can be a significant constraint. Start with few, carefully chosen
+                            features rather than throwing everything into the model.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>When to Use Logistic Regression</h3>
+                        <p>
+                            Logistic regression is an excellent choice when:
+                        </p>
+                        <ul>
+                            <li>You need <strong>interpretable</strong> results (coefficient meanings)</li>
+                            <li>You need <strong>calibrated probabilities</strong>, not just class labels</li>
+                            <li>You have a <strong>moderate dataset</strong> (not too small, not massive)</li>
+                            <li>The classes are <strong>approximately linearly separable</strong></li>
+                            <li>You need to <strong>explain</strong> the model to regulators or stakeholders</li>
+                        </ul>
+                        <p>
+                            For complex, non-linear boundaries or large-scale problems, decision
+                            trees, random forests, or neural networks may perform better &mdash; at
+                            the cost of interpretability.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: INTERACTIVE DEMO 2 - THRESHOLD CLASSIFIER
+             ========================================== -->
+        <section class="ch-section" id="demo-classifier">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Binary Classifier &mdash; Threshold vs. Precision/Recall
+                </h2>
+
+                <p>
+                    This demo simulates a logistic regression model predicting whether concrete
+                    test cylinders pass or fail based on two features. A scatter plot shows the
+                    data points coloured by their true class. The decision boundary (dashed line)
+                    separates the predicted "pass" and "fail" regions.
+                </p>
+                <p>
+                    Use the <strong>threshold slider</strong> to change the classification
+                    cut-off. Watch how precision, recall, and the F1-score change as you slide
+                    the threshold. Notice the trade-off: lowering the threshold catches more
+                    failures (higher recall) but also flags more passing samples as failures
+                    (lower precision).
+                </p>
+
+                <div class="demo-panel" id="demo-panel-classifier">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-crosshairs"></i> Threshold Tuning: Precision-Recall Trade-off</h3>
+                        <p>
+                            Slide the threshold to see how the classification and metrics change
+                            in real time. The scatter plot shows true class colours; the shaded
+                            regions show the model's predicted zones.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls" style="flex-wrap:wrap; gap:12px;">
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text-secondary);">
+                            Threshold
+                            <input type="range" id="clf-threshold" min="0.05" max="0.95" step="0.01" value="0.50" style="width:200px;">
+                            <span id="clf-threshold-val" style="min-width:36px; font-family:'JetBrains Mono',monospace;">0.50</span>
+                        </label>
+                        <button id="clf-regenerate" class="demo-btn" title="Generate new random data">
+                            <i class="fa-solid fa-shuffle"></i> New Data
+                        </button>
+                        <button id="clf-reset" class="demo-btn" title="Reset threshold to 0.5">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="classifier-canvas" style="width:100%; height:440px; border-radius:8px;"></canvas>
+                    <div id="clf-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="clf-accuracy">Accuracy: &mdash;</span>
+                        <span id="clf-precision">Precision: &mdash;</span>
+                        <span id="clf-recall">Recall: &mdash;</span>
+                        <span id="clf-f1">F1-Score: &mdash;</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: COMPARISON WITH OTHER CLASSIFIERS
+             ========================================== -->
+        <section class="ch-section" id="comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Logistic Regression vs. Other Classifiers
+                </h2>
+
+                <p>
+                    How does logistic regression compare to the other classification methods
+                    you will encounter in this chapter? Here is a concise comparison to
+                    orient your thinking:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-table"></i> Classifier Comparison
+                    </div>
+                    <pre><code>Algorithm           | Boundary | Probabilities | Interpretability | Speed
+--------------------|----------|---------------|------------------|-------
+Logistic Regression | Linear   | Calibrated    | High             | Fast
+k-NN                | Non-lin  | Approximate   | Moderate         | Slow*
+Decision Tree       | Non-lin  | Crude          | Very High        | Fast
+Random Forest       | Non-lin  | Good          | Moderate         | Medium
+Neural Network      | Non-lin  | Varies        | Low              | Slow
+
+* k-NN is slow at prediction time (must search all training data)</code></pre>
+                </div>
+
+                <p>
+                    Logistic regression's key advantages are its <strong>calibrated
+                    probabilities</strong> and <strong>interpretability</strong>. When you need
+                    to explain to a regulatory body <em>why</em> the model flagged a structure
+                    as at-risk, logistic regression's coefficients provide a clear, auditable
+                    answer. For many civil engineering applications, this transparency is not
+                    just nice to have &mdash; it is a regulatory requirement.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: PRACTICAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Practical Workflow for CE Applications
+                </h2>
+
+                <p>
+                    Here is a step-by-step workflow for applying logistic regression to a
+                    civil engineering classification problem:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Define the Problem</h3>
+                        <p>
+                            Clearly state the binary (or multi-class) outcome you want to predict.
+                            Examples: "Will this concrete batch fail the 28-day strength test?"
+                            "What risk category does this dam fall into?" Ensure the outcome is
+                            well-defined and consistently labelled in your data.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Collect and Prepare Data</h3>
+                        <p>
+                            Gather historical records with both features and outcomes. Check for
+                            class imbalance (if only 2% of samples are "fail," you may need
+                            resampling techniques). Standardise features so that coefficients
+                            are comparable across different scales.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Train and Validate</h3>
+                        <p>
+                            Split data into training and test sets. Fit the logistic regression
+                            model. Evaluate using the confusion matrix, precision, recall, and
+                            the ROC-AUC score. Use cross-validation for more robust estimates.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Set the Threshold</h3>
+                        <p>
+                            Choose the probability threshold based on the application's cost
+                            structure. Safety-critical applications demand low thresholds (high
+                            recall). Cost-sensitive applications may tolerate higher thresholds
+                            (higher precision). Plot the precision-recall curve to visualise
+                            the trade-off.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Interpret and Deploy</h3>
+                        <p>
+                            Examine the learned coefficients to verify they align with engineering
+                            domain knowledge. A positive weight for load intensity and a negative
+                            weight for reinforcement ratio (in a failure prediction model) make
+                            physical sense. Flag any counter-intuitive coefficients for further
+                            investigation before deploying the model.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: COMMON MISTAKES
+             ========================================== -->
+        <section class="ch-section" id="common-mistakes">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    Common Mistakes to Avoid
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Mistake 1: Ignoring Class Imbalance</h3>
+                        <p>
+                            In many CE datasets, failures are rare (perhaps 3-5% of samples). If
+                            you train logistic regression on imbalanced data without adjustment,
+                            the model learns to predict "pass" for everything and achieves 95%+
+                            accuracy while catching zero failures. Use class weighting, SMOTE, or
+                            stratified sampling to address this.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Mistake 2: Using the Default Threshold Blindly</h3>
+                        <p>
+                            The 0.5 threshold is a mathematical default, not an engineering
+                            recommendation. In safety-critical applications, it is almost always
+                            too high. Always perform a threshold analysis and choose based on
+                            the application's cost structure, not convenience.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Mistake 3: Treating Probabilities as Exact</h3>
+                        <p>
+                            When the model says P(failure) = 0.72, it does <em>not</em> mean
+                            there is a 72.0% chance of failure with three significant figures of
+                            precision. Model probabilities are estimates with their own
+                            uncertainty. Report ranges or confidence intervals, and always
+                            combine model outputs with engineering judgement.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Mistake 4: Extrapolating Beyond Training Data</h3>
+                        <p>
+                            If your model was trained on concrete strengths from 20 to 60 MPa,
+                            do not use it to predict failure probabilities for ultra-high-
+                            performance concrete at 150 MPa. Logistic regression (like any ML
+                            model) is unreliable outside the range of its training data. Always
+                            verify that new inputs fall within the training distribution.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 18: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of logistic regression. Each question reinforces a
+                    key concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        Why does logistic regression use the sigmoid function instead of
+                        directly outputting the linear combination z = w*x + b?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> To make the computation faster
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> To constrain the output to the range [0, 1] so it can be interpreted as a probability
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> To create a non-linear decision boundary
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> To reduce the number of model parameters
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The sigmoid maps any
+                        real number to the range (0, 1), making the output interpretable as a
+                        probability. Without it, the linear combination z could be any real
+                        number &mdash; meaningless as a probability.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The sigmoid's primary
+                        purpose is to <strong>constrain the output to [0, 1]</strong> so it can
+                        represent a probability. Note that the decision boundary remains linear
+                        even with the sigmoid &mdash; it does not add non-linearity to the
+                        boundary itself.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        A dam safety model predicts P(critical) = 0.18 for a particular
+                        embankment dam. A safety engineer decides to set the alert threshold at
+                        0.10 for "critical" risk. What happens compared to a threshold of 0.50?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Fewer dams are flagged as critical, reducing workload
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> More dams are flagged as critical, increasing recall but decreasing precision
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> The model's accuracy automatically improves
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> The model needs to be retrained with the new threshold
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Lowering the threshold
+                        from 0.50 to 0.10 means any dam with even a 10% estimated critical risk
+                        is flagged. This catches more genuinely critical dams (higher recall)
+                        but also flags some non-critical dams (lower precision). The threshold
+                        does not change the model itself &mdash; only how its probabilities
+                        are turned into decisions.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. A
+                        <strong>lower threshold means more samples are classified as
+                        positive</strong> (critical), increasing recall at the cost of precision.
+                        The threshold is a post-training decision &mdash; it does not change the
+                        model or require retraining.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        Binary cross-entropy penalises confident wrong predictions more heavily
+                        than uncertain wrong predictions. Why is this property useful for
+                        engineering applications?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> It makes the model train faster
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> It reduces the total number of parameters
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> It mirrors engineering reality where confidently wrong assessments are far more dangerous than uncertain ones
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> It ensures the model always achieves 100% accuracy
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! In engineering, a
+                        confidently wrong safety assessment (e.g., declaring a failing structure
+                        safe with 95% confidence) is far more dangerous than an uncertain one
+                        (50% confidence). Cross-entropy's logarithmic penalty naturally captures
+                        this: the more confident and wrong the prediction, the
+                        disproportionately larger the loss.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key property is
+                        that <strong>confident wrong predictions incur disproportionately large
+                        penalties</strong>, mirroring how engineering consequences escalate when
+                        a wrong assessment is made with high confidence.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        A soil classification model needs to assign each sample to one of four
+                        categories: Clay, Silt, Sand, or Gravel. Which function should replace
+                        the sigmoid in the logistic regression model?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> ReLU &mdash; because it handles multiple outputs efficiently
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Tanh &mdash; because it outputs values between -1 and 1
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Softmax &mdash; because it outputs a probability distribution across all K classes that sums to 1
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Four separate sigmoids &mdash; one per class
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The softmax function
+                        generalises the sigmoid to K classes. It produces K probabilities that
+                        are all positive and sum to 1, forming a valid probability distribution.
+                        Four separate sigmoids would not guarantee that probabilities sum to 1.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The correct answer is
+                        <strong>softmax</strong>. It generalises the sigmoid to produce a
+                        probability distribution across all K classes. Unlike separate sigmoids,
+                        softmax guarantees that all probabilities sum to 1.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 19: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <ul class="takeaway-list">
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Logistic regression</strong> wraps a linear model in the
+                                sigmoid function to produce calibrated probabilities in [0, 1].
+                                It is the simplest probabilistic classifier and the foundation
+                                for understanding more complex models.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                The <strong>sigmoid function</strong> maps any real number to a
+                                probability. Its S-shape provides smooth, monotonic, bounded
+                                output with a natural midpoint at 0.5.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Log-odds (logit)</strong> are linear in the features.
+                                Each coefficient tells you how much a one-unit change in a feature
+                                shifts the log-odds, making the model fully interpretable.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                The <strong>probability threshold</strong> controls the
+                                precision-recall trade-off. Safety-critical CE applications
+                                should use low thresholds to maximise recall, even at the cost
+                                of more false alarms.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Binary cross-entropy</strong> is the loss function that
+                                trains the model. It penalises confident wrong predictions
+                                disproportionately, mirroring the escalating cost of engineering
+                                errors.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                The <strong>softmax function</strong> extends logistic regression
+                                to multi-class problems like dam safety risk classification,
+                                outputting a full probability distribution across all categories.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we will explore <strong>Decision Trees</strong>
+                        &mdash; a fundamentally different approach to classification that uses
+                        a tree of if-then rules instead of a smooth probability function. Decision
+                        trees are highly interpretable, can capture non-linear boundaries without
+                        feature engineering, and form the building blocks for powerful ensemble
+                        methods like Random Forests and Gradient Boosting. The logistic regression
+                        concepts you learned here (probabilities, thresholds, loss functions) will
+                        help you compare and contrast these approaches.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub4.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.4 Classification Basics
+        </a>
+        <a href="sub6.html" class="chapter-nav__link next">
+            2.6 Decision Trees <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', BLUE:'#3b82f6', PURPLE:'#a855f7',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED SIGMOID FIELD
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var particles = [];
+            var numParticles = 80;
+            var animId;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                particles = [];
+                for (var i = 0; i < numParticles; i++) {
+                    var px = Math.random() * w;
+                    var py = Math.random() * h;
+                    var z = (px - w / 2) / (w / 8);
+                    var prob = 1 / (1 + Math.exp(-z));
+                    particles.push({
+                        x: px, y: py,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4,
+                        r: Math.random() * 3 + 1.5,
+                        prob: prob
+                    });
+                }
+            }
+
+            function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Draw subtle sigmoid curve */
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                for (var sx = 0; sx < w; sx++) {
+                    var z = (sx - w / 2) / (w / 10);
+                    var sy = h - sigmoid(z) * h * 0.8 - h * 0.1;
+                    if (sx === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                /* Draw grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                var gridSize = 40;
+                for (var gx = 0; gx < w; gx += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                /* Draw particles */
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+
+                    var z2 = (p.x - w / 2) / (w / 8);
+                    p.prob = sigmoid(z2);
+
+                    var r = Math.round(p.prob * 239 + (1 - p.prob) * 45);
+                    var g = Math.round(p.prob * 68 + (1 - p.prob) * 212);
+                    var b2 = Math.round(p.prob * 68 + (1 - p.prob) * 191);
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b2 + ')';
+                    ctx.fill();
+                }
+
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function() {
+                cancelAnimationFrame(animId);
+                resize();
+                draw();
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: SIGMOID FUNCTION VISUALISER
+           ============================================== */
+        (function initSigmoidDemo() {
+            var canvas = document.getElementById('sigmoid-canvas');
+            if (!canvas) return;
+
+            var weightSlider = document.getElementById('sig-weight');
+            var biasSlider = document.getElementById('sig-bias');
+            var weightVal = document.getElementById('sig-weight-val');
+            var biasVal = document.getElementById('sig-bias-val');
+            var resetBtn = document.getElementById('sig-reset');
+            var infoEl = document.getElementById('sig-info');
+
+            var ctx, W, H;
+            var mouseX = -1, mouseY = -1;
+
+            /* Canvas coordinate system */
+            var xMin = -8, xMax = 8;
+            var yMin = -0.1, yMax = 1.1;
+
+            function toCanvasX(x) { return (x - xMin) / (xMax - xMin) * (W - 100) + 60; }
+            function toCanvasY(y) { return H - 40 - (y - yMin) / (yMax - yMin) * (H - 80); }
+            function fromCanvasX(cx) { return (cx - 60) / (W - 100) * (xMax - xMin) + xMin; }
+
+            function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+            function drawSigmoid() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+                var c = getColors();
+
+                var weight = parseFloat(weightSlider.value);
+                var bias = parseFloat(biasSlider.value);
+
+                ctx.clearRect(0, 0, W, H);
+
+                /* Background */
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                /* Grid */
+                ctx.strokeStyle = c.DIM;
+                ctx.lineWidth = 0.5;
+                for (var gx = Math.ceil(xMin); gx <= Math.floor(xMax); gx++) {
+                    var cx = toCanvasX(gx);
+                    ctx.beginPath(); ctx.moveTo(cx, 40); ctx.lineTo(cx, H - 40); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(gx.toString(), cx, H - 22);
+                }
+                for (var gy = 0; gy <= 1; gy += 0.2) {
+                    var cy = toCanvasY(gy);
+                    ctx.beginPath(); ctx.moveTo(60, cy); ctx.lineTo(W - 40, cy); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(gy.toFixed(1), 52, cy + 4);
+                }
+
+                /* Axes */
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(60, 40); ctx.lineTo(60, H - 40); ctx.lineTo(W - 40, H - 40);
+                ctx.stroke();
+
+                /* Axis labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Input (z = w*x + b)', W / 2, H - 4);
+                ctx.save();
+                ctx.translate(16, H / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('P(class = 1)', 0, 0);
+                ctx.restore();
+
+                /* 0.5 reference line */
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([6, 4]);
+                var y05 = toCanvasY(0.5);
+                ctx.beginPath(); ctx.moveTo(60, y05); ctx.lineTo(W - 40, y05); ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = c.AMBER;
+                ctx.font = '11px JetBrains Mono, monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText('threshold = 0.5', W - 150, y05 - 6);
+
+                /* Default sigmoid (w=1, b=0) in dim */
+                if (weight !== 1 || bias !== 0) {
+                    ctx.strokeStyle = c.MUTED;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    for (var dx = 60; dx <= W - 40; dx++) {
+                        var xv = fromCanvasX(dx);
+                        var yv = sigmoid(xv);
+                        var py = toCanvasY(yv);
+                        if (dx === 60) ctx.moveTo(dx, py);
+                        else ctx.lineTo(dx, py);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                /* Active sigmoid curve */
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (var px = 60; px <= W - 40; px++) {
+                    var xVal = fromCanvasX(px);
+                    var z = weight * xVal + bias;
+                    var yVal = sigmoid(z);
+                    var pxy = toCanvasY(yVal);
+                    if (px === 60) ctx.moveTo(px, pxy);
+                    else ctx.lineTo(px, pxy);
+                }
+                ctx.stroke();
+
+                /* Filled regions */
+                ctx.globalAlpha = 0.06;
+                ctx.fillStyle = c.GREEN;
+                ctx.beginPath();
+                ctx.moveTo(60, toCanvasY(0.5));
+                for (var fx = 60; fx <= W - 40; fx++) {
+                    var xf = fromCanvasX(fx);
+                    var zf = weight * xf + bias;
+                    var yf = sigmoid(zf);
+                    if (yf >= 0.5) {
+                        ctx.lineTo(fx, toCanvasY(yf));
+                    } else {
+                        ctx.lineTo(fx, toCanvasY(0.5));
+                    }
+                }
+                ctx.lineTo(W - 40, toCanvasY(0.5));
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = c.RED;
+                ctx.beginPath();
+                ctx.moveTo(60, toCanvasY(0.5));
+                for (var rx = 60; rx <= W - 40; rx++) {
+                    var xr = fromCanvasX(rx);
+                    var zr = weight * xr + bias;
+                    var yr = sigmoid(zr);
+                    if (yr < 0.5) {
+                        ctx.lineTo(rx, toCanvasY(yr));
+                    } else {
+                        ctx.lineTo(rx, toCanvasY(0.5));
+                    }
+                }
+                ctx.lineTo(W - 40, toCanvasY(0.5));
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                /* Hover crosshair */
+                if (mouseX >= 60 && mouseX <= W - 40) {
+                    var hoverX = fromCanvasX(mouseX);
+                    var hoverZ = weight * hoverX + bias;
+                    var hoverP = sigmoid(hoverZ);
+                    var hoverCY = toCanvasY(hoverP);
+
+                    ctx.strokeStyle = c.CYAN;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 3]);
+                    ctx.beginPath(); ctx.moveTo(mouseX, 40); ctx.lineTo(mouseX, H - 40); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(60, hoverCY); ctx.lineTo(W - 40, hoverCY); ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.beginPath();
+                    ctx.arc(mouseX, hoverCY, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = c.CYAN;
+                    ctx.fill();
+
+                    /* Tooltip */
+                    var label = 'x=' + hoverX.toFixed(2) + '  z=' + hoverZ.toFixed(2) + '  P=' + hoverP.toFixed(4);
+                    ctx.font = '12px JetBrains Mono, monospace';
+                    var tw = ctx.measureText(label).width;
+                    var tx = mouseX + 12;
+                    var ty = hoverCY - 16;
+                    if (tx + tw + 12 > W - 40) tx = mouseX - tw - 20;
+                    if (ty < 40) ty = hoverCY + 24;
+
+                    ctx.fillStyle = c.BG;
+                    ctx.globalAlpha = 0.85;
+                    ctx.fillRect(tx - 6, ty - 14, tw + 12, 20);
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = c.WHITE;
+                    ctx.fillText(label, tx, ty);
+
+                    infoEl.textContent = 'x = ' + hoverX.toFixed(2) + ' | z = w*x+b = ' + hoverZ.toFixed(2) + ' | P(class=1) = ' + hoverP.toFixed(4);
+                }
+
+                /* Title */
+                ctx.fillStyle = c.WHITE;
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('sigma(z) = 1 / (1 + exp(-(w*x + b)))', 70, 28);
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '12px JetBrains Mono, monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText('w=' + weight.toFixed(1) + '  b=' + bias.toFixed(1), W - 50, 28);
+            }
+
+            function update() {
+                weightVal.textContent = parseFloat(weightSlider.value).toFixed(1);
+                biasVal.textContent = parseFloat(biasSlider.value).toFixed(1);
+                drawSigmoid();
+            }
+
+            weightSlider.addEventListener('input', update);
+            biasSlider.addEventListener('input', update);
+
+            resetBtn.addEventListener('click', function() {
+                weightSlider.value = '1';
+                biasSlider.value = '0';
+                update();
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+                drawSigmoid();
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                mouseX = -1; mouseY = -1;
+                infoEl.textContent = 'Adjust sliders to change the sigmoid shape. Hover over the canvas to read probability values.';
+                drawSigmoid();
+            });
+
+            update();
+
+            var ro = new ResizeObserver(function() { drawSigmoid(); });
+            ro.observe(canvas);
+        })();
+
+        /* ==============================================
+           DEMO 2: BINARY CLASSIFIER - THRESHOLD TUNING
+           ============================================== */
+        (function initClassifierDemo() {
+            var canvas = document.getElementById('classifier-canvas');
+            if (!canvas) return;
+
+            var thresholdSlider = document.getElementById('clf-threshold');
+            var thresholdVal = document.getElementById('clf-threshold-val');
+            var regenerateBtn = document.getElementById('clf-regenerate');
+            var resetBtn = document.getElementById('clf-reset');
+
+            var accEl = document.getElementById('clf-accuracy');
+            var precEl = document.getElementById('clf-precision');
+            var recEl = document.getElementById('clf-recall');
+            var f1El = document.getElementById('clf-f1');
+
+            var ctx, W, H;
+
+            /* Plot area */
+            var padL = 60, padR = 40, padT = 50, padB = 50;
+
+            /* Simulated data */
+            var dataPoints = [];
+            var trueWeights = { w1: 2.5, w2: 2.0, b: -4.5 };
+
+            function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+            function generateData() {
+                dataPoints = [];
+                var n = 120;
+                for (var i = 0; i < n; i++) {
+                    var x1 = Math.random() * 4;  /* Feature 1: e.g., W/C ratio scaled */
+                    var x2 = Math.random() * 4;  /* Feature 2: e.g., Age scaled */
+                    var z = trueWeights.w1 * x1 + trueWeights.w2 * x2 + trueWeights.b;
+                    var prob = sigmoid(z);
+                    /* Add noise */
+                    var noisyProb = prob + (Math.random() - 0.5) * 0.15;
+                    var trueClass = noisyProb > 0.5 ? 1 : 0;
+
+                    dataPoints.push({
+                        x1: x1, x2: x2,
+                        prob: prob,
+                        trueClass: trueClass
+                    });
+                }
+            }
+
+            function toCanvasX(x) { return padL + (x / 4) * (W - padL - padR); }
+            function toCanvasY(y) { return H - padB - (y / 4) * (H - padT - padB); }
+
+            function drawClassifier() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+                var c = getColors();
+
+                var threshold = parseFloat(thresholdSlider.value);
+
+                ctx.clearRect(0, 0, W, H);
+
+                /* Background */
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                /* Shaded decision regions */
+                var regionRes = 4;
+                for (var rx = padL; rx < W - padR; rx += regionRes) {
+                    for (var ry = padT; ry < H - padB; ry += regionRes) {
+                        var fx = ((rx - padL) / (W - padL - padR)) * 4;
+                        var fy = ((H - padB - ry) / (H - padT - padB)) * 4;
+                        var z = trueWeights.w1 * fx + trueWeights.w2 * fy + trueWeights.b;
+                        var p = sigmoid(z);
+                        if (p >= threshold) {
+                            ctx.fillStyle = 'rgba(239,68,68,0.06)';
+                        } else {
+                            ctx.fillStyle = 'rgba(34,197,94,0.06)';
+                        }
+                        ctx.fillRect(rx, ry, regionRes, regionRes);
+                    }
+                }
+
+                /* Grid */
+                ctx.strokeStyle = c.DIM;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx <= 4; gx++) {
+                    var cx = toCanvasX(gx);
+                    ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, H - padB); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(gx.toString(), cx, H - padB + 18);
+                }
+                for (var gy = 0; gy <= 4; gy++) {
+                    var cy = toCanvasY(gy);
+                    ctx.beginPath(); ctx.moveTo(padL, cy); ctx.lineTo(W - padR, cy); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(gy.toString(), padL - 8, cy + 4);
+                }
+
+                /* Axes */
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(padL, padT); ctx.lineTo(padL, H - padB); ctx.lineTo(W - padR, H - padB);
+                ctx.stroke();
+
+                /* Axis labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Feature 1: W/C Ratio (scaled)', W / 2, H - 6);
+                ctx.save();
+                ctx.translate(14, H / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Feature 2: Curing Age (scaled)', 0, 0);
+                ctx.restore();
+
+                /* Decision boundary line: w1*x1 + w2*x2 + b = logit(threshold) */
+                var logitThresh = Math.log(threshold / (1 - threshold));
+                /* w1*x1 + w2*x2 + b = logitThresh => x2 = (logitThresh - b - w1*x1) / w2 */
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 5]);
+                ctx.beginPath();
+                var bx1Start = 0, bx1End = 4;
+                var bx2Start = (logitThresh - trueWeights.b - trueWeights.w1 * bx1Start) / trueWeights.w2;
+                var bx2End = (logitThresh - trueWeights.b - trueWeights.w1 * bx1End) / trueWeights.w2;
+                ctx.moveTo(toCanvasX(bx1Start), toCanvasY(bx2Start));
+                ctx.lineTo(toCanvasX(bx1End), toCanvasY(bx2End));
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                /* Data points */
+                var tp = 0, fp = 0, tn = 0, fn = 0;
+
+                for (var i = 0; i < dataPoints.length; i++) {
+                    var pt = dataPoints[i];
+                    var predicted = pt.prob >= threshold ? 1 : 0;
+
+                    if (predicted === 1 && pt.trueClass === 1) tp++;
+                    else if (predicted === 1 && pt.trueClass === 0) fp++;
+                    else if (predicted === 0 && pt.trueClass === 0) tn++;
+                    else fn++;
+
+                    var px = toCanvasX(pt.x1);
+                    var py = toCanvasY(pt.x2);
+                    var radius = 5;
+
+                    /* Outer ring for misclassifications */
+                    if (predicted !== pt.trueClass) {
+                        ctx.beginPath();
+                        ctx.arc(px, py, radius + 3, 0, Math.PI * 2);
+                        ctx.strokeStyle = c.AMBER;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+
+                    /* Fill by true class */
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = pt.trueClass === 1 ? c.RED : c.GREEN;
+                    ctx.fill();
+                    ctx.strokeStyle = c.BG;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                /* Compute metrics */
+                var accuracy = (tp + tn) / (tp + tn + fp + fn);
+                var precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
+                var recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+                var f1 = (precision + recall) > 0 ? 2 * precision * recall / (precision + recall) : 0;
+
+                accEl.textContent = 'Accuracy: ' + (accuracy * 100).toFixed(1) + '%';
+                precEl.textContent = 'Precision: ' + (precision * 100).toFixed(1) + '%';
+                recEl.textContent = 'Recall: ' + (recall * 100).toFixed(1) + '%';
+                f1El.textContent = 'F1-Score: ' + f1.toFixed(3);
+
+                /* Legend */
+                ctx.font = '12px Inter, sans-serif';
+                ctx.textAlign = 'left';
+
+                ctx.beginPath();
+                ctx.arc(padL + 20, padT + 18, 5, 0, Math.PI * 2);
+                ctx.fillStyle = c.RED; ctx.fill();
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Fail (class 1)', padL + 32, padT + 22);
+
+                ctx.beginPath();
+                ctx.arc(padL + 130, padT + 18, 5, 0, Math.PI * 2);
+                ctx.fillStyle = c.GREEN; ctx.fill();
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Pass (class 0)', padL + 142, padT + 22);
+
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath(); ctx.moveTo(padL + 250, padT + 18); ctx.lineTo(padL + 280, padT + 18); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Decision boundary', padL + 288, padT + 22);
+
+                /* Title */
+                ctx.fillStyle = c.WHITE;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('Threshold = ' + threshold.toFixed(2) + '  |  TP=' + tp + ' FP=' + fp + ' TN=' + tn + ' FN=' + fn, W - padR, padT - 8);
+            }
+
+            function update() {
+                thresholdVal.textContent = parseFloat(thresholdSlider.value).toFixed(2);
+                drawClassifier();
+            }
+
+            thresholdSlider.addEventListener('input', update);
+
+            regenerateBtn.addEventListener('click', function() {
+                generateData();
+                update();
+            });
+
+            resetBtn.addEventListener('click', function() {
+                thresholdSlider.value = '0.50';
+                update();
+            });
+
+            generateData();
+            update();
+
+            var ro = new ResizeObserver(function() { drawClassifier(); });
+            ro.observe(canvas);
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

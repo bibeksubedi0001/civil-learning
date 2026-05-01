@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.2 Linear Regression | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master linear regression from a civil engineering perspective. Learn the equation y = mx + b, least squares, gradient descent, cost functions, R-squared, and predict concrete strength from water-cement ratio.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.2
+            </div>
+            <h1 class="chapter-hero__title">Linear Regression</h1>
+            <p class="chapter-hero__subtitle">
+                The simplest and most powerful predictive model in engineering &mdash; draw a straight
+                line through data and use it to predict the future. From concrete strength to
+                settlement estimation, linear regression is where every engineer's ML journey begins.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Line That Predicts Concrete Strength</h2>
+                        <p>
+                            Every civil engineer knows that increasing the water-cement (w/c) ratio
+                            weakens concrete. You learned this in your materials course, verified it in
+                            the lab, and apply it on every project. But have you ever asked: <strong>by
+                            exactly how much?</strong> If the w/c ratio goes from 0.45 to 0.50, what
+                            is the expected drop in 28-day compressive strength?
+                        </p>
+                        <p>
+                            Linear regression answers that question with mathematical precision. It
+                            takes your laboratory data &mdash; dozens or hundreds of test results
+                            linking w/c ratio to compressive strength &mdash; and finds the single
+                            straight line that best describes the relationship. That line becomes a
+                            predictive tool: feed it any w/c ratio, and it returns the expected
+                            strength, along with a measure of how confident you should be in that
+                            prediction.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Linear regression is the foundation of predictive modelling. It is the simplest
+                    supervised learning algorithm, yet it remains one of the most widely used in
+                    engineering practice. Understanding it deeply &mdash; not just the formula, but
+                    the geometry, the optimisation, and the diagnostics &mdash; will prepare you for
+                    every model that follows, because more complex algorithms are built on the same
+                    principles.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have completed Sub-chapter 2.1 (Supervised
+                        Learning Fundamentals) and understand the concepts of features, labels,
+                        training data, and loss functions. Basic algebra and familiarity with
+                        coordinate geometry (plotting points on an x-y axis) are helpful.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE EQUATION y = mx + b
+             ========================================== -->
+        <section class="ch-section" id="the-equation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-superscript"></i>
+                    The Equation: y = mx + b
+                </h2>
+
+                <p>
+                    Linear regression boils down to finding the best straight line through a set of
+                    data points. That line is described by the equation you first met in secondary
+                    school:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> The Linear Equation
+                    </div>
+                    <pre><code>y = m * x + b
+
+where:
+  y = predicted output (e.g., compressive strength in MPa)
+  x = input feature  (e.g., water-cement ratio)
+  m = slope          (how much y changes per unit change in x)
+  b = y-intercept    (the value of y when x = 0)</code></pre>
+                </div>
+
+                <p>
+                    In machine learning notation, you will often see this written as
+                    <strong>y&#770; = w<sub>1</sub>x + w<sub>0</sub></strong>, where w<sub>1</sub>
+                    is the weight (slope) and w<sub>0</sub> is the bias (intercept). The hat on
+                    y&#770; indicates it is a <em>predicted</em> value, not the actual measured value.
+                    Do not let the notation change confuse you &mdash; it is the same equation.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The linear equation is like Abrams' Law for concrete.</strong>
+                            Duff Abrams showed in 1918 that concrete strength is inversely related to
+                            the water-cement ratio. His empirical formula is essentially a regression
+                            model fitted to laboratory data. Linear regression formalises and
+                            generalises this process: instead of deriving a formula by hand, the
+                            algorithm finds the optimal parameters automatically from your data.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Understanding Slope and Intercept</h3>
+                        <p>
+                            The <strong>slope (m)</strong> tells you the rate of change. In our concrete
+                            example, if m = -65, that means for every 0.01 increase in the w/c ratio,
+                            the predicted compressive strength drops by 0.65 MPa. A negative slope
+                            confirms what engineers already know: more water means weaker concrete.
+                        </p>
+                        <p>
+                            The <strong>intercept (b)</strong> is the predicted value when the input is
+                            zero. For concrete strength vs. w/c ratio, the intercept has no physical
+                            meaning (you cannot have a w/c ratio of zero and still have concrete), but
+                            it is mathematically necessary to position the line correctly. This is
+                            common in engineering &mdash; extrapolation beyond the data range is always
+                            dangerous.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Extrapolation Warning</span>
+                    </div>
+                    <p>
+                        A regression model is only reliable within the range of the training data. If
+                        your data covers w/c ratios from 0.35 to 0.65, do not use the model to predict
+                        strength at w/c = 0.20 or 0.85. The relationship may be non-linear outside
+                        the observed range. This is a universal rule in engineering modelling, not
+                        unique to machine learning.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: THE CE CONTEXT - CONCRETE STRENGTH
+             ========================================== -->
+        <section class="ch-section" id="ce-context">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building-columns"></i>
+                    CE Context: Predicting Concrete Compressive Strength
+                </h2>
+
+                <p>
+                    Let us ground the theory in a real civil engineering problem. We have a dataset
+                    of concrete specimens, each tested at 28 days. For each specimen, we recorded
+                    the water-cement ratio (our feature, x) and the resulting compressive strength
+                    in MPa (our label, y). Our goal: fit a line that best describes this relationship,
+                    then use that line to predict the strength of future mixes.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sample Dataset: Water-Cement Ratio vs. 28-Day Strength</h3>
+                        <p>Here is a simplified dataset that we will use throughout this sub-chapter:</p>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin-top:12px;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-primary);">
+                                        <th style="text-align:left; padding:8px 12px;">Specimen</th>
+                                        <th style="text-align:center; padding:8px 12px;">w/c Ratio (x)</th>
+                                        <th style="text-align:center; padding:8px 12px;">Strength MPa (y)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C-01</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.35</td>
+                                        <td style="text-align:center; padding:8px 12px;">48.2</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C-02</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.40</td>
+                                        <td style="text-align:center; padding:8px 12px;">43.5</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C-03</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.45</td>
+                                        <td style="text-align:center; padding:8px 12px;">39.1</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C-04</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.50</td>
+                                        <td style="text-align:center; padding:8px 12px;">34.8</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C-05</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.55</td>
+                                        <td style="text-align:center; padding:8px 12px;">31.0</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C-06</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.60</td>
+                                        <td style="text-align:center; padding:8px 12px;">27.5</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 12px;">C-07</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.65</td>
+                                        <td style="text-align:center; padding:8px 12px;">23.8</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="margin-top:12px; font-size:0.85rem; color:var(--text-secondary);">
+                            Notice the clear trend: as the w/c ratio increases, compressive strength
+                            decreases. The relationship is approximately linear within this range.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    If you plotted these seven points on a graph, you would see them falling roughly
+                    along a straight line &mdash; but not perfectly. Real data always has scatter
+                    caused by variations in aggregate quality, curing conditions, testing equipment,
+                    and human error. The goal of linear regression is to find the line that best
+                    represents the underlying trend <em>despite</em> this scatter.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: THE LEAST SQUARES METHOD
+             ========================================== -->
+        <section class="ch-section" id="least-squares">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-minimize"></i>
+                    The Least Squares Method
+                </h2>
+
+                <p>
+                    How do we define "best" when fitting a line? We need a mathematical criterion
+                    that measures how well a candidate line fits the data. The most widely used
+                    criterion is the <strong>method of least squares</strong>, developed by
+                    Legendre and Gauss over two centuries ago.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Residuals: The Distance Between Prediction and Reality</h3>
+                        <p>
+                            For each data point, the <strong>residual</strong> is the vertical distance
+                            between the actual value (y<sub>i</sub>) and the predicted value
+                            (y&#770;<sub>i</sub>) on the regression line:
+                        </p>
+                        <div class="code-peek" style="margin:12px 0;">
+                            <div class="code-peek__header">
+                                <i class="fa-solid fa-calculator"></i> Residual Formula
+                            </div>
+                            <pre><code>residual_i = y_i - y_hat_i
+           = y_i - (m * x_i + b)</code></pre>
+                        </div>
+                        <p>
+                            A positive residual means the data point is <em>above</em> the line
+                            (the model underestimates). A negative residual means the point is
+                            <em>below</em> the line (the model overestimates). The best line
+                            minimises these residuals &mdash; but we cannot just sum them, because
+                            positive and negative values would cancel out.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Compute each residual</h3>
+                        <p>
+                            For every data point, subtract the predicted y&#770; from the actual y.
+                            This gives you a list of errors &mdash; some positive, some negative.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Square each residual</h3>
+                        <p>
+                            Squaring eliminates negative signs and penalises large errors more heavily
+                            than small ones. A point that is off by 10 MPa contributes 100 to the sum,
+                            while a point off by 2 MPa contributes only 4.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Sum the squared residuals</h3>
+                        <p>
+                            The total is the <strong>Sum of Squared Errors (SSE)</strong>. The line
+                            that produces the smallest SSE is the <strong>best-fit line</strong>.
+                            This is the "least squares" criterion.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Least squares is like surveying with a total station.</strong>
+                            When you measure elevations along a proposed road alignment, no single
+                            measurement is perfectly accurate. To design the road profile, you fit a
+                            smooth curve that minimises the overall deviation from all measured points.
+                            You do not force the curve through every point (that would follow the
+                            noise), but you find the profile that best represents the true ground level.
+                            Least squares does the same thing mathematically.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE COST FUNCTION (MSE)
+             ========================================== -->
+        <section class="ch-section" id="cost-function">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    The Cost Function: Mean Squared Error
+                </h2>
+
+                <p>
+                    In machine learning, the quantity we minimise is called the <strong>cost
+                    function</strong> (also called the loss function or objective function). For
+                    linear regression, the standard cost function is the <strong>Mean Squared
+                    Error (MSE)</strong>:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-calculator"></i> Mean Squared Error
+                    </div>
+                    <pre><code>MSE = (1/n) * SUM[ (y_i - y_hat_i)^2 ]
+
+where:
+  n      = number of data points
+  y_i    = actual measured value for point i
+  y_hat_i = predicted value (m * x_i + b) for point i</code></pre>
+                </div>
+
+                <p>
+                    MSE is simply the average of the squared residuals. It has the same units as
+                    y<sup>2</sup> (MPa<sup>2</sup> in our concrete example), which can make
+                    interpretation tricky. That is why you will sometimes see the <strong>Root
+                    Mean Squared Error (RMSE)</strong> &mdash; the square root of MSE &mdash;
+                    which returns the error to the original units (MPa).
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mountain"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Cost Surface: A Bowl-Shaped Landscape</h3>
+                        <p>
+                            Imagine plotting MSE as a function of the two parameters m (slope) and b
+                            (intercept). For every pair (m, b), you get a single MSE value. If you
+                            plot all possible MSE values in 3D, you get a <strong>bowl-shaped
+                            surface</strong> (technically a paraboloid). The bottom of the bowl
+                            represents the optimal m and b &mdash; the values that minimise the error.
+                        </p>
+                        <p>
+                            Finding the minimum of this bowl is the entire goal of training a linear
+                            regression model. There are two ways to do it: the closed-form solution
+                            (normal equations) and the iterative approach (gradient descent). Both
+                            reach the same answer, but gradient descent scales to problems with
+                            millions of features where closed-form solutions are computationally
+                            impractical.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Why "Cost" Function?</span>
+                    </div>
+                    <p>
+                        The name comes from optimisation theory. Think of the MSE as the "cost" of
+                        being wrong. High MSE = high cost = bad model. Low MSE = low cost = good
+                        model. Training is the process of reducing this cost. Civil engineers already
+                        think in terms of cost optimisation &mdash; minimising material cost subject
+                        to strength constraints. ML optimisation is conceptually identical: minimise
+                        prediction error subject to the model structure.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: GRADIENT DESCENT
+             ========================================== -->
+        <section class="ch-section" id="gradient-descent">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                    Gradient Descent: Walking Downhill
+                </h2>
+
+                <p>
+                    Gradient descent is the workhorse algorithm for training machine learning models.
+                    It finds the minimum of the cost function by taking iterative steps in the
+                    direction of steepest descent &mdash; like a ball rolling to the bottom of a
+                    bowl.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Initialise parameters</h3>
+                        <p>
+                            Start with random (or zero) values for the slope m and intercept b. At
+                            this point, the model's predictions are essentially random, and the MSE
+                            is high. You are at a random position on the bowl-shaped cost surface.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Compute the gradient</h3>
+                        <p>
+                            The <strong>gradient</strong> is the vector of partial derivatives of the
+                            cost function with respect to each parameter. It points in the direction
+                            of steepest <em>ascent</em>. We want to go the opposite direction
+                            (downhill), so we subtract the gradient.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Update parameters</h3>
+                        <p>
+                            Adjust m and b by subtracting a fraction of the gradient. The fraction is
+                            controlled by the <strong>learning rate</strong> (alpha) &mdash; a small
+                            positive number (e.g., 0.01) that determines the step size.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Repeat until convergence</h3>
+                        <p>
+                            Keep computing gradients and updating parameters. With each iteration, the
+                            MSE decreases and the model improves. Stop when the improvement becomes
+                            negligibly small (convergence) or after a set number of iterations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Gradient Descent Update Rules
+                    </div>
+                    <pre><code>// For each iteration:
+gradient_m = (2/n) * SUM[ x_i * (y_hat_i - y_i) ]
+gradient_b = (2/n) * SUM[ (y_hat_i - y_i) ]
+
+m = m - learning_rate * gradient_m
+b = b - learning_rate * gradient_b</code></pre>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Gradient descent is like grading a site to find the lowest
+                            point.</strong> Imagine you are standing on hilly terrain in dense fog
+                            and need to find the lowest elevation. You cannot see the whole landscape,
+                            but you can feel the slope under your feet. At each step, you walk in the
+                            direction where the ground slopes downward most steeply. Eventually, you
+                            reach the valley floor &mdash; the minimum. The learning rate is your step
+                            length: too large and you overshoot the valley; too small and you take
+                            forever to get there.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Learning Rate: A Critical Hyperparameter</h3>
+                        <p>
+                            The learning rate controls how aggressively the model updates its
+                            parameters. It is a <strong>hyperparameter</strong> &mdash; a value you
+                            set before training, not learned from the data.
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Too large</strong> &mdash; The model overshoots the minimum,
+                                bouncing back and forth across the valley or even diverging to infinity.
+                                Like a bulldozer that takes steps too big for the terrain.
+                            </li>
+                            <li>
+                                <strong>Too small</strong> &mdash; The model creeps toward the minimum
+                                agonisingly slowly, wasting computation. Like surveying millimetre by
+                                millimetre when metre-level steps would suffice.
+                            </li>
+                            <li>
+                                <strong>Just right</strong> &mdash; The model converges efficiently to
+                                the minimum in a reasonable number of iterations. Typical values range
+                                from 0.001 to 0.1.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: R-SQUARED
+             ========================================== -->
+        <section class="ch-section" id="r-squared">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    R-Squared: Measuring Model Quality
+                </h2>
+
+                <p>
+                    Once we have fitted a line, we need to know: <strong>how good is it?</strong>
+                    The MSE tells us the average squared error, but its magnitude depends on the
+                    scale of the data. A model predicting concrete strength in MPa might have an
+                    MSE of 4.0, while a model predicting settlement in millimetres might have an
+                    MSE of 0.5 &mdash; but which model is better relative to its problem?
+                </p>
+
+                <p>
+                    Enter <strong>R-squared</strong> (R<sup>2</sup>), also called the coefficient
+                    of determination. It measures the proportion of variance in the label that is
+                    explained by the model, on a scale from 0 to 1.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-calculator"></i> R-Squared Formula
+                    </div>
+                    <pre><code>R^2 = 1 - (SS_res / SS_tot)
+
+where:
+  SS_res = SUM[ (y_i - y_hat_i)^2 ]   (residual sum of squares)
+  SS_tot = SUM[ (y_i - y_mean)^2 ]    (total sum of squares)
+
+  y_mean = average of all actual y values</code></pre>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-signal"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interpreting R-Squared</h3>
+                        <ul>
+                            <li>
+                                <strong>R<sup>2</sup> = 1.0</strong> &mdash; The model explains 100%
+                                of the variance. Every prediction matches the actual value exactly.
+                                This almost never happens with real data.
+                            </li>
+                            <li>
+                                <strong>R<sup>2</sup> = 0.85</strong> &mdash; The model explains 85%
+                                of the variance in the data. This is excellent for most engineering
+                                applications.
+                            </li>
+                            <li>
+                                <strong>R<sup>2</sup> = 0.50</strong> &mdash; The model explains only
+                                half the variance. Significant patterns remain uncaptured. You might
+                                need more features or a non-linear model.
+                            </li>
+                            <li>
+                                <strong>R<sup>2</sup> = 0.0</strong> &mdash; The model is no better
+                                than simply predicting the mean for every data point. The features
+                                have no linear relationship with the label.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>R-Squared Limitations</span>
+                    </div>
+                    <p>
+                        R<sup>2</sup> always increases (or stays the same) when you add more features,
+                        even if those features are irrelevant. This is why the <strong>Adjusted
+                        R<sup>2</sup></strong> exists &mdash; it penalises unnecessary features. Also,
+                        a high R<sup>2</sup> does not guarantee the model is correct. The relationship
+                        might be non-linear, and a straight line might still achieve a decent R<sup>2</sup>
+                        while missing important curvature. Always examine the residuals.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: RESIDUAL ANALYSIS
+             ========================================== -->
+        <section class="ch-section" id="residual-analysis">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    Residual Analysis: Diagnosing Your Model
+                </h2>
+
+                <p>
+                    Fitting a line is only half the job. A responsible engineer always checks the
+                    residuals &mdash; the differences between actual and predicted values &mdash;
+                    to verify that the model's assumptions hold. Residual analysis is the
+                    engineering equivalent of quality control.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Good Residuals Look Like</h3>
+                        <ul>
+                            <li>
+                                <strong>Randomly scattered around zero</strong> &mdash; No systematic
+                                pattern. Points above and below the line are evenly distributed. This
+                                indicates the linear model captures the true relationship.
+                            </li>
+                            <li>
+                                <strong>Constant spread (homoscedasticity)</strong> &mdash; The
+                                residuals have roughly the same magnitude across all values of x.
+                                If they fan out (larger errors at higher x values), the model may
+                                need transformation.
+                            </li>
+                            <li>
+                                <strong>Approximately normal distribution</strong> &mdash; A histogram
+                                of residuals should look roughly bell-shaped. This validates
+                                confidence intervals and hypothesis tests.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bug"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Warning Signs in Residuals</h3>
+                        <ul>
+                            <li>
+                                <strong>Curved pattern</strong> &mdash; If residuals form a U-shape
+                                or inverted U, the true relationship is non-linear. A polynomial
+                                regression (covered in Sub-chapter 2.3) may be more appropriate.
+                            </li>
+                            <li>
+                                <strong>Funnel shape</strong> &mdash; Increasing spread suggests
+                                heteroscedasticity. Consider a log transformation or weighted
+                                regression.
+                            </li>
+                            <li>
+                                <strong>Outliers</strong> &mdash; Points with extremely large
+                                residuals deserve investigation. They may be data entry errors,
+                                unusual specimens, or genuine anomalies that reveal important
+                                engineering phenomena.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Residual analysis is like checking theodolite closing errors.</strong>
+                            After completing a traverse survey, you compute the closing error to assess
+                            accuracy. If the error is small and random, the survey is acceptable. If
+                            the error shows a systematic pattern (always drifting in one direction),
+                            something is wrong with the instrument or technique. Residuals serve the
+                            same diagnostic purpose for regression models.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: PUTTING IT ALL TOGETHER
+             ========================================== -->
+        <section class="ch-section" id="putting-together">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    Putting It All Together: The Complete Workflow
+                </h2>
+
+                <p>
+                    Let us trace the entire linear regression workflow from start to finish, using
+                    our concrete strength prediction problem:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Collect and prepare data</h3>
+                        <p>
+                            Gather laboratory test results: w/c ratio (feature) and 28-day compressive
+                            strength (label) for each specimen. Clean the data &mdash; remove
+                            obviously erroneous entries, handle missing values, and verify units.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Visualise the data</h3>
+                        <p>
+                            Plot a scatter diagram of x vs y. Does the relationship look linear?
+                            Are there obvious outliers? This visual check is essential before fitting
+                            a model &mdash; just as you would inspect a soil sample before testing it.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Fit the model (find m and b)</h3>
+                        <p>
+                            Use least squares (closed-form) or gradient descent (iterative) to find
+                            the slope and intercept that minimise the MSE. Record the equation:
+                            e.g., Strength = -81.3 * (w/c) + 76.8.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Evaluate the model</h3>
+                        <p>
+                            Compute R<sup>2</sup>, RMSE, and examine the residuals. Is the R<sup>2</sup>
+                            high enough for your application? Are residuals random? If not, revisit
+                            your assumptions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Make predictions</h3>
+                        <p>
+                            Use the fitted equation to predict strength for new mix designs. For
+                            example, at w/c = 0.48: Strength = -81.3 * 0.48 + 76.8 = 37.8 MPa.
+                            Always report the prediction alongside the R<sup>2</sup> and RMSE so
+                            stakeholders understand the uncertainty.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Complete Workflow in Pseudocode
+                    </div>
+                    <pre><code>// 1. Data
+x = [0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+y = [48.2, 43.5, 39.1, 34.8, 31.0, 27.5, 23.8]
+
+// 2. Compute means
+x_mean = average(x)    // 0.50
+y_mean = average(y)    // 35.41
+
+// 3. Compute slope (m) and intercept (b)
+numerator   = SUM[ (x_i - x_mean) * (y_i - y_mean) ]
+denominator = SUM[ (x_i - x_mean)^2 ]
+m = numerator / denominator   // approx -81.3
+b = y_mean - m * x_mean       // approx 76.1
+
+// 4. Predict
+for w_c_ratio = 0.48:
+    predicted_strength = m * 0.48 + b  // approx 37.1 MPa
+
+// 5. Evaluate
+R_squared = 1 - SS_res / SS_tot   // approx 0.998</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 1 - BEST FIT LINE
+             ========================================== -->
+        <section class="ch-section" id="demo-best-fit">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Build Your Own Regression Line
+                </h2>
+
+                <p>
+                    Experience linear regression firsthand. Click on the canvas below to add data
+                    points (imagine each click is a concrete test result). The algorithm will
+                    compute and display the best-fit line in real time, updating the slope,
+                    intercept, and R<sup>2</sup> as you add more data. Watch how the line stabilises
+                    as you add more points and how a single outlier can shift it.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-bestfit">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-chart-line"></i> Click to Add Points &mdash; Watch the Best-Fit Line</h3>
+                        <p>
+                            Click anywhere on the canvas to place data points. The regression line,
+                            slope, intercept, and R<sup>2</sup> update automatically after 2+ points.
+                            Toggle residuals to see the error lines.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <button id="bestfit-reset" class="demo-btn" title="Clear all points">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button id="bestfit-residuals" class="demo-btn" title="Toggle residual lines">
+                            <i class="fa-solid fa-arrows-up-down"></i> Show Residuals
+                        </button>
+                        <button id="bestfit-sample" class="demo-btn" title="Load sample concrete data">
+                            <i class="fa-solid fa-flask-vial"></i> Load Sample Data
+                        </button>
+                    </div>
+                    <canvas id="bestfit-canvas" style="width:100%; height:450px; cursor:crosshair; border-radius:8px;"></canvas>
+                    <div id="bestfit-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="bestfit-equation">Equation: click to add points</span>
+                        <span id="bestfit-r2">R<sup>2</sup>: &mdash;</span>
+                        <span id="bestfit-mse">MSE: &mdash;</span>
+                        <span id="bestfit-count">Points: 0</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 2 - GRADIENT DESCENT
+             ========================================== -->
+        <section class="ch-section" id="demo-gradient-descent">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                    Interactive Demo: Gradient Descent Visualiser
+                </h2>
+
+                <p>
+                    See gradient descent in action. This demo shows the bowl-shaped cost surface
+                    (contour plot of MSE as a function of slope and intercept) and traces the path
+                    the algorithm takes as it walks downhill toward the minimum. Adjust the learning
+                    rate to see how step size affects convergence. Too large and the path overshoots;
+                    too small and it crawls.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-gd">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-mountain"></i> Gradient Descent on the Cost Surface</h3>
+                        <p>
+                            The contour lines represent equal MSE values. The darkest region is the
+                            minimum (optimal parameters). Click "Start" to watch gradient descent
+                            navigate to the minimum. Adjust the learning rate and observe the effect.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <button id="gd-start" class="demo-btn" title="Start gradient descent">
+                            <i class="fa-solid fa-play"></i> Start
+                        </button>
+                        <button id="gd-reset" class="demo-btn" title="Reset to random start">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--text-secondary);">
+                            Learning Rate:
+                            <input type="range" id="gd-lr" min="1" max="100" value="30" style="width:120px;">
+                            <span id="gd-lr-val">0.030</span>
+                        </label>
+                    </div>
+                    <canvas id="gd-canvas" style="width:100%; height:450px; border-radius:8px;"></canvas>
+                    <div id="gd-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="gd-iteration">Iteration: 0</span>
+                        <span id="gd-slope">Slope: &mdash;</span>
+                        <span id="gd-intercept">Intercept: &mdash;</span>
+                        <span id="gd-mse">MSE: &mdash;</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: MULTIPLE LINEAR REGRESSION PREVIEW
+             ========================================== -->
+        <section class="ch-section" id="multiple-regression">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Beyond One Feature: Multiple Linear Regression
+                </h2>
+
+                <p>
+                    So far, we have used a single feature (w/c ratio) to predict concrete strength.
+                    But concrete strength depends on many factors: cement content, aggregate type,
+                    superplasticiser dosage, curing temperature, and more. <strong>Multiple linear
+                    regression</strong> extends the single-feature model to handle multiple inputs
+                    simultaneously:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Multiple Linear Regression
+                    </div>
+                    <pre><code>y_hat = w_0 + w_1 * x_1 + w_2 * x_2 + ... + w_p * x_p
+
+Example for concrete strength:
+  Strength = w_0
+           + w_1 * (cement content)
+           + w_2 * (w/c ratio)
+           + w_3 * (fine aggregate)
+           + w_4 * (coarse aggregate)
+           + w_5 * (superplasticiser)
+           + w_6 * (age in days)</code></pre>
+                </div>
+
+                <p>
+                    The principles are identical &mdash; we still minimise MSE, still use gradient
+                    descent (now with more parameters to update), and still evaluate with
+                    R<sup>2</sup>. The only difference is that instead of a 2D line, we are fitting
+                    a <strong>hyperplane</strong> in multi-dimensional space. You cannot visualise
+                    it beyond three dimensions, but the mathematics works exactly the same way.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Scaling Matters</h3>
+                        <p>
+                            When features have vastly different scales (e.g., cement content in
+                            hundreds of kg/m<sup>3</sup> vs. w/c ratio between 0.3 and 0.7), gradient
+                            descent can struggle. The cost surface becomes elongated (like an ellipse
+                            rather than a circle), causing the algorithm to zigzag inefficiently.
+                        </p>
+                        <p>
+                            The solution is <strong>feature scaling</strong>: normalise all features
+                            to a similar range (e.g., 0 to 1) before training. This is analogous to
+                            converting all measurements to consistent units before performing
+                            structural analysis &mdash; you would not mix metres and millimetres in
+                            the same stiffness matrix.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: PRACTICAL TIPS FOR ENGINEERS
+             ========================================== -->
+        <section class="ch-section" id="practical-tips">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    Practical Tips for Civil Engineers
+                </h2>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 1: Start Simple</span>
+                    </div>
+                    <p>
+                        Always start with a simple linear regression before trying complex models.
+                        If a straight line achieves R<sup>2</sup> = 0.92, you may not need a neural
+                        network. Simple models are easier to interpret, validate, and explain to
+                        non-technical stakeholders &mdash; a critical advantage when presenting to
+                        project managers or regulatory bodies.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 2: Check Your Assumptions</span>
+                    </div>
+                    <p>
+                        Linear regression assumes a linear relationship, independent errors, constant
+                        variance, and normally distributed residuals. If these assumptions are
+                        violated, the model's predictions and confidence intervals may be unreliable.
+                        Always plot residuals versus predicted values and check for patterns.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 3: Domain Knowledge is Your Superpower</span>
+                    </div>
+                    <p>
+                        As a civil engineer, you have something most data scientists lack: deep domain
+                        expertise. You know that concrete strength cannot be negative, that settlement
+                        increases with load, and that certain features are physically correlated. Use
+                        this knowledge to sanity-check your model. If the regression equation predicts
+                        negative strength at reasonable w/c ratios, something is wrong &mdash; do not
+                        blindly trust the mathematics.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 4: Report Uncertainty</span>
+                    </div>
+                    <p>
+                        Never present a single predicted value without context. Always report the
+                        RMSE, R<sup>2</sup>, and ideally a confidence interval. Saying "predicted
+                        strength = 37 MPa" is incomplete. Saying "predicted strength = 37 +/- 3 MPa
+                        (R<sup>2</sup> = 0.95)" tells the engineer how much to trust the prediction.
+                        This is no different from reporting survey coordinates with their estimated
+                        accuracy.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-brain"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Answer the following questions to check your grasp of linear regression concepts.
+                    Each question relates to civil engineering applications covered in this
+                    sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        In the linear regression equation y = mx + b for predicting concrete strength
+                        from water-cement ratio, what does the <strong>slope (m)</strong> represent?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> The average concrete strength across all specimens
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> The expected change in strength per unit change in w/c ratio
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> The predicted strength when the w/c ratio equals zero
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> The R-squared value of the model
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The slope (m) represents the
+                        rate of change &mdash; how many MPa of strength change for each unit change in
+                        the w/c ratio. A negative slope confirms that higher w/c ratios lead to lower
+                        strength.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The slope (m) represents
+                        the <strong>rate of change</strong> &mdash; the expected change in strength
+                        per unit change in w/c ratio. Option A describes the mean, option C describes
+                        the intercept (b), and option D is a separate metric.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        Why does the least squares method <strong>square</strong> the residuals
+                        instead of simply summing them?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> To make the computation faster on modern computers
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> To ensure the line passes through every data point
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> To prevent positive and negative residuals from cancelling out and to penalise large errors more heavily
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> To normalise the residuals to a 0-1 scale
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Squaring serves two purposes:
+                        it eliminates negative signs (so positive and negative errors do not cancel)
+                        and it penalises larger errors disproportionately (an error of 10 contributes
+                        100, not 10, to the total).
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Squaring the residuals
+                        <strong>prevents positive and negative residuals from cancelling out</strong>
+                        and <strong>penalises large errors more heavily</strong>. Without squaring, a
+                        point 10 MPa above the line and another 10 MPa below would sum to zero
+                        &mdash; suggesting a perfect fit when it is clearly not.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        In gradient descent, what happens if the <strong>learning rate</strong> is
+                        set too high?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> The model converges faster to the optimal solution
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> The model always finds the global minimum
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> The model may overshoot the minimum and diverge, failing to converge
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The R-squared value automatically becomes 1.0
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! A learning rate that is too
+                        high causes the algorithm to take steps that are too large, overshooting the
+                        minimum of the cost surface and potentially bouncing back and forth or
+                        diverging to infinity. Think of it like a bulldozer taking 10-metre steps on
+                        a narrow valley floor.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. A high learning rate
+                        causes <strong>overshooting and potential divergence</strong>. The steps are
+                        too large for the curvature of the cost surface, causing the algorithm to
+                        bounce past the minimum rather than settling into it.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        A linear regression model predicting concrete compressive strength from w/c
+                        ratio yields R<sup>2</sup> = 0.03. What does this tell you?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> The model is excellent and explains almost all the variance
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> The model has a 3% prediction error on every data point
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> The linear model explains only 3% of the variance; the w/c ratio alone has almost no linear predictive power in this dataset
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> The model needs exactly 3 more features to be accurate
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! An R<sup>2</sup> of 0.03
+                        means the model explains only 3% of the variance in the data. The w/c ratio
+                        alone is barely better than predicting the mean for every specimen. This could
+                        indicate the data is noisy, the relationship is non-linear, or other factors
+                        dominate strength variation in this particular dataset.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. R<sup>2</sup> = 0.03 means
+                        the model <strong>explains only 3% of the variance</strong>. It is essentially
+                        useless as a predictor. R<sup>2</sup> is not a percentage error &mdash; it is
+                        the proportion of variance explained. A value this low suggests the linear
+                        model does not capture the relationship in this data.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul>
+                            <li>
+                                Linear regression fits a straight line (y = mx + b) to data by
+                                minimising the Mean Squared Error between predictions and actual
+                                values.
+                            </li>
+                            <li>
+                                The <strong>slope</strong> tells you the rate of change; the
+                                <strong>intercept</strong> positions the line on the y-axis.
+                            </li>
+                            <li>
+                                The <strong>least squares method</strong> finds the optimal parameters
+                                by minimising the sum of squared residuals.
+                            </li>
+                            <li>
+                                <strong>Gradient descent</strong> is an iterative optimisation algorithm
+                                that walks downhill on the cost surface. The learning rate controls
+                                step size.
+                            </li>
+                            <li>
+                                <strong>R-squared</strong> measures the proportion of variance
+                                explained by the model, from 0 (useless) to 1 (perfect).
+                            </li>
+                            <li>
+                                Always <strong>check residuals</strong> for patterns &mdash; random
+                                scatter is good; systematic patterns indicate model mis-specification.
+                            </li>
+                            <li>
+                                <strong>Do not extrapolate</strong> beyond the range of training data.
+                                The model is only reliable within the observed input range.
+                            </li>
+                            <li>
+                                In civil engineering, linear regression powers applications from
+                                concrete strength prediction to settlement estimation and traffic
+                                volume forecasting.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>Coming Up Next</span>
+                    </div>
+                    <p>
+                        In Sub-chapter 2.3, we extend the linear model to handle curved relationships
+                        using <strong>Polynomial Regression</strong>. You will learn how to fit
+                        parabolas and higher-order curves to data, when to use polynomial terms, and
+                        how to avoid the trap of overfitting. The concepts of MSE, R<sup>2</sup>, and
+                        gradient descent you learned here carry forward directly.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub1.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.1 SL Fundamentals
+        </a>
+        <a href="sub3.html" class="chapter-nav__link next">
+            2.3 Polynomial Regression <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+        var lerp = Utils.lerp || function(a,b,t){ return a+(b-a)*t; };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); };
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED REGRESSION LINE
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var points = [];
+            var numPoints = 50;
+            var lineAngle = 0;
+            var animId;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                points = [];
+                for (var i = 0; i < numPoints; i++) {
+                    var px = rand(0.1, 0.9) * w;
+                    var trueY = 0.3 * h + (px / w) * 0.4 * h;
+                    var py = trueY + rand(-40, 40);
+                    points.push({
+                        x: px, y: py,
+                        baseY: trueY,
+                        r: rand(2, 4),
+                        phase: rand(0, Math.PI * 2)
+                    });
+                }
+            }
+
+            function draw(time) {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Grid
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                var gs = 50;
+                for (var gx = 0; gx < w; gx += gs) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += gs) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                // Animated regression line
+                lineAngle += 0.003;
+                var lm = 0.4 + Math.sin(lineAngle) * 0.1;
+                var lb = 0.3 * h - Math.sin(lineAngle * 0.7) * 20;
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.moveTo(0, lb);
+                ctx.lineTo(w, lb + lm * w * 0.5);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                // Data points with gentle bobbing
+                var t = time * 0.001;
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    var yOff = Math.sin(t + p.phase) * 3;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y + yOff, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = c.CYAN;
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                // Residual lines (subtle)
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 0.5;
+                ctx.globalAlpha = 0.15;
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    var lineY = lb + lm * p.x * 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x, lineY);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw(0);
+            window.addEventListener('resize', function() {
+                cancelAnimationFrame(animId);
+                resize();
+                draw(0);
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: BEST-FIT LINE (CLICK TO ADD POINTS)
+           ============================================== */
+        (function initBestFitDemo() {
+            var canvas = document.getElementById('bestfit-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var points = [];
+            var showResiduals = false;
+            var padding = 50;
+
+            // Axis ranges for mapping
+            var xMin = 0, xMax = 1, yMin = 0, yMax = 60;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                drawAll();
+            }
+
+            function toCanvasX(val) { return padding + (val - xMin) / (xMax - xMin) * (w - 2 * padding); }
+            function toCanvasY(val) { return h - padding - (val - yMin) / (yMax - yMin) * (h - 2 * padding); }
+            function fromCanvasX(px) { return xMin + (px - padding) / (w - 2 * padding) * (xMax - xMin); }
+            function fromCanvasY(py) { return yMin + (h - padding - py) / (h - 2 * padding) * (yMax - yMin); }
+
+            function computeRegression() {
+                var n = points.length;
+                if (n < 2) return null;
+                var sx = 0, sy = 0, sxy = 0, sx2 = 0, sy2 = 0;
+                for (var i = 0; i < n; i++) {
+                    sx += points[i].x;
+                    sy += points[i].y;
+                    sxy += points[i].x * points[i].y;
+                    sx2 += points[i].x * points[i].x;
+                    sy2 += points[i].y * points[i].y;
+                }
+                var denom = n * sx2 - sx * sx;
+                if (Math.abs(denom) < 1e-12) return null;
+                var m = (n * sxy - sx * sy) / denom;
+                var b = (sy - m * sx) / n;
+                var yMean = sy / n;
+                var ssTot = 0, ssRes = 0;
+                for (var i = 0; i < n; i++) {
+                    var yHat = m * points[i].x + b;
+                    ssTot += (points[i].y - yMean) * (points[i].y - yMean);
+                    ssRes += (points[i].y - yHat) * (points[i].y - yHat);
+                }
+                var r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+                var mse = ssRes / n;
+                return { m: m, b: b, r2: r2, mse: mse };
+            }
+
+            function drawAll() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Background
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx <= 10; gx++) {
+                    var px = padding + gx / 10 * (w - 2 * padding);
+                    ctx.beginPath(); ctx.moveTo(px, padding); ctx.lineTo(px, h - padding); ctx.stroke();
+                }
+                for (var gy = 0; gy <= 6; gy++) {
+                    var py = padding + gy / 6 * (h - 2 * padding);
+                    ctx.beginPath(); ctx.moveTo(padding, py); ctx.lineTo(w - padding, py); ctx.stroke();
+                }
+
+                // Axes
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, h - padding);
+                ctx.lineTo(w - padding, h - padding);
+                ctx.stroke();
+
+                // Axis labels
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                for (var lx = 0; lx <= 10; lx++) {
+                    var val = xMin + lx / 10 * (xMax - xMin);
+                    ctx.fillText(val.toFixed(1), toCanvasX(val), h - padding + 18);
+                }
+                ctx.textAlign = 'right';
+                for (var ly = 0; ly <= 6; ly++) {
+                    var val = yMin + ly / 6 * (yMax - yMin);
+                    ctx.fillText(val.toFixed(0), padding - 8, toCanvasY(val) + 4);
+                }
+
+                // Axis titles
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '12px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('x (feature value)', w / 2, h - 8);
+                ctx.save();
+                ctx.translate(14, h / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('y (target value)', 0, 0);
+                ctx.restore();
+
+                // Regression line
+                var reg = computeRegression();
+                if (reg) {
+                    var lx1 = xMin, lx2 = xMax;
+                    var ly1 = reg.m * lx1 + reg.b;
+                    var ly2 = reg.m * lx2 + reg.b;
+                    ctx.strokeStyle = c.TEAL;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(toCanvasX(lx1), toCanvasY(ly1));
+                    ctx.lineTo(toCanvasX(lx2), toCanvasY(ly2));
+                    ctx.stroke();
+
+                    // Residual lines
+                    if (showResiduals) {
+                        ctx.strokeStyle = c.AMBER;
+                        ctx.lineWidth = 1;
+                        ctx.globalAlpha = 0.6;
+                        for (var i = 0; i < points.length; i++) {
+                            var p = points[i];
+                            var yHat = reg.m * p.x + reg.b;
+                            ctx.beginPath();
+                            ctx.moveTo(toCanvasX(p.x), toCanvasY(p.y));
+                            ctx.lineTo(toCanvasX(p.x), toCanvasY(yHat));
+                            ctx.stroke();
+                        }
+                        ctx.globalAlpha = 1;
+                    }
+                }
+
+                // Data points
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(p.x), toCanvasY(p.y), 6, 0, Math.PI * 2);
+                    ctx.fillStyle = c.CYAN;
+                    ctx.fill();
+                    ctx.strokeStyle = c.BG;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Update stats
+                var eqEl = document.getElementById('bestfit-equation');
+                var r2El = document.getElementById('bestfit-r2');
+                var mseEl = document.getElementById('bestfit-mse');
+                var cntEl = document.getElementById('bestfit-count');
+                if (cntEl) cntEl.textContent = 'Points: ' + points.length;
+                if (reg) {
+                    if (eqEl) eqEl.textContent = 'y = ' + reg.m.toFixed(2) + 'x + ' + reg.b.toFixed(2);
+                    if (r2El) r2El.innerHTML = 'R<sup>2</sup>: ' + reg.r2.toFixed(4);
+                    if (mseEl) mseEl.textContent = 'MSE: ' + reg.mse.toFixed(3);
+                } else {
+                    if (eqEl) eqEl.textContent = 'Equation: add 2+ points';
+                    if (r2El) r2El.innerHTML = 'R<sup>2</sup>: \u2014';
+                    if (mseEl) mseEl.textContent = 'MSE: \u2014';
+                }
+            }
+
+            // Click to add point
+            canvas.addEventListener('click', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var dx = fromCanvasX(mx);
+                var dy = fromCanvasY(my);
+                if (dx >= xMin && dx <= xMax && dy >= yMin && dy <= yMax) {
+                    points.push({ x: dx, y: dy });
+                    drawAll();
+                }
+            });
+
+            // Reset
+            var resetBtn = document.getElementById('bestfit-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    points = [];
+                    drawAll();
+                });
+            }
+
+            // Toggle residuals
+            var resBtn = document.getElementById('bestfit-residuals');
+            if (resBtn) {
+                resBtn.addEventListener('click', function() {
+                    showResiduals = !showResiduals;
+                    resBtn.innerHTML = showResiduals
+                        ? '<i class="fa-solid fa-arrows-up-down"></i> Hide Residuals'
+                        : '<i class="fa-solid fa-arrows-up-down"></i> Show Residuals';
+                    drawAll();
+                });
+            }
+
+            // Load sample concrete data
+            var sampleBtn = document.getElementById('bestfit-sample');
+            if (sampleBtn) {
+                sampleBtn.addEventListener('click', function() {
+                    xMin = 0.25; xMax = 0.75; yMin = 15; yMax = 55;
+                    points = [
+                        { x: 0.35, y: 48.2 },
+                        { x: 0.38, y: 45.0 },
+                        { x: 0.40, y: 43.5 },
+                        { x: 0.42, y: 41.8 },
+                        { x: 0.45, y: 39.1 },
+                        { x: 0.47, y: 37.0 },
+                        { x: 0.50, y: 34.8 },
+                        { x: 0.52, y: 33.5 },
+                        { x: 0.55, y: 31.0 },
+                        { x: 0.57, y: 29.2 },
+                        { x: 0.60, y: 27.5 },
+                        { x: 0.63, y: 25.0 },
+                        { x: 0.65, y: 23.8 }
+                    ];
+                    drawAll();
+                });
+            }
+
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           DEMO 2: GRADIENT DESCENT VISUALISER
+           ============================================== */
+        (function initGradientDescentDemo() {
+            var canvas = document.getElementById('gd-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var padding = 60;
+
+            // Fixed dataset for cost computation
+            var data = [
+                { x: 0.35, y: 48.2 }, { x: 0.40, y: 43.5 },
+                { x: 0.45, y: 39.1 }, { x: 0.50, y: 34.8 },
+                { x: 0.55, y: 31.0 }, { x: 0.60, y: 27.5 },
+                { x: 0.65, y: 23.8 }
+            ];
+
+            // Parameter space ranges
+            var mMin = -120, mMax = -40;
+            var bMin = 50, bMax = 100;
+
+            // Optimal values (precomputed for reference)
+            var optM = -81.3, optB = 76.1;
+
+            // GD state
+            var gdM, gdB, gdPath, gdRunning, gdAnimId;
+            var learningRate = 0.030;
+            var iteration = 0;
+
+            function computeMSE(m, b) {
+                var sum = 0;
+                for (var i = 0; i < data.length; i++) {
+                    var err = data[i].y - (m * data[i].x + b);
+                    sum += err * err;
+                }
+                return sum / data.length;
+            }
+
+            function computeGradients(m, b) {
+                var gm = 0, gb = 0, n = data.length;
+                for (var i = 0; i < n; i++) {
+                    var yHat = m * data[i].x + b;
+                    var diff = yHat - data[i].y;
+                    gm += diff * data[i].x;
+                    gb += diff;
+                }
+                return { gm: (2 / n) * gm, gb: (2 / n) * gb };
+            }
+
+            function toCanvasX(m) { return padding + (m - mMin) / (mMax - mMin) * (w - 2 * padding); }
+            function toCanvasY(b) { return h - padding - (b - bMin) / (bMax - bMin) * (h - 2 * padding); }
+
+            function resetGD() {
+                gdM = rand(mMin + 10, mMax - 10);
+                gdB = rand(bMin + 5, bMax - 5);
+                gdPath = [{ m: gdM, b: gdB }];
+                gdRunning = false;
+                iteration = 0;
+                if (gdAnimId) cancelAnimationFrame(gdAnimId);
+                gdAnimId = null;
+                updateStats();
+                drawContour();
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                drawContour();
+            }
+
+            function drawContour() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Background
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                // Draw contour heatmap
+                var plotW = w - 2 * padding;
+                var plotH = h - 2 * padding;
+                var step = 4;
+                var maxMSE = computeMSE(mMin, bMax);
+                var minMSE = computeMSE(optM, optB);
+
+                for (var px = 0; px < plotW; px += step) {
+                    for (var py = 0; py < plotH; py += step) {
+                        var m = mMin + (px / plotW) * (mMax - mMin);
+                        var b = bMax - (py / plotH) * (bMax - bMin);
+                        var mse = computeMSE(m, b);
+                        var t = Math.log(mse - minMSE + 1) / Math.log(maxMSE - minMSE + 1);
+                        t = clamp(t, 0, 1);
+                        var r = Math.round(lerp(10, 80, t));
+                        var g = Math.round(lerp(180, 30, t));
+                        var bl = Math.round(lerp(170, 60, t));
+                        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + bl + ')';
+                        ctx.fillRect(padding + px, padding + py, step, step);
+                    }
+                }
+
+                // Contour lines
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 0.5;
+                var levels = [1, 5, 15, 40, 80, 150, 300, 500];
+                for (var li = 0; li < levels.length; li++) {
+                    var targetMSE = minMSE + levels[li];
+                    for (var px = 0; px < plotW; px += 3) {
+                        for (var py = 0; py < plotH; py += 3) {
+                            var m1 = mMin + (px / plotW) * (mMax - mMin);
+                            var b1 = bMax - (py / plotH) * (bMax - bMin);
+                            var mse1 = computeMSE(m1, b1);
+                            var m2 = mMin + ((px + 3) / plotW) * (mMax - mMin);
+                            var mse2 = computeMSE(m2, b1);
+                            var b2 = bMax - ((py + 3) / plotH) * (bMax - bMin);
+                            var mse3 = computeMSE(m1, b2);
+                            if ((mse1 - targetMSE) * (mse2 - targetMSE) < 0 ||
+                                (mse1 - targetMSE) * (mse3 - targetMSE) < 0) {
+                                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                                ctx.fillRect(padding + px, padding + py, 1, 1);
+                            }
+                        }
+                    }
+                }
+
+                // Axes
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, h - padding);
+                ctx.lineTo(w - padding, h - padding);
+                ctx.stroke();
+
+                // Axis labels
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                for (var lx = 0; lx <= 4; lx++) {
+                    var val = mMin + lx / 4 * (mMax - mMin);
+                    ctx.fillText(val.toFixed(0), toCanvasX(val), h - padding + 18);
+                }
+                ctx.textAlign = 'right';
+                for (var ly = 0; ly <= 4; ly++) {
+                    var val = bMin + ly / 4 * (bMax - bMin);
+                    ctx.fillText(val.toFixed(0), padding - 8, toCanvasY(val) + 4);
+                }
+
+                // Axis titles
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '12px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Slope (m)', w / 2, h - 8);
+                ctx.save();
+                ctx.translate(14, h / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Intercept (b)', 0, 0);
+                ctx.restore();
+
+                // Optimal point marker
+                ctx.beginPath();
+                ctx.arc(toCanvasX(optM), toCanvasY(optB), 8, 0, Math.PI * 2);
+                ctx.strokeStyle = c.GREEN;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = c.GREEN;
+                ctx.globalAlpha = 0.3;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.font = '10px Inter, sans-serif';
+                ctx.fillStyle = c.GREEN;
+                ctx.textAlign = 'left';
+                ctx.fillText('Optimum', toCanvasX(optM) + 12, toCanvasY(optB) + 4);
+
+                // Draw GD path
+                if (gdPath && gdPath.length > 1) {
+                    ctx.strokeStyle = c.AMBER;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(toCanvasX(gdPath[0].m), toCanvasY(gdPath[0].b));
+                    for (var i = 1; i < gdPath.length; i++) {
+                        ctx.lineTo(toCanvasX(gdPath[i].m), toCanvasY(gdPath[i].b));
+                    }
+                    ctx.stroke();
+
+                    // Path dots
+                    for (var i = 0; i < gdPath.length; i++) {
+                        ctx.beginPath();
+                        ctx.arc(toCanvasX(gdPath[i].m), toCanvasY(gdPath[i].b), 3, 0, Math.PI * 2);
+                        ctx.fillStyle = i === gdPath.length - 1 ? c.RED : c.AMBER;
+                        ctx.fill();
+                    }
+                }
+
+                // Current position
+                if (gdPath && gdPath.length >= 1) {
+                    var cur = gdPath[gdPath.length - 1];
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(cur.m), toCanvasY(cur.b), 6, 0, Math.PI * 2);
+                    ctx.fillStyle = c.RED;
+                    ctx.fill();
+                    ctx.strokeStyle = c.WHITE;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+
+            function gdStep() {
+                var lr = learningRate;
+                var g = computeGradients(gdM, gdB);
+                gdM = gdM - lr * g.gm;
+                gdB = gdB - lr * g.gb;
+                gdM = clamp(gdM, mMin, mMax);
+                gdB = clamp(gdB, bMin, bMax);
+                gdPath.push({ m: gdM, b: gdB });
+                iteration++;
+                updateStats();
+                drawContour();
+            }
+
+            function animateGD() {
+                if (!gdRunning) return;
+                if (iteration >= 300) {
+                    gdRunning = false;
+                    var startBtn = document.getElementById('gd-start');
+                    if (startBtn) startBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+                    return;
+                }
+                var mse = computeMSE(gdM, gdB);
+                var optMSE = computeMSE(optM, optB);
+                if (mse - optMSE < 0.01) {
+                    gdRunning = false;
+                    var startBtn = document.getElementById('gd-start');
+                    if (startBtn) startBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+                    updateStats();
+                    drawContour();
+                    return;
+                }
+                gdStep();
+                gdAnimId = requestAnimationFrame(animateGD);
+            }
+
+            function updateStats() {
+                var iterEl = document.getElementById('gd-iteration');
+                var slopeEl = document.getElementById('gd-slope');
+                var intEl = document.getElementById('gd-intercept');
+                var mseEl = document.getElementById('gd-mse');
+                if (iterEl) iterEl.textContent = 'Iteration: ' + iteration;
+                if (slopeEl) slopeEl.textContent = 'Slope: ' + gdM.toFixed(2);
+                if (intEl) intEl.textContent = 'Intercept: ' + gdB.toFixed(2);
+                if (mseEl) mseEl.textContent = 'MSE: ' + computeMSE(gdM, gdB).toFixed(3);
+            }
+
+            // Controls
+            var startBtn = document.getElementById('gd-start');
+            if (startBtn) {
+                startBtn.addEventListener('click', function() {
+                    if (gdRunning) {
+                        gdRunning = false;
+                        startBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+                    } else {
+                        gdRunning = true;
+                        startBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                        animateGD();
+                    }
+                });
+            }
+
+            var resetBtnGD = document.getElementById('gd-reset');
+            if (resetBtnGD) {
+                resetBtnGD.addEventListener('click', function() {
+                    resetGD();
+                    var startBtn = document.getElementById('gd-start');
+                    if (startBtn) startBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+                });
+            }
+
+            var lrSlider = document.getElementById('gd-lr');
+            var lrVal = document.getElementById('gd-lr-val');
+            if (lrSlider) {
+                lrSlider.addEventListener('input', function() {
+                    learningRate = parseFloat(lrSlider.value) / 1000;
+                    if (lrVal) lrVal.textContent = learningRate.toFixed(3);
+                });
+            }
+
+            resetGD();
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           SCROLL PROGRESS BAR
+           ============================================== */
+        (function initScrollProgress() {
+            var bar = document.getElementById('scroll-progress');
+            if (!bar) return;
+            function update() {
+                var scrollTop = window.scrollY;
+                var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+                bar.style.width = progress + '%';
+            }
+            window.addEventListener('scroll', update, { passive: true });
+            update();
+        })();
+
+        /* ==============================================
+           INTERSECTION OBSERVER FOR ANIMATIONS
+           ============================================== */
+        (function initObserver() {
+            var observerOptions = {
+                root: null,
+                rootMargin: '0px 0px -60px 0px',
+                threshold: 0.15
+            };
+
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .code-peek, .demo-panel')
+                .forEach(function (el) {
+                    observer.observe(el);
+                });
+        })();
+
+        /* ==============================================
+           THEME CHANGE HANDLER - REDRAW CANVASES
+           ============================================== */
+        (function initThemeWatcher() {
+            var observer = new MutationObserver(function () {
+                window.dispatchEvent(new Event('resize'));
+            });
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['data-theme']
+            });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

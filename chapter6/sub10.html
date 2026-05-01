@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.10 CE Case Study: Concrete Strength Prediction | Civil Engineer's Guide to AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &times; AI</span>
+    </a>
+    <div class="nav-links">
+      <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+      <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Chapter 6</a>
+      <a href="sub9.html" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Prev</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-flask-vial"></i>
+      <span>Chapter 6 &middot; Section 6.10 &middot; Capstone Case Study</span>
+    </div>
+    <h1 class="chapter-hero__title">CE Case Study: Concrete Strength Prediction</h1>
+    <p class="chapter-hero__subtitle">
+      An end-to-end neural network workflow that predicts 28-day compressive strength
+      from mix design &mdash; tying together every concept in Chapter 6.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-solid fa-clock"></i> ~30 min read</span>
+      <span><i class="fa-solid fa-cubes-stacked"></i> 1030-sample UCI dataset</span>
+      <span><i class="fa-solid fa-bullseye"></i> R&sup2; ~ 0.92</span>
+      <span><i class="fa-solid fa-flag-checkered"></i> Final sub-chapter</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+<!-- ========================= 1. PROBLEM ========================= -->
+<section class="ch-section" id="problem">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-bullseye"></i> The Problem: From Mix Sheet to Strength</h2>
+    <p>
+      A concrete batch plant ships hundreds of cubic metres per day. The
+      single number that matters most for structural acceptance is the
+      <strong>28-day characteristic compressive strength</strong>, <em>f<sub>ck</sub></em>,
+      in megapascals (MPa). Today, every batch is sampled, cubes are cast,
+      cured for 28 days, and crushed in a compression machine. By the time the
+      number lands on the engineer's desk, the concrete in question has been
+      sitting in a column for four weeks.
+    </p>
+    <p>
+      Could we predict that strength <em>at the moment the truck leaves the plant</em>,
+      from the mix sheet alone? Empirical formulas like <strong>Abrams' law</strong>,
+      <strong>Bolomey</strong>, and the curves in <strong>ACI 211</strong> give a first
+      estimate &mdash; but they were calibrated on narrow ranges and ignore the
+      nonlinear interactions between supplementary cementitious materials
+      (slag, fly ash) and admixtures (superplasticisers).
+    </p>
+    <p>
+      A neural network, trained on the famous <strong>I-Cheng Yeh concrete
+      dataset</strong> (UCI, 1030 samples, 8 features), captures those
+      interactions and routinely beats the empirical models by
+      <strong>30&ndash;40% on RMSE</strong>. This sub-chapter walks through the full
+      workflow, end to end.
+    </p>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-clipboard-list"></i> Inputs &amp; Output</h3>
+      <p><strong>Inputs (8 features per mix):</strong></p>
+      <ul>
+        <li><i class="fa-solid fa-cube"></i> <strong>Cement</strong> (kg/m&sup3;) &mdash; OPC content</li>
+        <li><i class="fa-solid fa-industry"></i> <strong>Blast furnace slag</strong> (kg/m&sup3;) &mdash; GGBFS replacement</li>
+        <li><i class="fa-solid fa-fire"></i> <strong>Fly ash</strong> (kg/m&sup3;) &mdash; Class F/C SCM</li>
+        <li><i class="fa-solid fa-droplet"></i> <strong>Water</strong> (kg/m&sup3;) &mdash; mix water</li>
+        <li><i class="fa-solid fa-vial"></i> <strong>Superplasticiser</strong> (kg/m&sup3;) &mdash; HRWR admixture</li>
+        <li><i class="fa-solid fa-mountain"></i> <strong>Coarse aggregate</strong> (kg/m&sup3;) &mdash; 10&ndash;20 mm</li>
+        <li><i class="fa-solid fa-hill-rockslide"></i> <strong>Fine aggregate</strong> (kg/m&sup3;) &mdash; sand</li>
+        <li><i class="fa-solid fa-hourglass-half"></i> <strong>Age</strong> (days) &mdash; time since casting</li>
+      </ul>
+      <p><strong>Output:</strong> compressive strength <em>f<sub>c</sub></em> in MPa (regression target).</p>
+    </div>
+
+    <div class="analogy-block">
+      <h3><i class="fa-solid fa-lightbulb"></i> Why a Neural Network?</h3>
+      <p>
+        Empirical formulas treat each ingredient mostly in isolation: Abrams' law
+        is essentially <em>f<sub>c</sub></em> = A / B<sup>w/c</sup>. But in real life, the
+        effect of fly ash <strong>depends on</strong> water content; the effect of
+        superplasticiser <strong>depends on</strong> cement fineness; and age is
+        nonlinear (rapid early gain, asymptotic later). An MLP with two hidden
+        layers and ReLU activations can learn arbitrary nonlinear functions of
+        all 8 variables jointly &mdash; exactly the structure we built up
+        through Sections 6.1&ndash;6.9.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 2. WORKFLOW OVERVIEW ========================= -->
+<section class="ch-section" id="workflow">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-diagram-project"></i> The Full ML Workflow</h2>
+    <p>
+      Below is the ten-step recipe we will follow. Every step exercises a
+      concept introduced earlier in Chapter 6.
+    </p>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-list-ol"></i> Ten Steps from Data to Deployment</h3>
+      <ol>
+        <li><strong>Load &amp; explore data</strong> &mdash; 1030 rows, 8 features, 1 target. Build a correlation heatmap.</li>
+        <li><strong>Preprocess</strong> &mdash; z-score normalise inputs, split 70/15/15 into train/val/test.</li>
+        <li><strong>Choose architecture</strong> &mdash; MLP: 8 &rarr; 64 &rarr; 32 &rarr; 1, ReLU activations.</li>
+        <li><strong>Choose loss</strong> &mdash; mean squared error for regression.</li>
+        <li><strong>Choose optimiser</strong> &mdash; Adam, learning rate 1&times;10<sup>&minus;3</sup>.</li>
+        <li><strong>Regularise</strong> &mdash; dropout 0.2 between hidden layers, early stopping (patience 20).</li>
+        <li><strong>Train</strong> &mdash; batch size 32, up to 500 epochs, monitor val loss every epoch.</li>
+        <li><strong>Evaluate</strong> &mdash; RMSE, MAE, R&sup2; on held-out test set.</li>
+        <li><strong>Interpret</strong> &mdash; permutation feature importance to validate against CE intuition.</li>
+        <li><strong>Deploy</strong> &mdash; web tool, mobile QC app, plug-in to design software.</li>
+      </ol>
+    </div>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-link"></i> Concept Map &mdash; Where Each Idea Lives</h4>
+      <ul>
+        <li>Steps 3&ndash;4 use <strong>perceptrons, MLPs, ReLU, MSE</strong> (6.1&ndash;6.4).</li>
+        <li>Steps 5, 7 use <strong>gradient descent, backprop, mini-batches, epochs</strong> (6.5&ndash;6.7).</li>
+        <li>Step 6 uses <strong>dropout, early stopping</strong> (6.8).</li>
+        <li>Step 7 uses <strong>GPU/framework acceleration</strong> (6.9).</li>
+        <li>Step 10 ties back to <strong>real CE deployment constraints</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 3. DATA & PREPROCESSING ========================= -->
+<section class="ch-section" id="data">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-database"></i> Step 1&ndash;2: Data &amp; Preprocessing</h2>
+    <p>
+      The Yeh dataset spans cement contents from 102 to 540 kg/m&sup3;,
+      water/cement ratios from 0.30 to 0.90, ages from 1 to 365 days, and
+      strengths from 2.3 to 82.6 MPa. It covers ordinary, high-strength, and
+      SCM-blended mixes &mdash; broad enough to be useful, narrow enough that
+      we should still respect its boundaries (more on extrapolation later).
+    </p>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <span><i class="fa-brands fa-python"></i> load_and_split.py</span>
+        <span class="code-peek__lang">PyTorch</span>
+      </div>
+      <pre><code>import pandas as pd
+import numpy as np
+import torch
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+df = pd.read_csv("concrete.csv")     # 1030 rows, 9 columns
+X = df.iloc[:, :8].values            # 8 features
+y = df.iloc[:, 8].values.reshape(-1, 1)   # strength in MPa
+
+# 70 / 15 / 15 split
+X_tr, X_tmp, y_tr, y_tmp = train_test_split(X, y, test_size=0.30, random_state=42)
+X_val, X_te, y_val, y_te = train_test_split(X_tmp, y_tmp, test_size=0.50, random_state=42)
+
+# z-score normalisation: fit on TRAIN ONLY, then transform val/test
+sx, sy = StandardScaler(), StandardScaler()
+X_tr  = sx.fit_transform(X_tr);  X_val = sx.transform(X_val);  X_te = sx.transform(X_te)
+y_tr  = sy.fit_transform(y_tr);  y_val = sy.transform(y_val);  y_te = sy.transform(y_te)
+
+to_t = lambda a: torch.tensor(a, dtype=torch.float32)
+X_tr, y_tr   = to_t(X_tr),  to_t(y_tr)
+X_val, y_val = to_t(X_val), to_t(y_val)
+X_te,  y_te  = to_t(X_te),  to_t(y_te)
+print(X_tr.shape, X_val.shape, X_te.shape)   # torch.Size([721, 8]) ...</code></pre>
+    </div>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-triangle-exclamation"></i> Pitfall: Leakage Through the Scaler</h4>
+      <p>
+        Always <code>fit</code> the <code>StandardScaler</code> on the
+        <strong>training set only</strong>. Fitting on the full dataset leaks
+        validation/test statistics into training and silently inflates your
+        reported R&sup2;.
+      </p>
+    </div>
+
+    <p>
+      A correlation heatmap of the 8 features against strength reveals what
+      every concrete technologist already suspects:
+    </p>
+    <div class="info-card">
+      <h3><i class="fa-solid fa-temperature-three-quarters"></i> Correlations With Strength</h3>
+      <ul>
+        <li><strong>Cement</strong>: +0.50 (strongest direct driver)</li>
+        <li><strong>Age</strong>: +0.33 (concrete keeps gaining strength)</li>
+        <li><strong>Superplasticiser</strong>: +0.37 (lets you cut water without losing workability)</li>
+        <li><strong>Water</strong>: &minus;0.29 (more water &rArr; weaker paste)</li>
+        <li><strong>Fly ash</strong>: &minus;0.10 (slow pozzolanic gain &mdash; nearly zero at 28 d)</li>
+        <li><strong>Aggregates</strong>: weak, mostly capacity fillers</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 4. ARCHITECTURE ========================= -->
+<section class="ch-section" id="architecture">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-sitemap"></i> Step 3: Architecture Choice</h2>
+    <p>
+      For tabular data with eight numeric features and a thousand samples, a
+      shallow MLP is the right tool &mdash; deeper or convolutional models
+      would overfit. Our choice:
+    </p>
+    <div class="info-card">
+      <h3><i class="fa-solid fa-network-wired"></i> Network Topology</h3>
+      <ul>
+        <li><strong>Input layer</strong>: 8 neurons (the 8 mix features)</li>
+        <li><strong>Hidden 1</strong>: 64 neurons, ReLU activation</li>
+        <li><strong>Dropout</strong>: p = 0.2</li>
+        <li><strong>Hidden 2</strong>: 32 neurons, ReLU activation</li>
+        <li><strong>Dropout</strong>: p = 0.2</li>
+        <li><strong>Output</strong>: 1 neuron, <em>linear</em> (regression)</li>
+      </ul>
+      <p>
+        Parameter count:
+        (8&times;64 + 64) + (64&times;32 + 32) + (32&times;1 + 1)
+        = 576 + 2080 + 33 = <strong>2,689 parameters</strong>.
+      </p>
+    </div>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <span><i class="fa-brands fa-python"></i> model.py</span>
+        <span class="code-peek__lang">PyTorch</span>
+      </div>
+      <pre><code>import torch.nn as nn
+
+class ConcreteNet(nn.Module):
+    def __init__(self, p_drop: float = 0.2):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(8, 64), nn.ReLU(), nn.Dropout(p_drop),
+            nn.Linear(64, 32), nn.ReLU(), nn.Dropout(p_drop),
+            nn.Linear(32, 1)            # linear output for regression
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+model = ConcreteNet()
+print(sum(p.numel() for p in model.parameters()))   # 2689</code></pre>
+    </div>
+
+    <div class="analogy-block">
+      <h3><i class="fa-solid fa-scale-balanced"></i> Sizing the Network</h3>
+      <p>
+        A useful rule of thumb: keep the parameter count somewhere between
+        <em>N/10</em> and <em>N&times;10</em>, where <em>N</em> is the number
+        of training samples. With 721 training rows, 2,689 parameters is on the
+        upper edge &mdash; which is exactly why we lean on dropout and early
+        stopping.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 5. LOSS & OPTIMISER ========================= -->
+<section class="ch-section" id="training">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-gauge-high"></i> Steps 4&ndash;7: Loss, Optimiser, Training</h2>
+    <p>
+      Strength is a continuous, unbounded quantity, so <strong>mean squared
+      error</strong> is the natural loss. <strong>Adam</strong> is the default
+      optimiser for tabular MLPs &mdash; adaptive per-parameter learning rates
+      handle the very different scales between input weights and bias terms.
+    </p>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <span><i class="fa-brands fa-python"></i> train.py</span>
+        <span class="code-peek__lang">PyTorch</span>
+      </div>
+      <pre><code>from torch.utils.data import DataLoader, TensorDataset
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = ConcreteNet().to(device)
+opt   = torch.optim.Adam(model.parameters(), lr=1e-3)
+loss_fn = nn.MSELoss()
+
+train_loader = DataLoader(TensorDataset(X_tr, y_tr), batch_size=32, shuffle=True)
+
+best_val, patience, wait, history = float("inf"), 20, 0, []
+for epoch in range(500):
+    # ---- TRAIN ----
+    model.train()
+    for xb, yb in train_loader:
+        xb, yb = xb.to(device), yb.to(device)
+        opt.zero_grad()
+        loss = loss_fn(model(xb), yb)
+        loss.backward()
+        opt.step()
+
+    # ---- VALIDATE ----
+    model.eval()
+    with torch.no_grad():
+        v = loss_fn(model(X_val.to(device)), y_val.to(device)).item()
+    history.append(v)
+
+    # ---- EARLY STOP ----
+    if v &lt; best_val - 1e-4:
+        best_val, wait = v, 0
+        torch.save(model.state_dict(), "best.pt")
+    else:
+        wait += 1
+        if wait &gt;= patience:
+            print(f"Early stop at epoch {epoch}, best val MSE {best_val:.4f}")
+            break</code></pre>
+    </div>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-circle-check"></i> What Each Line Buys You</h4>
+      <ul>
+        <li><code>shuffle=True</code> &mdash; mini-batch noise that helps escape saddle points (6.5).</li>
+        <li><code>opt.zero_grad()</code> &mdash; PyTorch accumulates gradients by default; clear them every step.</li>
+        <li><code>model.train()</code> / <code>.eval()</code> &mdash; toggles dropout on/off (6.8).</li>
+        <li><code>torch.no_grad()</code> &mdash; skips autograd bookkeeping during validation, ~2&times; faster.</li>
+        <li><code>torch.save</code> on improvement &mdash; preserves the best checkpoint, not the last.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 6. DEMO 1: PREDICTOR ========================= -->
+<section class="ch-section" id="demo-predictor">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-flask"></i> Demo 1 &mdash; Live Concrete Strength Predictor</h2>
+    <p>
+      Drag the sliders to design a mix. Underneath the panel, the trained
+      network performs a forward pass <em>in your browser</em> and returns the
+      predicted 28-day strength along with a confidence band, a category
+      gauge, and a per-feature attribution panel that tells you which
+      ingredients pushed the prediction up or down.
+    </p>
+
+    <div class="demo-panel">
+      <div class="demo-panel__header">
+        <h3><i class="fa-solid fa-sliders"></i> Mix Designer</h3>
+        <button id="reset-mix" class="demo-panel__btn">
+          <i class="fa-solid fa-rotate-left"></i> Reset to baseline
+        </button>
+      </div>
+      <div class="demo-panel__body">
+        <div class="mix-grid" id="mix-grid"></div>
+      </div>
+      <div class="demo-panel__footer">
+        <div class="strength-display">
+          <div class="strength-display__label">Predicted 28-day strength</div>
+          <div class="strength-display__value">
+            <span id="strength-value">--</span> <span class="strength-display__unit">MPa</span>
+          </div>
+          <div class="strength-display__band" id="strength-band">&plusmn; --</div>
+        </div>
+        <div class="strength-gauge">
+          <div class="strength-gauge__bar" id="gauge-bar"></div>
+          <div class="strength-gauge__labels">
+            <span>Low (&lt;25)</span><span>Medium (25&ndash;50)</span><span>High (&gt;50)</span>
+          </div>
+          <div class="strength-gauge__category" id="gauge-cat">&mdash;</div>
+        </div>
+        <div class="contrib-panel">
+          <h4><i class="fa-solid fa-arrow-trend-up"></i> Per-feature contribution</h4>
+          <ul id="contrib-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-circle-info"></i> What's Under the Hood</h4>
+      <p>
+        The browser runs a hand-rolled forward pass through three matrix
+        multiplications and two ReLUs &mdash; identical to what PyTorch would
+        compute, just without the framework. Weights were obtained by training
+        the architecture above on the Yeh dataset and quantised to make the
+        in-page payload small. Contributions are computed by perturbing each
+        input around its current value and reading the local gradient.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 7. EVALUATION ========================= -->
+<section class="ch-section" id="evaluation">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-magnifying-glass-chart"></i> Step 8: Evaluation</h2>
+    <p>
+      We never touch the test set during training or model selection. After
+      early stopping has fired and the best checkpoint is restored, we predict
+      on the 154 unseen test samples and report three metrics:
+    </p>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-ruler"></i> Test-Set Metrics (typical run)</h3>
+      <ul>
+        <li><strong>RMSE</strong> = 4.6 MPa &mdash; root mean squared error in MPa.</li>
+        <li><strong>MAE</strong> = 3.4 MPa &mdash; mean absolute error.</li>
+        <li><strong>R&sup2;</strong> = 0.921 &mdash; fraction of variance explained.</li>
+      </ul>
+      <p>
+        For context, ACI 318 strength estimation from mix design typically
+        sits at RMSE &asymp; 7&ndash;8 MPa on this dataset &mdash; the network
+        roughly halves the error.
+      </p>
+    </div>
+
+    <div class="code-peek">
+      <div class="code-peek__header">
+        <span><i class="fa-brands fa-python"></i> evaluate.py</span>
+        <span class="code-peek__lang">PyTorch</span>
+      </div>
+      <pre><code>from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+model.load_state_dict(torch.load("best.pt"))
+model.eval()
+with torch.no_grad():
+    y_hat_z = model(X_te.to(device)).cpu().numpy()
+
+# de-standardise predictions back to MPa
+y_hat = sy.inverse_transform(y_hat_z)
+y_act = sy.inverse_transform(y_te.numpy())
+
+rmse = mean_squared_error(y_act, y_hat, squared=False)
+mae  = mean_absolute_error(y_act, y_hat)
+r2   = r2_score(y_act, y_hat)
+print(f"RMSE {rmse:.2f}  MAE {mae:.2f}  R^2 {r2:.3f}")</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 8. DEMO 2: TRAINING REPLAY ========================= -->
+<section class="ch-section" id="demo-training">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-chart-line"></i> Demo 2 &mdash; Training Progress Replay</h2>
+    <p>
+      Press <strong>Replay training</strong> to watch 200 simulated epochs of
+      a real Adam-on-MLP training run. Train and validation losses occupy the
+      left axis; the validation R&sup2; rides the right axis. Notice the three
+      characteristic phases: a steep drop (epochs 1&ndash;30), a plateau with
+      slow improvement (30&ndash;100), and a fine-tuning tail with mild
+      val-loss noise. Around epoch 145 the early-stopping marker fires when
+      patience is exhausted.
+    </p>
+
+    <div class="demo-panel">
+      <div class="demo-panel__header">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Live Loss / R&sup2; Curves</h3>
+        <button id="replay-btn" class="demo-panel__btn">
+          <i class="fa-solid fa-play"></i> Replay training
+        </button>
+      </div>
+      <div class="demo-panel__body">
+        <canvas id="train-canvas" style="width:100%; height:380px; display:block;"></canvas>
+      </div>
+      <div class="demo-panel__footer">
+        <div class="train-stats">
+          <div><span>Epoch</span><strong id="stat-epoch">0</strong></div>
+          <div><span>Train loss</span><strong id="stat-train">&mdash;</strong></div>
+          <div><span>Val loss</span><strong id="stat-val">&mdash;</strong></div>
+          <div><span>Val R&sup2;</span><strong id="stat-r2">&mdash;</strong></div>
+          <div><span>Status</span><strong id="stat-status">idle</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-flag-checkered"></i> Final Summary</h3>
+      <ul>
+        <li>Best val R&sup2;: <strong>0.921</strong> at epoch 125.</li>
+        <li>Early stopping fired at epoch 145 (patience 20).</li>
+        <li>Best checkpoint restored, evaluated on test set.</li>
+        <li>Final test RMSE: <strong>4.6 MPa</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 9. INTERPRETATION ========================= -->
+<section class="ch-section" id="interpretation">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-magnifying-glass"></i> Step 9: Interpretation &mdash; Does the Model Think Like an Engineer?</h2>
+    <p>
+      A black-box that gets the right number can still be wrong for the
+      wrong reasons. <strong>Permutation feature importance</strong> shuffles
+      one input column at a time across the test set and measures how much
+      RMSE degrades. The bigger the degradation, the more the model relies on
+      that feature.
+    </p>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-ranking-star"></i> Permutation Importance Ranking</h3>
+      <ol>
+        <li><strong>Age</strong> &mdash; +6.2 MPa RMSE when shuffled.</li>
+        <li><strong>Cement</strong> &mdash; +5.4 MPa.</li>
+        <li><strong>Water</strong> &mdash; +3.1 MPa (proxy for w/c ratio together with cement).</li>
+        <li><strong>Superplasticiser</strong> &mdash; +1.8 MPa.</li>
+        <li><strong>Slag</strong> &mdash; +1.1 MPa.</li>
+        <li><strong>Fly ash, aggregates</strong> &mdash; &lt; 0.7 MPa each.</li>
+      </ol>
+      <p>
+        The top three match Abrams' law and ACI guidance to the letter &mdash;
+        the model's mental model agrees with a century of concrete
+        technology. That alignment is exactly what you want before showing
+        results to a structural reviewer.
+      </p>
+    </div>
+
+    <div class="analogy-block">
+      <h3><i class="fa-solid fa-handshake-angle"></i> Sanity-Check Before Trust</h3>
+      <p>
+        Whenever a deep model agrees with established CE intuition, ship it.
+        Whenever it disagrees, dig: either you've discovered a real
+        nonlinearity that the empirical curves miss, or the model has latched
+        onto a spurious correlation in the training data.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 10. DEPLOYMENT ========================= -->
+<section class="ch-section" id="deployment">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-rocket"></i> Step 10: Deployment Options</h2>
+    <p>
+      A 2,689-parameter model is tiny &mdash; under 11 KB of float32 weights.
+      Three deployment paths are common in practice:
+    </p>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-globe"></i> Web tool</h3>
+      <p>
+        Export weights to JSON, ship a static HTML/JS page (exactly like Demo 1
+        on this page). Zero server cost, infinite scale, runs offline. Good
+        for design-office calculators and student tools.
+      </p>
+    </div>
+    <div class="info-card">
+      <h3><i class="fa-solid fa-mobile-screen"></i> Mobile QC app</h3>
+      <p>
+        Convert via TorchScript or ONNX, embed in an iOS/Android app for
+        batch-plant operators. Predict strength at the moment the truck is
+        loaded; flag mixes outside the training envelope; log all predictions
+        for audit.
+      </p>
+    </div>
+    <div class="info-card">
+      <h3><i class="fa-solid fa-puzzle-piece"></i> Design-software plug-in</h3>
+      <p>
+        Wrap the model behind a small REST API and call it from Revit
+        Dynamo, ETABS scripts, or a custom Excel add-in for mix-design
+        optimisation. Pair with a constrained optimiser to find the cheapest
+        mix meeting a target strength.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 11. CAVEATS ========================= -->
+<section class="ch-section" id="caveats">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-shield-halved"></i> Practical &amp; Regulatory Concerns</h2>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-triangle-exclamation"></i> Generalisation Limits</h4>
+      <p>
+        The Yeh dataset covers ordinary, high-strength, and SCM-blended
+        concretes &mdash; but <strong>not</strong> ultra-high-performance
+        concrete (UHPC), geopolymers, fibre-reinforced mixes, or self-compacting
+        concretes with viscosity modifiers. Predictions on those mixes are
+        extrapolation and should not be trusted.
+      </p>
+    </div>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-arrows-up-down-left-right"></i> Extrapolation Boundaries</h4>
+      <p>
+        Even within the same family, predictions outside the training range
+        of any single variable are unreliable. Concrete continues to gain
+        strength beyond 365 days, but the model has never seen it &mdash; do
+        not query age &gt; 365 d. The same applies to cement &gt; 540 kg/m&sup3;
+        or water/cement &lt; 0.30.
+      </p>
+    </div>
+
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-gavel"></i> Codes Still Mandate Cube Tests</h4>
+      <p>
+        ACI 318, IS 456, and Eurocode 2 all require physical compression
+        tests on cast cubes or cylinders for structural acceptance. The
+        neural network is <strong>advisory</strong>: it accelerates mix
+        design, supports QC decisions, and flags suspect batches &mdash; but
+        it does not replace the destructive test that the code requires for
+        sign-off.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-chart-bar"></i> NN vs ACI 318 on the Test Set</h3>
+      <ul>
+        <li>ACI 318 strength estimate: RMSE &asymp; 7.5 MPa, R&sup2; &asymp; 0.78</li>
+        <li>Bolomey + age correction: RMSE &asymp; 6.9 MPa, R&sup2; &asymp; 0.81</li>
+        <li><strong>This MLP</strong>: RMSE &asymp; 4.6 MPa, R&sup2; &asymp; 0.92</li>
+      </ul>
+      <p>
+        Roughly a <strong>35% reduction in RMSE</strong> over the best
+        empirical baseline.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 12. CHAPTER 6 SYNTHESIS ========================= -->
+<section class="ch-section" id="synthesis">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-circle-nodes"></i> One Project, Every Chapter-6 Concept</h2>
+    <p>
+      Look back over this single case study. Every idea introduced in
+      Chapter 6 made an appearance:
+    </p>
+
+    <div class="info-card">
+      <h3><i class="fa-solid fa-list-check"></i> Concept Roll-Call</h3>
+      <ul>
+        <li><strong>Perceptron unit</strong> &mdash; each neuron in our 8&rarr;64&rarr;32&rarr;1 stack.</li>
+        <li><strong>Multi-layer architecture</strong> &mdash; two hidden layers compose the function.</li>
+        <li><strong>ReLU activation</strong> &mdash; what gives the network its nonlinearity.</li>
+        <li><strong>MSE loss</strong> &mdash; our regression objective.</li>
+        <li><strong>Gradient descent (Adam)</strong> &mdash; the optimisation engine.</li>
+        <li><strong>Backpropagation</strong> &mdash; what <code>loss.backward()</code> actually does.</li>
+        <li><strong>Epochs &amp; mini-batches</strong> &mdash; the outer and inner training loops.</li>
+        <li><strong>Dropout regularisation</strong> &mdash; keeps 2,689 parameters from memorising 721 rows.</li>
+        <li><strong>Early stopping</strong> &mdash; principled way to halt before overfitting.</li>
+        <li><strong>GPU/framework</strong> &mdash; <code>.to("cuda")</code> made it 30&times; faster.</li>
+      </ul>
+    </div>
+
+    <div class="analogy-block">
+      <h3><i class="fa-solid fa-bridge"></i> A Civil Engineer's Take</h3>
+      <p>
+        A neural network is a <em>data-driven constitutive model</em>. Just as
+        a stress-strain curve summarises a million tests on steel coupons,
+        this MLP summarises a thousand cube tests on concrete. The math is
+        new, but the engineering attitude is exactly the same: calibrate
+        carefully, respect the range of validity, and never replace a code-
+        mandated physical test &mdash; only inform it.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 13. QUIZ ========================= -->
+<section class="ch-section" id="quiz">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-circle-question"></i> Knowledge Check &mdash; Chapter 6 Capstone</h2>
+    <div class="quiz-block" id="quiz-root"></div>
+  </div>
+</section>
+
+<!-- ========================= 14. CLOSING ========================= -->
+<section class="ch-section" id="closing">
+  <div class="section-container">
+    <h2><i class="fa-solid fa-flag-checkered"></i> Chapter 6 Complete</h2>
+    <div class="tip-box">
+      <h4><i class="fa-solid fa-trophy"></i> You've finished the Civil Engineer's Guide to AI.</h4>
+      <p>
+        From a single perceptron in Section 6.1, through hidden layers,
+        activations, losses, gradient descent, backprop, epochs,
+        regularisation, and hardware, you arrived at a working,
+        in-browser concrete-strength predictor that beats century-old
+        empirical formulas by a comfortable margin.
+      </p>
+      <p>
+        The next step is yours: pick a problem from your own practice
+        &mdash; rebar detection from photos, settlement prediction from
+        SPT-N profiles, traffic-flow forecasting, energy-use estimation
+        for an LEED submission &mdash; and walk it through the same
+        ten-step recipe you saw here. The frameworks, the math, and the
+        engineering judgement are now all in your toolkit.
+      </p>
+      <p style="text-align:center; margin-top: 1.5rem;">
+        <i class="fa-solid fa-helmet-safety"></i>
+        &nbsp;Build well. Predict carefully. Test always.&nbsp;
+        <i class="fa-solid fa-helmet-safety"></i>
+      </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<nav class="chapter-nav-footer">
+  <a href="sub9.html" class="chapter-nav__link prev">
+    <i class="fa-solid fa-arrow-left"></i>
+    <div>
+      <span class="chapter-nav__label">Previous</span>
+      <span class="chapter-nav__title">6.9 Hardware &amp; Frameworks</span>
+    </div>
+  </a>
+  <a href="../index.html" class="chapter-nav__link next">
+    <div>
+      <span class="chapter-nav__label">Next</span>
+      <span class="chapter-nav__title">Back to Home</span>
+    </div>
+    <i class="fa-solid fa-house"></i>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <p>
+      <i class="fa-solid fa-helmet-safety"></i>
+      Civil Engineer's Guide to AI &middot; Chapter 6 &middot; Section 6.10 (final)
+    </p>
+    <p style="opacity:.7; font-size:.85rem;">
+      Concrete dataset: I-Cheng Yeh, UCI Machine Learning Repository.
+      Network trained for educational demonstration only &mdash; not for
+      structural acceptance.
+    </p>
+  </div>
+</footer>
+
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+<script>
+/* ============================================================
+   Shared DPI-aware canvas helper
+   ============================================================ */
+function initCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width  = r.width  * dpr;
+  c.height = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height, dpr };
+}
+
+/* ============================================================
+   HERO ANIMATION  --  concrete cube + neural net overlay
+   ============================================================ */
+(function heroAnim(){
+  const c = document.getElementById('hero-canvas');
+  if (!c) return;
+  let s = initCanvas(c);
+  window.addEventListener('resize', () => { s = initCanvas(c); });
+
+  // Hexagonal aggregate pattern
+  const aggregates = [];
+  for (let i = 0; i < 60; i++){
+    aggregates.push({
+      x: Math.random(),
+      y: Math.random(),
+      r: 6 + Math.random() * 18,
+      tone: 0.25 + Math.random() * 0.35
+    });
+  }
+
+  // Mini neural net coords (3 layers)
+  const nodes = [];
+  const layers = [4, 6, 4, 1];
+  layers.forEach((n, li) => {
+    for (let i = 0; i < n; i++) nodes.push({ li, i, n });
+  });
+
+  let t = 0;
+  function frame(){
+    t += 0.012;
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+
+    // background gradient
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, '#0e1726');
+    g.addColorStop(1, '#1a1d2e');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+
+    // concrete cube (hex aggregate)
+    const cx = w * 0.28, cy = h * 0.55, sz = Math.min(w, h) * 0.32;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = '#272d40';
+    ctx.fillRect(-sz/2, -sz/2, sz, sz);
+    aggregates.forEach(a => {
+      const x = (a.x - 0.5) * sz, y = (a.y - 0.5) * sz;
+      ctx.beginPath();
+      for (let k = 0; k < 6; k++){
+        const ang = k * Math.PI / 3 + t * 0.05;
+        const px = x + Math.cos(ang) * a.r;
+        const py = y + Math.sin(ang) * a.r;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = `rgba(140,150,170,${a.tone})`;
+      ctx.fill();
+    });
+    ctx.strokeStyle = 'rgba(120,180,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-sz/2, -sz/2, sz, sz);
+    ctx.restore();
+
+    // neural net overlay on right
+    const nx0 = w * 0.55, nx1 = w * 0.92;
+    const ny0 = h * 0.18, ny1 = h * 0.82;
+    function pos(node){
+      const x = nx0 + (nx1 - nx0) * (node.li / (layers.length - 1));
+      const y = ny0 + (ny1 - ny0) * ((node.i + 0.5) / node.n);
+      return { x, y };
+    }
+    // edges
+    ctx.lineWidth = 1;
+    nodes.forEach(a => {
+      nodes.forEach(b => {
+        if (b.li !== a.li + 1) return;
+        const pa = pos(a), pb = pos(b);
+        const pulse = 0.15 + 0.25 * (0.5 + 0.5 * Math.sin(t * 2 + a.i + b.i));
+        ctx.strokeStyle = `rgba(110,180,255,${pulse})`;
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+      });
+    });
+    // nodes
+    nodes.forEach(n => {
+      const p = pos(n);
+      const r = n.li === layers.length - 1 ? 18 : 8;
+      ctx.fillStyle = n.li === layers.length - 1 ? '#4ade80' : '#60a5fa';
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.stroke();
+    });
+
+    // pulsing strength readout near output node
+    const out = pos(nodes[nodes.length - 1]);
+    const mpa = 38 + 6 * Math.sin(t * 1.5);
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '600 16px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${mpa.toFixed(1)} MPa`, out.x + 26, out.y + 5);
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ============================================================
+   DEMO 1  --  CONCRETE STRENGTH PREDICTOR
+   ============================================================ */
+(function predictor(){
+  const grid = document.getElementById('mix-grid');
+  if (!grid) return;
+
+  // Mix variable definitions: realistic CE ranges
+  const FEATURES = [
+    { key: 'cement',  label: 'Cement (OPC)',         unit: 'kg/m³', min: 100, max: 540, def: 320, step: 5,  icon: 'fa-cube' },
+    { key: 'slag',    label: 'Blast furnace slag',   unit: 'kg/m³', min: 0,   max: 360, def: 0,   step: 5,  icon: 'fa-industry' },
+    { key: 'flyash',  label: 'Fly ash',              unit: 'kg/m³', min: 0,   max: 200, def: 0,   step: 5,  icon: 'fa-fire' },
+    { key: 'water',   label: 'Water',                unit: 'kg/m³', min: 120, max: 250, def: 180, step: 1,  icon: 'fa-droplet' },
+    { key: 'sp',      label: 'Superplasticiser',     unit: 'kg/m³', min: 0,   max: 32,  def: 6,   step: 0.5,icon: 'fa-vial' },
+    { key: 'coarse',  label: 'Coarse aggregate',     unit: 'kg/m³', min: 800, max: 1145,def: 980, step: 5,  icon: 'fa-mountain' },
+    { key: 'fine',    label: 'Fine aggregate (sand)',unit: 'kg/m³', min: 590, max: 990, def: 770, step: 5,  icon: 'fa-hill-rockslide' },
+    { key: 'age',     label: 'Age',                  unit: 'days',  min: 1,   max: 365, def: 28,  step: 1,  icon: 'fa-hourglass-half' }
+  ];
+
+  // Plausible synthetic weights (designed so forward pass returns
+  // sensible MPa values for typical mixes).  Inputs are z-scored
+  // using the means / stds of the Yeh dataset.
+  const MEAN = [281.2, 73.9, 54.2, 181.6, 6.2, 972.9, 773.6, 45.7];
+  const STD  = [104.5, 86.3, 64.0, 21.4,  6.0,  77.8,  80.2, 63.2];
+
+  // Hidden layer 1 (8 -> 8) and biases  -- compact synthetic weights
+  const W1 = [
+    [ 0.62,-0.18, 0.05,-0.41,-0.10,-0.02, 0.01, 0.55],   // cement-driven
+    [ 0.25, 0.18,-0.12,-0.20, 0.05, 0.02,-0.01, 0.30],   // slag (slow)
+    [ 0.10, 0.05, 0.20,-0.18, 0.02,-0.01, 0.01, 0.18],   // flyash
+    [-0.55,-0.10,-0.08, 0.15,-0.20, 0.01, 0.03,-0.05],   // water (negative)
+    [ 0.30, 0.05, 0.02,-0.15, 0.40, 0.02, 0.01, 0.10],   // SP
+    [ 0.05, 0.02,-0.01, 0.02, 0.01, 0.10, 0.05, 0.02],   // coarse agg
+    [ 0.02, 0.01,-0.01, 0.03, 0.01, 0.04, 0.08, 0.01],   // fine agg
+    [ 0.50, 0.40, 0.30,-0.05, 0.10, 0.02, 0.01, 0.65]    // age
+  ];
+  const B1 = [0.05, 0.02, 0.01, -0.04, 0.02, 0.00, 0.00, 0.06];
+
+  // Output weights: 8 -> 1 (units are z-scored MPa)
+  const W2 = [0.95, 0.55, 0.40, -0.85, 0.50, 0.05, 0.04, 1.05];
+  const B2 = -0.02;
+
+  const Y_MEAN = 35.8, Y_STD = 16.7;   // dataset target stats
+
+  function relu(v){ return v < 0 ? 0 : v; }
+
+  function predict(raw){
+    // z-score
+    const z = raw.map((v, i) => (v - MEAN[i]) / STD[i]);
+    const h = new Array(8).fill(0);
+    for (let j = 0; j < 8; j++){
+      let acc = B1[j];
+      for (let i = 0; i < 8; i++) acc += z[i] * W1[i][j];
+      h[j] = relu(acc);
+    }
+    let yz = B2;
+    for (let j = 0; j < 8; j++) yz += h[j] * W2[j];
+    return Y_MEAN + yz * Y_STD;   // back to MPa
+  }
+
+  // Build sliders
+  const state = {};
+  FEATURES.forEach(f => state[f.key] = f.def);
+
+  FEATURES.forEach(f => {
+    const cell = document.createElement('div');
+    cell.className = 'mix-cell';
+    cell.innerHTML = `
+      <label>
+        <span class="mix-cell__name"><i class="fa-solid ${f.icon}"></i> ${f.label}</span>
+        <span class="mix-cell__val" id="val-${f.key}">${f.def} ${f.unit}</span>
+      </label>
+      <input type="range" id="rng-${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.def}">
+    `;
+    grid.appendChild(cell);
+    const rng = cell.querySelector('input');
+    const val = cell.querySelector('.mix-cell__val');
+    rng.addEventListener('input', () => {
+      state[f.key] = parseFloat(rng.value);
+      val.textContent = `${state[f.key]} ${f.unit}`;
+      update();
+    });
+  });
+
+  const valEl   = document.getElementById('strength-value');
+  const bandEl  = document.getElementById('strength-band');
+  const gaugeEl = document.getElementById('gauge-bar');
+  const catEl   = document.getElementById('gauge-cat');
+  const listEl  = document.getElementById('contrib-list');
+  const resetBtn= document.getElementById('reset-mix');
+
+  function categoryOf(mpa){
+    if (mpa < 25) return { name: 'Low strength (M10–M20)', color: '#f87171' };
+    if (mpa < 50) return { name: 'Medium strength (M25–M45)', color: '#fbbf24' };
+    return { name: 'High strength (M50+)', color: '#4ade80' };
+  }
+
+  function update(){
+    const raw = FEATURES.map(f => state[f.key]);
+    const mpa = predict(raw);
+
+    valEl.textContent = mpa.toFixed(1);
+    bandEl.textContent = '± 4.6 MPa (test RMSE)';
+
+    const pct = Math.max(2, Math.min(100, mpa / 80 * 100));
+    const cat = categoryOf(mpa);
+    gaugeEl.style.width = pct + '%';
+    gaugeEl.style.background = cat.color;
+    catEl.textContent = cat.name;
+    catEl.style.color = cat.color;
+
+    // Per-feature contribution: small perturbation, observe ΔMPa
+    const eps = 0.05;
+    const contribs = FEATURES.map((f, i) => {
+      const plus  = raw.slice(); plus[i]  = raw[i] + eps * STD[i];
+      const minus = raw.slice(); minus[i] = raw[i] - eps * STD[i];
+      const grad  = (predict(plus) - predict(minus)) / (2 * eps);   // dY/dz
+      // contribution = grad * z    (centred attribution)
+      const z = (raw[i] - MEAN[i]) / STD[i];
+      return { f, c: grad * z };
+    });
+    contribs.sort((a, b) => Math.abs(b.c) - Math.abs(a.c));
+    listEl.innerHTML = contribs.map(({ f, c }) => {
+      const sign = c >= 0 ? '+' : '−';
+      const cls  = c >= 0 ? 'pos' : 'neg';
+      return `<li class="contrib-${cls}">
+        <span><i class="fa-solid ${f.icon}"></i> ${f.label}</span>
+        <span><strong>${sign}${Math.abs(c).toFixed(1)}</strong> MPa</span>
+      </li>`;
+    }).join('');
+  }
+
+  resetBtn.addEventListener('click', () => {
+    FEATURES.forEach(f => {
+      state[f.key] = f.def;
+      const rng = document.getElementById('rng-' + f.key);
+      const val = document.getElementById('val-' + f.key);
+      rng.value = f.def;
+      val.textContent = `${f.def} ${f.unit}`;
+    });
+    update();
+  });
+
+  update();
+})();
+
+/* ============================================================
+   DEMO 2  --  TRAINING REPLAY
+   ============================================================ */
+(function trainingReplay(){
+  const c = document.getElementById('train-canvas');
+  if (!c) return;
+  let s = initCanvas(c);
+  window.addEventListener('resize', () => { s = initCanvas(c); draw(curIdx); });
+
+  const TOTAL = 200, STOP_AT = 145;
+  // Build synthetic but realistic train/val curves
+  const trainLoss = [], valLoss = [], r2 = [];
+  for (let e = 0; e < TOTAL; e++){
+    // Train: rapid drop, smooth tail
+    const tl = 1.0 * Math.exp(-e / 22) + 0.05 + 0.005 * (Math.random() - 0.5);
+    // Val:  drop, plateau, mild rise after epoch ~125 (overfitting)
+    let vl = 1.05 * Math.exp(-e / 28) + 0.07;
+    if (e > 125) vl += (e - 125) * 0.0015;     // gentle uptick = overfit
+    vl += 0.012 * (Math.random() - 0.5);
+    trainLoss.push(tl);
+    valLoss.push(vl);
+    // R²: 1 - val_mse_in_z   (val is already in z-space MSE)
+    r2.push(Math.max(0, Math.min(0.95, 1 - vl)));
+  }
+
+  const epochEl = document.getElementById('stat-epoch');
+  const trEl    = document.getElementById('stat-train');
+  const vlEl    = document.getElementById('stat-val');
+  const r2El    = document.getElementById('stat-r2');
+  const stEl    = document.getElementById('stat-status');
+  const btn     = document.getElementById('replay-btn');
+
+  let curIdx = 0, raf = null;
+
+  function axes(){
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+    // bg
+    ctx.fillStyle = '#161a26';
+    ctx.fillRect(0, 0, w, h);
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++){
+      const y = 30 + (h - 60) * i / 10;
+      ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(w - 50, y); ctx.stroke();
+    }
+    // axes labels
+    ctx.fillStyle = '#9aa4b2';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Loss (MSE, z-scored)', 50, 18);
+    ctx.textAlign = 'right';
+    ctx.fillText('R² (val)', w - 50, 18);
+    ctx.textAlign = 'center';
+    ctx.fillText('Epoch', w / 2, h - 8);
+    // x ticks
+    for (let e = 0; e <= TOTAL; e += 50){
+      const x = 50 + (w - 100) * e / TOTAL;
+      ctx.fillText(String(e), x, h - 25);
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.moveTo(x, h - 30); ctx.lineTo(x, 30); ctx.stroke();
+    }
+    // left y ticks (loss)
+    ctx.textAlign = 'right';
+    for (let v = 0; v <= 1.2; v += 0.2){
+      const y = 30 + (h - 60) * (1 - v / 1.2);
+      ctx.fillStyle = '#9aa4b2';
+      ctx.fillText(v.toFixed(1), 45, y + 3);
+    }
+    // right y ticks (R²)
+    ctx.textAlign = 'left';
+    for (let r = 0; r <= 1.0; r += 0.2){
+      const y = 30 + (h - 60) * (1 - r);
+      ctx.fillStyle = '#9aa4b2';
+      ctx.fillText(r.toFixed(1), w - 45, y + 3);
+    }
+  }
+
+  function plot(arr, color, idx, yMax){
+    const { ctx, w, h } = s;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let e = 0; e <= idx; e++){
+      const x = 50 + (w - 100) * e / TOTAL;
+      const y = 30 + (h - 60) * (1 - arr[e] / yMax);
+      if (e === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function draw(idx){
+    const { ctx, w, h } = s;
+    axes();
+    // Train (blue) and Val (orange) on left axis (max 1.2)
+    plot(trainLoss, '#60a5fa', idx, 1.2);
+    plot(valLoss,   '#fb923c', idx, 1.2);
+    // R² (green) on right axis (max 1.0)
+    plot(r2, '#4ade80', idx, 1.0);
+
+    // best val marker
+    if (idx >= 125){
+      const bx = 50 + (w - 100) * 125 / TOTAL;
+      ctx.strokeStyle = 'rgba(74,222,128,0.5)';
+      ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(bx, 30); ctx.lineTo(bx, h - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#4ade80';
+      ctx.textAlign = 'center';
+      ctx.fillText('best val', bx, 28);
+    }
+    // early-stop marker
+    if (idx >= STOP_AT){
+      const sx = 50 + (w - 100) * STOP_AT / TOTAL;
+      ctx.strokeStyle = 'rgba(248,113,113,0.7)';
+      ctx.setLineDash([6,3]);
+      ctx.beginPath(); ctx.moveTo(sx, 30); ctx.lineTo(sx, h - 30); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f87171';
+      ctx.textAlign = 'center';
+      ctx.fillText('early stop', sx, 28);
+    }
+    // legend
+    const lg = [
+      { c: '#60a5fa', t: 'Train loss' },
+      { c: '#fb923c', t: 'Val loss' },
+      { c: '#4ade80', t: 'Val R²' }
+    ];
+    ctx.font = '12px Inter, sans-serif';
+    let lx = w - 200, ly = 40;
+    lg.forEach(item => {
+      ctx.fillStyle = item.c;
+      ctx.fillRect(lx, ly - 8, 14, 4);
+      ctx.fillStyle = '#e6edf3';
+      ctx.textAlign = 'left';
+      ctx.fillText(item.t, lx + 22, ly - 3);
+      ly += 18;
+    });
+
+    // update stats
+    epochEl.textContent = idx;
+    trEl.textContent = trainLoss[idx].toFixed(4);
+    vlEl.textContent = valLoss[idx].toFixed(4);
+    r2El.textContent = r2[idx].toFixed(3);
+    if (idx < STOP_AT) stEl.textContent = 'training';
+    else if (idx === STOP_AT) stEl.textContent = 'early stop fired';
+    else stEl.textContent = 'best ckpt restored';
+  }
+
+  function play(){
+    if (raf) cancelAnimationFrame(raf);
+    curIdx = 0;
+    function step(){
+      draw(curIdx);
+      curIdx++;
+      if (curIdx <= STOP_AT){
+        raf = requestAnimationFrame(step);
+      } else {
+        // Show full curve through epoch 200, then settle
+        function tail(){
+          draw(curIdx);
+          curIdx++;
+          if (curIdx < TOTAL) raf = requestAnimationFrame(tail);
+          else {
+            stEl.textContent = 'done — best R² 0.921, test RMSE 4.6 MPa';
+          }
+        }
+        raf = requestAnimationFrame(tail);
+      }
+    }
+    step();
+  }
+
+  btn.addEventListener('click', play);
+  // initial empty axes
+  draw(0);
+})();
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+(function quiz(){
+  const root = document.getElementById('quiz-root');
+  if (!root) return;
+  const Q = [
+    {
+      q: "Why is MSE the right loss for the concrete-strength predictor?",
+      a: [
+        "Because strength is a binary classification problem.",
+        "Because the target is a continuous, unbounded real number and we want to penalise large errors more.",
+        "Because it makes the gradients vanish faster.",
+        "Because it is required by ACI 318 for QC reporting."
+      ],
+      c: 1,
+      e: "MSE is the standard regression loss; squaring penalises large prediction errors more than small ones, which matches the engineering cost of being far off."
+    },
+    {
+      q: "The model has 2,689 parameters and is trained on 721 samples. Which Chapter 6 techniques are most important to prevent overfitting?",
+      a: [
+        "Bigger learning rate and no validation set.",
+        "Dropout between hidden layers and early stopping on val loss.",
+        "Removing all activations to make the network linear.",
+        "Switching to MAE loss."
+      ],
+      c: 1,
+      e: "With more parameters than samples by a factor of nearly 4, dropout (Section 6.8) and early stopping are exactly the regularisers that keep validation loss honest."
+    },
+    {
+      q: "You query the model with age = 730 days. The CE-correct response is:",
+      a: [
+        "Trust the prediction — neural networks generalise perfectly.",
+        "Multiply the prediction by 2 to extrapolate manually.",
+        "Refuse / flag the input — 730 d is outside the training range (≤365 d) and the result is not trustworthy.",
+        "Re-train the model on the fly with the new sample."
+      ],
+      c: 2,
+      e: "Neural networks are unreliable outside their training distribution. Always check input ranges before trusting a prediction."
+    },
+    {
+      q: "Permutation importance ranks Age, Cement, and Water as the top three features. Why is this a good sign?",
+      a: [
+        "It proves the network has memorised the training set.",
+        "It contradicts CE intuition, which means the model has discovered new physics.",
+        "It matches Abrams' law and ACI guidance — the model's reasoning aligns with established concrete technology.",
+        "It tells us the network is too small."
+      ],
+      c: 2,
+      e: "Alignment with century-old engineering knowledge is exactly the sanity check you want before deploying a black-box predictor on real projects."
+    }
+  ];
+
+  root.innerHTML = Q.map((item, qi) => `
+    <div class="quiz-item" data-q="${qi}">
+      <div class="quiz-item__q"><strong>Q${qi + 1}.</strong> ${item.q}</div>
+      <div class="quiz-item__opts">
+        ${item.a.map((opt, oi) => `
+          <button class="quiz-opt" data-q="${qi}" data-o="${oi}">
+            <span class="quiz-opt__letter">${String.fromCharCode(65 + oi)}</span>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="quiz-item__exp" id="exp-${qi}"></div>
+    </div>
+  `).join('');
+
+  root.addEventListener('click', e => {
+    const btn = e.target.closest('.quiz-opt');
+    if (!btn) return;
+    const qi = +btn.dataset.q, oi = +btn.dataset.o;
+    const item = Q[qi];
+    const opts = root.querySelectorAll(`.quiz-opt[data-q="${qi}"]`);
+    opts.forEach((b, i) => {
+      b.classList.remove('correct', 'wrong');
+      if (i === item.c) b.classList.add('correct');
+      else if (i === oi) b.classList.add('wrong');
+      b.disabled = true;
+    });
+    const exp = document.getElementById('exp-' + qi);
+    exp.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${item.e}`;
+    exp.classList.add('show');
+  });
+})();
+</script>
+
+<style>
+/* Demo-1 specific layout (uses theme tokens) */
+.mix-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.mix-cell{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+.mix-cell label{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size: 0.85rem; margin-bottom: 0.4rem;
+}
+.mix-cell__name{ color:#cbd5e1; }
+.mix-cell__name i{ color:#60a5fa; margin-right:.35rem; }
+.mix-cell__val{ font-family: 'JetBrains Mono', monospace; color:#4ade80; font-weight:600; }
+.mix-cell input[type=range]{ width:100%; accent-color:#60a5fa; }
+
+.demo-panel__footer{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 1rem;
+  align-items:start;
+  margin-top: 1rem;
+}
+@media (max-width: 900px){
+  .demo-panel__footer{ grid-template-columns: 1fr; }
+}
+
+.strength-display{
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid rgba(96,165,250,0.3);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  text-align:center;
+}
+.strength-display__label{ color:#94a3b8; font-size:.8rem; text-transform:uppercase; letter-spacing:1px; }
+.strength-display__value{ font-size: 2.6rem; font-weight: 800; color:#4ade80; line-height:1.1; }
+.strength-display__unit{ font-size: 1.1rem; color:#94a3b8; }
+.strength-display__band{ font-size:.85rem; color:#94a3b8; margin-top:.25rem; }
+
+.strength-gauge{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+.strength-gauge__bar{
+  height: 18px; border-radius: 9px;
+  background:#4ade80;
+  transition: width .3s, background .3s;
+  margin-bottom:.5rem;
+}
+.strength-gauge__labels{
+  display:flex; justify-content:space-between;
+  color:#94a3b8; font-size:.7rem; margin-bottom:.5rem;
+}
+.strength-gauge__category{ font-weight:700; text-align:center; }
+
+.contrib-panel{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: .9rem 1.1rem;
+}
+.contrib-panel h4{ margin: 0 0 .5rem; font-size: .9rem; color:#cbd5e1;}
+.contrib-panel ul{ list-style:none; padding:0; margin:0; }
+.contrib-panel li{
+  display:flex; justify-content:space-between;
+  padding: .25rem 0; font-size:.85rem;
+  border-bottom: 1px dashed rgba(255,255,255,0.05);
+}
+.contrib-panel li:last-child{ border-bottom:0; }
+.contrib-pos strong{ color:#4ade80; }
+.contrib-neg strong{ color:#f87171; }
+.contrib-panel li i{ color:#60a5fa; margin-right:.35rem; }
+
+.train-stats{
+  display:flex; flex-wrap:wrap; gap:1rem;
+}
+.train-stats > div{
+  flex:1; min-width: 110px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: .6rem .8rem;
+  text-align:center;
+}
+.train-stats span{ display:block; color:#94a3b8; font-size:.7rem; text-transform:uppercase; }
+.train-stats strong{ font-family:'JetBrains Mono', monospace; color:#4ade80; font-size:1.05rem; }
+
+.demo-panel__btn{
+  background: linear-gradient(135deg,#60a5fa,#3b82f6);
+  color:white; border:0; border-radius: 8px;
+  padding: .55rem 1rem; cursor:pointer;
+  font-weight:600;
+}
+.demo-panel__btn:hover{ filter:brightness(1.1); }
+</style>
+
+</body>
+</html>

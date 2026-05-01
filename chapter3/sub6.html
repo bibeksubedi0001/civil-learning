@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.6 t-SNE &amp; UMAP Visualization | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn t-SNE and UMAP for non-linear dimensionality reduction and visualization. Explore perplexity, probability distributions, fuzzy topological sets, and interactive demos comparing PCA versus t-SNE on multi-sensor SHM data for civil engineering.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.6
+            </div>
+            <h1 class="chapter-hero__title">t-SNE &amp; UMAP Visualization</h1>
+            <p class="chapter-hero__subtitle">
+                PCA projects data onto straight axes &mdash; but real engineering datasets
+                often live on curved manifolds. t-SNE and UMAP unfold these non-linear
+                structures into vivid 2D maps, revealing hidden clusters in multi-sensor
+                bridge monitoring data that linear methods completely miss.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 55 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY GO BEYOND PCA?
+             ========================================== -->
+        <section class="ch-section" id="beyond-pca">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why Go Beyond PCA?</h2>
+                        <p>
+                            In the previous sub-chapter you saw PCA compress
+                            high-dimensional data by projecting it onto orthogonal axes of
+                            maximum variance. That works brilliantly when the important
+                            structure is <em>linear</em> &mdash; when clusters, gradients,
+                            and trends align with straight axes through the data cloud.
+                        </p>
+                        <p>
+                            But consider a structural health monitoring (SHM) system on a
+                            cable-stayed bridge with 200 sensors recording acceleration,
+                            strain, temperature, humidity, and wind speed. The sensor
+                            readings interact in highly non-linear ways: thermal expansion
+                            warps the deck in a curve, traffic load creates non-linear
+                            vibration patterns, and wind couples with cable tension through
+                            aerodynamic flutter. The &ldquo;shape&rdquo; of the data in
+                            200-dimensional space is not a flat ellipse &mdash; it is a
+                            tangled, curved manifold.
+                        </p>
+                        <p>
+                            PCA would flatten this manifold into a straight-line projection,
+                            smearing distinct operating conditions (normal traffic, heavy
+                            truck convoy, thermal expansion event, potential damage) on top
+                            of each other. What you need is a method that can
+                            <strong>unfold</strong> the manifold, preserving the local
+                            neighbourhood relationships, so that distinct clusters appear as
+                            visually separated groups in 2D.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Non-linear Dimensionality Reduction</h3>
+                        <p>
+                            Non-linear methods do not restrict themselves to straight
+                            projections. Instead, they learn a mapping from
+                            high-dimensional space to low-dimensional space that preserves
+                            some notion of <strong>neighbourhood structure</strong>: points
+                            that are close in the original space should remain close in the
+                            embedding, and points that are far apart should remain separated.
+                        </p>
+                        <p>
+                            The two most widely used non-linear visualisation methods are:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>t-SNE</strong> (t-distributed Stochastic Neighbour
+                                Embedding) &mdash; introduced by Laurens van der Maaten and
+                                Geoffrey Hinton in 2008.
+                            </li>
+                            <li>
+                                <strong>UMAP</strong> (Uniform Manifold Approximation and
+                                Projection) &mdash; introduced by Leland McInnes, John Healy,
+                                and James Melville in 2018.
+                            </li>
+                        </ul>
+                        <p>
+                            Both produce stunning 2D scatter plots from hundreds of
+                            dimensions. But they work very differently under the hood, have
+                            different strengths and weaknesses, and must be used with care.
+                            This sub-chapter gives you the intuition to wield them
+                            effectively on civil engineering datasets.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine you have a crumpled sheet of paper &mdash; this is your
+                            data living on a 2D manifold embedded in 3D space. PCA would
+                            photograph the crumpled ball from above, squashing all the
+                            folds into an unreadable mess. t-SNE and UMAP are like
+                            carefully un-crumpling the paper, flattening it back out so you
+                            can read what is written on it. The text (local neighbourhood
+                            relationships) is preserved, even though the paper changes
+                            shape.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have read Sub-chapter 3.5 (PCA) and
+                        understand the curse of dimensionality, variance, and the idea of
+                        projecting data to lower dimensions. Familiarity with probability
+                        distributions (Gaussian, Student-t) is helpful but not strictly
+                        required &mdash; we build intuition from first principles.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: t-SNE FUNDAMENTALS
+             ========================================== -->
+        <section class="ch-section" id="tsne-fundamentals">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wave-square"></i>
+                    t-SNE: The Algorithm
+                </h2>
+
+                <p>
+                    t-SNE converts high-dimensional distances into probabilities,
+                    then arranges points in 2D so that similar probabilities are
+                    reproduced as faithfully as possible. The process has three
+                    conceptual stages.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bell"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: High-Dimensional Affinities</h3>
+                        <p>
+                            For each data point <em>x<sub>i</sub></em>, t-SNE defines a
+                            conditional probability <em>p<sub>j|i</sub></em> that
+                            <em>x<sub>i</sub></em> would pick <em>x<sub>j</sub></em> as
+                            its neighbour under a Gaussian distribution centred on
+                            <em>x<sub>i</sub></em>:
+                        </p>
+                        <div class="formula-block" style="margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.95rem; overflow-x:auto;">
+                            p<sub>j|i</sub> = exp(&minus;||x<sub>i</sub> &minus; x<sub>j</sub>||<sup>2</sup> / 2&sigma;<sub>i</sub><sup>2</sup>) / &Sigma;<sub>k&ne;i</sub> exp(&minus;||x<sub>i</sub> &minus; x<sub>k</sub>||<sup>2</sup> / 2&sigma;<sub>i</sub><sup>2</sup>)
+                        </div>
+                        <p>
+                            The bandwidth &sigma;<sub>i</sub> of the Gaussian is chosen
+                            per-point so that the effective number of neighbours
+                            matches a user-specified parameter called
+                            <strong>perplexity</strong>. Think of perplexity as &ldquo;how
+                            many neighbours does each point consider?&rdquo; Typical
+                            values range from 5 to 50.
+                        </p>
+                        <p>
+                            The conditional probabilities are then symmetrised:
+                            <em>p<sub>ij</sub></em> = (<em>p<sub>j|i</sub></em> +
+                            <em>p<sub>i|j</sub></em>) / 2<em>n</em>, ensuring the
+                            affinity matrix is symmetric. Large values of
+                            <em>p<sub>ij</sub></em> mean points <em>i</em> and <em>j</em>
+                            are considered neighbours; small values mean they are distant.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Low-Dimensional Affinities with Student-t</h3>
+                        <p>
+                            In the 2D embedding, t-SNE defines analogous affinities
+                            <em>q<sub>ij</sub></em> using a <strong>Student-t distribution
+                            with one degree of freedom</strong> (also known as the Cauchy
+                            distribution):
+                        </p>
+                        <div class="formula-block" style="margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.95rem; overflow-x:auto;">
+                            q<sub>ij</sub> = (1 + ||y<sub>i</sub> &minus; y<sub>j</sub>||<sup>2</sup>)<sup>&minus;1</sup> / &Sigma;<sub>k&ne;l</sub> (1 + ||y<sub>k</sub> &minus; y<sub>l</sub>||<sup>2</sup>)<sup>&minus;1</sup>
+                        </div>
+                        <p>
+                            The crucial insight is using the <em>heavy-tailed</em>
+                            Student-t distribution in the low-dimensional space rather than
+                            a Gaussian. Because the Student-t has heavier tails, moderately
+                            distant points in high-D can be pushed much further apart in
+                            2D, alleviating the &ldquo;crowding problem&rdquo; where
+                            everything collapses into a single blob.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-minimize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Minimise KL Divergence via Gradient Descent</h3>
+                        <p>
+                            t-SNE measures the mismatch between the high-dimensional
+                            affinities <em>P</em> and the low-dimensional affinities
+                            <em>Q</em> using the <strong>Kullback&ndash;Leibler (KL)
+                            divergence</strong>:
+                        </p>
+                        <div class="formula-block" style="margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:0.95rem; overflow-x:auto;">
+                            KL(P || Q) = &Sigma;<sub>i&ne;j</sub> p<sub>ij</sub> log(p<sub>ij</sub> / q<sub>ij</sub>)
+                        </div>
+                        <p>
+                            The 2D coordinates <em>y<sub>i</sub></em> are initialised
+                            randomly, then iteratively updated via gradient descent to
+                            minimise this KL divergence. Points that should be close (high
+                            <em>p<sub>ij</sub></em>) are pulled together; points that
+                            should be far apart are pushed away. The result, after a few
+                            hundred to a thousand iterations, is a 2D scatter plot where
+                            local neighbourhood structure from high-D is faithfully
+                            reproduced.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine each sensor reading is a person standing in a crowded
+                            room (high-D space). Each person holds elastic bands connecting
+                            them to their nearest friends (high <em>p<sub>ij</sub></em>)
+                            and weak threads to acquaintances. t-SNE places everyone onto a
+                            flat floor plan (2D) by letting the elastic bands pull friends
+                            together while the weak threads snap, allowing strangers to
+                            drift apart. The final seating arrangement preserves
+                            friendships (local structure) even though the room shape has
+                            completely changed.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: PERPLEXITY — THE KEY PARAMETER
+             ========================================== -->
+        <section class="ch-section" id="perplexity">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Perplexity: t-SNE's Key Hyperparameter
+                </h2>
+
+                <p>
+                    Perplexity controls the effective number of neighbours each point
+                    considers. It directly influences the bandwidth
+                    &sigma;<sub>i</sub> of the Gaussian centred on each point.
+                    Understanding perplexity is critical for interpreting t-SNE
+                    results correctly.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-nodes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Low Perplexity (5&ndash;10)</h3>
+                        <p>
+                            Each point only looks at its 5&ndash;10 nearest neighbours.
+                            This produces tight, fragmented clusters. Fine-grained local
+                            structure is preserved, but global relationships between
+                            clusters are unreliable. You may see a single true cluster
+                            split into multiple spurious sub-clusters.
+                        </p>
+                        <p>
+                            <strong>CE example:</strong> Analysing strain gauge data from
+                            a single bridge section with low perplexity might separate
+                            readings by individual sensor location, but you lose the
+                            overall picture of which sections behave similarly.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Medium Perplexity (30&ndash;50)</h3>
+                        <p>
+                            The most common range. Each point considers a moderate
+                            neighbourhood. Clusters are well-separated, and the embedding
+                            is usually stable across different random initialisations.
+                            Most SHM datasets with a few thousand data points work well
+                            with perplexity around 30&ndash;50.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-globe"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>High Perplexity (100+)</h3>
+                        <p>
+                            Each point considers a large fraction of the dataset. This
+                            broadens the Gaussian bandwidth, making the affinity
+                            distribution more uniform. Global structure is somewhat
+                            preserved, but fine-grained local detail is washed out.
+                            Extremely high perplexity can make t-SNE resemble PCA.
+                        </p>
+                        <p>
+                            <strong>Guideline:</strong> Perplexity should generally be
+                            between 5 and <em>n</em>/3, where <em>n</em> is the number
+                            of data points. A dataset with 300 samples should not use
+                            perplexity 150.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box warning">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Common Pitfall</span>
+                    </div>
+                    <p>
+                        Never trust a single t-SNE plot. Always run the algorithm with
+                        multiple perplexity values and multiple random seeds. Patterns
+                        that are consistent across settings reflect genuine structure;
+                        patterns that appear only with one specific perplexity are likely
+                        artifacts.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: UNDERSTANDING t-SNE OUTPUT
+             ========================================== -->
+        <section class="ch-section" id="tsne-interpretation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-eye"></i>
+                    Interpreting t-SNE Plots
+                </h2>
+
+                <p>
+                    t-SNE produces beautiful scatter plots, but they are deceptively
+                    easy to misinterpret. Here are the rules every civil engineer
+                    should know before drawing conclusions from a t-SNE visualisation.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You CAN Interpret</h3>
+                        <ul>
+                            <li>
+                                <strong>Cluster existence:</strong> If groups of points are
+                                clearly separated in the plot, those points are genuinely
+                                similar to each other and dissimilar to other groups in the
+                                original high-D space.
+                            </li>
+                            <li>
+                                <strong>Relative within-cluster density:</strong> Tighter
+                                clusters generally contain more similar points; spread-out
+                                groups have more internal variation.
+                            </li>
+                            <li>
+                                <strong>Outliers:</strong> Points isolated from all clusters
+                                are genuinely unusual in the original data.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You CANNOT Interpret</h3>
+                        <ul>
+                            <li>
+                                <strong>Distances between clusters:</strong> The distance
+                                between two clusters in the t-SNE plot does
+                                <em>not</em> reliably indicate how different they are. A
+                                cluster placed far away could be very similar or very
+                                different &mdash; t-SNE does not preserve global distances.
+                            </li>
+                            <li>
+                                <strong>Cluster sizes:</strong> A cluster that appears large
+                                in the plot is not necessarily more varied. t-SNE can
+                                artificially expand or compress clusters to balance
+                                crowding.
+                            </li>
+                            <li>
+                                <strong>Axis values:</strong> The x and y axes have no
+                                physical meaning. Rotating, flipping, or scaling the plot
+                                does not change its validity. Never label the axes or read
+                                off coordinates.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of t-SNE like a schematic metro map. The map shows which
+                            stations are on the same line and the order of stops (local
+                            neighbourhood), but it deliberately distorts physical distances
+                            and directions to make the diagram readable. You would never
+                            measure the actual walking distance between two stations on a
+                            metro map &mdash; and similarly, you should never measure
+                            inter-cluster distances on a t-SNE plot.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: t-SNE GRADIENT DESCENT PROCESS
+             ========================================== -->
+        <section class="ch-section" id="tsne-optimisation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    The Optimisation Process
+                </h2>
+
+                <p>
+                    Understanding how t-SNE iteratively moves points helps you
+                    diagnose problems and tune parameters.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shuffle"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Random Initialisation</h3>
+                        <p>
+                            The 2D coordinates are initialised from a small Gaussian
+                            distribution. Because the initialisation is random, running
+                            t-SNE twice on the same data will produce different-looking
+                            plots &mdash; but the same clusters should emerge
+                            consistently.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-forward-fast"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Early Exaggeration</h3>
+                        <p>
+                            During the first 250 iterations, t-SNE multiplies all
+                            <em>p<sub>ij</sub></em> values by a factor (typically 12).
+                            This forces clusters to move apart quickly before refining
+                            their positions. Without early exaggeration, clusters may
+                            overlap and fail to separate.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Learning Rate and Momentum</h3>
+                        <p>
+                            The learning rate controls step size in gradient descent.
+                            Too small, and points get stuck in poor configurations; too
+                            large, and the layout oscillates wildly. Modern
+                            implementations default to <em>n</em>/12 (where <em>n</em>
+                            is the number of points) or 200, with adaptive momentum that
+                            speeds up convergence.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hourglass-end"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Convergence</h3>
+                        <p>
+                            t-SNE typically runs for 1,000 iterations. The KL divergence
+                            decreases over time, and the layout stabilises. If you see
+                            points still moving significantly at iteration 1,000, increase
+                            the number of iterations. On large SHM datasets (50,000+
+                            time windows), use the Barnes&ndash;Hut approximation which
+                            reduces complexity from O(<em>n</em><sup>2</sup>) to
+                            O(<em>n</em> log <em>n</em>).
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: UMAP FUNDAMENTALS
+             ========================================== -->
+        <section class="ch-section" id="umap-fundamentals">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bezier-curve"></i>
+                    UMAP: Uniform Manifold Approximation and Projection
+                </h2>
+
+                <p>
+                    UMAP approaches the same problem &mdash; embedding high-dimensional
+                    data into 2D &mdash; from a completely different mathematical
+                    foundation: <strong>algebraic topology</strong> and
+                    <strong>fuzzy set theory</strong>. Despite the heavier mathematical
+                    machinery, the intuition is surprisingly accessible.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-dot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: Build a Fuzzy Topological Representation</h3>
+                        <p>
+                            UMAP constructs a weighted k-nearest-neighbour graph in the
+                            high-dimensional space. For each point, it finds the
+                            <em>k</em> nearest neighbours (controlled by the
+                            <code>n_neighbors</code> parameter) and assigns edge weights
+                            based on distance &mdash; but with a twist.
+                        </p>
+                        <p>
+                            Each point defines its own local notion of distance, scaled so
+                            that its nearest neighbour is distance 0. This local metric
+                            adapts to the data density: in dense regions, only very close
+                            points get high weights; in sparse regions, more distant points
+                            are still considered neighbours. The result is a
+                            <strong>fuzzy simplicial set</strong> &mdash; a topological
+                            representation of the data that captures its shape at multiple
+                            scales.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-object-ungroup"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Construct Low-Dimensional Equivalent</h3>
+                        <p>
+                            UMAP also builds a fuzzy simplicial set in the
+                            low-dimensional embedding space. The goal is to find 2D
+                            coordinates such that the low-dimensional fuzzy set matches
+                            the high-dimensional one as closely as possible.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-minimize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Optimise via Cross-Entropy</h3>
+                        <p>
+                            UMAP minimises the <strong>fuzzy set cross-entropy</strong>
+                            between the high-dimensional and low-dimensional
+                            representations using stochastic gradient descent with
+                            negative sampling. This is analogous to t-SNE's KL divergence
+                            minimisation, but UMAP's loss function is symmetric: it
+                            penalises both pulling apart true neighbours
+                            (<em>attraction</em>) and pushing together non-neighbours
+                            (<em>repulsion</em>) equally, whereas t-SNE's KL divergence is
+                            asymmetric.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why UMAP Is Faster</h3>
+                        <p>
+                            UMAP uses several computational tricks that make it
+                            significantly faster than t-SNE:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Approximate nearest neighbours:</strong> Instead
+                                of computing all pairwise distances (O(<em>n</em><sup>2</sup>)),
+                                UMAP uses algorithms like NN-Descent that find approximate
+                                k-nearest neighbours in O(<em>n</em><sup>1.14</sup>) time.
+                            </li>
+                            <li>
+                                <strong>Negative sampling:</strong> Rather than computing
+                                repulsion over all <em>n</em><sup>2</sup> pairs, UMAP
+                                randomly samples a small number of non-neighbours per
+                                iteration.
+                            </li>
+                            <li>
+                                <strong>Fewer iterations:</strong> UMAP's SGD converges
+                                in 200&ndash;500 epochs versus t-SNE's 1,000+.
+                            </li>
+                        </ul>
+                        <p>
+                            On a bridge SHM dataset with 100,000 time windows and 200
+                            sensor features, UMAP can finish in under a minute where t-SNE
+                            might take 30 minutes &mdash; a critical difference for
+                            real-time monitoring dashboards.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: UMAP KEY PARAMETERS
+             ========================================== -->
+        <section class="ch-section" id="umap-parameters">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    UMAP Key Parameters
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>n_neighbors</h3>
+                        <p>
+                            Analogous to t-SNE's perplexity, <code>n_neighbors</code>
+                            controls how many nearest neighbours define the local topology.
+                            Small values (5&ndash;15) preserve very local structure and
+                            produce tighter, more fragmented clusters. Large values
+                            (50&ndash;200) capture more global structure and produce
+                            smoother, more connected layouts.
+                        </p>
+                        <p>
+                            <strong>CE guideline:</strong> For multi-sensor SHM data with
+                            well-separated operating conditions, start with
+                            <code>n_neighbors=15</code> and increase if clusters are too
+                            fragmented.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-horizontal"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>min_dist</h3>
+                        <p>
+                            Controls how tightly points are allowed to pack together in
+                            the embedding. A small <code>min_dist</code> (0.0&ndash;0.1)
+                            produces very dense, clumpy clusters with clear boundaries.
+                            A larger value (0.5&ndash;1.0) produces a more uniform,
+                            spread-out layout that better preserves the broader topological
+                            structure at the expense of within-cluster detail.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>metric</h3>
+                        <p>
+                            UMAP supports a wide range of distance metrics:
+                            Euclidean, cosine, Manhattan, Chebyshev, Mahalanobis, and even
+                            custom functions. For SHM time-series features, cosine
+                            similarity often works better than Euclidean distance because
+                            it captures the <em>shape</em> of sensor response patterns
+                            regardless of amplitude.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: t-SNE vs UMAP COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="tsne-vs-umap">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    t-SNE vs. UMAP: When to Use Which
+                </h2>
+
+                <p>
+                    Both methods produce 2D scatter plots from high-dimensional data,
+                    but they have distinct characteristics that make each better suited
+                    to different situations.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison Table</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin-top:12px;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-subtle);">
+                                        <th style="text-align:left; padding:10px; font-weight:700;">Criterion</th>
+                                        <th style="text-align:left; padding:10px; font-weight:700;">t-SNE</th>
+                                        <th style="text-align:left; padding:10px; font-weight:700;">UMAP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px; font-weight:600;">Speed</td>
+                                        <td style="padding:10px;">Slow on large datasets (O(n<sup>2</sup>) or O(n log n) with Barnes-Hut)</td>
+                                        <td style="padding:10px;">Fast, scales well to 1M+ points</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                        <td style="padding:10px; font-weight:600;">Global structure</td>
+                                        <td style="padding:10px;">Poorly preserved; cluster positions are arbitrary</td>
+                                        <td style="padding:10px;">Better preserved; relative cluster positions are more meaningful</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px; font-weight:600;">Local structure</td>
+                                        <td style="padding:10px;">Excellent; primary design goal</td>
+                                        <td style="padding:10px;">Excellent; comparable to t-SNE</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                        <td style="padding:10px; font-weight:600;">Reproducibility</td>
+                                        <td style="padding:10px;">Different runs yield different layouts (stochastic)</td>
+                                        <td style="padding:10px;">More stable with fixed random seed</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px; font-weight:600;">New data</td>
+                                        <td style="padding:10px;">Cannot embed new points without re-running</td>
+                                        <td style="padding:10px;">Supports transform() on unseen data</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                        <td style="padding:10px; font-weight:600;">Higher-dim output</td>
+                                        <td style="padding:10px;">Possible but rarely used beyond 2&ndash;3D</td>
+                                        <td style="padding:10px;">Works well in 2D through 100D for general DR</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px; font-weight:600;">Mathematical basis</td>
+                                        <td style="padding:10px;">Probability distributions, KL divergence</td>
+                                        <td style="padding:10px;">Algebraic topology, fuzzy sets, cross-entropy</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Recommendation for Civil Engineering</h3>
+                        <p>
+                            For most civil engineering visualisation tasks &mdash;
+                            especially SHM dashboards that need to process new data in
+                            near real-time &mdash; <strong>UMAP is the better default
+                            choice</strong>. It is faster, better preserves global
+                            cluster relationships, and can project new incoming sensor
+                            windows without re-running the entire algorithm.
+                        </p>
+                        <p>
+                            Use t-SNE when you need the highest-quality local
+                            neighbourhood visualisation for a fixed, moderate-sized
+                            dataset (up to ~10,000 points) and are willing to invest
+                            computation time and multiple runs to verify stability.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: LIMITATIONS
+             ========================================== -->
+        <section class="ch-section" id="limitations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Limitations and Pitfalls
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-globe"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>t-SNE Does Not Preserve Global Structure</h3>
+                        <p>
+                            This is the single most important limitation. The relative
+                            positions and distances between clusters in a t-SNE plot are
+                            <em>not meaningful</em>. Two clusters placed far apart might
+                            be very similar in the original space; two clusters placed
+                            close together might be very different. The KL divergence
+                            objective heavily penalises placing true neighbours far apart
+                            but barely penalises placing non-neighbours close together.
+                        </p>
+                        <p>
+                            <strong>Practical impact:</strong> If you use t-SNE to
+                            visualise SHM data and see three clusters, you can conclude
+                            that three distinct operating conditions exist &mdash; but you
+                            cannot conclude that cluster A is &ldquo;more similar&rdquo;
+                            to cluster B than to cluster C based on their 2D positions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ban"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Not Suitable for New / Unseen Data</h3>
+                        <p>
+                            Standard t-SNE has no <code>transform()</code> method. To
+                            embed a new sensor reading, you must re-run the entire
+                            algorithm on the combined old + new data. For a real-time
+                            monitoring system receiving data every second, this is
+                            impractical. UMAP partially addresses this with its
+                            <code>transform()</code> method, but even UMAP's transform
+                            can degrade if the new data is very different from the
+                            training distribution.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-dice"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Stochastic Nature</h3>
+                        <p>
+                            Both t-SNE and UMAP are stochastic: different random seeds
+                            produce different-looking plots. Genuine clusters will appear
+                            consistently across runs, but their positions, orientations,
+                            and sizes will vary. Never base a conclusion on a single run
+                            &mdash; always verify with multiple initialisations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-up-down"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Hyperparameter Sensitivity</h3>
+                        <p>
+                            Both methods are sensitive to their key parameters. Changing
+                            perplexity from 5 to 50 can dramatically alter the t-SNE
+                            output. Changing <code>n_neighbors</code> or
+                            <code>min_dist</code> in UMAP has similar effects. Always
+                            explore a range of parameter values before drawing conclusions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Visualisation Only &mdash; Not for Downstream ML</h3>
+                        <p>
+                            t-SNE embeddings are designed for human visual inspection, not
+                            as input features for machine learning models. The embedding
+                            distorts distances and densities in ways that mislead
+                            classifiers and regressors. If you need a reduced
+                            representation for modelling, use PCA or autoencoders. Use
+                            t-SNE/UMAP for exploration and presentation only.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box warning">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Critical Warning for Engineers</span>
+                    </div>
+                    <p>
+                        Never use t-SNE cluster separations as evidence for structural
+                        damage without independent validation. The algorithm can create
+                        apparent clusters even in uniformly random data if the perplexity
+                        is set too low. Always cross-reference visual clusters with
+                        physical sensor metadata and known loading events.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: CE APPLICATION — SHM DATA
+             ========================================== -->
+        <section class="ch-section" id="ce-application">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bridge"></i>
+                    CE Application: Visualising Multi-Sensor SHM Data
+                </h2>
+
+                <p>
+                    Structural health monitoring systems on large bridges, dams, and
+                    tunnels generate immense volumes of high-dimensional time-series
+                    data. t-SNE and UMAP are invaluable for turning this flood of
+                    numbers into actionable visual insights.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Typical SHM Data Pipeline</h3>
+                        <ol>
+                            <li>
+                                <strong>Raw data:</strong> 200 sensors &times; 100 Hz &times;
+                                24 hours = 1.7 billion readings per day.
+                            </li>
+                            <li>
+                                <strong>Feature extraction:</strong> Divide into 10-minute
+                                windows. For each window, compute statistical features per
+                                sensor: mean, std, max, min, RMS, kurtosis, dominant
+                                frequency, spectral entropy. This yields ~144 windows/day
+                                &times; 200 sensors &times; 8 features = 230,400 dimensions
+                                per window. Flatten or aggregate to get a manageable feature
+                                vector per window (e.g., 1,600 dimensions).
+                            </li>
+                            <li>
+                                <strong>Dimensionality reduction:</strong> Apply PCA to
+                                reduce from 1,600 to 50 dimensions (retaining 95% variance),
+                                then apply UMAP to project from 50 to 2 dimensions for
+                                visualisation.
+                            </li>
+                            <li>
+                                <strong>Visualisation:</strong> Colour-code the 2D scatter
+                                plot by known metadata (time of day, temperature range,
+                                traffic load level). Clusters should correspond to distinct
+                                operating conditions.
+                            </li>
+                            <li>
+                                <strong>Anomaly detection:</strong> Points that fall outside
+                                all known clusters may indicate unusual structural behaviour
+                                &mdash; a potential damage event warranting physical
+                                inspection.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-microscope"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Engineers Have Found</h3>
+                        <p>
+                            Published studies applying t-SNE and UMAP to SHM data have
+                            revealed:
+                        </p>
+                        <ul>
+                            <li>
+                                Distinct clusters corresponding to temperature-driven
+                                expansion states (winter contraction, summer expansion,
+                                transition seasons).
+                            </li>
+                            <li>
+                                Sub-clusters within a temperature regime that correspond
+                                to traffic loading levels (night-time quiescence, morning
+                                rush hour, heavy truck convoy).
+                            </li>
+                            <li>
+                                Isolated outlier points corresponding to known seismic
+                                events, extreme wind storms, or maintenance activities
+                                (bridge closures, load testing).
+                            </li>
+                            <li>
+                                Gradual cluster drift over months indicating slow
+                                deterioration of bearings or cable tension loss.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Running UMAP on SHM data is like giving the bridge a medical
+                            imaging scan. Just as an MRI condenses millions of voxels into
+                            a human-readable image that a doctor can inspect for tumours,
+                            UMAP condenses millions of sensor readings into a 2D map that
+                            an engineer can inspect for anomalies. The map does not replace
+                            physical inspection, but it tells you <em>where to look</em>.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 1 — t-SNE PERPLEXITY EXPLORER
+             ========================================== -->
+        <section class="ch-section" id="demo-tsne-perplexity">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                    Interactive Demo: t-SNE Perplexity Explorer
+                </h2>
+
+                <p>
+                    This demo simulates high-dimensional clustered data (representing
+                    sensor feature vectors from different bridge operating conditions)
+                    and embeds it in 2D using a simplified t-SNE algorithm. Drag the
+                    perplexity slider to see how the embedding changes: low perplexity
+                    fragments clusters; high perplexity merges them.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-tsne">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-wave-square"></i> t-SNE Perplexity Explorer</h3>
+                        <p>Adjust perplexity to observe how neighbourhood size affects 2D cluster layout.</p>
+                    </div>
+
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                        <div style="flex:1; min-width:220px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Perplexity: <span id="perp-value">30</span>
+                            </label>
+                            <input type="range" id="perp-slider" min="2" max="80" value="30" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width:180px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Iterations: <span id="iter-value">300</span>
+                            </label>
+                            <input type="range" id="iter-slider" min="50" max="600" value="300" step="50" style="width:100%;">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end;">
+                            <button id="btn-run-tsne" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary);">
+                                <i class="fa-solid fa-play"></i> Run t-SNE
+                            </button>
+                            <button id="btn-regen-data" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-secondary); background:transparent; color:var(--accent-secondary);">
+                                <i class="fa-solid fa-rotate"></i> New Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas-tsne" style="width:100%; height:480px; border-radius:12px; cursor:crosshair; border:1px solid var(--border-color);"></canvas>
+
+                    <div id="tsne-stats" style="margin-top:12px; font-size:0.85rem; font-family:'JetBrains Mono',monospace; color:var(--text-muted);">
+                        Status: Ready &nbsp;|&nbsp; Perplexity: 30 &nbsp;|&nbsp; Clusters: 5 &nbsp;|&nbsp; Points: 150
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: INTERACTIVE DEMO 2 — PCA vs t-SNE COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="demo-pca-vs-tsne">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-columns"></i>
+                    Interactive Demo: PCA vs. t-SNE Comparison
+                </h2>
+
+                <p>
+                    This side-by-side comparison embeds the <em>same</em>
+                    high-dimensional dataset using PCA (left) and a simplified t-SNE
+                    (right). Notice how PCA preserves global spread but overlaps
+                    clusters, while t-SNE separates clusters clearly but distorts
+                    global distances.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-comparison">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-scale-balanced"></i> PCA vs. t-SNE on Same Dataset</h3>
+                        <p>Regenerate data to see both projections update simultaneously.</p>
+                    </div>
+
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                        <div style="flex:1; min-width:180px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Clusters: <span id="comp-clusters-value">4</span>
+                            </label>
+                            <input type="range" id="comp-clusters-slider" min="2" max="7" value="4" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width:180px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Dimensions: <span id="comp-dims-value">8</span>
+                            </label>
+                            <input type="range" id="comp-dims-slider" min="3" max="20" value="8" style="width:100%;">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end;">
+                            <button id="btn-run-comparison" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary);">
+                                <i class="fa-solid fa-play"></i> Run Both
+                            </button>
+                            <button id="btn-regen-comp" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-secondary); background:transparent; color:var(--accent-secondary);">
+                                <i class="fa-solid fa-dice"></i> New Dataset
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:280px;">
+                            <div style="text-align:center; font-weight:700; font-size:0.9rem; margin-bottom:6px; color:var(--accent-primary);">
+                                <i class="fa-solid fa-compress"></i> PCA Projection
+                            </div>
+                            <canvas id="canvas-pca-comp" style="width:100%; height:400px; border-radius:12px; border:1px solid var(--border-color);"></canvas>
+                        </div>
+                        <div style="flex:1; min-width:280px;">
+                            <div style="text-align:center; font-weight:700; font-size:0.9rem; margin-bottom:6px; color:var(--accent-warm);">
+                                <i class="fa-solid fa-wave-square"></i> t-SNE Embedding
+                            </div>
+                            <canvas id="canvas-tsne-comp" style="width:100%; height:400px; border-radius:12px; border:1px solid var(--border-color);"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="comparison-stats" style="margin-top:12px; font-size:0.85rem; font-family:'JetBrains Mono',monospace; color:var(--text-muted);">
+                        Status: Ready &nbsp;|&nbsp; Points: 120 &nbsp;|&nbsp; Original dims: 8 &nbsp;|&nbsp; Clusters: 4
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: PRACTICAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Practical Workflow for Engineers
+                </h2>
+
+                <p>
+                    Follow this step-by-step workflow when applying t-SNE or UMAP to
+                    your civil engineering datasets.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: Pre-process and Standardise</h3>
+                        <p>
+                            Remove missing values, handle outliers, and standardise all
+                            features to zero mean and unit variance. Both t-SNE and UMAP
+                            are distance-based methods &mdash; features on larger scales
+                            will dominate the distance computations just as they do in
+                            PCA.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Apply PCA First</h3>
+                        <p>
+                            If your data has more than ~50 dimensions, apply PCA to
+                            reduce to 30&ndash;50 components before running t-SNE or
+                            UMAP. This speeds up computation, reduces noise, and often
+                            improves the quality of the embedding. The original t-SNE
+                            paper recommends PCA pre-processing to 50 dimensions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Choose Your Method</h3>
+                        <p>
+                            Use UMAP for large datasets (&gt; 10,000 points), when you
+                            need to embed new data, or when global cluster relationships
+                            matter. Use t-SNE for smaller datasets when you want the
+                            sharpest local cluster separation and are willing to run
+                            multiple times.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 4: Explore Parameters</h3>
+                        <p>
+                            Run the algorithm with at least 3&ndash;5 different parameter
+                            settings. For t-SNE, try perplexity = {5, 15, 30, 50}. For
+                            UMAP, try n_neighbors = {5, 15, 30, 50} with min_dist =
+                            {0.0, 0.1, 0.5}. Compare results to distinguish genuine
+                            structure from artifacts.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-5"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 5: Validate with Domain Knowledge</h3>
+                        <p>
+                            Colour-code the resulting scatter plot by known labels:
+                            temperature range, traffic load, time of day, sensor location.
+                            If the clusters align with physical intuition, the embedding
+                            is trustworthy. If they do not, revisit feature engineering
+                            and parameter settings.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        What distribution does t-SNE use in the <strong>low-dimensional</strong>
+                        space to compute affinities between embedded points?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Gaussian (normal) distribution
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Student-t distribution with one degree of freedom
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Uniform distribution
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Exponential distribution
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! t-SNE uses the
+                        Student-t distribution (with 1 degree of freedom, i.e., the Cauchy
+                        distribution) in the low-dimensional space. Its heavy tails allow
+                        moderate-distance points to be spread further apart, solving the
+                        crowding problem that occurs when using Gaussians in both spaces.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The Gaussian is
+                        used in the <em>high-dimensional</em> space. In the
+                        <em>low-dimensional</em> space, t-SNE uses a
+                        <strong>Student-t distribution</strong> with 1 degree of freedom
+                        because its heavy tails prevent the crowding problem.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        An engineer runs t-SNE on SHM data and sees two well-separated
+                        clusters A and B. Cluster A is placed 10 units away from cluster B
+                        on the 2D plot. Can she conclude that A and B are very different in
+                        the original sensor space?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Yes &mdash; larger inter-cluster distance means greater dissimilarity
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> No &mdash; t-SNE does not preserve global distances between clusters
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Only if the perplexity is set above 50
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Yes, provided the algorithm has converged
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! t-SNE preserves
+                        <em>local neighbourhood</em> structure but <em>not global
+                        distances</em>. The 10-unit gap between clusters A and B is an
+                        artifact of the embedding layout, not a measure of actual
+                        dissimilarity. She can only conclude that A and B are distinct
+                        clusters, not how different they are.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. A key limitation
+                        of t-SNE is that <strong>inter-cluster distances are not
+                        meaningful</strong>. Two clusters may be placed far apart or close
+                        together regardless of their true dissimilarity. Only the
+                        <em>existence</em> of distinct clusters is reliable.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        Which advantage does UMAP have over t-SNE for a real-time bridge
+                        monitoring system that receives new sensor data every second?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> UMAP always produces perfectly reproducible results
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> UMAP preserves all pairwise distances exactly
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> UMAP can project new unseen data without re-running the entire algorithm
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> UMAP does not require any hyperparameter tuning
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! UMAP supports a
+                        <code>transform()</code> method that can embed new data points
+                        into an existing embedding without re-computing the entire graph.
+                        This makes it feasible for near-real-time monitoring dashboards.
+                        t-SNE lacks this capability and requires a full re-run for each
+                        new data point.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key advantage
+                        for real-time systems is UMAP's <strong>transform()</strong>
+                        capability: new incoming sensor data can be projected into the
+                        existing 2D embedding without re-computing the entire model from
+                        scratch.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        Before applying t-SNE to a 500-dimensional SHM feature vector,
+                        the recommended best practice is to:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Apply t-SNE directly to all 500 dimensions
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Remove all but 2 features manually
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> First reduce to ~50 dimensions with PCA, then apply t-SNE
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Increase perplexity to 500 to match the dimensionality
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The original t-SNE
+                        paper recommends reducing to approximately 50 dimensions with PCA
+                        before running t-SNE. This removes noise, speeds up computation,
+                        and often produces better embeddings than applying t-SNE directly
+                        to very high-dimensional data.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The recommended
+                        practice is to use <strong>PCA as a pre-processing step</strong>,
+                        reducing to ~50 dimensions, before running t-SNE. This reduces
+                        noise, improves speed, and generally improves embedding quality.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul>
+                            <li>
+                                <strong>t-SNE</strong> converts high-D distances into
+                                probabilities (Gaussian in high-D, Student-t in low-D) and
+                                minimises KL divergence via gradient descent to produce 2D
+                                embeddings with excellent local structure.
+                            </li>
+                            <li>
+                                <strong>Perplexity</strong> controls how many neighbours
+                                each point considers. Always try multiple values (5&ndash;50)
+                                and verify clusters are consistent.
+                            </li>
+                            <li>
+                                <strong>UMAP</strong> uses fuzzy topological representations
+                                and cross-entropy optimisation. It is faster, better
+                                preserves global structure, and supports projecting new data.
+                            </li>
+                            <li>
+                                <strong>Neither method preserves global distances
+                                reliably.</strong> Cluster existence is trustworthy;
+                                inter-cluster distances and cluster sizes are not.
+                            </li>
+                            <li>
+                                For <strong>civil engineering SHM</strong>, UMAP is the
+                                recommended default. Apply PCA pre-processing (to ~50
+                                dimensions) before t-SNE or UMAP for best results.
+                            </li>
+                            <li>
+                                Use t-SNE and UMAP for <strong>visualisation and
+                                exploration only</strong> &mdash; not as input features for
+                                downstream ML models.
+                            </li>
+                            <li>
+                                Always <strong>validate visual clusters</strong> against
+                                physical metadata (temperature, traffic load, known events)
+                                before drawing engineering conclusions.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-forward"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Comes Next</h3>
+                        <p>
+                            In Sub-chapter 3.7 (Anomaly Detection), you will learn how to
+                            move from visual cluster inspection to automated anomaly
+                            detection. We will explore isolation forests, autoencoders, and
+                            one-class SVMs that can flag unusual sensor patterns without
+                            human intervention &mdash; the next step towards autonomous
+                            structural health monitoring.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub5.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.5 PCA
+        </a>
+        <a href="sub7.html" class="chapter-nav__link next">
+            3.7 Anomaly Detection <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ============================================
+           UTILITY REFERENCES
+           ============================================ */
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:  dark ? '#2dd4bf' : '#059669',
+                CYAN:  dark ? '#22d3ee' : '#0284c7',
+                AMBER: dark ? '#fbbf24' : '#d97706',
+                RED:   dark ? '#ef4444' : '#dc2626',
+                GREEN: dark ? '#22c55e' : '#16a34a',
+                BG:    dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT:  dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:   dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:  dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE:  dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                STROKE:dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: dark ? '#fff' : '#1a1a2e',
+                MUTED: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(canvas) {
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            canvas.width  = rect.width  * dpr;
+            canvas.height = rect.height * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx: ctx, w: rect.width, h: rect.height };
+        };
+        var rand = Utils.rand || function(a, b){ return Math.random() * (b - a) + a; };
+        var lerp = Utils.lerp || function(a, b, t){ return a + (b - a) * t; };
+
+        /* ============================================
+           COLOUR PALETTE FOR CLUSTERS
+           ============================================ */
+        var clusterPalette = [
+            '#2dd4bf', '#22d3ee', '#fbbf24', '#ef4444',
+            '#a78bfa', '#f472b6', '#34d399'
+        ];
+
+        /* ============================================
+           DATA GENERATION UTILITIES
+           ============================================ */
+        function gaussRand() {
+            var u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function generateClusters(nClusters, pointsPerCluster, dims) {
+            var data = [];
+            var labels = [];
+            for (var c = 0; c < nClusters; c++) {
+                var center = [];
+                for (var d = 0; d < dims; d++) {
+                    center.push(rand(-8, 8));
+                }
+                var spread = rand(0.4, 1.2);
+                for (var p = 0; p < pointsPerCluster; p++) {
+                    var point = [];
+                    for (var d = 0; d < dims; d++) {
+                        point.push(center[d] + gaussRand() * spread);
+                    }
+                    data.push(point);
+                    labels.push(c);
+                }
+            }
+            return { data: data, labels: labels };
+        }
+
+        /* ============================================
+           DISTANCE & MATH HELPERS
+           ============================================ */
+        function euclideanDist(a, b) {
+            var s = 0;
+            for (var i = 0; i < a.length; i++) {
+                var d = a[i] - b[i];
+                s += d * d;
+            }
+            return Math.sqrt(s);
+        }
+
+        function euclideanDistSq(a, b) {
+            var s = 0;
+            for (var i = 0; i < a.length; i++) {
+                var d = a[i] - b[i];
+                s += d * d;
+            }
+            return s;
+        }
+
+        /* ============================================
+           SIMPLE PCA IMPLEMENTATION (2-component)
+           ============================================ */
+        function simplePCA(data) {
+            var n = data.length;
+            var dims = data[0].length;
+
+            /* Mean center */
+            var mean = new Array(dims).fill(0);
+            for (var i = 0; i < n; i++) {
+                for (var d = 0; d < dims; d++) mean[d] += data[i][d];
+            }
+            for (var d = 0; d < dims; d++) mean[d] /= n;
+
+            var centered = [];
+            for (var i = 0; i < n; i++) {
+                var row = [];
+                for (var d = 0; d < dims; d++) row.push(data[i][d] - mean[d]);
+                centered.push(row);
+            }
+
+            /* Covariance matrix */
+            var cov = [];
+            for (var i = 0; i < dims; i++) {
+                cov[i] = new Array(dims).fill(0);
+                for (var j = 0; j < dims; j++) {
+                    var s = 0;
+                    for (var k = 0; k < n; k++) s += centered[k][i] * centered[k][j];
+                    cov[i][j] = s / (n - 1);
+                }
+            }
+
+            /* Power iteration for top 2 eigenvectors */
+            function powerIter(mat, deflated) {
+                var size = mat.length;
+                var v = [];
+                for (var i = 0; i < size; i++) v.push(gaussRand());
+                var norm = Math.sqrt(v.reduce(function(s, x){ return s + x*x; }, 0));
+                for (var i = 0; i < size; i++) v[i] /= norm;
+
+                for (var iter = 0; iter < 100; iter++) {
+                    var nv = new Array(size).fill(0);
+                    for (var i = 0; i < size; i++) {
+                        for (var j = 0; j < size; j++) nv[i] += mat[i][j] * v[j];
+                    }
+                    if (deflated) {
+                        var dot = 0;
+                        for (var i = 0; i < size; i++) dot += nv[i] * deflated[i];
+                        for (var i = 0; i < size; i++) nv[i] -= dot * deflated[i];
+                    }
+                    norm = Math.sqrt(nv.reduce(function(s, x){ return s + x*x; }, 0));
+                    if (norm < 1e-12) break;
+                    for (var i = 0; i < size; i++) v[i] = nv[i] / norm;
+                }
+                return { vector: v, value: norm };
+            }
+
+            var pc1 = powerIter(cov, null);
+            var pc2 = powerIter(cov, pc1.vector);
+
+            /* Project */
+            var projected = [];
+            for (var i = 0; i < n; i++) {
+                var x = 0, y = 0;
+                for (var d = 0; d < dims; d++) {
+                    x += centered[i][d] * pc1.vector[d];
+                    y += centered[i][d] * pc2.vector[d];
+                }
+                projected.push([x, y]);
+            }
+            return projected;
+        }
+
+        /* ============================================
+           SIMPLIFIED t-SNE IMPLEMENTATION
+           ============================================ */
+        function simpleTSNE(data, perplexity, maxIter) {
+            var n = data.length;
+            if (n < 2) return [[0,0]];
+            var perp = Math.min(perplexity, Math.floor(n / 3));
+            if (perp < 1) perp = 1;
+
+            /* Pairwise distances */
+            var dist = [];
+            for (var i = 0; i < n; i++) {
+                dist[i] = [];
+                for (var j = 0; j < n; j++) {
+                    dist[i][j] = euclideanDistSq(data[i], data[j]);
+                }
+            }
+
+            /* Compute P (symmetrised conditional probabilities) */
+            var P = [];
+            for (var i = 0; i < n; i++) P[i] = new Array(n).fill(0);
+
+            for (var i = 0; i < n; i++) {
+                var lo = 1e-10, hi = 1e4, beta = 1.0;
+                for (var iter = 0; iter < 50; iter++) {
+                    var sum = 0;
+                    for (var j = 0; j < n; j++) {
+                        if (j === i) continue;
+                        sum += Math.exp(-dist[i][j] * beta);
+                    }
+                    if (sum < 1e-20) sum = 1e-20;
+                    var H = 0;
+                    for (var j = 0; j < n; j++) {
+                        if (j === i) continue;
+                        var pj = Math.exp(-dist[i][j] * beta) / sum;
+                        if (pj > 1e-10) H -= pj * Math.log2(pj);
+                    }
+                    var perpCur = Math.pow(2, H);
+                    if (Math.abs(perpCur - perp) < 0.1) break;
+                    if (perpCur > perp) { lo = beta; beta = (hi === 1e4) ? beta * 2 : (beta + hi) / 2; }
+                    else { hi = beta; beta = (lo === 1e-10) ? beta / 2 : (beta + lo) / 2; }
+                }
+                var sum = 0;
+                for (var j = 0; j < n; j++) {
+                    if (j === i) continue;
+                    sum += Math.exp(-dist[i][j] * beta);
+                }
+                if (sum < 1e-20) sum = 1e-20;
+                for (var j = 0; j < n; j++) {
+                    if (j === i) { P[i][j] = 0; continue; }
+                    P[i][j] = Math.exp(-dist[i][j] * beta) / sum;
+                }
+            }
+
+            /* Symmetrise */
+            for (var i = 0; i < n; i++) {
+                for (var j = i + 1; j < n; j++) {
+                    var val = (P[i][j] + P[j][i]) / (2 * n);
+                    P[i][j] = val;
+                    P[j][i] = val;
+                }
+            }
+
+            /* Initialise Y randomly */
+            var Y = [];
+            for (var i = 0; i < n; i++) {
+                Y.push([gaussRand() * 0.01, gaussRand() * 0.01]);
+            }
+
+            var lr = Math.max(1, n / 12);
+            var momentum = 0.5;
+            var gains = [];
+            var prevDY = [];
+            for (var i = 0; i < n; i++) {
+                gains.push([1, 1]);
+                prevDY.push([0, 0]);
+            }
+
+            /* Early exaggeration */
+            var exagEnd = Math.min(100, Math.floor(maxIter / 4));
+            var exagFactor = 4.0;
+
+            for (var t = 0; t < maxIter; t++) {
+                if (t === exagEnd) {
+                    /* Remove exaggeration */
+                    for (var i = 0; i < n; i++) {
+                        for (var j = 0; j < n; j++) {
+                            P[i][j] /= exagFactor;
+                        }
+                    }
+                    momentum = 0.8;
+                }
+                if (t === 0) {
+                    for (var i = 0; i < n; i++) {
+                        for (var j = 0; j < n; j++) {
+                            P[i][j] *= exagFactor;
+                        }
+                    }
+                }
+
+                /* Compute Q */
+                var Q = [];
+                var Qsum = 0;
+                for (var i = 0; i < n; i++) {
+                    Q[i] = new Array(n).fill(0);
+                    for (var j = 0; j < n; j++) {
+                        if (i === j) continue;
+                        var dd = (Y[i][0]-Y[j][0])*(Y[i][0]-Y[j][0]) + (Y[i][1]-Y[j][1])*(Y[i][1]-Y[j][1]);
+                        Q[i][j] = 1.0 / (1.0 + dd);
+                        Qsum += Q[i][j];
+                    }
+                }
+                if (Qsum < 1e-20) Qsum = 1e-20;
+                for (var i = 0; i < n; i++) {
+                    for (var j = 0; j < n; j++) Q[i][j] /= Qsum;
+                }
+
+                /* Gradients */
+                for (var i = 0; i < n; i++) {
+                    var gx = 0, gy = 0;
+                    for (var j = 0; j < n; j++) {
+                        if (i === j) continue;
+                        var dd = (Y[i][0]-Y[j][0])*(Y[i][0]-Y[j][0]) + (Y[i][1]-Y[j][1])*(Y[i][1]-Y[j][1]);
+                        var mult = 4 * (P[i][j] - Q[i][j]) / (1 + dd);
+                        gx += mult * (Y[i][0] - Y[j][0]);
+                        gy += mult * (Y[i][1] - Y[j][1]);
+                    }
+
+                    /* Adaptive gains */
+                    gains[i][0] = (Math.sign(gx) !== Math.sign(prevDY[i][0])) ? gains[i][0] + 0.2 : gains[i][0] * 0.8;
+                    gains[i][1] = (Math.sign(gy) !== Math.sign(prevDY[i][1])) ? gains[i][1] + 0.2 : gains[i][1] * 0.8;
+                    if (gains[i][0] < 0.01) gains[i][0] = 0.01;
+                    if (gains[i][1] < 0.01) gains[i][1] = 0.01;
+
+                    var dx = momentum * prevDY[i][0] - lr * gains[i][0] * gx;
+                    var dy = momentum * prevDY[i][1] - lr * gains[i][1] * gy;
+                    Y[i][0] += dx;
+                    Y[i][1] += dy;
+                    prevDY[i][0] = dx;
+                    prevDY[i][1] = dy;
+                }
+
+                /* Re-center */
+                var mx = 0, my = 0;
+                for (var i = 0; i < n; i++) { mx += Y[i][0]; my += Y[i][1]; }
+                mx /= n; my /= n;
+                for (var i = 0; i < n; i++) { Y[i][0] -= mx; Y[i][1] -= my; }
+            }
+
+            return Y;
+        }
+
+        /* ============================================
+           DRAWING UTILITY: SCATTER PLOT ON CANVAS
+           ============================================ */
+        function drawScatter(canvas, points, labels, title) {
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+            var c = getColors();
+            var pad = 40;
+
+            /* Background */
+            ctx.fillStyle = c.BG;
+            ctx.fillRect(0, 0, W, H);
+
+            /* Grid */
+            ctx.strokeStyle = c.GRID;
+            ctx.lineWidth = 1;
+            for (var x = pad; x < W - pad; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H - pad); ctx.stroke();
+            }
+            for (var y = pad; y < H - pad; y += 40) {
+                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+            }
+
+            if (points.length === 0) {
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '500 14px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Press "Run" to generate embedding', W / 2, H / 2);
+                return;
+            }
+
+            /* Find bounds */
+            var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (var i = 0; i < points.length; i++) {
+                if (points[i][0] < minX) minX = points[i][0];
+                if (points[i][0] > maxX) maxX = points[i][0];
+                if (points[i][1] < minY) minY = points[i][1];
+                if (points[i][1] > maxY) maxY = points[i][1];
+            }
+            var rangeX = maxX - minX || 1;
+            var rangeY = maxY - minY || 1;
+            var scale = Math.min((W - 2 * pad) / rangeX, (H - 2 * pad) / rangeY) * 0.9;
+            var cx = W / 2, cy = H / 2;
+            var midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
+
+            /* Draw points */
+            for (var i = 0; i < points.length; i++) {
+                var px = cx + (points[i][0] - midX) * scale;
+                var py = cy + (points[i][1] - midY) * scale;
+                var col = clusterPalette[labels[i] % clusterPalette.length];
+
+                ctx.beginPath();
+                ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = col;
+                ctx.globalAlpha = 0.8;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                ctx.strokeStyle = col;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            /* Title */
+            if (title) {
+                ctx.font = '600 12px Inter, sans-serif';
+                ctx.fillStyle = c.TEXT;
+                ctx.textAlign = 'left';
+                ctx.fillText(title, pad + 5, pad - 10);
+            }
+        }
+
+        /* ============================================
+           HERO CANVAS ANIMATION
+           ============================================ */
+        (function() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            var particles = [];
+            var nParticles = 80;
+            for (var i = 0; i < nParticles; i++) {
+                particles.push({
+                    x: rand(0, W), y: rand(0, H),
+                    vx: rand(-0.3, 0.3), vy: rand(-0.3, 0.3),
+                    r: rand(1.5, 3.5),
+                    cluster: Math.floor(rand(0, 4))
+                });
+            }
+
+            function animHero() {
+                var c = getColors();
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                /* Connections */
+                ctx.lineWidth = 0.5;
+                for (var i = 0; i < nParticles; i++) {
+                    for (var j = i + 1; j < nParticles; j++) {
+                        if (particles[i].cluster !== particles[j].cluster) continue;
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var d = Math.sqrt(dx*dx + dy*dy);
+                        if (d < 120) {
+                            ctx.strokeStyle = clusterPalette[particles[i].cluster % clusterPalette.length];
+                            ctx.globalAlpha = (1 - d / 120) * 0.2;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                /* Particles */
+                for (var i = 0; i < nParticles; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > W) p.vx *= -1;
+                    if (p.y < 0 || p.y > H) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = clusterPalette[p.cluster % clusterPalette.length];
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                requestAnimationFrame(animHero);
+            }
+            animHero();
+
+            window.addEventListener('resize', function() {
+                info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+            });
+        })();
+
+        /* ============================================
+           DEMO 1: t-SNE PERPLEXITY EXPLORER
+           ============================================ */
+        (function() {
+            var canvas = document.getElementById('canvas-tsne');
+            if (!canvas) return;
+
+            var perpSlider = document.getElementById('perp-slider');
+            var perpLabel  = document.getElementById('perp-value');
+            var iterSlider = document.getElementById('iter-slider');
+            var iterLabel  = document.getElementById('iter-value');
+            var btnRun     = document.getElementById('btn-run-tsne');
+            var btnRegen   = document.getElementById('btn-regen-data');
+            var statsEl    = document.getElementById('tsne-stats');
+
+            var nClusters = 5;
+            var pointsPerCluster = 30;
+            var dims = 10;
+            var dataset, tsneResult;
+
+            function regenData() {
+                dataset = generateClusters(nClusters, pointsPerCluster, dims);
+                tsneResult = [];
+                drawScatter(canvas, [], [], 't-SNE Embedding');
+                statsEl.innerHTML = 'Status: Data generated &nbsp;|&nbsp; Perplexity: ' +
+                    perpSlider.value + ' &nbsp;|&nbsp; Clusters: ' + nClusters +
+                    ' &nbsp;|&nbsp; Points: ' + dataset.data.length;
+            }
+
+            function runTSNE() {
+                var perp = parseInt(perpSlider.value);
+                var iters = parseInt(iterSlider.value);
+                statsEl.innerHTML = 'Status: Running t-SNE... &nbsp;|&nbsp; Perplexity: ' + perp +
+                    ' &nbsp;|&nbsp; Iterations: ' + iters;
+
+                /* Use setTimeout to allow UI update */
+                setTimeout(function() {
+                    tsneResult = simpleTSNE(dataset.data, perp, iters);
+                    drawScatter(canvas, tsneResult, dataset.labels, 't-SNE (perplexity=' + perp + ')');
+                    statsEl.innerHTML = 'Status: Complete &nbsp;|&nbsp; Perplexity: ' + perp +
+                        ' &nbsp;|&nbsp; Clusters: ' + nClusters +
+                        ' &nbsp;|&nbsp; Points: ' + dataset.data.length +
+                        ' &nbsp;|&nbsp; Iterations: ' + iters;
+                }, 30);
+            }
+
+            perpSlider.addEventListener('input', function() {
+                perpLabel.textContent = perpSlider.value;
+            });
+            iterSlider.addEventListener('input', function() {
+                iterLabel.textContent = iterSlider.value;
+            });
+            btnRun.addEventListener('click', runTSNE);
+            btnRegen.addEventListener('click', function() {
+                regenData();
+            });
+
+            /* Resize */
+            var resizeTimer1;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer1);
+                resizeTimer1 = setTimeout(function() {
+                    if (tsneResult && tsneResult.length > 0) {
+                        drawScatter(canvas, tsneResult, dataset.labels, 't-SNE (perplexity=' + perpSlider.value + ')');
+                    } else {
+                        drawScatter(canvas, [], [], 't-SNE Embedding');
+                    }
+                }, 200);
+            });
+
+            regenData();
+        })();
+
+        /* ============================================
+           DEMO 2: PCA vs t-SNE COMPARISON
+           ============================================ */
+        (function() {
+            var canvasPCA  = document.getElementById('canvas-pca-comp');
+            var canvasTSNE = document.getElementById('canvas-tsne-comp');
+            if (!canvasPCA || !canvasTSNE) return;
+
+            var clustersSlider = document.getElementById('comp-clusters-slider');
+            var clustersLabel  = document.getElementById('comp-clusters-value');
+            var dimsSlider     = document.getElementById('comp-dims-slider');
+            var dimsLabel      = document.getElementById('comp-dims-value');
+            var btnRun         = document.getElementById('btn-run-comparison');
+            var btnRegen       = document.getElementById('btn-regen-comp');
+            var statsEl        = document.getElementById('comparison-stats');
+
+            var dataset, pcaResult, tsneResult;
+
+            function regenData() {
+                var nC = parseInt(clustersSlider.value);
+                var nD = parseInt(dimsSlider.value);
+                var ppc = Math.max(15, Math.floor(120 / nC));
+                dataset = generateClusters(nC, ppc, nD);
+                pcaResult = [];
+                tsneResult = [];
+                drawScatter(canvasPCA, [], [], 'PCA Projection');
+                drawScatter(canvasTSNE, [], [], 't-SNE Embedding');
+                statsEl.innerHTML = 'Status: Data generated &nbsp;|&nbsp; Points: ' +
+                    dataset.data.length + ' &nbsp;|&nbsp; Original dims: ' + nD +
+                    ' &nbsp;|&nbsp; Clusters: ' + nC;
+            }
+
+            function runBoth() {
+                var nC = parseInt(clustersSlider.value);
+                var nD = parseInt(dimsSlider.value);
+                statsEl.innerHTML = 'Status: Computing PCA &amp; t-SNE...';
+
+                setTimeout(function() {
+                    /* PCA */
+                    pcaResult = simplePCA(dataset.data);
+                    drawScatter(canvasPCA, pcaResult, dataset.labels, 'PCA (first 2 components)');
+
+                    /* t-SNE */
+                    tsneResult = simpleTSNE(dataset.data, 30, 300);
+                    drawScatter(canvasTSNE, tsneResult, dataset.labels, 't-SNE (perplexity=30)');
+
+                    statsEl.innerHTML = 'Status: Complete &nbsp;|&nbsp; Points: ' +
+                        dataset.data.length + ' &nbsp;|&nbsp; Original dims: ' + nD +
+                        ' &nbsp;|&nbsp; Clusters: ' + nC;
+                }, 30);
+            }
+
+            clustersSlider.addEventListener('input', function() {
+                clustersLabel.textContent = clustersSlider.value;
+            });
+            dimsSlider.addEventListener('input', function() {
+                dimsLabel.textContent = dimsSlider.value;
+            });
+            btnRun.addEventListener('click', runBoth);
+            btnRegen.addEventListener('click', regenData);
+
+            /* Resize */
+            var resizeTimer2;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer2);
+                resizeTimer2 = setTimeout(function() {
+                    if (pcaResult && pcaResult.length > 0) {
+                        drawScatter(canvasPCA, pcaResult, dataset.labels, 'PCA (first 2 components)');
+                    } else {
+                        drawScatter(canvasPCA, [], [], 'PCA Projection');
+                    }
+                    if (tsneResult && tsneResult.length > 0) {
+                        drawScatter(canvasTSNE, tsneResult, dataset.labels, 't-SNE (perplexity=30)');
+                    } else {
+                        drawScatter(canvasTSNE, [], [], 't-SNE Embedding');
+                    }
+                }, 200);
+            });
+
+            regenData();
+        })();
+
+        /* ============================================
+           QUIZ HANDLER
+           ============================================ */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var options = block.querySelectorAll('.quiz-option');
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+
+            /* Disable all options */
+            for (var i = 0; i < options.length; i++) {
+                options[i].disabled = true;
+                options[i].style.pointerEvents = 'none';
+                if (options[i].getAttribute('data-correct') === 'true') {
+                    options[i].style.borderColor = 'var(--accent-success)';
+                    options[i].style.background = 'rgba(34,197,94,0.1)';
+                }
+            }
+
+            if (!isCorrect) {
+                btn.style.borderColor = 'var(--accent-danger)';
+                btn.style.background = 'rgba(239,68,68,0.1)';
+            }
+
+            var correctFb = document.getElementById(quizId + '-correct');
+            var wrongFb   = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctFb) correctFb.style.display = 'block';
+            if (!isCorrect && wrongFb)  wrongFb.style.display = 'block';
+        };
+
+    })();
+    </script>
+
+</body>
+</html>

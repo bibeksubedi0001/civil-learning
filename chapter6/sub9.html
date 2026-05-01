@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.9 Hardware &amp; Frameworks | Civil Engineer's Guide to AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &times; AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html" class="nav-link">Home</a></li>
+      <li><a href="index.html" class="nav-link">Chapter 6</a></li>
+      <li><a href="sub8.html" class="nav-link">Prev</a></li>
+      <li><a href="sub10.html" class="nav-link">Next</a></li>
+    </ul>
+    <button class="theme-toggle" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- ============================================================= -->
+<!-- HERO                                                          -->
+<!-- ============================================================= -->
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-microchip"></i>
+      <span>Sub-chapter 6.9</span>
+    </div>
+    <h1 class="chapter-hero__title">Hardware &amp; Frameworks</h1>
+    <p class="chapter-hero__subtitle">
+      The silicon and software that turn equations into intelligence &mdash;
+      from a single CPU thread to a rack of TPUs orchestrating a trillion-parameter model.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-solid fa-clock"></i> 22 min read</span>
+      <span><i class="fa-solid fa-layer-group"></i> Beginner &mdash; Intermediate</span>
+      <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+      <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+  <!-- ========================================================= -->
+  <!-- 1. INTRO                                                  -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-bolt"></i>
+        Why Hardware Suddenly Matters
+      </h2>
+
+      <p class="section-lead">
+        For decades, civil engineers got along with a single workstation, a copy of
+        STAAD or ETABS, and a printer. Modern AI broke that model. Training a
+        deep network is not a few thousand FLOPs &mdash; it is
+        <em>quintillions</em>. The reason AI feels &ldquo;new&rdquo; isn&rsquo;t a
+        single mathematical breakthrough; it is the collision of three trends:
+        bigger datasets, deeper architectures, and the rise of massively
+        parallel silicon. This chapter is your tour of that silicon and the
+        software stack that drives it.
+      </p>
+
+      <div class="info-card">
+        <div class="info-card__icon">
+          <i class="fa-solid fa-lightbulb"></i>
+        </div>
+        <div class="info-card__body">
+          <h3>One sentence summary</h3>
+          <p>
+            Neural networks are mostly matrix multiplications, and matrix
+            multiplications are <strong>embarrassingly parallel</strong>
+            &mdash; that is exactly what GPUs, TPUs, and NPUs were designed to
+            do faster than any CPU ever could.
+          </p>
+        </div>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__header">
+          <i class="fa-solid fa-helmet-safety"></i>
+          <h3>CE Analogy &mdash; Choosing Construction Equipment</h3>
+        </div>
+        <div class="analogy-block__body">
+          <p>
+            Picking a processor for an AI job is exactly like picking heavy
+            equipment for a job site. None of these are &ldquo;better&rdquo;
+            in the abstract &mdash; they are tuned for a specific kind of
+            work:
+          </p>
+          <ul class="analogy-list">
+            <li>
+              <strong>CPU</strong> &mdash; a versatile <em>excavator</em>.
+              It can dig, lift, demolish, and pivot. Slow at any single
+              repetitive task, but unmatched at varied work and decision
+              making (data prep, control flow, OS calls).
+            </li>
+            <li>
+              <strong>GPU</strong> &mdash; a fleet of 5,000 <em>dump
+              trucks</em> rolling in lock-step. Useless if your job has
+              one truckload of dirt; devastatingly fast if you have a million.
+            </li>
+            <li>
+              <strong>TPU</strong> &mdash; a custom <em>tunnel-boring
+              machine</em>. It does one thing &mdash; tensor multiplication
+              &mdash; better than anything else, but it cannot back out and
+              dig a foundation.
+            </li>
+            <li>
+              <strong>NPU</strong> &mdash; a battery-powered
+              <em>jackhammer</em>. Tiny, low-power, fits in your pocket
+              (literally &mdash; it is in your phone). Perfect for
+              on-device inference.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 2. CPU vs GPU vs TPU vs NPU                                -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-microchip"></i>
+        The Silicon Family Tree
+      </h2>
+
+      <p>
+        Modern AI workloads run on four broad classes of processors. Each
+        evolved for a different bottleneck.
+      </p>
+
+      <div class="card-grid card-grid--4">
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon">
+            <i class="fa-solid fa-computer"></i>
+          </div>
+          <div class="info-card__body">
+            <h3>CPU</h3>
+            <p class="info-card__tag">Central Processing Unit</p>
+            <ul class="bullet-list">
+              <li>8&ndash;32 powerful cores</li>
+              <li>Large multi-MB caches</li>
+              <li>Branch prediction, OOO execution</li>
+              <li>Best for: data prep, I/O, control logic, tiny models</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon">
+            <i class="fa-solid fa-server"></i>
+          </div>
+          <div class="info-card__body">
+            <h3>GPU</h3>
+            <p class="info-card__tag">Graphics Processing Unit</p>
+            <ul class="bullet-list">
+              <li>5,000&ndash;18,000 CUDA cores</li>
+              <li>Massive SIMD parallelism</li>
+              <li>HBM / GDDR memory, &gt;1 TB/s</li>
+              <li>Best for: training and inference of NNs</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon">
+            <i class="fa-solid fa-cube"></i>
+          </div>
+          <div class="info-card__body">
+            <h3>TPU</h3>
+            <p class="info-card__tag">Tensor Processing Unit</p>
+            <ul class="bullet-list">
+              <li>Custom matrix-multiply ASIC (Google)</li>
+              <li>Systolic arrays of MAC units</li>
+              <li>Huge HBM bandwidth, BF16 native</li>
+              <li>Best for: large-scale training on GCP</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon">
+            <i class="fa-solid fa-mobile-screen"></i>
+          </div>
+          <div class="info-card__body">
+            <h3>NPU</h3>
+            <p class="info-card__tag">Neural Processing Unit</p>
+            <ul class="bullet-list">
+              <li>Apple Neural Engine, Qualcomm Hexagon</li>
+              <li>Quantized INT8 inference</li>
+              <li>Watts, not kilowatts</li>
+              <li>Best for: on-device inference (phones, IoT)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <strong>Rule of thumb.</strong> If your job is mostly matmul on
+          tensors that fit in VRAM, the GPU wins. If it is mostly Python
+          loops, the CPU wins. If you have access to a Google Cloud TPU pod,
+          a TPU wins for training. If your model needs to run inside a
+          phone, an NPU wins.
+        </div>
+      </div>
+
+      <h3 class="subsection-title">
+        <i class="fa-solid fa-table"></i> Quick comparison
+      </h3>
+
+      <div class="table-wrap">
+        <table class="ch-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>CPU</th>
+              <th>GPU</th>
+              <th>TPU v4</th>
+              <th>NPU (mobile)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cores / units</td>
+              <td>8&ndash;64</td>
+              <td>5,000&ndash;18,000</td>
+              <td>~32k MACs</td>
+              <td>~16 cores</td>
+            </tr>
+            <tr>
+              <td>Peak FP16 TFLOPs</td>
+              <td>1&ndash;5</td>
+              <td>100&ndash;1000+</td>
+              <td>275</td>
+              <td>5&ndash;30</td>
+            </tr>
+            <tr>
+              <td>Memory bandwidth</td>
+              <td>50&ndash;100 GB/s</td>
+              <td>500&ndash;3000 GB/s</td>
+              <td>1.2 TB/s</td>
+              <td>20&ndash;100 GB/s</td>
+            </tr>
+            <tr>
+              <td>Power draw</td>
+              <td>65&ndash;250 W</td>
+              <td>200&ndash;700 W</td>
+              <td>200 W (chip)</td>
+              <td>1&ndash;5 W</td>
+            </tr>
+            <tr>
+              <td>Strength</td>
+              <td>Flexibility</td>
+              <td>Throughput</td>
+              <td>Matmul density</td>
+              <td>Energy efficiency</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 3. DEMO 1 - CPU vs GPU race                                -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-flag-checkered"></i>
+        Demo 1 &mdash; CPU vs GPU Matrix Race
+      </h2>
+
+      <p>
+        A neural network forward pass is essentially many matrix
+        multiplications. Below, two simulated processors race on the same
+        $N \times N$ matmul. The CPU is a <em>single worker</em> walking
+        cell-by-cell. The GPU is a <em>grid of 64 workers</em> each
+        computing a tile in parallel. Watch how the GPU&rsquo;s lead grows
+        as $N$ increases &mdash; that compounding advantage is exactly
+        why all of modern AI runs on GPUs.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__header">
+          <h3><i class="fa-solid fa-gauge-high"></i> Matrix multiplication race</h3>
+          <div class="demo-panel__controls">
+            <label>
+              Matrix size:
+              <select id="race-size">
+                <option value="32">32 &times; 32</option>
+                <option value="64">64 &times; 64</option>
+                <option value="128" selected>128 &times; 128</option>
+                <option value="256">256 &times; 256</option>
+                <option value="512">512 &times; 512</option>
+              </select>
+            </label>
+            <label>
+              GPU workers:
+              <select id="race-workers">
+                <option value="16">16</option>
+                <option value="64" selected>64</option>
+                <option value="256">256</option>
+              </select>
+            </label>
+            <button class="btn btn--primary" id="race-start">
+              <i class="fa-solid fa-play"></i> Start race
+            </button>
+            <button class="btn btn--ghost" id="race-reset">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <div class="demo-panel__body race-grid">
+          <div class="race-lane">
+            <div class="race-lane__title">
+              <i class="fa-solid fa-computer"></i>
+              <span>CPU &mdash; 1 worker</span>
+              <span class="race-timer" id="cpu-timer">0.000 s</span>
+            </div>
+            <canvas id="race-cpu"></canvas>
+            <div class="race-meta">
+              <span id="cpu-progress">0%</span>
+              <span id="cpu-ops">0 ops/sec</span>
+            </div>
+          </div>
+
+          <div class="race-lane">
+            <div class="race-lane__title">
+              <i class="fa-solid fa-server"></i>
+              <span>GPU &mdash; <span id="gpu-count">64</span> workers</span>
+              <span class="race-timer" id="gpu-timer">0.000 s</span>
+            </div>
+            <canvas id="race-gpu"></canvas>
+            <div class="race-meta">
+              <span id="gpu-progress">0%</span>
+              <span id="gpu-ops">0 ops/sec</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-panel__footer">
+          <h4><i class="fa-solid fa-chart-bar"></i> Throughput (ops/sec)</h4>
+          <canvas id="race-bars" class="race-bars"></canvas>
+        </div>
+      </div>
+
+      <div class="tip-box tip-box--warn">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Why the gap widens with $N$.</strong> CPU work scales
+          like $N^3$ on one core. GPU work also scales like $N^3$, but
+          divided across thousands of cores. As $N$ doubles, the CPU does
+          $8\times$ more work; the GPU still finishes in roughly the
+          same wall-clock time until you exhaust its parallelism.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 4. VRAM and the memory bottleneck                          -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-memory"></i>
+        VRAM &mdash; the Real Bottleneck
+      </h2>
+
+      <p>
+        Beginners assume the limit on training big models is FLOPs.
+        It is not. The limit is <strong>memory</strong>. A model has to
+        fit in VRAM together with its activations, optimizer states, and
+        gradients.
+      </p>
+
+      <div class="info-card">
+        <div class="info-card__icon">
+          <i class="fa-solid fa-calculator"></i>
+        </div>
+        <div class="info-card__body">
+          <h3>The math of fitting a 70B model</h3>
+          <p>
+            With a 70B-parameter model in FP32 you need:
+          </p>
+          <ul class="bullet-list">
+            <li>Weights: $70 \times 10^9 \times 4 = 280$ GB</li>
+            <li>Adam optimizer states: another $\sim 560$ GB</li>
+            <li>Activations &amp; gradients: another $\sim 200$ GB</li>
+          </ul>
+          <p>
+            That is over <strong>1 TB</strong> of fast memory.
+            A consumer RTX 4090 has 24 GB. This is why training
+            frontier models requires data-center GPUs (H100, 80 GB) and
+            <em>many</em> of them, with mixed precision and sharding
+            tricks just to make the math close.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">
+        <i class="fa-solid fa-compress"></i> Mixed precision &mdash; the free 2&times;
+      </h3>
+
+      <p>
+        Storing weights as 16-bit floats instead of 32-bit halves memory
+        and roughly doubles throughput on modern tensor cores, with
+        <em>no measurable loss</em> in final accuracy on most networks.
+        BF16 (Brain Float 16) preserves the FP32 exponent range, which
+        avoids the gradient-underflow issues older FP16 training had.
+        In 2026 it is essentially the default.
+      </p>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span><i class="fa-brands fa-python"></i> mixed_precision.py</span>
+          <span class="code-peek__lang">PyTorch</span>
+        </div>
+<pre><code>from torch.cuda.amp import autocast, GradScaler
+
+scaler = GradScaler()
+for x, y in loader:
+    optimizer.zero_grad()
+    with autocast(dtype=torch.bfloat16):
+        out = model(x)
+        loss = criterion(out, y)
+    scaler.scale(loss).backward()
+    scaler.step(optimizer)
+    scaler.update()</code></pre>
+      </div>
+
+      <h3 class="subsection-title">
+        <i class="fa-solid fa-cube"></i> Tensor cores
+      </h3>
+      <p>
+        From Volta (2017) onward, NVIDIA GPUs ship dedicated
+        <strong>tensor cores</strong> that compute a $4 \times 4$ matrix
+        multiply-accumulate in one cycle at FP16/BF16. This is where the
+        100&times; speedups in CNN/Transformer training come from. AMD
+        and Intel have followed with similar units (Matrix Cores, XMX).
+      </p>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 5. Distributed training                                     -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-network-wired"></i>
+        Distributed Training Strategies
+      </h2>
+
+      <p>
+        Once a single GPU is saturated, you scale across many. There are
+        four canonical strategies; large models combine them.
+      </p>
+
+      <div class="card-grid card-grid--2">
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-clone"></i></div>
+          <div class="info-card__body">
+            <h3>Data parallel</h3>
+            <p>
+              Replicate the whole model on every GPU. Each gets a different
+              mini-batch. Gradients are averaged via <em>all-reduce</em>.
+              Simplest, best for small-to-medium models.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-cubes"></i></div>
+          <div class="info-card__body">
+            <h3>Model parallel</h3>
+            <p>
+              Split the model itself across GPUs (e.g., layer 1&ndash;10
+              on GPU 0, 11&ndash;20 on GPU 1). Required when no single GPU
+              can hold the model.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-arrows-down-to-line"></i></div>
+          <div class="info-card__body">
+            <h3>Pipeline parallel</h3>
+            <p>
+              Like an assembly line: GPU 0 processes batch 1 layer 1
+              while GPU 1 processes batch 0 layer 2. Reduces idle bubbles.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-shapes"></i></div>
+          <div class="info-card__body">
+            <h3>ZeRO sharding</h3>
+            <p>
+              DeepSpeed&rsquo;s trick: shard <em>optimizer states,
+              gradients, and parameters</em> across GPUs so each holds
+              only $1/N$ of the model. Enables 1T-parameter training on
+              modest clusters.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__header">
+          <i class="fa-solid fa-helmet-safety"></i>
+          <h3>CE Analogy &mdash; A skyscraper construction crew</h3>
+        </div>
+        <div class="analogy-block__body">
+          <p>
+            <strong>Data parallel</strong> is 10 identical crews each
+            building a clone of the same building, then comparing notes.
+            <strong>Model parallel</strong> is one crew per floor of one
+            tall building. <strong>Pipeline parallel</strong> is a crew
+            per trade (electrical, plumbing, drywall) cycling through
+            floors. <strong>ZeRO</strong> is when the toolbox itself is
+            split &mdash; nobody owns all the wrenches; they pass them
+            around as needed.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 6. Frameworks                                               -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-code"></i>
+        The Framework Landscape
+      </h2>
+
+      <p>
+        Hardware needs software. Three frameworks dominate research and
+        production in 2026, surrounded by a constellation of high-level
+        wrappers.
+      </p>
+
+      <div class="card-grid card-grid--3">
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon"><i class="fa-solid fa-fire"></i></div>
+          <div class="info-card__body">
+            <h3>PyTorch</h3>
+            <p class="info-card__tag">Meta &middot; dominant in research</p>
+            <ul class="bullet-list">
+              <li>Dynamic (eager) graphs &mdash; debug like Python</li>
+              <li>Pythonic, intuitive API</li>
+              <li><code>torch.compile</code> for graph capture</li>
+              <li>Strong production story since 2.0</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon"><i class="fa-solid fa-brain"></i></div>
+          <div class="info-card__body">
+            <h3>TensorFlow / Keras</h3>
+            <p class="info-card__tag">Google &middot; production king</p>
+            <ul class="bullet-list">
+              <li>Keras high-level API (now multi-backend)</li>
+              <li>TF Serving, TFLite, TF.js for deployment</li>
+              <li>Strong on TPUs and mobile</li>
+              <li>TF2 added eager mode</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card info-card--accent">
+          <div class="info-card__icon"><i class="fa-solid fa-rocket"></i></div>
+          <div class="info-card__body">
+            <h3>JAX</h3>
+            <p class="info-card__tag">Google Research &middot; rising fast</p>
+            <ul class="bullet-list">
+              <li>Functional, NumPy-like</li>
+              <li><code>jit</code>, <code>grad</code>, <code>vmap</code>, <code>pmap</code></li>
+              <li>Best-in-class TPU support</li>
+              <li>Used by DeepMind, many LLM labs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">
+        <i class="fa-solid fa-layer-group"></i> Higher-level wrappers
+      </h3>
+
+      <div class="card-grid card-grid--3">
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-bolt-lightning"></i></div>
+          <div class="info-card__body">
+            <h3>PyTorch Lightning</h3>
+            <p>Removes the training loop boilerplate. Multi-GPU with one flag.</p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-face-smile"></i></div>
+          <div class="info-card__body">
+            <h3>HuggingFace Transformers</h3>
+            <p>Pretrained models for NLP, vision, audio. Two-line inference.</p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-image"></i></div>
+          <div class="info-card__body">
+            <h3>Diffusers</h3>
+            <p>Stable Diffusion and friends &mdash; a unified API for diffusion models.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 7. DEMO 2 - Framework Code Compare                          -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-code-compare"></i>
+        Demo 2 &mdash; Same MLP, Three Frameworks
+      </h2>
+
+      <p>
+        Below is the <em>same</em> task &mdash; define a 3-layer MLP and
+        train one epoch &mdash; in PyTorch, TensorFlow/Keras, and JAX.
+        Use the toggle to highlight equivalent operations across all
+        three. The shapes of the syntax differ; the underlying math is
+        identical.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__header">
+          <h3><i class="fa-solid fa-code"></i> Framework code compare</h3>
+          <div class="demo-panel__controls">
+            <div class="tab-group" id="fw-tabs" role="tablist">
+              <button class="tab tab--active" data-tab="pytorch" role="tab">
+                <i class="fa-solid fa-fire"></i> PyTorch
+              </button>
+              <button class="tab" data-tab="tf" role="tab">
+                <i class="fa-solid fa-brain"></i> TensorFlow
+              </button>
+              <button class="tab" data-tab="jax" role="tab">
+                <i class="fa-solid fa-rocket"></i> JAX
+              </button>
+            </div>
+            <label class="inline-toggle">
+              Highlight:
+              <select id="fw-highlight">
+                <option value="none">None</option>
+                <option value="model">Model definition</option>
+                <option value="loss">Loss</option>
+                <option value="optim">Optimizer</option>
+                <option value="step">Training step</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="demo-panel__body">
+          <!-- PyTorch -->
+          <div class="fw-pane fw-pane--active" data-pane="pytorch">
+            <div class="code-peek">
+              <div class="code-peek__header">
+                <span><i class="fa-brands fa-python"></i> pytorch_mlp.py</span>
+                <span class="code-peek__lang">PyTorch 2.x</span>
+              </div>
+<pre><code id="code-pytorch">import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+
+# <span class="hl hl-model">--- model ---</span>
+<span class="hl hl-model">class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(784, 128), nn.ReLU(),
+            nn.Linear(128, 64),  nn.ReLU(),
+            nn.Linear(64, 10)
+        )
+    def forward(self, x):
+        return self.net(x)
+model = MLP().cuda()</span>
+
+# <span class="hl hl-loss">--- loss ---</span>
+<span class="hl hl-loss">criterion = nn.CrossEntropyLoss()</span>
+
+# <span class="hl hl-optim">--- optimizer ---</span>
+<span class="hl hl-optim">optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)</span>
+
+loader = DataLoader(TensorDataset(X, y), batch_size=64, shuffle=True)
+
+# <span class="hl hl-step">--- training step ---</span>
+<span class="hl hl-step">for xb, yb in loader:
+    xb, yb = xb.cuda(), yb.cuda()
+    optimizer.zero_grad()
+    out  = model(xb)
+    loss = criterion(out, yb)
+    loss.backward()
+    optimizer.step()</span></code></pre>
+            </div>
+          </div>
+
+          <!-- TensorFlow -->
+          <div class="fw-pane" data-pane="tf">
+            <div class="code-peek">
+              <div class="code-peek__header">
+                <span><i class="fa-solid fa-brain"></i> tf_mlp.py</span>
+                <span class="code-peek__lang">TensorFlow 2 / Keras</span>
+              </div>
+<pre><code id="code-tf">import tensorflow as tf
+from tensorflow import keras
+
+# <span class="hl hl-model">--- model ---</span>
+<span class="hl hl-model">model = keras.Sequential([
+    keras.layers.Dense(128, activation='relu', input_shape=(784,)),
+    keras.layers.Dense(64,  activation='relu'),
+    keras.layers.Dense(10)
+])</span>
+
+# <span class="hl hl-loss">--- loss ---</span>
+<span class="hl hl-loss">loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)</span>
+
+# <span class="hl hl-optim">--- optimizer ---</span>
+<span class="hl hl-optim">optimizer = keras.optimizers.Adam(learning_rate=1e-3)</span>
+
+model.compile(optimizer=optimizer, loss=loss_fn, metrics=['accuracy'])
+
+# <span class="hl hl-step">--- training step ---</span>
+<span class="hl hl-step">model.fit(X, y, batch_size=64, epochs=1)</span>
+
+# Or, written as an explicit step:
+# with tf.GradientTape() as tape:
+#     out  = model(xb, training=True)
+#     loss = loss_fn(yb, out)
+# grads = tape.gradient(loss, model.trainable_variables)
+# optimizer.apply_gradients(zip(grads, model.trainable_variables))</code></pre>
+            </div>
+          </div>
+
+          <!-- JAX -->
+          <div class="fw-pane" data-pane="jax">
+            <div class="code-peek">
+              <div class="code-peek__header">
+                <span><i class="fa-solid fa-rocket"></i> jax_mlp.py</span>
+                <span class="code-peek__lang">JAX + Flax + Optax</span>
+              </div>
+<pre><code id="code-jax">import jax, jax.numpy as jnp
+import flax.linen as nn
+import optax
+
+# <span class="hl hl-model">--- model ---</span>
+<span class="hl hl-model">class MLP(nn.Module):
+    @nn.compact
+    def __call__(self, x):
+        x = nn.relu(nn.Dense(128)(x))
+        x = nn.relu(nn.Dense(64)(x))
+        return nn.Dense(10)(x)
+
+model  = MLP()
+params = model.init(jax.random.PRNGKey(0), jnp.ones([1,784]))</span>
+
+# <span class="hl hl-loss">--- loss ---</span>
+<span class="hl hl-loss">def loss_fn(params, xb, yb):
+    logits = model.apply(params, xb)
+    return optax.softmax_cross_entropy_with_integer_labels(logits, yb).mean()</span>
+
+# <span class="hl hl-optim">--- optimizer ---</span>
+<span class="hl hl-optim">tx       = optax.adam(1e-3)
+opt_state = tx.init(params)</span>
+
+# <span class="hl hl-step">--- training step ---</span>
+<span class="hl hl-step">@jax.jit
+def step(params, opt_state, xb, yb):
+    grads = jax.grad(loss_fn)(params, xb, yb)
+    updates, opt_state = tx.update(grads, opt_state)
+    params = optax.apply_updates(params, updates)
+    return params, opt_state
+
+for xb, yb in batches:
+    params, opt_state = step(params, opt_state, xb, yb)</span></code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-panel__footer">
+          <div class="legend">
+            <span><i class="fa-solid fa-circle" style="color:#60a5fa"></i> model</span>
+            <span><i class="fa-solid fa-circle" style="color:#f59e0b"></i> loss</span>
+            <span><i class="fa-solid fa-circle" style="color:#34d399"></i> optimizer</span>
+            <span><i class="fa-solid fa-circle" style="color:#f472b6"></i> training step</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <strong>Same math, different ergonomics.</strong> PyTorch lets you
+          step through training imperatively. Keras hides the loop entirely.
+          JAX makes you write a pure function and then JIT-compiles the whole
+          thing for the accelerator. Pick based on team taste, not capability.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 8. ONNX & deployment                                        -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-share-nodes"></i>
+        ONNX &amp; Edge Deployment
+      </h2>
+
+      <p>
+        Training is one thing; <em>shipping</em> the model is another.
+        You rarely deploy raw PyTorch into a phone or a microcontroller.
+        Instead you convert it to a portable runtime.
+      </p>
+
+      <div class="card-grid card-grid--2">
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-shuffle"></i></div>
+          <div class="info-card__body">
+            <h3>ONNX</h3>
+            <p>
+              <strong>Open Neural Network eXchange.</strong> A vendor-neutral
+              graph format. Train in PyTorch, export <code>model.onnx</code>,
+              run it with ONNX Runtime on Windows, Linux, mobile, browser,
+              or even NVIDIA TensorRT.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+          <div class="info-card__body">
+            <h3>TFLite</h3>
+            <p>
+              TensorFlow&rsquo;s mobile/embedded runtime. Quantizes models to
+              INT8 for $\sim 4\times$ size reduction. Powers most Android
+              ML features.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-brands fa-apple"></i></div>
+          <div class="info-card__body">
+            <h3>CoreML</h3>
+            <p>
+              Apple&rsquo;s on-device format. Targets the Neural Engine
+              directly. Used by every &ldquo;magic&rdquo; feature in iOS.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-bolt"></i></div>
+          <div class="info-card__body">
+            <h3>TensorRT</h3>
+            <p>
+              NVIDIA&rsquo;s inference compiler. Fuses ops, picks kernels,
+              quantizes &mdash; routinely 2&ndash;5&times; faster than
+              vanilla PyTorch on the same GPU.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 9. Cost reality check                                       -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-sack-dollar"></i>
+        Cost Reality Check
+      </h2>
+
+      <p>
+        The headlines about AI training costs are real, but they describe
+        a tiny slice of the work that gets done.
+      </p>
+
+      <div class="card-grid card-grid--2">
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-building-columns"></i></div>
+          <div class="info-card__body">
+            <h3>Frontier scale</h3>
+            <ul class="bullet-list">
+              <li>GPT-3 training: ~$5M of GPU-hours</li>
+              <li>GPT-4 class: estimated $50&ndash;100M+</li>
+              <li>Multi-thousand H100 clusters, weeks of training</li>
+            </ul>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-house-laptop"></i></div>
+          <div class="info-card__body">
+            <h3>What you actually need</h3>
+            <ul class="bullet-list">
+              <li>One $1,000 RTX 4070/4080 trains 99% of CE-relevant models</li>
+              <li>Free: Google Colab, Kaggle, Lightning AI Studios</li>
+              <li>$1&ndash;3/hour: rented A100/H100 on Lambda, RunPod, Vast.ai</li>
+              <li>Fine-tuning a 7B LLM on a single 24 GB card is routine</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box tip-box--success">
+        <i class="fa-solid fa-circle-check"></i>
+        <div>
+          <strong>Practical path for a civil engineer.</strong> Start on
+          Colab. Move to a $1,500 desktop with an RTX 4080 once your
+          datasets exceed 10 GB or your training runs exceed 30 minutes.
+          That covers concrete-strength models, structural anomaly
+          detectors, and even modest computer-vision pipelines.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 10. QUIZ                                                    -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-circle-question"></i>
+        Quick Quiz
+      </h2>
+
+      <div class="quiz-block" data-correct="b">
+        <h3 class="quiz-block__q">1. Why are GPUs faster than CPUs for training neural networks?</h3>
+        <ul class="quiz-block__opts">
+          <li data-key="a">Because GPU cores run at higher clock speeds.</li>
+          <li data-key="b">Because thousands of GPU cores can perform the parallel matrix multiplies in a layer simultaneously.</li>
+          <li data-key="c">Because GPUs have more cache than CPUs.</li>
+          <li data-key="d">Because GPUs use less memory than CPUs.</li>
+        </ul>
+        <div class="quiz-block__explain">
+          GPU cores are individually <em>slower</em> than CPU cores. Their
+          win is sheer count: SIMD parallelism over thousands of cores
+          maps perfectly to the matmul-heavy structure of NNs.
+        </div>
+      </div>
+
+      <div class="quiz-block" data-correct="c">
+        <h3 class="quiz-block__q">2. Mixed-precision training (BF16) gives you...</h3>
+        <ul class="quiz-block__opts">
+          <li data-key="a">Better generalization but slower training.</li>
+          <li data-key="b">Higher accuracy at the cost of memory.</li>
+          <li data-key="c">Roughly 2&times; speedup and half the memory, with negligible accuracy loss.</li>
+          <li data-key="d">A purely cosmetic change.</li>
+        </ul>
+        <div class="quiz-block__explain">
+          BF16 keeps FP32&rsquo;s exponent range (avoiding underflow) while
+          using half the bytes. Tensor cores handle BF16 natively at full
+          throughput, so you essentially get a free 2&times;.
+        </div>
+      </div>
+
+      <div class="quiz-block" data-correct="d">
+        <h3 class="quiz-block__q">3. ZeRO sharding helps when...</h3>
+        <ul class="quiz-block__opts">
+          <li data-key="a">Your model is small enough to fit on one GPU.</li>
+          <li data-key="b">You want to run inference on a phone.</li>
+          <li data-key="c">You only have CPUs.</li>
+          <li data-key="d">The model + optimizer states are too large to fit on a single GPU and you need to spread them across many.</li>
+        </ul>
+        <div class="quiz-block__explain">
+          ZeRO partitions optimizer states, gradients, and parameters
+          across GPUs so each holds only $1/N$, enabling training of
+          models that no single device could hold.
+        </div>
+      </div>
+
+      <div class="quiz-block" data-correct="b">
+        <h3 class="quiz-block__q">4. Which framework is most associated with TPUs and functional programming with <code>vmap</code> / <code>pmap</code>?</h3>
+        <ul class="quiz-block__opts">
+          <li data-key="a">PyTorch</li>
+          <li data-key="b">JAX</li>
+          <li data-key="c">scikit-learn</li>
+          <li data-key="d">XGBoost</li>
+        </ul>
+        <div class="quiz-block__explain">
+          JAX is built around pure functions and transforms
+          (<code>jit</code>, <code>grad</code>, <code>vmap</code>,
+          <code>pmap</code>), and has first-class TPU support via XLA.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 11. KEY TAKEAWAYS                                           -->
+  <!-- ========================================================= -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-key"></i>
+        Key Takeaways
+      </h2>
+
+      <div class="card-grid card-grid--2">
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-microchip"></i></div>
+          <div class="info-card__body">
+            <h3>Match silicon to job</h3>
+            <p>
+              CPU = control. GPU = throughput. TPU = matmul density.
+              NPU = on-device efficiency.
+            </p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-memory"></i></div>
+          <div class="info-card__body">
+            <h3>Memory is the real wall</h3>
+            <p>
+              Mixed precision and sharding exist because VRAM &mdash; not
+              FLOPs &mdash; is the limit at scale.
+            </p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-code"></i></div>
+          <div class="info-card__body">
+            <h3>Frameworks converge</h3>
+            <p>
+              PyTorch, TF/Keras, and JAX are now within shouting distance
+              on features. Pick by team familiarity and deployment target.
+            </p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__icon"><i class="fa-solid fa-house-laptop"></i></div>
+          <div class="info-card__body">
+            <h3>You don&rsquo;t need a datacenter</h3>
+            <p>
+              A modern consumer GPU plus a free Colab account is enough
+              to do real, useful AI work in civil engineering.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- 12. NAV FOOTER                                              -->
+  <!-- ========================================================= -->
+  <nav class="chapter-nav-footer">
+    <a href="sub8.html" class="chapter-nav__link prev">
+      <i class="fa-solid fa-arrow-left"></i>
+      <div>
+        <span class="chapter-nav__label">Previous</span>
+        <span class="chapter-nav__title">6.8 Regularization &amp; Generalization</span>
+      </div>
+    </a>
+    <a href="sub10.html" class="chapter-nav__link next">
+      <div>
+        <span class="chapter-nav__label">Next</span>
+        <span class="chapter-nav__title">6.10 Concrete Strength Case Study</span>
+      </div>
+      <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-col">
+      <h4><i class="fa-solid fa-helmet-safety"></i> CE &times; AI</h4>
+      <p>A Civil Engineer&rsquo;s Guide to Artificial Intelligence.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Chapter 6</h4>
+      <ul>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="sub8.html">6.8 Regularization</a></li>
+        <li><a href="sub9.html">6.9 Hardware &amp; Frameworks</a></li>
+        <li><a href="sub10.html">6.10 Concrete Case Study</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="https://pytorch.org" target="_blank" rel="noopener">PyTorch</a></li>
+        <li><a href="https://www.tensorflow.org" target="_blank" rel="noopener">TensorFlow</a></li>
+        <li><a href="https://jax.readthedocs.io" target="_blank" rel="noopener">JAX</a></li>
+        <li><a href="https://onnx.ai" target="_blank" rel="noopener">ONNX</a></li>
+      </ul>
+    </div>
+    <div class="footer-col footer-col--meta">
+      <p>&copy; 2026 CE &times; AI Project.</p>
+      <p>Built with Inter, JetBrains Mono, and Font Awesome.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+
+<!-- ============================================================= -->
+<!-- INLINE CANVAS / DEMO LOGIC                                    -->
+<!-- ============================================================= -->
+<script>
+(function () {
+  'use strict';
+
+  // ---------- DPI-aware canvas helper ----------
+  function initCanvas(c) {
+    const dpr = window.devicePixelRatio || 1;
+    const r = c.getBoundingClientRect();
+    c.width = r.width * dpr;
+    c.height = r.height * dpr;
+    const ctx = c.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: r.width, h: r.height, dpr };
+  }
+
+  // =========================================================
+  // HERO CANVAS - GPU silicon die with glowing cores
+  // =========================================================
+  (function heroCanvas() {
+    const canvas = document.getElementById('hero-canvas');
+    if (!canvas) return;
+    let { ctx, w, h } = initCanvas(canvas);
+
+    // Build a grid of cores
+    const cols = 48, rows = 24;
+    const cores = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        cores.push({
+          x: c, y: r,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.4 + Math.random() * 1.2
+        });
+      }
+    }
+
+    function resize() {
+      const i = initCanvas(canvas);
+      ctx = i.ctx; w = i.w; h = i.h;
+    }
+    window.addEventListener('resize', resize);
+
+    let t0 = performance.now();
+    function frame(now) {
+      const t = (now - t0) / 1000;
+      ctx.clearRect(0, 0, w, h);
+
+      // Background gradient - silicon wafer feel
+      const bg = ctx.createRadialGradient(w/2, h/2, 50, w/2, h/2, Math.max(w,h)/1.2);
+      bg.addColorStop(0, 'rgba(20, 30, 55, 0.95)');
+      bg.addColorStop(1, 'rgba(5, 8, 18, 1)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+
+      // Die outline
+      const padX = w * 0.08, padY = h * 0.18;
+      const dieW = w - padX * 2, dieH = h - padY * 2;
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(padX, padY, dieW, dieH);
+
+      // Inner traces
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.08)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 6; i++) {
+        const y = padY + (dieH * i) / 6;
+        ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(padX + dieW, y); ctx.stroke();
+      }
+      for (let i = 1; i < 12; i++) {
+        const x = padX + (dieW * i) / 12;
+        ctx.beginPath(); ctx.moveTo(x, padY); ctx.lineTo(x, padY + dieH); ctx.stroke();
+      }
+
+      // Cores
+      const cw = dieW / cols, chh = dieH / rows;
+      const wave = 2.5;
+      cores.forEach(core => {
+        const cx = padX + core.x * cw + cw / 2;
+        const cy = padY + core.y * chh + chh / 2;
+
+        // Wave passing across the die
+        const dist = (core.x / cols + core.y / rows * 0.4);
+        const pulse = Math.sin(t * core.speed - dist * wave + core.phase);
+        const intensity = Math.max(0, pulse) ** 2;
+
+        const r = Math.min(cw, chh) * 0.25;
+        const glow = intensity * 0.85 + 0.15;
+
+        ctx.fillStyle = `rgba(96, 165, 250, ${0.08 + glow * 0.55})`;
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+        if (intensity > 0.6) {
+          ctx.fillStyle = `rgba(186, 230, 253, ${intensity * 0.9})`;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Edge accent
+      ctx.fillStyle = 'rgba(0,0,0,0.0)';
+      const overlay = ctx.createLinearGradient(0, 0, 0, h);
+      overlay.addColorStop(0, 'rgba(5, 8, 18, 0.85)');
+      overlay.addColorStop(0.4, 'rgba(5, 8, 18, 0)');
+      overlay.addColorStop(0.6, 'rgba(5, 8, 18, 0)');
+      overlay.addColorStop(1, 'rgba(5, 8, 18, 0.85)');
+      ctx.fillStyle = overlay;
+      ctx.fillRect(0, 0, w, h);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  // =========================================================
+  // DEMO 1 - CPU vs GPU race
+  // =========================================================
+  (function raceDemo() {
+    const cpuCanvas = document.getElementById('race-cpu');
+    const gpuCanvas = document.getElementById('race-gpu');
+    const barsCanvas = document.getElementById('race-bars');
+    if (!cpuCanvas || !gpuCanvas || !barsCanvas) return;
+
+    const sizeSel    = document.getElementById('race-size');
+    const workersSel = document.getElementById('race-workers');
+    const startBtn   = document.getElementById('race-start');
+    const resetBtn   = document.getElementById('race-reset');
+    const cpuTimerEl = document.getElementById('cpu-timer');
+    const gpuTimerEl = document.getElementById('gpu-timer');
+    const cpuPctEl   = document.getElementById('cpu-progress');
+    const gpuPctEl   = document.getElementById('gpu-progress');
+    const cpuOpsEl   = document.getElementById('cpu-ops');
+    const gpuOpsEl   = document.getElementById('gpu-ops');
+    const gpuCountEl = document.getElementById('gpu-count');
+
+    let cpuI = initCanvas(cpuCanvas);
+    let gpuI = initCanvas(gpuCanvas);
+    let barI = initCanvas(barsCanvas);
+
+    window.addEventListener('resize', () => {
+      cpuI = initCanvas(cpuCanvas);
+      gpuI = initCanvas(gpuCanvas);
+      barI = initCanvas(barsCanvas);
+      drawAll();
+    });
+
+    let state = null;
+
+    function makeState() {
+      const N = parseInt(sizeSel.value, 10);
+      const W = parseInt(workersSel.value, 10);
+      gpuCountEl.textContent = W;
+
+      // Each cell counts as 1 "op" for purposes of the race
+      const total = N * N;
+      const cpuPerSec = 6000;            // CPU does 6000 cell-ops / sec
+      const gpuPerSec = 6000 * (W * 0.9); // GPU scales with workers (slight overhead)
+
+      return {
+        N, W, total,
+        cpuDone: 0, gpuDone: 0,
+        cpuPerSec, gpuPerSec,
+        running: false, finished: false,
+        startT: 0,
+        cpuT: 0, gpuT: 0
+      };
+    }
+
+    function drawMatrix(info, N, done, color, workerCount) {
+      const { ctx, w, h } = info;
+      ctx.clearRect(0, 0, w, h);
+
+      // Background
+      ctx.fillStyle = 'rgba(15,23,42,0.6)';
+      ctx.fillRect(0, 0, w, h);
+
+      const pad = 8;
+      const size = Math.min(w, h) - pad * 2;
+      const ox = (w - size) / 2;
+      const oy = (h - size) / 2;
+      const cell = size / N;
+
+      // Draw cells
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          const idx = i * N + j;
+          if (idx < done) {
+            const t = idx / (N * N);
+            ctx.fillStyle = `hsla(${210 + t * 30}, 80%, ${40 + t * 20}%, 0.85)`;
+          } else {
+            ctx.fillStyle = 'rgba(51, 65, 85, 0.35)';
+          }
+          ctx.fillRect(ox + j * cell, oy + i * cell, cell - 0.5, cell - 0.5);
+        }
+      }
+
+      // Active workers - highlight current frontier
+      if (done < N * N) {
+        const frontier = Math.min(workerCount, N * N - done);
+        for (let k = 0; k < frontier; k++) {
+          const idx = done + k;
+          const i = Math.floor(idx / N);
+          const j = idx % N;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(ox + j * cell, oy + i * cell, cell - 0.5, cell - 0.5);
+        }
+      }
+
+      // Border
+      ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ox, oy, size, size);
+    }
+
+    function drawBars() {
+      const { ctx, w, h } = barI;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(15,23,42,0.5)';
+      ctx.fillRect(0, 0, w, h);
+
+      if (!state) return;
+      const cpuOps = state.cpuPerSec;
+      const gpuOps = state.gpuPerSec;
+      const max = Math.max(cpuOps, gpuOps) * 1.1;
+
+      const padL = 70, padR = 16, padT = 14, padB = 30;
+      const barH = (h - padT - padB) / 2 - 8;
+
+      // CPU bar
+      const cpuW = (cpuOps / max) * (w - padL - padR);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(padL, padT, cpuW, barH);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('CPU', padL - 8, padT + barH * 0.65);
+      ctx.textAlign = 'left';
+      ctx.fillText(formatOps(cpuOps), padL + cpuW + 6, padT + barH * 0.65);
+
+      // GPU bar
+      const gpuW = (gpuOps / max) * (w - padL - padR);
+      ctx.fillStyle = '#60a5fa';
+      ctx.fillRect(padL, padT + barH + 16, gpuW, barH);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'right';
+      ctx.fillText('GPU', padL - 8, padT + barH + 16 + barH * 0.65);
+      ctx.textAlign = 'left';
+      ctx.fillText(formatOps(gpuOps), padL + gpuW + 6, padT + barH + 16 + barH * 0.65);
+
+      // Speedup
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'center';
+      const speedup = (gpuOps / cpuOps).toFixed(1);
+      ctx.fillText(`GPU is ${speedup}x faster`, w / 2, h - 8);
+    }
+
+    function formatOps(o) {
+      if (o > 1e6) return (o / 1e6).toFixed(2) + ' M ops/s';
+      if (o > 1e3) return (o / 1e3).toFixed(1) + ' k ops/s';
+      return o.toFixed(0) + ' ops/s';
+    }
+
+    function drawAll() {
+      if (!state) {
+        const tmp = makeState();
+        drawMatrix(cpuI, tmp.N, 0, '#f59e0b', 1);
+        drawMatrix(gpuI, tmp.N, 0, '#60a5fa', tmp.W);
+        return;
+      }
+      drawMatrix(cpuI, state.N, state.cpuDone, '#f59e0b', 1);
+      drawMatrix(gpuI, state.N, state.gpuDone, '#60a5fa', state.W);
+      drawBars();
+
+      cpuPctEl.textContent = ((state.cpuDone / state.total) * 100).toFixed(0) + '%';
+      gpuPctEl.textContent = ((state.gpuDone / state.total) * 100).toFixed(0) + '%';
+      cpuOpsEl.textContent = formatOps(state.cpuPerSec);
+      gpuOpsEl.textContent = formatOps(state.gpuPerSec);
+    }
+
+    function start() {
+      state = makeState();
+      state.running = true;
+      state.startT = performance.now();
+      let last = state.startT;
+
+      function tick(now) {
+        if (!state || !state.running) return;
+        const dt = (now - last) / 1000;
+        last = now;
+
+        if (state.cpuDone < state.total) {
+          state.cpuDone = Math.min(state.total, state.cpuDone + state.cpuPerSec * dt);
+          state.cpuT = (now - state.startT) / 1000;
+          cpuTimerEl.textContent = state.cpuT.toFixed(3) + ' s';
+        }
+        if (state.gpuDone < state.total) {
+          state.gpuDone = Math.min(state.total, state.gpuDone + state.gpuPerSec * dt);
+          state.gpuT = (now - state.startT) / 1000;
+          gpuTimerEl.textContent = state.gpuT.toFixed(3) + ' s';
+        }
+
+        drawAll();
+
+        if (state.cpuDone >= state.total && state.gpuDone >= state.total) {
+          state.running = false;
+          state.finished = true;
+          return;
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function reset() {
+      state = null;
+      cpuTimerEl.textContent = '0.000 s';
+      gpuTimerEl.textContent = '0.000 s';
+      cpuPctEl.textContent = '0%';
+      gpuPctEl.textContent = '0%';
+      cpuOpsEl.textContent = '0 ops/sec';
+      gpuOpsEl.textContent = '0 ops/sec';
+      drawAll();
+    }
+
+    startBtn.addEventListener('click', start);
+    resetBtn.addEventListener('click', reset);
+    [sizeSel, workersSel].forEach(s => s.addEventListener('change', reset));
+
+    reset();
+  })();
+
+  // =========================================================
+  // DEMO 2 - Framework code compare tabs + highlight
+  // =========================================================
+  (function fwDemo() {
+    const tabs = document.querySelectorAll('#fw-tabs .tab');
+    const panes = document.querySelectorAll('.fw-pane');
+    const hlSel = document.getElementById('fw-highlight');
+    if (!tabs.length) return;
+
+    tabs.forEach(t => {
+      t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.remove('tab--active'));
+        t.classList.add('tab--active');
+        const target = t.dataset.tab;
+        panes.forEach(p => {
+          p.classList.toggle('fw-pane--active', p.dataset.pane === target);
+        });
+      });
+    });
+
+    function applyHighlight() {
+      const v = hlSel.value;
+      const all = document.querySelectorAll('.fw-pane .hl');
+      all.forEach(el => {
+        el.classList.remove('hl--on');
+        if (v !== 'none' && el.classList.contains('hl-' + v)) {
+          el.classList.add('hl--on');
+        }
+      });
+    }
+    hlSel.addEventListener('change', applyHighlight);
+    applyHighlight();
+  })();
+
+  // =========================================================
+  // QUIZ
+  // =========================================================
+  (function quiz() {
+    document.querySelectorAll('.quiz-block').forEach(block => {
+      const correct = block.dataset.correct;
+      const opts = block.querySelectorAll('.quiz-block__opts li');
+      opts.forEach(li => {
+        li.addEventListener('click', () => {
+          opts.forEach(x => x.classList.remove('is-correct', 'is-wrong'));
+          if (li.dataset.key === correct) li.classList.add('is-correct');
+          else li.classList.add('is-wrong');
+          block.classList.add('quiz-block--answered');
+        });
+      });
+    });
+  })();
+
+  // =========================================================
+  // SCROLL PROGRESS
+  // =========================================================
+  (function scrollProgress() {
+    const bar = document.getElementById('scroll-progress');
+    if (!bar) return;
+    function upd() {
+      const h = document.documentElement;
+      const scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight);
+      bar.style.width = (scrolled * 100) + '%';
+    }
+    window.addEventListener('scroll', upd, { passive: true });
+    upd();
+  })();
+})();
+</script>
+
+<style>
+/* Inline scoped tweaks for highlight + race demo not assumed in chapters.css */
+.hl { transition: background 0.25s ease, box-shadow 0.25s ease; border-radius: 3px; padding: 0 2px; }
+.hl--on.hl-model { background: rgba(96,165,250,0.22); box-shadow: 0 0 0 1px rgba(96,165,250,0.5); }
+.hl--on.hl-loss  { background: rgba(245,158,11,0.22); box-shadow: 0 0 0 1px rgba(245,158,11,0.5); }
+.hl--on.hl-optim { background: rgba(52,211,153,0.22); box-shadow: 0 0 0 1px rgba(52,211,153,0.5); }
+.hl--on.hl-step  { background: rgba(244,114,182,0.22); box-shadow: 0 0 0 1px rgba(244,114,182,0.5); }
+
+.race-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 720px) { .race-grid { grid-template-columns: 1fr; } }
+.race-lane { background: rgba(15,23,42,0.45); border: 1px solid rgba(148,163,184,0.18); border-radius: 10px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.race-lane__title { display:flex; align-items:center; gap:0.5rem; font-weight:600; }
+.race-lane__title .race-timer { margin-left:auto; font-family:'JetBrains Mono', monospace; color:#93c5fd; }
+.race-lane canvas { width: 100%; height: 260px; display:block; border-radius:6px; }
+.race-meta { display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:0.85rem; color:#94a3b8; }
+.race-bars { width: 100%; height: 110px; display:block; border-radius:6px; }
+
+.tab-group { display:inline-flex; gap:4px; background:rgba(15,23,42,0.4); padding:4px; border-radius:8px; }
+.tab { background:transparent; border:none; color:#cbd5e1; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:6px; }
+.tab:hover { color:#f1f5f9; }
+.tab--active { background:rgba(96,165,250,0.18); color:#dbeafe; }
+.fw-pane { display:none; }
+.fw-pane--active { display:block; }
+.inline-toggle { color:#cbd5e1; font-size:0.9rem; display:inline-flex; align-items:center; gap:6px; }
+.inline-toggle select { background:rgba(15,23,42,0.5); color:#e2e8f0; border:1px solid rgba(148,163,184,0.3); border-radius:6px; padding:4px 8px; }
+
+.legend { display:flex; gap:1rem; flex-wrap:wrap; font-size:0.85rem; color:#94a3b8; }
+.legend i { font-size:0.6rem; vertical-align:middle; }
+</style>
+
+</body>
+</html>

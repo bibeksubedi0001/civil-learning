@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.1 Supervised Learning Fundamentals | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master the fundamentals of supervised learning through a civil engineering lens. Understand features, labels, training workflows, regression vs classification, and real-world CE applications.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.1
+            </div>
+            <h1 class="chapter-hero__title">Supervised Learning Fundamentals</h1>
+            <p class="chapter-hero__subtitle">
+                The backbone of predictive engineering &mdash; learn how machines learn from labelled
+                examples, just as engineers learn from tested specimens and documented case studies.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 30 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>What If Your Lab Already Teaches Machines?</h2>
+                        <p>
+                            Every time a civil engineer sends a concrete cube to the testing lab, records
+                            the mix design alongside the 28-day compressive strength, and files the
+                            result, they are &mdash; without realising it &mdash; creating a training
+                            dataset for a supervised learning model. The mix proportions are the
+                            <strong>features</strong>. The compressive strength is the
+                            <strong>label</strong>. And the relationship between them is exactly what
+                            a supervised learning algorithm sets out to discover.
+                        </p>
+                        <p>
+                            Supervised learning is the most widely used branch of machine learning in
+                            engineering practice. It powers concrete strength prediction, soil
+                            classification systems, structural damage detection, and dozens of other
+                            applications you will encounter throughout your career. Understanding its
+                            fundamentals is not optional &mdash; it is foundational.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In this sub-chapter, we will break down supervised learning from the ground up.
+                    We will use civil engineering examples at every step, draw analogies to processes
+                    you already know, and build interactive demonstrations so you can see these
+                    concepts in action. By the end, you will understand not just what supervised
+                    learning is, but why it works and how it maps to the engineering workflow you
+                    already follow every day.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have completed Chapter 1 and understand basic AI
+                        terminology. No programming knowledge is required yet &mdash; we focus on
+                        concepts and intuition here. Code implementations follow in later sub-chapters.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHAT IS SUPERVISED LEARNING?
+             ========================================== -->
+        <section class="ch-section" id="what-is-supervised">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    What is Supervised Learning?
+                </h2>
+
+                <p>
+                    Supervised learning is a type of machine learning where the algorithm learns from
+                    <strong>labelled examples</strong>. You provide the model with input data (features)
+                    alongside the correct answers (labels), and the model learns the mapping between
+                    them. Once trained, it can predict labels for new, unseen inputs.
+                </p>
+
+                <p>
+                    The word "supervised" comes from the idea that the training process is guided by a
+                    teacher &mdash; the labels act as the teacher, telling the model whether its
+                    predictions are correct or not. This is in contrast to unsupervised learning, where
+                    no labels exist and the algorithm must find patterns on its own.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Supervised learning is like training a junior engineer using past
+                            project reports.</strong> You hand them dozens of completed projects: soil
+                            investigation reports (input features) paired with the foundation type that
+                            was ultimately selected (label). After studying enough examples, the junior
+                            engineer can look at a new soil report and recommend the appropriate
+                            foundation type &mdash; not because they memorised every case, but because
+                            they learned the underlying patterns.
+                        </p>
+                        <p>
+                            The model does the same thing, except it can process thousands of examples
+                            in seconds and identify patterns too subtle for human perception.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Three Ingredients of Supervised Learning</h3>
+                        <ul>
+                            <li>
+                                <strong>Training Data</strong> &mdash; A collection of input-output pairs.
+                                The larger and more representative the dataset, the better the model
+                                learns. Think of it as the number of lab test results you have on file.
+                            </li>
+                            <li>
+                                <strong>A Model (Algorithm)</strong> &mdash; The mathematical structure
+                                that captures the relationship between inputs and outputs. This is the
+                                "brain" being trained &mdash; it could be a linear equation, a decision
+                                tree, or a neural network.
+                            </li>
+                            <li>
+                                <strong>A Loss Function</strong> &mdash; A measure of how wrong the model's
+                                predictions are. The training process minimises this loss, just as you
+                                minimise deflection or cost in structural optimisation.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: FEATURES AND LABELS
+             ========================================== -->
+        <section class="ch-section" id="features-labels">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-tags"></i>
+                    Features and Labels Explained
+                </h2>
+
+                <p>
+                    In supervised learning, every data point consists of two parts: the
+                    <strong>features</strong> (also called predictors, independent variables, or inputs)
+                    and the <strong>label</strong> (also called the target, dependent variable, or
+                    output). Understanding this distinction is critical because it determines what your
+                    model can learn and predict.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Features: The Inputs Your Model Sees</h3>
+                        <p>
+                            Features are the measurable properties of each data point &mdash; the
+                            information the model uses to make predictions. In civil engineering terms,
+                            features are the parameters you measure, control, or observe.
+                        </p>
+                        <p><strong>Concrete Strength Prediction Example:</strong></p>
+                        <ul>
+                            <li>Cement content (kg/m<sup>3</sup>)</li>
+                            <li>Water-cement ratio</li>
+                            <li>Fine aggregate content (kg/m<sup>3</sup>)</li>
+                            <li>Coite aggregate content (kg/m<sup>3</sup>)</li>
+                            <li>Superplasticiser dosage (litres/m<sup>3</sup>)</li>
+                            <li>Age of specimen (days)</li>
+                            <li>Curing temperature (degrees C)</li>
+                        </ul>
+                        <p>
+                            Each of these is a feature. Together, they form a <strong>feature vector</strong>
+                            &mdash; a numerical description of a single concrete specimen.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Labels: The Answers You Want to Predict</h3>
+                        <p>
+                            The label is the value you want the model to output &mdash; the "answer" for
+                            each data point. It is the quantity you are trying to predict for future,
+                            unseen data.
+                        </p>
+                        <p><strong>Concrete Strength Example:</strong></p>
+                        <ul>
+                            <li>28-day compressive strength (MPa) &mdash; this is the label</li>
+                        </ul>
+                        <p><strong>Soil Classification Example:</strong></p>
+                        <ul>
+                            <li>Soil type (Clay, Silt, Sand, Gravel) &mdash; a categorical label</li>
+                        </ul>
+                        <p>
+                            The type of label determines whether your problem is a
+                            <strong>regression</strong> task (continuous numerical label) or a
+                            <strong>classification</strong> task (categorical label). We will explore
+                            this distinction in detail shortly.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Conceptual Data Structure</span>
+                    </div>
+                    <pre><code>| Cement | W/C Ratio | Fine Agg | Coarse Agg | Age | Strength (MPa) |
+|--------|-----------|----------|------------|-----|----------------|
+|  350   |   0.45    |   680    |    1050    |  28 |      38.2      |   &lt;-- Label
+|  400   |   0.40    |   650    |    1080    |  28 |      45.7      |
+|  310   |   0.55    |   720    |    1020    |   7 |      22.1      |
+|  380   |   0.42    |   670    |    1060    |  28 |      42.5      |
+       ^                                              ^
+  Features (inputs)                              Label (output)</code></pre>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Feature Engineering Matters</span>
+                    </div>
+                    <p>
+                        The quality of your features determines the ceiling on your model's performance.
+                        No algorithm can extract information that is not present in the data. As a civil
+                        engineer, your domain expertise in selecting relevant features &mdash; knowing
+                        that water-cement ratio matters more than the colour of the aggregate &mdash;
+                        gives you a significant advantage in building effective ML models. This process
+                        of selecting and crafting features is called <strong>feature engineering</strong>,
+                        and it is where engineering knowledge meets data science.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: TRAINING VS TESTING DATA
+             ========================================== -->
+        <section class="ch-section" id="train-test-split">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-divide"></i>
+                    Training vs Testing Data
+                </h2>
+
+                <p>
+                    One of the most important concepts in supervised learning is the distinction between
+                    <strong>training data</strong> and <strong>testing data</strong>. The model learns
+                    from training data, but its real-world usefulness is measured on testing data &mdash;
+                    data it has never seen before.
+                </p>
+
+                <p>
+                    Why not just use all the data for training? Because a model that memorises its
+                    training data perfectly may fail spectacularly on new data. This is called
+                    <strong>overfitting</strong>, and it is the machine learning equivalent of a student
+                    who memorises past exam papers but cannot solve new problems.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Training/testing split is like material testing protocols.</strong>
+                            When you cast concrete cubes for testing, you do not test every single cube
+                            and then declare the concrete acceptable. You test a representative sample
+                            and use those results to infer the quality of the entire batch. The tested
+                            cubes are your "test set" &mdash; they validate whether the mix design
+                            (trained model) actually works.
+                        </p>
+                        <p>
+                            If you tested the same cube twice and used that to validate your mix, you
+                            would learn nothing about how the concrete performs in general. Similarly,
+                            testing a model on its training data tells you nothing about how it will
+                            perform on new data.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Typical Split Ratios</h3>
+                        <ul>
+                            <li>
+                                <strong>80/20 split</strong> &mdash; 80% training, 20% testing. The most
+                                common starting point. Works well for medium-sized datasets (hundreds to
+                                thousands of samples).
+                            </li>
+                            <li>
+                                <strong>70/15/15 split</strong> &mdash; 70% training, 15% validation, 15%
+                                testing. The validation set is used to tune model settings (hyperparameters)
+                                without touching the test set.
+                            </li>
+                            <li>
+                                <strong>K-fold cross-validation</strong> &mdash; The data is divided into
+                                K equal parts. The model is trained K times, each time using a different
+                                part as the test set. This maximises data utilisation and is especially
+                                useful when data is scarce &mdash; common in civil engineering.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Common Pitfall: Data Leakage</span>
+                    </div>
+                    <p>
+                        Data leakage occurs when information from the test set accidentally influences
+                        the training process. In civil engineering ML, this can happen subtly &mdash;
+                        for example, if you normalise your entire dataset (including the test set)
+                        before splitting, the model has "seen" the test data's statistical properties.
+                        Always split first, then preprocess each set independently.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE SUPERVISED LEARNING WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="supervised-workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    The Supervised Learning Workflow
+                </h2>
+
+                <p>
+                    Supervised learning follows a structured pipeline that mirrors the engineering
+                    design process. Understanding this workflow gives you a roadmap for any ML
+                    project you will encounter. Let us walk through each step.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h4>Collect Labelled Data</h4>
+                        <p>
+                            Gather input-output pairs from historical records, experiments, or sensors.
+                            In civil engineering, this might mean compiling years of concrete test results,
+                            soil boring logs, or bridge inspection reports. Each record must include both
+                            the measured properties (features) and the known outcome (label).
+                        </p>
+                        <p>
+                            <strong>CE Example:</strong> Collecting 500 concrete mix designs along with
+                            their 28-day compressive strength test results from your lab database.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h4>Extract and Engineer Features</h4>
+                        <p>
+                            Transform raw data into meaningful numerical representations. This involves
+                            selecting relevant variables, handling missing values, encoding categorical
+                            data, and potentially creating new features from existing ones.
+                        </p>
+                        <p>
+                            <strong>CE Example:</strong> From a concrete mix record, you extract cement
+                            content, water-cement ratio, aggregate proportions, and specimen age. You
+                            might also engineer a new feature like "binder intensity" (total cite content
+                            per unit volume) that captures domain knowledge.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h4>Split Data into Training and Testing Sets</h4>
+                        <p>
+                            Reserve a portion of your labelled data for evaluation. The model will never
+                            see the test set during training, ensuring an honest assessment of its
+                            predictive ability on genuinely new data.
+                        </p>
+                        <p>
+                            <strong>CE Example:</strong> You randomly assign 400 of your 500 mix records
+                            to training and hold out 100 for testing. Random assignment ensures both sets
+                            are representative of the overall population.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h4>Train the Model</h4>
+                        <p>
+                            Feed the training data to your chosen algorithm. The model iteratively adjusts
+                            its internal parameters to minimise prediction errors on the training set. This
+                            is the "learning" phase &mdash; the algorithm discovers patterns and
+                            relationships in the data.
+                        </p>
+                        <p>
+                            <strong>CE Example:</strong> A linear regression model learns that compressive
+                            strength increases as cement content rises and decreases as water-cement ratio
+                            increases &mdash; relationships any concrete technologist knows, but now
+                            quantified precisely by the model.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h4>Evaluate on Test Data</h4>
+                        <p>
+                            Apply the trained model to the held-out test set and measure its performance
+                            using appropriate metrics (accuracy, mean squared error, R-squared, etc.).
+                            This step tells you how the model will perform in the real world.
+                        </p>
+                        <p>
+                            <strong>CE Example:</strong> Your model predicts the compressive strength of
+                            the 100 held-out specimens. Comparing predictions to actual test results
+                            gives you an R-squared of 0.91 &mdash; meaning the model explains 91% of
+                            the variation in concrete strength.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">6</div>
+                    <div class="process-step__content">
+                        <h4>Deploy and Monitor</h4>
+                        <p>
+                            If the model meets performance requirements, deploy it into production. But
+                            the work does not end here &mdash; you must continuously monitor the model's
+                            predictions against actual outcomes and retrain when performance degrades.
+                        </p>
+                        <p>
+                            <strong>CE Example:</strong> The model is integrated into your batch plant's
+                            quality control system. Before every pour, it predicts whether the proposed
+                            mix will meet the required strength. Monthly audits compare predictions to
+                            actual test results to ensure the model remains accurate.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Workflow Parallel: ML vs Quality Testing</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            The supervised learning workflow mirrors the civil engineering quality testing
+                            process remarkably closely:
+                        </p>
+                        <ul>
+                            <li><strong>Collect labelled data</strong> = Accumulate test records in your lab database</li>
+                            <li><strong>Extract features</strong> = Record mix proportions and specimen properties</li>
+                            <li><strong>Split train/test</strong> = Cast multiple cubes per batch, test a sample</li>
+                            <li><strong>Train the model</strong> = Develop empirical relationships from past data</li>
+                            <li><strong>Evaluate</strong> = Validate predictions against independent test results</li>
+                            <li><strong>Deploy and monitor</strong> = Use the relationship for QC, audit periodically</li>
+                        </ul>
+                        <p>
+                            If you have ever developed an empirical formula from lab data, you have
+                            already performed a simplified version of the supervised learning workflow.
+                            Machine learning simply automates and scales this process, handling far more
+                            variables and far more data than any human could process manually.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: REGRESSION VS CLASSIFICATION
+             ========================================== -->
+        <section class="ch-section" id="regression-vs-classification">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-branch"></i>
+                    Regression vs Classification
+                </h2>
+
+                <p>
+                    Supervised learning problems fall into two major categories based on the type of
+                    label being predicted. Understanding this distinction is essential because it
+                    determines which algorithms, metrics, and approaches are appropriate.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Regression: Predicting Continuous Values</h3>
+                        <p>
+                            In regression, the label is a continuous numerical value. The model outputs a
+                            number on a continuous scale, and we measure how close that number is to the
+                            true value.
+                        </p>
+                        <p><strong>Civil Engineering Regression Examples:</strong></p>
+                        <ul>
+                            <li>Predicting compressive strength of concrete (MPa)</li>
+                            <li>Estimating maximum deflection of a beam under load (mm)</li>
+                            <li>Forecasting daily traffic volume on a highway (vehicles/day)</li>
+                            <li>Predicting remaining service life of a bridge (years)</li>
+                            <li>Estimating construction project cost (currency units)</li>
+                        </ul>
+                        <p>
+                            <strong>Key metrics:</strong> Mean Squared Error (MSE), Root Mean Squared
+                            Error (RMSE), Mean Absolute Error (MAE), R-squared (R<sup>2</sup>).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Classification: Predicting Categories</h3>
+                        <p>
+                            In classification, the label is a discrete category. The model assigns each
+                            input to one of a predefined set of classes. The output is not a continuous
+                            number but a class membership.
+                        </p>
+                        <p><strong>Civil Engineering Classification Examples:</strong></p>
+                        <ul>
+                            <li>Classifying soil type (Clay, Silt, Sand, Gravel)</li>
+                            <li>Detecting structural damage (Damaged / Not Damaged)</li>
+                            <li>Categorising crack severity (Minor, Moderate, Severe)</li>
+                            <li>Identifying land use from satellite imagery (Residential, Commercial, Industrial, Agricultural)</li>
+                            <li>Predicting project outcome (On-time / Delayed)</li>
+                        </ul>
+                        <p>
+                            <strong>Key metrics:</strong> Accuracy, Precision, Recall, F1-score,
+                            Confusion Matrix, ROC-AUC.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>How to Tell Which Type You Need</span>
+                    </div>
+                    <p>
+                        Ask yourself: "Is the answer a number on a continuous scale, or a category?"
+                        If you are predicting "how much" or "how many," it is regression. If you are
+                        predicting "which type" or "yes/no," it is classification. Sometimes the same
+                        problem can be framed either way &mdash; you could predict concrete strength
+                        as a number (regression) or classify it as "Pass/Fail" relative to a threshold
+                        (classification).
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CE EXAMPLE - CONCRETE STRENGTH
+             ========================================== -->
+        <section class="ch-section" id="ce-concrete-strength">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building-columns"></i>
+                    CE Example: Concrete Strength Prediction
+                </h2>
+
+                <p>
+                    Let us walk through a complete supervised learning example using a problem every
+                    civil engineer encounters: predicting the compressive strength of concrete. This
+                    is a <strong>regression</strong> problem because the label (strength in MPa) is a
+                    continuous value.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Dataset</h3>
+                        <p>
+                            The classic Concrete Compressive Strength dataset (Yeh, 1998) contains 1,030
+                            records from laboratory tests. Each record includes eight input features and
+                            one label:
+                        </p>
+                        <ul>
+                            <li><strong>Features:</strong> Cement, Blast Furnace Slag, Fly Ash, Water, Superplasticiser, Coarse Aggregate, Fine Aggregate, Age</li>
+                            <li><strong>Label:</strong> Compressive strength (MPa), ranging from 2.33 to 82.60 MPa</li>
+                        </ul>
+                        <p>
+                            This dataset is the "hello world" of civil engineering ML. It has been used
+                            in hundreds of research papers and is freely available for experimentation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why It Works</h3>
+                        <p>
+                            Concrete strength is governed by well-understood physical and chemical
+                            processes (hydration, packing density, pozzolanic reactions), but the
+                            interactions between eight variables create a complex, nonlinear relationship
+                            that empirical formulas like Abram's law can only approximate. ML models
+                            capture these interactions without needing explicit equations.
+                        </p>
+                        <p>
+                            Research consistently shows that ML models (neural networks, gradient
+                            boosting, random forests) outperform traditional empirical formulas by
+                            10-25% in prediction accuracy on this dataset. The advantage grows as more
+                            variables are added, because ML handles high-dimensional interactions
+                            naturally.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Typical Workflow (Pseudocode)</span>
+                    </div>
+                    <pre><code>1. Load dataset (1030 records x 9 columns)
+2. Explore: plot distributions, check correlations
+3. Split: 824 training, 206 testing (80/20)
+4. Choose model: Random Forest Regressor
+5. Train: model.fit(X_train, y_train)
+6. Predict: y_pred = model.predict(X_test)
+7. Evaluate: RMSE = 5.2 MPa, R-squared = 0.91
+8. Deploy: integrate into batch plant QC system</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CE EXAMPLE - SOIL CLASSIFICATION
+             ========================================== -->
+        <section class="ch-section" id="ce-soil-classification">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mountain"></i>
+                    CE Example: Soil Classification
+                </h2>
+
+                <p>
+                    Now let us examine a <strong>classification</strong> problem: automatically
+                    classifying soil type from measured properties. This is directly relevant to
+                    geotechnical engineering, site investigation, and foundation design.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Problem</h3>
+                        <p>
+                            Soil classification systems like the Unified Soil Classification System (USCS)
+                            and the AASHTO system use grain size distribution, liquid limit, and
+                            plasticity index to assign soils to categories (GW, GP, GM, GC, SW, SP, SM,
+                            SC, ML, CL, OL, MH, CH, OH, Pt). Traditionally, this is done by plotting
+                            results on the Casagrande plasticity chart and applying classification rules.
+                        </p>
+                        <p>
+                            A supervised learning classifier can automate this process, handling edge
+                            cases and borderline soils more consistently than manual classification.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Features and Labels</h3>
+                        <p><strong>Features (inputs):</strong></p>
+                        <ul>
+                            <li>Percentage passing various sieve sizes (No. 4, No. 10, No. 40, No. 200)</li>
+                            <li>Liquid Limit (LL)</li>
+                            <li>Plastic Limit (PL)</li>
+                            <li>Plasticity Index (PI = LL - PL)</li>
+                            <li>Specific gravity</li>
+                            <li>Natural moisture content</li>
+                        </ul>
+                        <p><strong>Label (output):</strong></p>
+                        <ul>
+                            <li>USCS soil class (e.g., CL, CH, SM, SP, etc.)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Why ML Adds Value Here</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            You might wonder: "We already have classification rules. Why use ML?" Three
+                            reasons. First, ML handles <strong>borderline cases</strong> where soils
+                            fall near classification boundaries &mdash; it assigns probabilities rather
+                            than hard boundaries. Second, ML can incorporate <strong>additional
+                            features</strong> beyond what standard charts use, potentially improving
+                            classification. Third, ML enables <strong>real-time automated
+                            classification</strong> from sensor data during site investigation, without
+                            waiting for manual lab analysis.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: THE QUALITY TESTING PARALLEL
+             ========================================== -->
+        <section class="ch-section" id="quality-testing-parallel">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    How Supervised Learning Mirrors Quality Testing
+                </h2>
+
+                <p>
+                    At this point, you may have noticed the deep parallels between supervised learning
+                    and the quality testing processes you use every day. Let us make these connections
+                    explicit, because understanding them will make the entire field of ML feel far more
+                    intuitive.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Side-by-Side Comparison</h3>
+                        <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-color);">
+                                    <th style="text-align:left; padding:8px; color:var(--accent-primary);">ML Concept</th>
+                                    <th style="text-align:left; padding:8px; color:var(--accent-primary);">CE Quality Testing</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Training data</td>
+                                    <td style="padding:8px;">Historical test records in your lab database</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Features</td>
+                                    <td style="padding:8px;">Mix proportions, curing conditions, specimen properties</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Labels</td>
+                                    <td style="padding:8px;">Test results (strength, classification, pass/fail)</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Model training</td>
+                                    <td style="padding:8px;">Developing empirical relationships from past data</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Test set evaluation</td>
+                                    <td style="padding:8px;">Validating predictions against independent samples</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Overfitting</td>
+                                    <td style="padding:8px;">A formula that works only for one specific mix/lab</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding:8px;">Underfitting</td>
+                                    <td style="padding:8px;">A formula too simple to capture mix behaviour</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">Model deployment</td>
+                                    <td style="padding:8px;">Using the formula for QC decisions on new batches</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>The Key Insight</span>
+                    </div>
+                    <p>
+                        Supervised learning is not an alien concept imported from computer science. It is
+                        the formalisation and automation of something civil engineers have been doing for
+                        decades: learning from past test results to predict future outcomes. The
+                        difference is that ML does it with mathematical rigour, handles thousands of
+                        variables simultaneously, and scales to millions of data points. The fundamental
+                        logic is identical.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 1 - SCATTER LABELLING
+             ========================================== -->
+        <section class="ch-section" id="demo-scatter-labelling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Label and Fit
+                </h2>
+
+                <p>
+                    Experience supervised learning firsthand. In this demo, you will play the role of
+                    both the data collector (creating labelled data) and the algorithm (watching the
+                    model fit to your data). Click on the canvas to add data points, toggle between
+                    two classes, and watch as a decision boundary emerges.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-scatter">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-crosshairs"></i> Scatter Plot: Label Points and Fit a Model</h3>
+                        <p>
+                            Click to place data points. Use the toggle below to switch between Class A
+                            (e.g., "Safe Soil") and Class B (e.g., "Unstable Soil"). The model fits a
+                            linear decision boundary after you place at least 3 points per class.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <button id="scatter-class-toggle" class="demo-btn" title="Switch class label">
+                            <i class="fa-solid fa-circle" style="color:#2dd4bf;"></i> Placing: Class A (Safe)
+                        </button>
+                        <button id="scatter-reset" class="demo-btn" title="Clear all points">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button id="scatter-fit" class="demo-btn" title="Fit the model">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Fit Model
+                        </button>
+                    </div>
+                    <canvas id="scatter-canvas" style="width:100%; height:420px; cursor:crosshair; border-radius:8px;"></canvas>
+                    <div id="scatter-info" style="margin-top:12px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        Click on the canvas to add labelled data points. Add at least 3 per class, then click "Fit Model."
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 2 - FEATURE IMPORTANCE
+             ========================================== -->
+        <section class="ch-section" id="demo-feature-importance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    Interactive Demo: Feature Importance Visualiser
+                </h2>
+
+                <p>
+                    Not all features contribute equally to a model's predictions. Some features
+                    are highly informative, while others add little value or even introduce noise.
+                    This demo visualises feature importance for a concrete strength prediction model.
+                    Drag the sliders to adjust feature values and watch how the predicted strength
+                    changes &mdash; revealing which features matter most.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-features">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-sliders"></i> Feature Importance: Concrete Strength Factors</h3>
+                        <p>
+                            The bar chart shows each feature's relative importance. Adjust the sliders to
+                            see how changing each feature affects the predicted strength.
+                        </p>
+                    </div>
+                    <canvas id="feature-canvas" style="width:100%; height:460px; border-radius:8px;"></canvas>
+                    <div class="demo-panel__controls" style="flex-wrap:wrap; gap:8px; margin-top:12px;">
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--text-secondary);">
+                            Cement
+                            <input type="range" id="feat-cement" min="100" max="550" value="350" style="width:100px;">
+                            <span id="feat-cement-val">350</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--text-secondary);">
+                            W/C Ratio
+                            <input type="range" id="feat-wc" min="25" max="70" value="45" style="width:100px;">
+                            <span id="feat-wc-val">0.45</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--text-secondary);">
+                            Age (days)
+                            <input type="range" id="feat-age" min="1" max="365" value="28" style="width:100px;">
+                            <span id="feat-age-val">28</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--text-secondary);">
+                            Fly Ash
+                            <input type="range" id="feat-flyash" min="0" max="200" value="50" style="width:100px;">
+                            <span id="feat-flyash-val">50</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--text-secondary);">
+                            Superplast.
+                            <input type="range" id="feat-sp" min="0" max="30" value="8" style="width:100px;">
+                            <span id="feat-sp-val">8</span>
+                        </label>
+                    </div>
+                    <div id="feature-prediction" style="margin-top:14px; font-size:1rem; font-weight:600; color:var(--accent-primary);">
+                        Predicted Strength: 38.2 MPa
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: COMMON MISCONCEPTIONS
+             ========================================== -->
+        <section class="ch-section" id="misconceptions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    Common Misconceptions
+                </h2>
+
+                <p>
+                    Before moving on, let us address some common misconceptions about supervised
+                    learning that can lead engineers astray when they first encounter the field.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception 1: "More data always means a better model"</h3>
+                        <p>
+                            While more data generally helps, <strong>data quality matters more than
+                            quantity</strong>. A thousand carefully documented test results from a
+                            well-calibrated lab will train a better model than ten thousand noisy records
+                            with inconsistent measurement protocols. In civil engineering, data is
+                            expensive to collect (each concrete test costs time and money), so quality
+                            is paramount.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception 2: "The model understands the physics"</h3>
+                        <p>
+                            A supervised learning model finds <strong>statistical correlations</strong>,
+                            not physical causation. It does not "know" that cement hydration produces
+                            calcium silicate hydrate. It simply learns that higher cement content
+                            correlates with higher strength. This is powerful but also dangerous &mdash;
+                            the model might make predictions that are statistically plausible but
+                            physically impossible. Domain expertise is essential for validating outputs.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception 3: "A high training accuracy means the model is good"</h3>
+                        <p>
+                            A model that achieves 99% accuracy on training data but only 60% on test
+                            data is <strong>overfitting</strong>. It has memorised the training examples
+                            rather than learning generalisable patterns. Always evaluate on held-out test
+                            data. In CE terms, a formula calibrated perfectly to your lab's data but
+                            failing on data from other labs is overfitted to your specific conditions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception 4: "Supervised learning replaces engineering judgement"</h3>
+                        <p>
+                            ML models are tools, not replacements. They augment your decision-making by
+                            processing data faster and finding subtle patterns. But the engineer remains
+                            responsible for validating results, understanding limitations, and making
+                            final decisions. A model that predicts M25 concrete will achieve 80 MPa
+                            should raise red flags &mdash; your engineering knowledge catches what the
+                            model cannot.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of supervised learning fundamentals. Each question
+                    reinforces a key concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        In a concrete strength prediction model, which of the following is a
+                        <strong>feature</strong> (input) rather than a <strong>label</strong> (output)?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> 28-day compressive strength (MPa)
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Water-cement ratio
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Pass/Fail classification result
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Predicted deflection under load
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Water-cement ratio is an input
+                        property of the concrete mix &mdash; a feature that influences strength. The
+                        other options are all outputs (labels) that a model would predict.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. <strong>Water-cement ratio</strong>
+                        is the feature here. It is a measurable input property of the mix, not something
+                        we are trying to predict. Compressive strength, pass/fail status, and deflection
+                        are all outputs (labels).
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        A model predicts soil type (Clay, Silt, Sand) based on Atterberg limits and
+                        grain size distribution. What type of supervised learning problem is this?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Regression &mdash; because soil properties are continuous
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> Classification &mdash; because the output is a discrete category
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Unsupervised learning &mdash; because soil types are natural groupings
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Reinforcement learning &mdash; because the model improves with feedback
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The output is a discrete soil
+                        type category (Clay, Silt, Sand), making this a classification problem. Even
+                        though the input features are continuous numbers, the label determines the
+                        problem type.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. This is
+                        <strong>classification</strong> because the model predicts a discrete category
+                        (Clay, Silt, or Sand). The continuous features do not change the problem type
+                        &mdash; it is the label type that matters. And since we have labelled training
+                        data, it is supervised, not unsupervised.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        Why do we split data into training and testing sets instead of using all data
+                        for training?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> To reduce computation time &mdash; less data trains faster
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Because machine learning algorithms require exactly 80% of the data
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> To evaluate how the model performs on unseen data and detect overfitting
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> To ensure the model has enough data left over for validation
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The test set gives us an honest
+                        estimate of how the model will perform on genuinely new data. Without it, we
+                        have no way to detect overfitting &mdash; a model that memorises training data
+                        but cannot generalise. This is like validating a mix design formula against
+                        independent test results.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. We split data to
+                        <strong>evaluate generalisation performance and detect overfitting</strong>.
+                        The test set serves as independent, unseen data that validates the model's
+                        ability to predict beyond its training examples. The 80/20 ratio is a convention,
+                        not a requirement.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        In the supervised learning workflow, which step is most analogous to a civil
+                        engineer validating an empirical formula against new test results?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Collecting labelled data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Training the model on historical data
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Evaluating the model on the held-out test set
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Deploying the model into a production system
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Evaluating on the test set is
+                        the ML equivalent of validating an empirical formula against new, independent
+                        test results. In both cases, the goal is to verify that the learned relationship
+                        generalises beyond the data used to derive it.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite.
+                        <strong>Evaluating on the test set</strong> is the closest analogy. Just as
+                        an engineer checks a formula against new test results to confirm it works
+                        beyond the data used to develop it, test set evaluation checks that the model
+                        generalises to unseen data.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <ul class="takeaway-list">
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Supervised learning</strong> trains models on labelled
+                                input-output pairs. The model learns the mapping from features (inputs)
+                                to labels (outputs) and then predicts labels for new data.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Features</strong> are the measurable properties you feed into the
+                                model (mix design parameters, soil properties). <strong>Labels</strong> are
+                                the outcomes you want to predict (strength, soil class, pass/fail).
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Training/testing split</strong> is essential for honest evaluation.
+                                Never evaluate a model on the same data it was trained on. This mirrors
+                                how engineers validate empirical formulas against independent test data.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                The supervised learning <strong>workflow</strong> (collect, feature-engineer,
+                                split, train, evaluate, deploy) parallels the civil engineering quality
+                                testing process you already follow.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Regression</strong> predicts continuous values (strength in MPa).
+                                <strong>Classification</strong> predicts categories (soil type, damage
+                                status). The label type determines which you need.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Domain expertise is irreplaceable.</strong> Feature engineering,
+                                result validation, and physical plausibility checks all require your
+                                civil engineering knowledge. ML is a tool; you are the engineer.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we will dive into <strong>Linear Regression</strong>
+                        &mdash; the simplest and most interpretable supervised learning algorithm. You
+                        will learn how it works mathematically, implement it step by step, and apply it
+                        to a concrete strength prediction problem. The concepts you learned here
+                        (features, labels, train/test split, regression vs classification) will serve
+                        as the foundation for everything that follows.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="index.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> Chapter 2 Hub
+        </a>
+        <a href="sub2.html" class="chapter-nav__link next">
+            2.2 Linear Regression <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED SCATTER FIELD
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var particles = [];
+            var numParticles = 80;
+            var animId;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                particles = [];
+                for (var i = 0; i < numParticles; i++) {
+                    particles.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.6,
+                        vy: (Math.random() - 0.5) * 0.6,
+                        r: Math.random() * 3 + 1.5,
+                        cls: Math.random() > 0.5 ? 0 : 1
+                    });
+                }
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Draw grid
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                var gridSize = 40;
+                for (var gx = 0; gx < w; gx += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                // Draw connections
+                for (var i = 0; i < particles.length; i++) {
+                    for (var j = i + 1; j < particles.length; j++) {
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.strokeStyle = c.DIM;
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // Draw particles
+                for (var k = 0; k < particles.length; k++) {
+                    var p = particles[k];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.cls === 0 ? c.TEAL : c.AMBER;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+                }
+
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function () {
+                cancelAnimationFrame(animId);
+                resize();
+                draw();
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: SCATTER PLOT - LABEL AND FIT
+           ============================================== */
+        (function initScatterDemo() {
+            var canvas = document.getElementById('scatter-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var points = [];
+            var currentClass = 0; // 0 = A (teal), 1 = B (amber)
+            var boundary = null;
+            var padX = 50, padY = 40;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                drawAll();
+            }
+
+            function plotX(val) { return padX + val * (w - padX * 2); }
+            function plotY(val) { return (h - padY) - val * (h - padY * 2); }
+            function unplotX(px) { return (px - padX) / (w - padX * 2); }
+            function unplotY(py) { return ((h - padY) - py) / (h - padY * 2); }
+
+            function drawAll() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Background
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx <= 10; gx++) {
+                    var x = plotX(gx / 10);
+                    ctx.beginPath(); ctx.moveTo(x, padY); ctx.lineTo(x, h - padY); ctx.stroke();
+                }
+                for (var gy = 0; gy <= 10; gy++) {
+                    var y = plotY(gy / 10);
+                    ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+                }
+
+                // Axes
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(padX, padY);
+                ctx.lineTo(padX, h - padY);
+                ctx.lineTo(w - padX, h - padY);
+                ctx.stroke();
+
+                // Axis labels
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Feature 1 (e.g., Plasticity Index)', w / 2, h - 6);
+                ctx.save();
+                ctx.translate(14, h / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Feature 2 (e.g., Liquid Limit)', 0, 0);
+                ctx.restore();
+
+                // Decision boundary
+                if (boundary) {
+                    ctx.strokeStyle = c.CYAN;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    // boundary: y = mx + b  (in normalized coords)
+                    var x0 = 0, y0 = boundary.m * 0 + boundary.b;
+                    var x1 = 1, y1 = boundary.m * 1 + boundary.b;
+                    ctx.moveTo(plotX(x0), plotY(y0));
+                    ctx.lineTo(plotX(x1), plotY(y1));
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Shade regions
+                    ctx.globalAlpha = 0.04;
+                    ctx.fillStyle = c.TEAL;
+                    ctx.beginPath();
+                    ctx.moveTo(plotX(0), plotY(y0));
+                    ctx.lineTo(plotX(1), plotY(y1));
+                    ctx.lineTo(plotX(1), plotY(1));
+                    ctx.lineTo(plotX(0), plotY(1));
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.fillStyle = c.AMBER;
+                    ctx.beginPath();
+                    ctx.moveTo(plotX(0), plotY(y0));
+                    ctx.lineTo(plotX(1), plotY(y1));
+                    ctx.lineTo(plotX(1), plotY(0));
+                    ctx.lineTo(plotX(0), plotY(0));
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                // Points
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    ctx.beginPath();
+                    ctx.arc(plotX(p.x), plotY(p.y), 7, 0, Math.PI * 2);
+                    ctx.fillStyle = p.cls === 0 ? c.TEAL : c.AMBER;
+                    ctx.fill();
+                    ctx.strokeStyle = c.WHITE;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Legend
+                ctx.font = '12px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.beginPath(); ctx.arc(w - 160, padY + 10, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = c.TEXT;
+                ctx.textAlign = 'left';
+                ctx.fillText('Class A (Safe)', w - 148, padY + 14);
+
+                ctx.fillStyle = c.AMBER;
+                ctx.beginPath(); ctx.arc(w - 160, padY + 30, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Class B (Unstable)', w - 148, padY + 34);
+            }
+
+            // Click to add point
+            canvas.addEventListener('click', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var nx = unplotX(mx);
+                var ny = unplotY(my);
+                if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return;
+                points.push({ x: nx, y: ny, cls: currentClass });
+                boundary = null;
+                drawAll();
+                updateInfo();
+            });
+
+            // Class toggle
+            var toggleBtn = document.getElementById('scatter-class-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    currentClass = currentClass === 0 ? 1 : 0;
+                    var c = getColors();
+                    if (currentClass === 0) {
+                        toggleBtn.innerHTML = '<i class="fa-solid fa-circle" style="color:' + c.TEAL + ';"></i> Placing: Class A (Safe)';
+                    } else {
+                        toggleBtn.innerHTML = '<i class="fa-solid fa-circle" style="color:' + c.AMBER + ';"></i> Placing: Class B (Unstable)';
+                    }
+                });
+            }
+
+            // Reset
+            var resetBtn = document.getElementById('scatter-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function () {
+                    points = [];
+                    boundary = null;
+                    drawAll();
+                    updateInfo();
+                });
+            }
+
+            // Fit model (simple linear separator using mean-based approach)
+            var fitBtn = document.getElementById('scatter-fit');
+            if (fitBtn) {
+                fitBtn.addEventListener('click', function () {
+                    var classA = points.filter(function (p) { return p.cls === 0; });
+                    var classB = points.filter(function (p) { return p.cls === 1; });
+
+                    if (classA.length < 3 || classB.length < 3) {
+                        var infoEl = document.getElementById('scatter-info');
+                        if (infoEl) infoEl.textContent = 'Need at least 3 points per class to fit a model.';
+                        return;
+                    }
+
+                    // Compute centroids
+                    var ax = 0, ay = 0, bx = 0, by = 0;
+                    classA.forEach(function (p) { ax += p.x; ay += p.y; });
+                    classB.forEach(function (p) { bx += p.x; by += p.y; });
+                    ax /= classA.length; ay /= classA.length;
+                    bx /= classB.length; by /= classB.length;
+
+                    // Midpoint between centroids
+                    var midX = (ax + bx) / 2;
+                    var midY = (ay + by) / 2;
+
+                    // Perpendicular bisector of the line connecting centroids
+                    var dx = bx - ax;
+                    var dy = by - ay;
+
+                    // The boundary line is perpendicular to the centroid line
+                    // Direction: (-dy, dx), passing through (midX, midY)
+                    // y - midY = (-dx/dy) * (x - midX) if dy != 0
+                    if (Math.abs(dy) > 0.0001) {
+                        var m = -dx / dy;
+                        var b = midY - m * midX;
+                        boundary = { m: m, b: b };
+                    } else {
+                        // Vertical-ish boundary
+                        boundary = { m: 9999, b: midY - 9999 * midX };
+                    }
+
+                    // Count accuracy
+                    var correct = 0;
+                    points.forEach(function (p) {
+                        var predicted = (p.y > boundary.m * p.x + boundary.b) ? 0 : 1;
+                        if (predicted === p.cls) correct++;
+                    });
+                    var acc = ((correct / points.length) * 100).toFixed(1);
+
+                    drawAll();
+                    var infoEl = document.getElementById('scatter-info');
+                    if (infoEl) {
+                        infoEl.textContent = 'Model fitted! Training accuracy: ' + acc + '% (' + correct + '/' + points.length + ' correct). Try adding more points and refitting.';
+                    }
+                });
+            }
+
+            function updateInfo() {
+                var classA = points.filter(function (p) { return p.cls === 0; });
+                var classB = points.filter(function (p) { return p.cls === 1; });
+                var infoEl = document.getElementById('scatter-info');
+                if (infoEl) {
+                    infoEl.textContent = 'Class A: ' + classA.length + ' points | Class B: ' + classB.length + ' points. Add at least 3 per class, then click "Fit Model."';
+                }
+            }
+
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           DEMO 2: FEATURE IMPORTANCE VISUALISER
+           ============================================== */
+        (function initFeatureDemo() {
+            var canvas = document.getElementById('feature-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+
+            // Simulated feature importances (typical for concrete strength)
+            var features = [
+                { name: 'Cement',         importance: 0.32, slider: 'feat-cement',  valEl: 'feat-cement-val',  min: 100, max: 550, coeff: 0.065 },
+                { name: 'W/C Ratio',      importance: 0.28, slider: 'feat-wc',      valEl: 'feat-wc-val',      min: 25,  max: 70,  coeff: -0.55 },
+                { name: 'Age',            importance: 0.18, slider: 'feat-age',     valEl: 'feat-age-val',     min: 1,   max: 365, coeff: 0.04 },
+                { name: 'Fly Ash',        importance: 0.12, slider: 'feat-flyash',  valEl: 'feat-flyash-val',  min: 0,   max: 200, coeff: 0.02 },
+                { name: 'Superplast.',    importance: 0.10, slider: 'feat-sp',      valEl: 'feat-sp-val',      min: 0,   max: 30,  coeff: 0.35 }
+            ];
+
+            var barColors;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                barColors = null;
+                drawChart();
+            }
+
+            function getBarColors() {
+                var c = getColors();
+                return [c.TEAL, c.CYAN, c.AMBER, c.GREEN, c.RED];
+            }
+
+            function drawChart() {
+                var c = getColors();
+                if (!barColors) barColors = getBarColors();
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var padLeft = 110, padRight = 40, padTop = 50, padBottom = 40;
+                var chartW = w - padLeft - padRight;
+                var chartH = h - padTop - padBottom;
+                var barH = Math.min(40, (chartH - (features.length - 1) * 12) / features.length);
+                var gap = 12;
+                var totalH = features.length * barH + (features.length - 1) * gap;
+                var startY = padTop + (chartH - totalH) / 2;
+
+                // Title
+                ctx.fillStyle = c.WHITE;
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Relative Feature Importance for Concrete Strength', w / 2, 28);
+
+                // Draw bars
+                for (var i = 0; i < features.length; i++) {
+                    var f = features[i];
+                    var y = startY + i * (barH + gap);
+                    var barW = f.importance * chartW;
+
+                    // Bar background
+                    ctx.fillStyle = c.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(padLeft, y, chartW, barH, 4);
+                    ctx.fill();
+
+                    // Bar fill
+                    ctx.fillStyle = barColors[i];
+                    ctx.globalAlpha = 0.85;
+                    ctx.beginPath();
+                    ctx.roundRect(padLeft, y, barW, barH, 4);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // Label
+                    ctx.fillStyle = c.TEXT;
+                    ctx.font = '500 12px Inter, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(f.name, padLeft - 10, y + barH / 2);
+
+                    // Percentage
+                    ctx.fillStyle = c.WHITE;
+                    ctx.font = '600 12px JetBrains Mono, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText((f.importance * 100).toFixed(0) + '%', padLeft + barW + 8, y + barH / 2);
+                }
+
+                // Axis line
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padLeft, startY - 8);
+                ctx.lineTo(padLeft, startY + totalH + 8);
+                ctx.stroke();
+            }
+
+            function computeStrength() {
+                // Simplified prediction model for demonstration
+                var cement = parseInt(document.getElementById('feat-cement').value);
+                var wc = parseInt(document.getElementById('feat-wc').value) / 100;
+                var age = parseInt(document.getElementById('feat-age').value);
+                var flyash = parseInt(document.getElementById('feat-flyash').value);
+                var sp = parseInt(document.getElementById('feat-sp').value);
+
+                // Update display values
+                document.getElementById('feat-cement-val').textContent = cement;
+                document.getElementById('feat-wc-val').textContent = wc.toFixed(2);
+                document.getElementById('feat-age-val').textContent = age;
+                document.getElementById('feat-flyash-val').textContent = flyash;
+                document.getElementById('feat-sp-val').textContent = sp;
+
+                // Simplified concrete strength model (inspired by Abram's-like relationships)
+                var strength = 0.065 * cement
+                             - 55 * wc
+                             + 0.04 * Math.min(age, 90) * (1 - Math.exp(-age / 10))
+                             + 0.02 * flyash
+                             + 0.35 * sp
+                             + 5;
+
+                strength = Math.max(5, Math.min(80, strength));
+
+                document.getElementById('feature-prediction').textContent =
+                    'Predicted Strength: ' + strength.toFixed(1) + ' MPa';
+
+                // Update importances dynamically based on sensitivity
+                var base = strength;
+                var sensitivities = [];
+                var total = 0;
+
+                // Cement sensitivity
+                var sCement = Math.abs(0.065 * cement / base);
+                sensitivities.push(sCement); total += sCement;
+
+                // W/C sensitivity
+                var sWC = Math.abs(55 * wc / base);
+                sensitivities.push(sWC); total += sWC;
+
+                // Age sensitivity
+                var sAge = Math.abs(0.04 * Math.min(age, 90) * (1 - Math.exp(-age / 10)) / base);
+                sensitivities.push(sAge); total += sAge;
+
+                // Fly Ash sensitivity
+                var sFA = Math.abs(0.02 * flyash / base);
+                sensitivities.push(sFA); total += sFA;
+
+                // SP sensitivity
+                var sSP = Math.abs(0.35 * sp / base);
+                sensitivities.push(sSP); total += sSP;
+
+                if (total > 0) {
+                    for (var i = 0; i < features.length; i++) {
+                        features[i].importance = sensitivities[i] / total;
+                    }
+                }
+
+                drawChart();
+            }
+
+            // Attach slider listeners
+            ['feat-cement', 'feat-wc', 'feat-age', 'feat-flyash', 'feat-sp'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', computeStrength);
+                }
+            });
+
+            resize();
+            computeStrength();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           SCROLL PROGRESS BAR
+           ============================================== */
+        (function initScrollProgress() {
+            var bar = document.getElementById('scroll-progress');
+            if (!bar) return;
+            function update() {
+                var scrollTop = window.scrollY;
+                var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+                bar.style.width = progress + '%';
+            }
+            window.addEventListener('scroll', update, { passive: true });
+            update();
+        })();
+
+        /* ==============================================
+           INTERSECTION OBSERVER FOR ANIMATIONS
+           ============================================== */
+        (function initObserver() {
+            var observerOptions = {
+                root: null,
+                rootMargin: '0px 0px -60px 0px',
+                threshold: 0.15
+            };
+
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .code-peek, .demo-panel')
+                .forEach(function (el) {
+                    observer.observe(el);
+                });
+        })();
+
+        /* ==============================================
+           THEME CHANGE HANDLER - REDRAW CANVASES
+           ============================================== */
+        (function initThemeWatcher() {
+            var observer = new MutationObserver(function () {
+                // Re-trigger canvas redraws on theme change
+                window.dispatchEvent(new Event('resize'));
+            });
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['data-theme']
+            });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

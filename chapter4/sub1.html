@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.1 Images as Data | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Understand how computers see images as numerical data. Explore pixels, grayscale vs color, RGB channels, resolution, and image tensors through a civil engineering lens with interactive demos.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.1
+            </div>
+            <h1 class="chapter-hero__title">Images as Data</h1>
+            <p class="chapter-hero__subtitle">
+                How computers see the world &mdash; every photograph of a bridge, every drone
+                survey of a construction site, and every thermal scan of a building facade is
+                nothing more than a structured grid of numbers to a machine.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 30 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>What Does a Computer Actually See?</h2>
+                        <p>
+                            You are standing on a bridge deck during a routine structural inspection.
+                            You pull out your phone and snap a photograph of a hairline crack running
+                            along the concrete surface. To you, the image is immediately meaningful
+                            &mdash; you see the crack, the surrounding concrete texture, the shadow
+                            patterns, the rebar staining. You understand context, depth, and urgency.
+                        </p>
+                        <p>
+                            But to a computer, that same photograph is none of those things. There is
+                            no "crack," no "concrete," no "shadow." There is only a rectangular grid
+                            of numbers &mdash; thousands upon thousands of them &mdash; each
+                            representing a tiny square of colour or brightness. Understanding this
+                            fundamental truth is the first step toward understanding how AI can learn
+                            to see and interpret images the way we do.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This sub-chapter introduces the concept of <strong>images as data</strong>
+                    &mdash; the foundational idea upon which all computer vision and image-based
+                    AI is built. Before we can discuss convolutional neural networks, object
+                    detection, or crack classification, we must first understand what an image
+                    actually <em>is</em> to a computer: a structured array of numerical values.
+                </p>
+                <p>
+                    We will explore how pixels encode brightness and colour, how images are
+                    represented as multi-dimensional arrays (tensors), how resolution and colour
+                    channels affect data size, and why all of this matters for civil engineering
+                    applications like drone imagery analysis, thermal scanning, and automated
+                    defect detection.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes basic familiarity with the concepts from
+                        Chapters 1&ndash;3. No programming experience is required, but comfort
+                        with the idea of data represented as numbers (from Chapter 1) and basic
+                        matrix concepts will be helpful. We build everything from first principles.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: PIXELS — THE ATOMS OF IMAGES
+             ========================================== -->
+        <section class="ch-section" id="pixels-atoms">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-border-all"></i>
+                    Pixels: The Atoms of Every Digital Image
+                </h2>
+
+                <p>
+                    The word "pixel" comes from "picture element." A pixel is the smallest
+                    addressable unit of a digital image &mdash; a single dot of colour or
+                    brightness. Every digital photograph, satellite image, or thermal scan you
+                    have ever seen is composed entirely of pixels arranged in a rectangular grid.
+                </p>
+                <p>
+                    Think of it like a mosaic. Stand close to a mosaic wall and you see individual
+                    tiles of different colours. Step back and those tiles merge into a recognisable
+                    picture. Digital images work the same way: each pixel is a tile, and the grid
+                    of tiles forms the image.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Pixels are like survey grid points.</strong> When a geotechnical
+                            engineer conducts a site investigation, they often lay out a regular grid
+                            across the site and take measurements at each grid point &mdash; soil
+                            type, bearing capacity, moisture content. Each grid point captures a
+                            single, localised measurement. Collectively, the grid of measurements
+                            forms a complete picture of the site conditions.
+                        </p>
+                        <p>
+                            A digital image works identically. Each pixel is a "measurement point"
+                            that records the light intensity (brightness or colour) at that specific
+                            location. The denser the grid (higher resolution), the more detailed the
+                            picture &mdash; just as a finer survey grid reveals more about the site.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Pixel Values: Numbers Between 0 and 255</h3>
+
+                <p>
+                    Each pixel stores a numerical value that represents brightness or colour
+                    intensity. For a <strong>grayscale</strong> (black-and-white) image, each pixel
+                    holds a single number ranging from <strong>0 to 255</strong>:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The 0&ndash;255 Scale</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>0</strong> = pure black (no light, no brightness)</li>
+                            <li><strong>128</strong> = medium grey (halfway between black and white)</li>
+                            <li><strong>255</strong> = pure white (maximum brightness)</li>
+                        </ul>
+                        <p>
+                            Why 255? Because pixel values are stored as <strong>8-bit unsigned
+                            integers</strong>. With 8 bits, you can represent 2<sup>8</sup> = 256
+                            distinct values, ranging from 0 to 255. This gives 256 shades of grey
+                            &mdash; more than enough for the human eye to perceive smooth gradients.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Consider a very small 4&times;4 grayscale image. It would be stored as a grid
+                    of 16 numbers, each between 0 and 255. A dark region might contain values like
+                    12, 18, 20, while a bright region might contain 230, 240, 245. The computer
+                    does not know what these numbers <em>mean</em> &mdash; it simply stores them.
+                    Meaning is something we (or an AI model) must impose.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Why This Matters for Engineers</span>
+                    </div>
+                    <p>
+                        When you photograph a crack in concrete, the crack appears dark against a
+                        lighter background. In pixel terms, the crack region has <strong>low pixel
+                        values</strong> (dark) while the surrounding concrete has <strong>higher
+                        pixel values</strong> (lighter). An AI model learns to detect cracks by
+                        recognising these patterns of contrast in the numerical grid &mdash; it
+                        never "sees" a crack the way you do.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: GRAYSCALE VS COLOUR
+             ========================================== -->
+        <section class="ch-section" id="grayscale-vs-colour">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-palette"></i>
+                    Grayscale vs Colour Images
+                </h2>
+
+                <p>
+                    Not all images carry the same amount of information per pixel. The simplest
+                    images are <strong>grayscale</strong> &mdash; each pixel stores a single number
+                    representing brightness. But most photographs we work with are <strong>colour
+                    images</strong>, and they store significantly more data.
+                </p>
+
+                <h3>Grayscale: One Number Per Pixel</h3>
+
+                <p>
+                    A grayscale image has a single <strong>channel</strong>. Each pixel is
+                    described by exactly one value (0&ndash;255). Grayscale images are common in
+                    engineering contexts: X-ray inspection images, certain types of thermal
+                    imagery, and older photographic documentation are often grayscale.
+                </p>
+                <p>
+                    For a grayscale image of size 100&times;100 pixels, the total data is 100
+                    &times; 100 = 10,000 numbers. Simple, compact, and efficient.
+                </p>
+
+                <h3>Colour: Three Numbers Per Pixel (RGB)</h3>
+
+                <p>
+                    A colour image uses the <strong>RGB colour model</strong>. Each pixel stores
+                    <strong>three</strong> numbers instead of one:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The RGB Colour Model</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>R (Red)</strong> &mdash; intensity of the red component (0&ndash;255)</li>
+                            <li><strong>G (Green)</strong> &mdash; intensity of the green component (0&ndash;255)</li>
+                            <li><strong>B (Blue)</strong> &mdash; intensity of the blue component (0&ndash;255)</li>
+                        </ul>
+                        <p>
+                            By mixing these three primary colours at different intensities, any
+                            visible colour can be approximated. For example:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><code style="color:var(--code-number);">(255, 0, 0)</code> = pure red</li>
+                            <li><code style="color:var(--code-number);">(0, 255, 0)</code> = pure green</li>
+                            <li><code style="color:var(--code-number);">(0, 0, 255)</code> = pure blue</li>
+                            <li><code style="color:var(--code-number);">(255, 255, 0)</code> = yellow (red + green)</li>
+                            <li><code style="color:var(--code-number);">(255, 255, 255)</code> = white (all channels max)</li>
+                            <li><code style="color:var(--code-number);">(0, 0, 0)</code> = black (all channels zero)</li>
+                            <li><code style="color:var(--code-number);">(128, 128, 128)</code> = neutral grey</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    For a 100&times;100 colour image, the data is 100 &times; 100 &times; 3 =
+                    30,000 numbers &mdash; three times more data than the equivalent grayscale
+                    image. Each pixel now carries three independent measurements of light
+                    intensity, one for each colour channel.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Grayscale vs colour is like single-parameter vs multi-parameter
+                            site testing.</strong> A grayscale image records one measurement per
+                            pixel (brightness), just like measuring only bearing capacity at each
+                            grid point. A colour image records three measurements per pixel (R, G,
+                            B), like simultaneously measuring bearing capacity, moisture content,
+                            and density at every grid point.
+                        </p>
+                        <p>
+                            More channels mean more information &mdash; but also more data to
+                            process, store, and analyse. This trade-off between richness and
+                            computational cost is central to image-based AI.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: RGB CHANNELS IN DEPTH
+             ========================================== -->
+        <section class="ch-section" id="rgb-channels">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    RGB Channels: Three Layers of Information
+                </h2>
+
+                <p>
+                    A colour image can be thought of as three separate grayscale images stacked
+                    on top of each other &mdash; one for red, one for green, and one for blue.
+                    Each of these layers is called a <strong>channel</strong>. When displayed
+                    together, they produce the full-colour image.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Decomposing an Image into Channels</h3>
+                        <p>
+                            Imagine you have a photograph of a construction site with an orange
+                            safety barrier, green vegetation, and a blue sky. If you extracted
+                            only the <strong>Red channel</strong>, the orange barrier would appear
+                            bright (high values), the vegetation moderate, and the sky dark. In the
+                            <strong>Green channel</strong>, vegetation appears brightest. In the
+                            <strong>Blue channel</strong>, the sky dominates.
+                        </p>
+                        <p>
+                            Each channel highlights different features of the same scene. This
+                            decomposition is exactly what convolutional neural networks exploit
+                            &mdash; they learn which channel patterns correspond to specific objects,
+                            textures, or defects.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Understanding channels is essential for civil engineering AI applications.
+                    Thermal cameras, for instance, often produce single-channel images where
+                    pixel values represent temperature rather than visible light. Multispectral
+                    drone imagery may have 5, 10, or even more channels, each capturing a
+                    different wavelength of light. The principle is always the same: each channel
+                    is a 2D grid of numbers encoding one type of measurement.
+                </p>
+
+                <h3>Beyond RGB: Special Channels in Engineering</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-temperature-half"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Engineering Image Types and Their Channels</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:0.95rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-active);">
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-primary); font-weight:700;">Image Type</th>
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-secondary); font-weight:700;">Channels</th>
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-warm); font-weight:700;">CE Application</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">Standard photo</td>
+                                        <td style="padding:10px 16px;">3 (R, G, B)</td>
+                                        <td style="padding:10px 16px;">Site documentation, crack detection</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">Grayscale photo</td>
+                                        <td style="padding:10px 16px;">1 (intensity)</td>
+                                        <td style="padding:10px 16px;">X-ray inspection, simplified processing</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">Thermal image</td>
+                                        <td style="padding:10px 16px;">1 (temperature)</td>
+                                        <td style="padding:10px 16px;">Heat loss analysis, moisture detection</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">RGBA image</td>
+                                        <td style="padding:10px 16px;">4 (R, G, B, Alpha)</td>
+                                        <td style="padding:10px 16px;">Overlays, transparency masks</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">Multispectral</td>
+                                        <td style="padding:10px 16px;">5&ndash;12+</td>
+                                        <td style="padding:10px 16px;">Vegetation health, material classification</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:10px 16px; font-weight:600;">Depth map</td>
+                                        <td style="padding:10px 16px;">1 (distance)</td>
+                                        <td style="padding:10px 16px;">LiDAR surveys, 3D reconstruction</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: RESOLUTION AND IMAGE SIZE
+             ========================================== -->
+        <section class="ch-section" id="resolution-size">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-expand"></i>
+                    Resolution and Image Size
+                </h2>
+
+                <p>
+                    An image's <strong>resolution</strong> describes the number of pixels along
+                    its width and height. A 1920&times;1080 image has 1,920 columns and 1,080
+                    rows of pixels, totalling 2,073,600 pixels (approximately 2 megapixels).
+                </p>
+
+                <p>
+                    Resolution directly determines data volume. Higher resolution means more
+                    pixels, more numbers, and more data to store and process:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Data Size Calculation</h3>
+                        <p>The formula for raw image data size is straightforward:</p>
+                        <p style="text-align:center; font-family:'JetBrains Mono', monospace; font-size:1.05rem; margin:16px 0; padding:16px; background:var(--bg-tertiary); border-radius:8px; color:var(--accent-primary);">
+                            Data Size = Width &times; Height &times; Channels &times; Bytes per channel
+                        </p>
+                        <p>Examples for a single 8-bit-per-channel image:</p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li>
+                                <strong>640 &times; 480 grayscale</strong>:
+                                640 &times; 480 &times; 1 = 307,200 bytes (~300 KB)
+                            </li>
+                            <li>
+                                <strong>1920 &times; 1080 colour (RGB)</strong>:
+                                1920 &times; 1080 &times; 3 = 6,220,800 bytes (~5.9 MB)
+                            </li>
+                            <li>
+                                <strong>4000 &times; 3000 colour (drone photo)</strong>:
+                                4000 &times; 3000 &times; 3 = 36,000,000 bytes (~34.3 MB)
+                            </li>
+                        </ul>
+                        <p>
+                            These are <em>raw, uncompressed</em> sizes. Formats like JPEG compress
+                            this data significantly, but AI models typically work with the full,
+                            uncompressed pixel values.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box" style="border-left-color:var(--accent-warm);">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Resolution vs Quality Trade-off</span>
+                    </div>
+                    <p>
+                        In civil engineering AI, resolution is a double-edged sword. Higher
+                        resolution captures finer details &mdash; essential for detecting
+                        hairline cracks or subtle corrosion. But higher resolution also means
+                        dramatically more data, requiring more memory, more processing power,
+                        and longer training times. Finding the right balance is a critical
+                        engineering decision.
+                    </p>
+                    <p>
+                        A 12-megapixel drone photo captures extraordinary detail, but feeding
+                        it directly into a neural network is usually impractical. Instead,
+                        engineers typically resize images to a standard dimension (e.g., 224
+                        &times; 224 or 512 &times; 512) or use a sliding window approach to
+                        analyse the full image in smaller patches.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: IMAGE AS A 3D TENSOR
+             ========================================== -->
+        <section class="ch-section" id="image-tensor">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-cube"></i>
+                    The Image as a 3D Tensor (H &times; W &times; C)
+                </h2>
+
+                <p>
+                    In machine learning, an image is represented as a <strong>3-dimensional
+                    array</strong> called a <strong>tensor</strong>. This is simply a fancy name
+                    for a block of numbers organised along three axes:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Three Dimensions of an Image Tensor</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li>
+                                <strong>H (Height)</strong> &mdash; the number of pixel rows
+                                (vertical extent)
+                            </li>
+                            <li>
+                                <strong>W (Width)</strong> &mdash; the number of pixel columns
+                                (horizontal extent)
+                            </li>
+                            <li>
+                                <strong>C (Channels)</strong> &mdash; the number of colour or
+                                measurement channels (1 for grayscale, 3 for RGB, etc.)
+                            </li>
+                        </ul>
+                        <p>
+                            A 1920&times;1080 colour photograph is a tensor of shape
+                            <code style="color:var(--code-number);">(1080, 1920, 3)</code>
+                            &mdash; 1,080 rows, 1,920 columns, and 3 colour channels. Every
+                            single value in this tensor is an integer between 0 and 255.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The tensor representation is powerful because it turns images into pure
+                    numerical data that mathematical operations can manipulate. Addition,
+                    subtraction, multiplication, convolution &mdash; all become applicable once
+                    the image is a tensor. This is the bridge between photography and
+                    computation, between visual inspection and automated analysis.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>An image tensor is like a multi-storey building floor
+                            plan.</strong> Imagine a building where each floor has the same grid
+                            layout of rooms (H rows &times; W columns). Each floor represents a
+                            different measurement &mdash; floor 1 records temperature in each room,
+                            floor 2 records humidity, floor 3 records noise level. The entire
+                            building (all floors stacked) is the tensor.
+                        </p>
+                        <p>
+                            Similarly, an RGB image has three "floors" (channels). Floor 1 records
+                            red intensity at every pixel, floor 2 records green, floor 3 records
+                            blue. The complete stack of floors is the 3D image tensor &mdash; a
+                            compact, structured representation of all the visual information.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Visualising the Tensor Shape</h3>
+
+                <p>
+                    Here is how different image types map to tensor dimensions:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Tensor Shapes</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:0.95rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-active);">
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-primary); font-weight:700;">Image Description</th>
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-secondary); font-weight:700;">Tensor Shape (H,W,C)</th>
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-warm); font-weight:700;">Total Values</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;">Tiny icon (grayscale)</td>
+                                        <td style="padding:10px 16px; font-family:'JetBrains Mono',monospace;">(28, 28, 1)</td>
+                                        <td style="padding:10px 16px;">784</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;">Small patch (colour)</td>
+                                        <td style="padding:10px 16px; font-family:'JetBrains Mono',monospace;">(64, 64, 3)</td>
+                                        <td style="padding:10px 16px;">12,288</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;">Standard AI input (colour)</td>
+                                        <td style="padding:10px 16px; font-family:'JetBrains Mono',monospace;">(224, 224, 3)</td>
+                                        <td style="padding:10px 16px;">150,528</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;">Full HD photo (colour)</td>
+                                        <td style="padding:10px 16px; font-family:'JetBrains Mono',monospace;">(1080, 1920, 3)</td>
+                                        <td style="padding:10px 16px;">6,220,800</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:10px 16px;">Drone photo (colour)</td>
+                                        <td style="padding:10px 16px; font-family:'JetBrains Mono',monospace;">(3000, 4000, 3)</td>
+                                        <td style="padding:10px 16px;">36,000,000</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CIVIL ENGINEERING CONTEXT
+             ========================================== -->
+        <section class="ch-section" id="ce-context">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    Images in Civil Engineering Practice
+                </h2>
+
+                <p>
+                    Now that we understand how computers represent images as numbers, let us
+                    connect this to the real-world scenarios where civil engineers encounter
+                    image data. Understanding the data format is critical because it determines
+                    what information is available for AI models to learn from.
+                </p>
+
+                <h3><i class="fa-solid fa-magnifying-glass"></i> Structural Inspection Photos</h3>
+
+                <p>
+                    Routine inspections of bridges, tunnels, dams, and buildings generate
+                    thousands of photographs. Each photo is a high-resolution RGB tensor. AI
+                    models trained on these images can learn to detect cracks, spalling,
+                    delamination, corrosion staining, and other defects automatically. The
+                    critical insight is that these defects manifest as specific <em>patterns
+                    of pixel values</em> &mdash; a crack is a narrow band of dark pixels against
+                    lighter surroundings; corrosion staining is a region where red channel values
+                    are disproportionately high.
+                </p>
+
+                <h3><i class="fa-solid fa-helicopter"></i> Drone Imagery</h3>
+
+                <p>
+                    Unmanned aerial vehicles (UAVs) capture images from perspectives that are
+                    difficult or dangerous for human inspectors. Drone images of construction
+                    sites, bridge decks, or building facades are typically very high resolution
+                    (12&ndash;48 megapixels), producing massive tensors. Processing these images
+                    for AI analysis often requires dividing them into smaller, manageable patches
+                    &mdash; a technique called <strong>tiling</strong> or <strong>windowing
+                    </strong>.
+                </p>
+
+                <h3><i class="fa-solid fa-fire"></i> Thermal Imaging</h3>
+
+                <p>
+                    Thermal cameras capture infrared radiation and produce images where pixel
+                    values represent <strong>temperature</strong> rather than visible light.
+                    These are typically single-channel images. Civil engineers use thermal
+                    imaging to detect heat loss through building envelopes, locate moisture
+                    ingress (wet areas cool differently), find delamination in bridge decks
+                    (subsurface voids trap air, creating temperature differences), and monitor
+                    concrete curing temperatures.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Key Insight</span>
+                    </div>
+                    <p>
+                        Regardless of the source &mdash; smartphone camera, industrial drone,
+                        thermal sensor, or multispectral scanner &mdash; the fundamental
+                        representation is always the same: a tensor of numbers. The dimensions
+                        and ranges may differ, but the structure is consistent. Once you
+                        understand images as tensors, you can apply AI techniques to any type
+                        of imaging data.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DEMO 1: PIXEL EXPLORER
+             ========================================== -->
+        <section class="ch-section" id="demo-pixel-explorer">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Pixel Explorer
+                </h2>
+
+                <p>
+                    This interactive demo lets you see the numerical values behind individual
+                    pixels. The canvas displays a simulated image region (representing a concrete
+                    surface with a dark "crack"). Hover over any cell to inspect its grayscale
+                    value. Click <strong>Zoom In</strong> to see a magnified view of a small
+                    area, revealing the numbers that define each pixel.
+                </p>
+
+                <div class="demo-panel" id="pixel-explorer-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-border-all"></i>
+                        <span>Pixel Explorer &mdash; Seeing the Numbers Behind an Image</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+                        <button id="pixel-zoom-in" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-magnifying-glass-plus"></i> Zoom In
+                        </button>
+                        <button id="pixel-zoom-out" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-magnifying-glass-minus"></i> Zoom Out
+                        </button>
+                        <button id="pixel-reset" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="pixel-explorer-canvas" style="width:100%; height:420px; border-radius:8px; cursor:crosshair;"></canvas>
+                    <p id="pixel-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-secondary); min-height:20px;">
+                        Hover over the grid to see pixel values. Click Zoom In to magnify a region.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: HOW IMAGES ENCODE INFORMATION
+             ========================================== -->
+        <section class="ch-section" id="encoding-information">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-barcode"></i>
+                    How Images Encode Engineering Information
+                </h2>
+
+                <p>
+                    With the pixel-level understanding from the demo, let us now examine how
+                    meaningful engineering information is encoded in these pixel values. This is
+                    the bridge between "images are numbers" and "AI can learn from images."
+                </p>
+
+                <h3>Contrast Encodes Boundaries</h3>
+                <p>
+                    When adjacent pixels have very different values, it indicates an edge or
+                    boundary. A crack in concrete creates a sharp contrast &mdash; dark pixels
+                    (the crack) next to lighter pixels (the concrete). AI models learn to
+                    detect these rapid changes in pixel values as potential features of interest.
+                </p>
+
+                <h3>Texture Encodes Surface Condition</h3>
+                <p>
+                    The statistical distribution of pixel values across a region encodes texture.
+                    Smooth concrete has relatively uniform pixel values. Rough, spalled concrete
+                    has highly variable values. Corroded steel has a characteristic mottled
+                    pattern of reds and browns. These texture patterns are captured entirely in
+                    the numbers.
+                </p>
+
+                <h3>Colour Encodes Material Properties</h3>
+                <p>
+                    The relative intensities of R, G, and B channels encode colour, which often
+                    reveals material properties. Rust staining produces elevated red channel
+                    values. Algae growth produces elevated green values. Efflorescence (white
+                    mineral deposits) produces uniformly high values across all channels. AI
+                    models learn these colour signatures from the tensor data.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>From Pixels to Patterns: The Learning Pipeline</h3>
+                        <p>
+                            The journey from raw pixel data to automated defect detection follows
+                            a clear pipeline:
+                        </p>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Capture</strong> &mdash; take a photograph (create the tensor)</li>
+                            <li><strong>Pre-process</strong> &mdash; resize, normalise pixel values (scale 0&ndash;255 to 0&ndash;1)</li>
+                            <li><strong>Feed to model</strong> &mdash; pass the tensor to a neural network</li>
+                            <li><strong>Extract features</strong> &mdash; model learns edges, textures, shapes from pixel patterns</li>
+                            <li><strong>Classify / detect</strong> &mdash; model outputs a prediction (crack / no crack, severity level, etc.)</li>
+                        </ol>
+                        <p>
+                            Every step depends on the image being a well-structured numerical tensor.
+                            This is why understanding images as data is foundational.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DEMO 2: CHANNEL SEPARATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-channel-separator">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 2: RGB Channel Separator
+                </h2>
+
+                <p>
+                    This demo simulates a construction site image and separates it into its
+                    Red, Green, and Blue channels. Notice how different objects appear brighter
+                    or darker in each channel depending on their colour. Use the buttons to
+                    switch between the combined view and individual channels.
+                </p>
+
+                <div class="demo-panel" id="channel-separator-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span>Channel Separator &mdash; Decomposing an Image into R, G, B</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+                        <button id="ch-combined" class="demo-btn" style="padding:8px 18px; border:2px solid var(--accent-primary); background:var(--bg-tertiary); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.9rem; font-weight:600;">
+                            <i class="fa-solid fa-image"></i> Combined
+                        </button>
+                        <button id="ch-red" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-r"></i> Red
+                        </button>
+                        <button id="ch-green" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-g"></i> Green
+                        </button>
+                        <button id="ch-blue" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-b"></i> Blue
+                        </button>
+                        <button id="ch-all" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-table-columns"></i> Side by Side
+                        </button>
+                    </div>
+                    <canvas id="channel-canvas" style="width:100%; height:420px; border-radius:8px;"></canvas>
+                    <p id="channel-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-secondary); min-height:20px;">
+                        Showing combined RGB image. Use buttons to isolate individual channels.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: NORMALISATION AND PREPROCESSING
+             ========================================== -->
+        <section class="ch-section" id="normalisation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-to-dot"></i>
+                    Normalisation: Preparing Images for AI
+                </h2>
+
+                <p>
+                    Raw pixel values (0&ndash;255) are integers, but neural networks work best
+                    with small floating-point numbers. Before feeding images to a model, we
+                    typically <strong>normalise</strong> the pixel values &mdash; a simple but
+                    essential pre-processing step.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-divide"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Normalisation Approaches</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li>
+                                <strong>Min-max scaling</strong>: divide all values by 255 to map
+                                the range to [0, 1]. A pixel value of 128 becomes 0.502.
+                            </li>
+                            <li>
+                                <strong>Mean subtraction + scaling</strong>: subtract the mean pixel
+                                value of the dataset and divide by the standard deviation. This
+                                centres the data around zero with unit variance.
+                            </li>
+                            <li>
+                                <strong>Channel-wise normalisation</strong>: apply mean subtraction
+                                and scaling independently to each RGB channel, using statistics
+                                computed across the training dataset (e.g., ImageNet means:
+                                R=0.485, G=0.456, B=0.406).
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    Why does normalisation matter? Neural networks use gradient descent to learn.
+                    When input values are very large (like 0&ndash;255), the gradients can become
+                    unstable, making training slow or erratic. Normalised values (0&ndash;1 or
+                    centred around zero) keep the gradients well-behaved, leading to faster and
+                    more reliable training.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Normalisation is like converting units before structural
+                            analysis.</strong> If you mix forces in kilonewtons with dimensions in
+                            millimetres and densities in tonnes per cubic metre, numerical methods
+                            can struggle with the vastly different scales. Engineers routinely
+                            normalise their units &mdash; working in consistent SI units or
+                            non-dimensionalising equations &mdash; to ensure numerical stability.
+                            Image normalisation serves exactly the same purpose.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: SUMMARY AND KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                A digital image is a <strong>rectangular grid of pixels</strong>,
+                                where each pixel stores one or more numerical values representing
+                                brightness or colour intensity.
+                            </li>
+                            <li>
+                                Grayscale pixels hold <strong>one value</strong> (0&ndash;255);
+                                colour pixels hold <strong>three values</strong> (R, G, B), each
+                                0&ndash;255.
+                            </li>
+                            <li>
+                                An image is stored as a <strong>3D tensor</strong> with shape
+                                (Height &times; Width &times; Channels).
+                            </li>
+                            <li>
+                                <strong>Resolution</strong> (number of pixels) directly determines
+                                data size and the level of detail captured.
+                            </li>
+                            <li>
+                                Engineering features like cracks, corrosion, and temperature
+                                variations are encoded as <strong>patterns of pixel values</strong>
+                                &mdash; contrast, texture, and colour signatures.
+                            </li>
+                            <li>
+                                <strong>Normalisation</strong> (scaling pixel values) is essential
+                                before feeding images to neural networks.
+                            </li>
+                            <li>
+                                The tensor representation is universal &mdash; it applies to
+                                standard photos, thermal images, drone imagery, and multispectral
+                                scans alike.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Answer the following questions to check your grasp of the core concepts
+                    covered in this sub-chapter.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A 640 &times; 480 RGB image has how many total numerical values in its
+                        tensor representation?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 307,200
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 921,600
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 1,228,800
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 614,400
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> 640 &times; 480 &times; 3 (RGB channels) =
+                        921,600 values. Each pixel contributes three numbers.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Remember, an RGB image has 3 channels.
+                        640 &times; 480 = 307,200 pixels, but each pixel has 3 values, giving
+                        307,200 &times; 3 = 921,600 total values.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In a grayscale image, a pixel with value 0 represents:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Pure white
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Medium grey
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Pure black
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Transparent
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> In the 0&ndash;255 scale, 0 means no brightness
+                        at all &mdash; pure black. 255 would be pure white.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Pixel value 0 represents zero brightness,
+                        which is pure black. The scale goes from 0 (black) to 255 (white).
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A thermal image from a building envelope survey is typically:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> A 3-channel RGB image
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> A single-channel image where values represent temperature
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> A 4-channel RGBA image
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> A 12-channel multispectral image
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Thermal cameras produce single-channel images
+                        where each pixel value encodes temperature rather than visible light
+                        intensity.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Thermal images capture infrared radiation
+                        and produce a single channel of temperature data, not visible light
+                        colour channels.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the tensor shape of a 1920&times;1080 colour photograph?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> (1920, 1080, 3)
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> (1080, 1920, 3)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> (3, 1080, 1920)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> (1080, 1920, 1)
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> In H &times; W &times; C format, height (rows)
+                        comes first: 1080 rows, 1920 columns, 3 colour channels = (1080, 1920, 3).
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The convention is (Height, Width, Channels).
+                        Height = number of rows = 1080. Width = number of columns = 1920.
+                        Channels = 3 for RGB. So the shape is (1080, 1920, 3).
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="index.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> Chapter 4 Hub
+        </a>
+        <a href="sub2.html" class="chapter-nav__link next">
+            4.2 Convolution Operation <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED PIXEL GRID
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var cells = [];
+            var cols, rows;
+            var cellSize = 32;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                cols = Math.ceil(w / cellSize) + 1;
+                rows = Math.ceil(h / cellSize) + 1;
+                cells = [];
+                for (var r = 0; r < rows; r++) {
+                    for (var c = 0; c < cols; c++) {
+                        cells.push({
+                            x: c * cellSize,
+                            y: r * cellSize,
+                            val: Math.floor(Math.random() * 256),
+                            speed: 0.2 + Math.random() * 0.8,
+                            phase: Math.random() * Math.PI * 2
+                        });
+                    }
+                }
+            }
+
+            var t = 0;
+            function draw() {
+                var colors = getColors();
+                ctx.fillStyle = colors.BG;
+                ctx.fillRect(0, 0, w, h);
+                t += 0.01;
+
+                for (var i = 0; i < cells.length; i++) {
+                    var cell = cells[i];
+                    var flicker = Math.sin(t * cell.speed + cell.phase) * 0.3 + 0.5;
+                    var alpha = flicker * 0.12;
+                    var grayVal = Math.floor(cell.val * flicker);
+                    ctx.fillStyle = 'rgba(' + grayVal + ',' + grayVal + ',' + grayVal + ',' + alpha + ')';
+                    ctx.fillRect(cell.x + 1, cell.y + 1, cellSize - 2, cellSize - 2);
+
+                    if (alpha > 0.08) {
+                        ctx.fillStyle = 'rgba(255,255,255,' + (alpha * 0.4) + ')';
+                        ctx.font = '9px "JetBrains Mono", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(grayVal, cell.x + cellSize / 2, cell.y + cellSize / 2);
+                    }
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+
+            var themeObs = new MutationObserver(function () { resize(); });
+            themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 1: PIXEL EXPLORER
+           ============================================== */
+        (function initPixelExplorer() {
+            var canvas = document.getElementById('pixel-explorer-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var GRID_SIZE = 20;
+            var pixelData = [];
+            var zoomed = false;
+            var zoomRegion = { r: 4, c: 6, size: 5 };
+            var hoverCell = null;
+
+            /* Generate a simulated concrete surface with a "crack" */
+            function generateImage() {
+                pixelData = [];
+                for (var r = 0; r < GRID_SIZE; r++) {
+                    var row = [];
+                    for (var c = 0; c < GRID_SIZE; c++) {
+                        /* Base concrete: light grey with noise */
+                        var base = 160 + Math.floor(Math.random() * 50);
+
+                        /* Crack: a diagonal band of dark pixels */
+                        var crackDist = Math.abs((r - 2) - (c * 0.8));
+                        if (crackDist < 1.2) {
+                            base = 20 + Math.floor(Math.random() * 30);
+                        } else if (crackDist < 2.5) {
+                            base = 80 + Math.floor(Math.random() * 40);
+                        }
+
+                        /* Shadow region in bottom-right */
+                        if (r > 14 && c > 14) {
+                            base = Math.max(30, base - 60);
+                        }
+
+                        row.push(Math.min(255, Math.max(0, base)));
+                    }
+                    pixelData.push(row);
+                }
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.fillStyle = colors.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                if (zoomed) {
+                    drawZoomed(colors);
+                } else {
+                    drawFull(colors);
+                }
+            }
+
+            function drawFull(colors) {
+                var cellW = w / GRID_SIZE;
+                var cellH = h / GRID_SIZE;
+
+                for (var r = 0; r < GRID_SIZE; r++) {
+                    for (var c = 0; c < GRID_SIZE; c++) {
+                        var val = pixelData[r][c];
+                        var x = c * cellW;
+                        var y = r * cellH;
+
+                        /* Fill cell with grayscale colour */
+                        ctx.fillStyle = 'rgb(' + val + ',' + val + ',' + val + ')';
+                        ctx.fillRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1);
+
+                        /* Show value */
+                        var textColor = val > 128 ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
+                        ctx.fillStyle = textColor;
+                        ctx.font = Math.max(9, Math.min(12, cellW * 0.35)) + 'px "JetBrains Mono", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(val, x + cellW / 2, y + cellH / 2);
+
+                        /* Highlight hover */
+                        if (hoverCell && hoverCell.r === r && hoverCell.c === c) {
+                            ctx.strokeStyle = colors.TEAL;
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(x + 1, y + 1, cellW - 2, cellH - 2);
+                        }
+                    }
+                }
+
+                /* Grid lines */
+                ctx.strokeStyle = colors.GRID;
+                ctx.lineWidth = 0.5;
+                for (var i = 0; i <= GRID_SIZE; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(i * cellW, 0);
+                    ctx.lineTo(i * cellW, h);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * cellH);
+                    ctx.lineTo(w, i * cellH);
+                    ctx.stroke();
+                }
+
+                /* Zoom region indicator */
+                ctx.strokeStyle = colors.AMBER;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 3]);
+                ctx.strokeRect(
+                    zoomRegion.c * cellW,
+                    zoomRegion.r * cellH,
+                    zoomRegion.size * cellW,
+                    zoomRegion.size * cellH
+                );
+                ctx.setLineDash([]);
+
+                /* Label */
+                ctx.fillStyle = colors.AMBER;
+                ctx.font = '11px "Inter", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Zoom region', zoomRegion.c * cellW, zoomRegion.r * cellH - 6);
+            }
+
+            function drawZoomed(colors) {
+                var sr = zoomRegion.r;
+                var sc = zoomRegion.c;
+                var sz = zoomRegion.size;
+                var cellW = w / sz;
+                var cellH = h / sz;
+
+                for (var dr = 0; dr < sz; dr++) {
+                    for (var dc = 0; dc < sz; dc++) {
+                        var r = sr + dr;
+                        var c = sc + dc;
+                        if (r >= GRID_SIZE || c >= GRID_SIZE) continue;
+                        var val = pixelData[r][c];
+                        var x = dc * cellW;
+                        var y = dr * cellH;
+
+                        ctx.fillStyle = 'rgb(' + val + ',' + val + ',' + val + ')';
+                        ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
+
+                        /* Large value display */
+                        var textColor = val > 128 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)';
+                        ctx.fillStyle = textColor;
+                        ctx.font = 'bold ' + Math.max(16, cellW * 0.25) + 'px "JetBrains Mono", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(val, x + cellW / 2, y + cellH / 2 - 10);
+
+                        /* Label */
+                        ctx.fillStyle = textColor;
+                        ctx.font = Math.max(10, cellW * 0.12) + 'px "Inter", sans-serif';
+                        ctx.fillText('(' + r + ',' + c + ')', x + cellW / 2, y + cellH / 2 + 14);
+
+                        /* Brightness bar */
+                        var barW = cellW * 0.6;
+                        var barH = 8;
+                        var barX = x + (cellW - barW) / 2;
+                        var barY = y + cellH / 2 + 30;
+                        ctx.fillStyle = 'rgba(128,128,128,0.3)';
+                        ctx.fillRect(barX, barY, barW, barH);
+                        ctx.fillStyle = colors.TEAL;
+                        ctx.fillRect(barX, barY, barW * (val / 255), barH);
+
+                        /* Highlight hover */
+                        if (hoverCell && hoverCell.r === r && hoverCell.c === c) {
+                            ctx.strokeStyle = colors.TEAL;
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(x + 2, y + 2, cellW - 4, cellH - 4);
+                        }
+                    }
+                }
+
+                /* Grid lines */
+                ctx.strokeStyle = colors.STROKE;
+                ctx.lineWidth = 1;
+                for (var i = 0; i <= sz; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(i * cellW, 0);
+                    ctx.lineTo(i * cellW, h);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * cellH);
+                    ctx.lineTo(w, i * cellH);
+                    ctx.stroke();
+                }
+
+                /* Title */
+                ctx.fillStyle = colors.AMBER;
+                ctx.font = 'bold 14px "Inter", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('ZOOMED VIEW  |  Rows ' + sr + '-' + (sr + sz - 1) + ', Cols ' + sc + '-' + (sc + sz - 1), 10, 22);
+            }
+
+            /* Mouse hover */
+            canvas.addEventListener('mousemove', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+
+                if (zoomed) {
+                    var sz = zoomRegion.size;
+                    var cellW = w / sz;
+                    var cellH = h / sz;
+                    var dc = Math.floor(mx / cellW);
+                    var dr = Math.floor(my / cellH);
+                    if (dc >= 0 && dc < sz && dr >= 0 && dr < sz) {
+                        var r2 = zoomRegion.r + dr;
+                        var c2 = zoomRegion.c + dc;
+                        hoverCell = { r: r2, c: c2 };
+                        var v = pixelData[r2][c2];
+                        document.getElementById('pixel-info').textContent =
+                            'Pixel (' + r2 + ', ' + c2 + ')  |  Value: ' + v + '  |  Brightness: ' + (v / 255 * 100).toFixed(1) + '%  |  ' + (v < 80 ? 'Dark (possible crack)' : v > 180 ? 'Light (concrete surface)' : 'Mid-tone (transition zone)');
+                    }
+                } else {
+                    var cellW2 = w / GRID_SIZE;
+                    var cellH2 = h / GRID_SIZE;
+                    var gc = Math.floor(mx / cellW2);
+                    var gr = Math.floor(my / cellH2);
+                    if (gc >= 0 && gc < GRID_SIZE && gr >= 0 && gr < GRID_SIZE) {
+                        hoverCell = { r: gr, c: gc };
+                        var v2 = pixelData[gr][gc];
+                        document.getElementById('pixel-info').textContent =
+                            'Pixel (' + gr + ', ' + gc + ')  |  Value: ' + v2 + '  |  Brightness: ' + (v2 / 255 * 100).toFixed(1) + '%';
+                    }
+                }
+                draw();
+            });
+
+            canvas.addEventListener('mouseleave', function () {
+                hoverCell = null;
+                draw();
+            });
+
+            /* Buttons */
+            document.getElementById('pixel-zoom-in').addEventListener('click', function () {
+                zoomed = true;
+                document.getElementById('pixel-info').textContent = 'Zoomed into a 5x5 region. Hover to inspect individual pixels.';
+                draw();
+            });
+
+            document.getElementById('pixel-zoom-out').addEventListener('click', function () {
+                zoomed = false;
+                document.getElementById('pixel-info').textContent = 'Full 20x20 grid view. Dashed box shows zoom region.';
+                draw();
+            });
+
+            document.getElementById('pixel-reset').addEventListener('click', function () {
+                zoomed = false;
+                generateImage();
+                document.getElementById('pixel-info').textContent = 'New surface generated. Hover to explore pixel values.';
+                draw();
+            });
+
+            /* Theme change */
+            var themeObs = new MutationObserver(function () { resize(); draw(); });
+            themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            generateImage();
+            resize();
+            draw();
+            window.addEventListener('resize', function () { resize(); draw(); });
+        })();
+
+        /* ==============================================
+           DEMO 2: RGB CHANNEL SEPARATOR
+           ============================================== */
+        (function initChannelSeparator() {
+            var canvas = document.getElementById('channel-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var IMG_W = 32;
+            var IMG_H = 24;
+            var imgData = [];
+            var mode = 'combined'; /* combined, red, green, blue, all */
+
+            /* Generate a simulated construction scene */
+            function generateScene() {
+                imgData = [];
+                for (var r = 0; r < IMG_H; r++) {
+                    var row = [];
+                    for (var c = 0; c < IMG_W; c++) {
+                        var R, G, B;
+
+                        /* Sky region (top 8 rows) */
+                        if (r < 8) {
+                            R = 80 + Math.floor(Math.random() * 30);
+                            G = 140 + Math.floor(Math.random() * 30);
+                            B = 200 + Math.floor(Math.random() * 40);
+                            /* Cloud patch */
+                            if (c > 10 && c < 20 && r > 1 && r < 5) {
+                                var cloud = Math.floor(Math.random() * 40);
+                                R = 200 + cloud;
+                                G = 210 + cloud;
+                                B = 220 + Math.floor(cloud * 0.8);
+                            }
+                        }
+                        /* Building / structure (middle) */
+                        else if (r < 16) {
+                            /* Concrete structure — grey tones */
+                            var grey = 140 + Math.floor(Math.random() * 40);
+                            R = grey;
+                            G = grey + Math.floor(Math.random() * 10);
+                            B = grey - 5 + Math.floor(Math.random() * 10);
+
+                            /* Orange safety barrier */
+                            if (c > 2 && c < 8 && r > 9 && r < 14) {
+                                R = 220 + Math.floor(Math.random() * 30);
+                                G = 120 + Math.floor(Math.random() * 30);
+                                B = 20 + Math.floor(Math.random() * 20);
+                            }
+
+                            /* Rust stain */
+                            if (c > 20 && c < 26 && r > 10 && r < 15) {
+                                R = 160 + Math.floor(Math.random() * 50);
+                                G = 60 + Math.floor(Math.random() * 30);
+                                B = 30 + Math.floor(Math.random() * 20);
+                            }
+
+                            /* Window / dark opening */
+                            if (c > 13 && c < 18 && r > 9 && r < 13) {
+                                R = 20 + Math.floor(Math.random() * 15);
+                                G = 25 + Math.floor(Math.random() * 15);
+                                B = 35 + Math.floor(Math.random() * 15);
+                            }
+                        }
+                        /* Ground / vegetation (bottom) */
+                        else {
+                            /* Earth tones */
+                            R = 100 + Math.floor(Math.random() * 40);
+                            G = 80 + Math.floor(Math.random() * 30);
+                            B = 50 + Math.floor(Math.random() * 25);
+
+                            /* Green vegetation patches */
+                            if ((c > 0 && c < 10) || (c > 24 && c < 31)) {
+                                R = 40 + Math.floor(Math.random() * 30);
+                                G = 120 + Math.floor(Math.random() * 60);
+                                B = 40 + Math.floor(Math.random() * 25);
+                            }
+                        }
+
+                        R = Math.min(255, Math.max(0, R));
+                        G = Math.min(255, Math.max(0, G));
+                        B = Math.min(255, Math.max(0, B));
+                        row.push({ r: R, g: G, b: B });
+                    }
+                    imgData.push(row);
+                }
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function drawSingleChannel(ox, oy, dw, dh, channel, tinted) {
+                var cellW = dw / IMG_W;
+                var cellH = dh / IMG_H;
+
+                for (var r = 0; r < IMG_H; r++) {
+                    for (var c = 0; c < IMG_W; c++) {
+                        var px = imgData[r][c];
+                        var val;
+                        if (channel === 'r') val = px.r;
+                        else if (channel === 'g') val = px.g;
+                        else val = px.b;
+
+                        var x = ox + c * cellW;
+                        var y = oy + r * cellH;
+
+                        if (tinted) {
+                            if (channel === 'r') ctx.fillStyle = 'rgb(' + val + ',0,0)';
+                            else if (channel === 'g') ctx.fillStyle = 'rgb(0,' + val + ',0)';
+                            else ctx.fillStyle = 'rgb(0,0,' + val + ')';
+                        } else {
+                            ctx.fillStyle = 'rgb(' + val + ',' + val + ',' + val + ')';
+                        }
+
+                        ctx.fillRect(x, y, cellW + 0.5, cellH + 0.5);
+                    }
+                }
+            }
+
+            function drawCombined(ox, oy, dw, dh) {
+                var cellW = dw / IMG_W;
+                var cellH = dh / IMG_H;
+
+                for (var r = 0; r < IMG_H; r++) {
+                    for (var c = 0; c < IMG_W; c++) {
+                        var px = imgData[r][c];
+                        var x = ox + c * cellW;
+                        var y = oy + r * cellH;
+                        ctx.fillStyle = 'rgb(' + px.r + ',' + px.g + ',' + px.b + ')';
+                        ctx.fillRect(x, y, cellW + 0.5, cellH + 0.5);
+                    }
+                }
+            }
+
+            function drawLabel(text, x, y, color) {
+                var colors = getColors();
+                ctx.fillStyle = color || colors.WHITE;
+                ctx.font = 'bold 13px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(text, x, y);
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.fillStyle = colors.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var pad = 16;
+
+                if (mode === 'combined') {
+                    var imgW = w - pad * 2;
+                    var imgH = h - pad * 2 - 20;
+                    drawCombined(pad, pad + 20, imgW, imgH);
+                    drawLabel('Combined RGB', w / 2, pad + 16, colors.TEAL);
+                } else if (mode === 'red') {
+                    var imgW2 = w - pad * 2;
+                    var imgH2 = h - pad * 2 - 20;
+                    drawSingleChannel(pad, pad + 20, imgW2, imgH2, 'r', true);
+                    drawLabel('Red Channel', w / 2, pad + 16, '#ef4444');
+                } else if (mode === 'green') {
+                    var imgW3 = w - pad * 2;
+                    var imgH3 = h - pad * 2 - 20;
+                    drawSingleChannel(pad, pad + 20, imgW3, imgH3, 'g', true);
+                    drawLabel('Green Channel', w / 2, pad + 16, '#22c55e');
+                } else if (mode === 'blue') {
+                    var imgW4 = w - pad * 2;
+                    var imgH4 = h - pad * 2 - 20;
+                    drawSingleChannel(pad, pad + 20, imgW4, imgH4, 'b', true);
+                    drawLabel('Blue Channel', w / 2, pad + 16, '#3b82f6');
+                } else if (mode === 'all') {
+                    /* 2x2 layout: Combined, R, G, B */
+                    var gap = 12;
+                    var titleH = 22;
+                    var panelW = (w - pad * 2 - gap) / 2;
+                    var panelH = (h - pad * 2 - gap - titleH * 2) / 2;
+
+                    drawCombined(pad, pad + titleH, panelW, panelH);
+                    drawLabel('Combined', pad + panelW / 2, pad + titleH - 4, colors.TEAL);
+
+                    drawSingleChannel(pad + panelW + gap, pad + titleH, panelW, panelH, 'r', true);
+                    drawLabel('Red', pad + panelW + gap + panelW / 2, pad + titleH - 4, '#ef4444');
+
+                    drawSingleChannel(pad, pad + titleH + panelH + gap + titleH, panelW, panelH, 'g', true);
+                    drawLabel('Green', pad + panelW / 2, pad + titleH + panelH + gap + titleH - 4, '#22c55e');
+
+                    drawSingleChannel(pad + panelW + gap, pad + titleH + panelH + gap + titleH, panelW, panelH, 'b', true);
+                    drawLabel('Blue', pad + panelW + gap + panelW / 2, pad + titleH + panelH + gap + titleH - 4, '#3b82f6');
+                }
+            }
+
+            /* Button handlers */
+            var buttons = {
+                'ch-combined': 'combined',
+                'ch-red': 'red',
+                'ch-green': 'green',
+                'ch-blue': 'blue',
+                'ch-all': 'all'
+            };
+
+            var infoMessages = {
+                'combined': 'Showing combined RGB image. Each pixel has 3 values (R, G, B) mixed together.',
+                'red': 'Red channel only. Bright areas have high red values. Notice the safety barrier and rust stain appear bright.',
+                'green': 'Green channel only. Vegetation patches appear brightest here. The sky also has moderate green values.',
+                'blue': 'Blue channel only. The sky region dominates. The orange barrier appears very dark (low blue content).',
+                'all': 'Side-by-side comparison. Each channel highlights different features of the same scene.'
+            };
+
+            Object.keys(buttons).forEach(function (btnId) {
+                var btn = document.getElementById(btnId);
+                if (!btn) return;
+                btn.addEventListener('click', function () {
+                    mode = buttons[btnId];
+                    document.getElementById('channel-info').textContent = infoMessages[mode];
+
+                    /* Update active button style */
+                    Object.keys(buttons).forEach(function (id) {
+                        var b = document.getElementById(id);
+                        if (b) {
+                            b.style.borderColor = 'var(--border-active)';
+                            b.style.borderWidth = '1px';
+                            b.style.color = 'var(--text-primary)';
+                        }
+                    });
+                    btn.style.borderColor = 'var(--accent-primary)';
+                    btn.style.borderWidth = '2px';
+                    btn.style.color = 'var(--accent-primary)';
+
+                    draw();
+                });
+            });
+
+            /* Theme change */
+            var themeObs2 = new MutationObserver(function () { resize(); draw(); });
+            themeObs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            generateScene();
+            resize();
+            draw();
+            window.addEventListener('resize', function () { resize(); draw(); });
+        })();
+
+        /* ==============================================
+           SCROLL-TRIGGERED REVEAL ANIMATION
+           ============================================== */
+        (function initRevealAnimations() {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { observer.observe(el); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

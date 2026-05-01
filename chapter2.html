@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 02 — Supervised Learning | CE Guide to AI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="chapter-page">
+
+    <!-- Navigation -->
+    <nav id="main-nav">
+        <div class="nav-brand">
+            <a href="index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-helmet-safety"></i><span>CE × AI</span>
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="chapter1.html" class="nav-link"><i class="fa-solid fa-code-branch"></i> Ch 01</a>
+            <a href="chapter2.html" class="nav-link active"><i class="fa-solid fa-wave-square"></i> Ch 02</a>
+            <a href="chapter3.html" class="nav-link"><i class="fa-solid fa-map-location-dot"></i> Ch 03</a>
+            <a href="chapter4.html" class="nav-link"><i class="fa-solid fa-satellite"></i> Ch 04</a>
+            <a href="chapter5.html" class="nav-link"><i class="fa-solid fa-brain"></i> Ch 05</a>
+        </div>
+        <div class="nav-progress"><div class="nav-progress-bar" id="scroll-progress"></div></div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="chapter-hero" id="ch-hero">
+        <canvas id="hero-bg-canvas"></canvas>
+        <div class="chapter-hero-content">
+            <div class="chapter-number-large">02</div>
+            <div class="ch-tag"><i class="fa-solid fa-bullseye"></i> The Predictor</div>
+            <h1>Supervised Learning <span class="gradient-text">—</span> The Site Response Analyst</h1>
+            <p class="ch-lead">
+                🌍 In geotechnical engineering, <strong>Site Response Analysis</strong> predicts how a specific 
+                site will amplify seismic waves — using known soil profiles and recorded earthquake data. 
+                Supervised Learning works the same way: it learns from <strong>labeled examples</strong> 
+                (input → known output) and predicts outcomes for new, unseen inputs.
+            </p>
+            <div class="ch-stats">
+                <div class="ch-stat"><i class="fa-solid fa-bookmark"></i> <strong>10</strong> Sections</div>
+                <div class="ch-stat"><i class="fa-solid fa-hand-pointer"></i> <strong>7</strong> Interactive Demos</div>
+                <div class="ch-stat"><i class="fa-solid fa-clock"></i> ~<strong>30</strong> min read</div>
+                <div class="ch-stat"><i class="fa-solid fa-brain"></i> <strong>3</strong> Knowledge Checks</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TABLE OF CONTENTS ==================== -->
+    <div class="chapter-toc" id="ch-toc">
+        <div class="toc-inner">
+            <span class="toc-label"><i class="fa-solid fa-list"></i> Sections</span>
+            <a href="#what-is-sl" class="toc-link">What is SL?</a>
+            <a href="#training-process" class="toc-link">Training</a>
+            <a href="#regression" class="toc-link">Regression</a>
+            <a href="#classification" class="toc-link">Classification</a>
+            <a href="#regression-types" class="toc-link">Regression Types</a>
+            <a href="#classification-types" class="toc-link">Classification Types</a>
+            <a href="#overfitting" class="toc-link">Overfitting</a>
+            <a href="#evaluation" class="toc-link">Evaluation</a>
+            <a href="#code-peek" class="toc-link">Code Peek</a>
+            <a href="#quiz" class="toc-link">Quiz</a>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 1: WHAT IS SUPERVISED LEARNING ==================== -->
+    <div id="what-is-sl" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-graduation-cap"></i> Fundamentals</div>
+        <h2>What is Supervised Learning? <span class="gradient-text">📝</span></h2>
+        <p>
+            Supervised Learning is like an engineering student studying <strong>past exam papers with answer keys</strong>. 
+            The student sees the question (input) and the correct answer (output) for hundreds of examples. By studying 
+            enough examples, the student learns the underlying patterns — so when a brand new question appears on the 
+            actual exam, they can predict the answer.
+        </p>
+        <p>
+            The "supervised" part means a <strong>teacher provides the correct answers</strong> during training. 
+            In ML terms, this means we have labeled data — each data point has both the input features AND the 
+            known target outcome.
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">🌍</div>
+            <div>
+                <h4>The Site Response Analysis Analogy</h4>
+                <p>
+                    In geotechnical earthquake engineering, <strong>Site Response Analysis</strong> predicts how 
+                    a specific site amplifies seismic ground motion. You know the soil profile (layers, Vs30, 
+                    density, damping) and you know the recorded surface motion for past earthquakes. The ML model 
+                    learns this input-output mapping, then predicts amplification for new, uncharted sites where 
+                    you only have the soil profile but no earthquake recordings.
+                </p>
+            </div>
+        </div>
+
+        <h3>The Three Phases of Supervised Learning</h3>
+        <div class="process-steps">
+            <div class="process-step">
+                <div class="step-marker">1</div>
+                <h4>📊 Data Collection — The Borehole Logs</h4>
+                <p>
+                    Gather historical labeled data: hundreds of sites where you know both the soil conditions (input 
+                    features: soil type, layer thickness, shear wave velocity, water table depth) AND the measured 
+                    seismic amplification factor (target output). This is your training dataset.
+                </p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">2</div>
+                <h4>⚙️ Training — Learning the Patterns</h4>
+                <p>
+                    Feed the labeled data into an algorithm. The algorithm adjusts its internal parameters to 
+                    minimize the difference between its predictions and the actual known answers. Like a student 
+                    practicing — each wrong answer teaches them something, until their predictions closely match 
+                    reality.
+                </p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">3</div>
+                <h4>🎯 Prediction — The New Site</h4>
+                <p>
+                    Deploy the trained model on new, unseen data. A new borehole log arrives from a project site. 
+                    You feed it to the model, and it predicts the expected seismic amplification — without needing 
+                    to wait for an actual earthquake or run a computationally expensive numerical simulation.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 2: TRAINING PROCESS ==================== -->
+    <div id="training-process" class="ch-section">
+        <div class="section-badge blue"><i class="fa-solid fa-gears"></i> Process</div>
+        <h2>The Training Process — How Models Learn <span class="gradient-text">⚙️</span></h2>
+        <p>
+            Training a supervised model is an iterative process of <strong>predict → compare → adjust → repeat</strong>. 
+            It's exactly like calibrating a surveying instrument: you aim at a known benchmark, check the error, 
+            adjust the instrument, and repeat until the readings match the known elevation.
+        </p>
+
+        <!-- Interactive Training Demo -->
+        <div class="demo-panel" id="training-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-gears"></i>
+                <span>Training Process Visualizer</span>
+                <span class="demo-tag">Watch the model learn</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:350px;">
+                    <canvas id="training-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <button id="train-btn" class="predict-button" style="max-width:180px;">
+                        <i class="fa-solid fa-play"></i> Train Model
+                    </button>
+                    <button id="train-reset-btn" class="predict-button secondary" style="max-width:140px;">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                    <span id="train-info" style="margin-left:auto;font-family:var(--font-mono);font-size:0.82rem;color:var(--text-muted);">
+                        Epoch: 0 | Loss: —
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="analogy-block">
+            <div class="analogy-icon">🔧</div>
+            <div>
+                <h4>The Calibration Analogy</h4>
+                <p>
+                    <strong>Loss function</strong> = the error between your instrument's reading and the known 
+                    benchmark. <strong>Gradient descent</strong> = the direction and amount you turn the 
+                    adjustment knob. <strong>Epoch</strong> = one complete round of checking all benchmarks. 
+                    <strong>Learning rate</strong> = how aggressively you turn the knob (too much → overshoot, 
+                    too little → takes forever).
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 3: REGRESSION ==================== -->
+    <div id="regression" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-chart-line"></i> Task Type 1</div>
+        <h2>Regression — Predicting Continuous Values <span class="gradient-text">📈</span></h2>
+        <p>
+            Regression is the task of predicting a <strong>continuous number</strong>. Not a category, not a label 
+            — a specific numerical value on a continuous scale. "What will the concrete compressive strength be at 
+            28 days?" "What's the expected settlement of this foundation?" "What will the traffic volume be at 5 PM?"
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">📐</div>
+            <div>
+                <h4>CE Analogy: Predicting Concrete Strength</h4>
+                <p>
+                    Given the mix design (water-cement ratio, aggregate size, admixture type, curing temperature), 
+                    predict the 28-day compressive strength in MPa. The output is a number on a continuous scale 
+                    (25.4 MPa, 31.7 MPa, 42.1 MPa), not a category.
+                </p>
+            </div>
+        </div>
+
+        <!-- Interactive Regression Demo -->
+        <div class="demo-panel" id="regression-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Linear Regression — Fit the Line</span>
+                <span class="demo-tag">Click to add data points</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:350px;">
+                    <canvas id="regression-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <button id="reg-fit-btn" class="predict-button" style="max-width:150px;">
+                        <i class="fa-solid fa-chart-line"></i> Fit Line
+                    </button>
+                    <button id="reg-clear-btn" class="predict-button secondary" style="max-width:120px;">
+                        <i class="fa-solid fa-trash"></i> Clear
+                    </button>
+                    <span id="reg-info" style="margin-left:auto;font-family:var(--font-mono);font-size:0.82rem;color:var(--text-muted);">
+                        Points: 0 | R²: —
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tip-box info">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+                <strong>Click anywhere on the canvas</strong> to place data points. Then click "Fit Line" to 
+                see the regression line. The <strong>R²</strong> value tells you how well the line fits — 
+                1.0 is perfect, 0.0 means the line explains nothing.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 4: CLASSIFICATION ==================== -->
+    <div id="classification" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-tags"></i> Task Type 2</div>
+        <h2>Classification — Predicting Categories <span class="gradient-text">🏷️</span></h2>
+        <p>
+            Classification predicts a <strong>discrete category or label</strong>. Not a number — a class. 
+            "Is this concrete sample acceptable or defective?" "Is this slope stable, marginally stable, or 
+            unstable?" "Is this traffic pattern normal or anomalous?"
+        </p>
+
+        <div class="analogy-block">
+            <div class="analogy-icon">🏗️</div>
+            <div>
+                <h4>CE Analogy: Soil Classification</h4>
+                <p>
+                    Given soil properties (grain size distribution, liquid limit, plastic limit, moisture content), 
+                    classify the soil type: <strong>Gravel (GW, GP, GM, GC)</strong>, <strong>Sand (SW, SP, SM, SC)</strong>, 
+                    <strong>Silt (ML, MH)</strong>, or <strong>Clay (CL, CH)</strong>. The output is a discrete category, 
+                    not a continuous number.
+                </p>
+            </div>
+        </div>
+
+        <!-- Interactive Classification Demo -->
+        <div class="demo-panel" id="classification-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+                <span>Classification — Decision Boundary</span>
+                <span class="demo-tag">Click to place points (use buttons to switch class)</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:350px;">
+                    <canvas id="classify-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <button id="cls-a-btn" class="predict-button" style="max-width:120px;background:var(--accent-primary);">
+                        <i class="fa-solid fa-circle"></i> Class A
+                    </button>
+                    <button id="cls-b-btn" class="predict-button secondary" style="max-width:120px;border-color:var(--accent-warm);color:var(--accent-warm);">
+                        <i class="fa-solid fa-circle"></i> Class B
+                    </button>
+                    <button id="cls-boundary-btn" class="predict-button" style="max-width:180px;">
+                        <i class="fa-solid fa-border-all"></i> Show Boundary
+                    </button>
+                    <button id="cls-clear-btn" class="predict-button secondary" style="max-width:100px;">
+                        <i class="fa-solid fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <h3>Binary vs. Multi-Class Classification</h3>
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-toggle-on"></i></div>
+                <span class="card-tag">Binary</span>
+                <h4>Two Classes Only</h4>
+                <p>
+                    Pass / Fail. Safe / Unsafe. Crack / No Crack. The simplest form. The model outputs a probability 
+                    (e.g., 87% chance of "safe") and you set a threshold (typically 50%) to make the final decision.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-layer-group"></i></div>
+                <span class="card-tag">Multi-Class</span>
+                <h4>Three or More Classes</h4>
+                <p>
+                    Soil type classification (6+ classes). Structural damage grade (None, Minor, Moderate, Severe, Collapse). 
+                    The model outputs a probability for each class and picks the highest. More complex, but same principle.
+                </p>
+            </div>
+        </div>
+
+        <!-- Knowledge Check -->
+        <div class="quiz-block" id="quiz-1">
+            <h4><i class="fa-solid fa-circle-question"></i> Knowledge Check #1</h4>
+            <div class="quiz-question">
+                An ML model predicts "the expected settlement of a building foundation will be 23.4 mm." 
+                Is this a regression or classification task?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">A</span>
+                    <span>Regression — the output is a continuous number (23.4 mm)</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">B</span>
+                    <span>Classification — the model is categorizing the building</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-1-correct">
+                <i class="fa-solid fa-check-circle"></i> Correct! The output is a specific number on a continuous 
+                scale (23.4 mm), making this regression. If it said "Safe / Unsafe," that would be classification.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-1-wrong">
+                <i class="fa-solid fa-times-circle"></i> Not quite. The key is the output type: 23.4 mm is a 
+                continuous number, which makes this a regression task.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 5: REGRESSION TYPES ==================== -->
+    <div id="regression-types" class="ch-section">
+        <div class="section-badge blue"><i class="fa-solid fa-bezier-curve"></i> Deep Dive</div>
+        <h2>Types of Regression <span class="gradient-text">📊</span></h2>
+        <p>
+            Just as there are many methods for soil stabilization (cement, lime, geosynthetics), there are many 
+            regression algorithms. Each has strengths and weaknesses depending on the data's complexity.
+        </p>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-chart-line"></i></div>
+                <span class="card-tag">Simplest</span>
+                <h4>Linear Regression</h4>
+                <p>
+                    Fits a straight line: <code>y = mx + b</code>. Works when the relationship between input and 
+                    output is approximately linear. Like estimating concrete strength as a linear function of 
+                    water-cement ratio. Fast, interpretable, but can't capture curves.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-bezier-curve"></i></div>
+                <span class="card-tag">Flexible</span>
+                <h4>Polynomial Regression</h4>
+                <p>
+                    Fits a curve: <code>y = ax² + bx + c</code> (or higher degree). Captures nonlinear relationships. 
+                    Like modeling how load-displacement curves follow a parabolic path up to yield, then level off. 
+                    More flexible but risks overfitting.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-shield-halved"></i></div>
+                <span class="card-tag">Regularized</span>
+                <h4>Ridge & Lasso Regression</h4>
+                <p>
+                    Linear regression with a penalty that prevents extreme coefficients. <strong>Ridge (L2)</strong> 
+                    shrinks coefficients toward zero. <strong>Lasso (L1)</strong> can force some to exactly zero 
+                    (automatic feature selection). Use when you have many correlated features.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-tree"></i></div>
+                <span class="card-tag">Ensemble</span>
+                <h4>Random Forest Regression</h4>
+                <p>
+                    Builds hundreds of decision trees and averages their predictions. Handles nonlinear relationships, 
+                    mixed feature types, and missing data. Like getting 100 independent engineering estimates and 
+                    averaging them — the crowd wisdom is usually more accurate than any individual.
+                </p>
+            </div>
+        </div>
+
+        <!-- Interactive Regression Comparison -->
+        <div class="demo-panel" id="reg-compare-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-code-compare"></i>
+                <span>Regression Type Comparison</span>
+                <span class="demo-tag">See how different methods fit the same data</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:320px;">
+                    <canvas id="reg-compare-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <label><i class="fa-solid fa-chart-line"></i> Method</label>
+                    <select id="reg-method-select" style="padding:6px 12px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:8px;font-family:var(--font-mono);font-size:0.82rem;">
+                        <option value="linear">Linear</option>
+                        <option value="poly2">Polynomial (degree 2)</option>
+                        <option value="poly5">Polynomial (degree 5)</option>
+                        <option value="poly15">Polynomial (degree 15) — Overfit!</option>
+                    </select>
+                    <label style="margin-left:16px;"><i class="fa-solid fa-wave-square"></i> Noise</label>
+                    <input type="range" id="reg-noise-slider" min="0" max="100" value="30" class="custom-slider">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 6: CLASSIFICATION TYPES ==================== -->
+    <div id="classification-types" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-sitemap"></i> Deep Dive</div>
+        <h2>Types of Classification Algorithms <span class="gradient-text">🏷️</span></h2>
+        <p>
+            Each classification algorithm draws the decision boundary differently. Some draw straight lines, 
+            others draw curves, and some create complex regions. The best choice depends on your data.
+        </p>
+
+        <div class="cards-grid">
+            <div class="info-card">
+                <div class="card-icon teal"><i class="fa-solid fa-ruler-combined"></i></div>
+                <span class="card-tag">Linear</span>
+                <h4>Logistic Regression</h4>
+                <p>
+                    Despite the name, this is a <strong>classification</strong> algorithm. It draws a straight 
+                    decision boundary and outputs probabilities. Like drawing a line on a soil plasticity chart 
+                    separating clay from silt. Simple, fast, interpretable, works great when classes are linearly 
+                    separable.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-arrows-up-to-line"></i></div>
+                <span class="card-tag">Margin-Based</span>
+                <h4>Support Vector Machine (SVM)</h4>
+                <p>
+                    Finds the boundary that maximizes the margin (distance) between classes. Like finding the 
+                    widest possible buffer zone between two landslide-prone areas. Can use "kernel tricks" to 
+                    handle non-linear boundaries. Very effective for high-dimensional data.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-code-branch"></i></div>
+                <span class="card-tag">Rule-Based</span>
+                <h4>Decision Tree</h4>
+                <p>
+                    Creates a flowchart of yes/no questions. "Is Vs30 > 300? → Yes → Is depth to bedrock < 5m? → 
+                    No → Classify as Site Class D." Extremely interpretable — you can literally read the logic. 
+                    But a single tree is prone to overfitting.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-trees"></i></div>
+                <span class="card-tag">Ensemble</span>
+                <h4>Random Forest</h4>
+                <p>
+                    Builds hundreds of decision trees, each trained on a random subset of data. The final 
+                    prediction is a majority vote. Like consulting 100 engineers independently — if 87 say "stable" 
+                    and 13 say "unstable," you go with "stable." Robust, accurate, handles messy real-world data.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon red"><i class="fa-solid fa-circle-dot"></i></div>
+                <span class="card-tag">Distance-Based</span>
+                <h4>K-Nearest Neighbors (KNN)</h4>
+                <p>
+                    Classifies a point by looking at its K nearest neighbors and taking a majority vote. Like 
+                    classifying a soil sample by finding the 5 most similar samples in your database and using 
+                    their classification. Simple but can be slow for large datasets.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-brain"></i></div>
+                <span class="card-tag">Deep Learning</span>
+                <h4>Neural Network Classifier</h4>
+                <p>
+                    Multi-layer networks that learn complex, non-linear decision boundaries automatically. 
+                    Can handle any boundary shape. Like having a team of engineers where each one specializes 
+                    in a different aspect — together they can classify anything. Powerful but needs more data.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 7: OVERFITTING ==================== -->
+    <div id="overfitting" class="ch-section">
+        <div class="section-badge red"><i class="fa-solid fa-triangle-exclamation"></i> Critical Concept</div>
+        <h2>Overfitting vs. Underfitting <span class="gradient-text">⚠️</span></h2>
+        <p>
+            The most important concept in all of machine learning. Get this wrong, and your model is worthless.
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">📏</div>
+            <div>
+                <h4>The Surveyor's Dilemma</h4>
+                <p>
+                    Imagine a surveyor measuring ground levels along a road alignment. The ground has a general 
+                    slope with some natural undulation. <strong>Underfitting</strong> = drawing a perfectly 
+                    horizontal line, ignoring the obvious slope. <strong>Good fit</strong> = drawing a smooth 
+                    curve that captures the trend and major features. <strong>Overfitting</strong> = connecting 
+                    every single measurement point with a jagged line — capturing every tiny measurement error 
+                    as if it were real terrain.
+                </p>
+            </div>
+        </div>
+
+        <!-- Interactive Overfitting Demo -->
+        <div class="demo-panel" id="overfit-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-chart-area"></i>
+                <span>Overfitting Visualizer</span>
+                <span class="demo-tag">Adjust complexity to see the effect</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:320px;">
+                    <canvas id="overfit-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <label><i class="fa-solid fa-sliders"></i> Model Complexity</label>
+                    <input type="range" id="overfit-slider" min="1" max="20" value="3" class="custom-slider">
+                    <span id="overfit-label" style="font-family:var(--font-mono);color:var(--accent-primary);font-weight:700;min-width:100px;">Degree: 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-grid">
+            <div class="info-card warm-accent">
+                <div class="card-icon amber"><i class="fa-solid fa-minus"></i></div>
+                <h4>Underfitting (Too Simple)</h4>
+                <p>
+                    The model is <strong>too simple</strong> to capture the real patterns. It performs poorly on 
+                    both training data AND new data. Like using a single average value for all soil types — 
+                    technically a "model," but useless for prediction.
+                </p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Good Fit (Just Right)</h4>
+                <p>
+                    The model captures <strong>real patterns without memorizing noise</strong>. It performs well 
+                    on training data AND generalizes to new data. This is the goal. Like a well-calibrated site 
+                    characterization model.
+                </p>
+            </div>
+            <div class="info-card danger-accent">
+                <div class="card-icon red"><i class="fa-solid fa-chart-line"></i></div>
+                <h4>Overfitting (Too Complex)</h4>
+                <p>
+                    The model <strong>memorizes the training data</strong>, including noise and random variations. 
+                    It performs perfectly on training data but terribly on new data. Like a curve that passes 
+                    through every measurement error — it looks perfect on paper but predicts nothing useful.
+                </p>
+            </div>
+        </div>
+
+        <h3>How to Prevent Overfitting</h3>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Technique</th>
+                    <th>How It Works</th>
+                    <th>CE Analogy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>More Data</strong></td>
+                    <td>Give the model more examples to learn from</td>
+                    <td>More borehole data = better site characterization</td>
+                </tr>
+                <tr>
+                    <td><strong>Cross-Validation</strong></td>
+                    <td>Test on different subsets of data to ensure consistency</td>
+                    <td>Checking your design against multiple load combinations</td>
+                </tr>
+                <tr>
+                    <td><strong>Regularization</strong></td>
+                    <td>Penalize overly complex models (Ridge, Lasso)</td>
+                    <td>Building code limits on span-to-depth ratios</td>
+                </tr>
+                <tr>
+                    <td><strong>Early Stopping</strong></td>
+                    <td>Stop training before the model starts memorizing</td>
+                    <td>Stopping compaction before the soil starts loosening</td>
+                </tr>
+                <tr>
+                    <td><strong>Simpler Model</strong></td>
+                    <td>Use fewer parameters, fewer layers</td>
+                    <td>Using a simpler structural analysis method when appropriate</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 8: EVALUATION ==================== -->
+    <div id="evaluation" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-gauge-high"></i> Metrics</div>
+        <h2>Evaluating Model Performance <span class="gradient-text">📊</span></h2>
+        <p>
+            After training, how do you know if your model is good? In civil engineering, you validate designs 
+            against building codes. In ML, you validate models against <strong>evaluation metrics</strong>.
+        </p>
+
+        <h3>Regression Metrics</h3>
+        <div class="cards-grid">
+            <div class="info-card">
+                <div class="card-icon teal"><i class="fa-solid fa-chart-simple"></i></div>
+                <h4>R² (Coefficient of Determination)</h4>
+                <p>
+                    How much variance in the output does your model explain? R² = 1.0 means perfect prediction. 
+                    R² = 0.0 means the model is no better than just predicting the average. Negative R² means 
+                    the model is worse than useless.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-ruler"></i></div>
+                <h4>MAE (Mean Absolute Error)</h4>
+                <p>
+                    Average absolute difference between predicted and actual values. If MAE = 3.2 mm for a 
+                    settlement prediction model, on average the model is off by 3.2 mm. Easy to interpret — 
+                    it's in the same units as your output.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-square-root-variable"></i></div>
+                <h4>RMSE (Root Mean Square Error)</h4>
+                <p>
+                    Similar to MAE but penalizes large errors more heavily. Like a factor of safety — small 
+                    errors are tolerable, but one large error could be catastrophic. Use RMSE when large errors 
+                    are unacceptable.
+                </p>
+            </div>
+        </div>
+
+        <h3>Classification Metrics</h3>
+        <!-- Confusion Matrix Demo -->
+        <div class="demo-panel" id="confusion-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-table-cells"></i>
+                <span>Confusion Matrix Explorer</span>
+                <span class="demo-tag">Click cells to adjust values</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:320px;">
+                    <canvas id="confusion-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-grid">
+            <div class="info-card">
+                <div class="card-icon teal"><i class="fa-solid fa-percent"></i></div>
+                <h4>Accuracy</h4>
+                <p>
+                    Percentage of correct predictions overall. If 95 out of 100 soil samples are correctly 
+                    classified, accuracy = 95%. <strong>Warning:</strong> misleading when classes are imbalanced 
+                    (99% of bridges are safe → always predicting "safe" gives 99% accuracy but catches no defects).
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-crosshairs"></i></div>
+                <h4>Precision</h4>
+                <p>
+                    Of all the times the model said "defective," how many actually were? High precision = few 
+                    false alarms. Like a crack detection system that rarely flags healthy concrete as damaged.
+                </p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h4>Recall (Sensitivity)</h4>
+                <p>
+                    Of all actually defective items, how many did the model catch? High recall = few missed 
+                    defects. For safety-critical applications (bridge inspection), you want very high recall — 
+                    missing a real crack is far worse than a false alarm.
+                </p>
+            </div>
+        </div>
+
+        <!-- Knowledge Check -->
+        <div class="quiz-block" id="quiz-2">
+            <h4><i class="fa-solid fa-circle-question"></i> Knowledge Check #2</h4>
+            <div class="quiz-question">
+                A bridge crack detection system correctly identifies 45 out of 50 actual cracks, but also 
+                flags 20 healthy spots as cracks. Which metric would be high?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">A</span>
+                    <span>Precision — because it correctly identifies most cracks</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">B</span>
+                    <span>Recall — 45/50 = 90% of real cracks are caught</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">C</span>
+                    <span>Accuracy — overall correct predictions are high</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-2-correct">
+                <i class="fa-solid fa-check-circle"></i> Correct! Recall = 45/50 = 90% — it catches most cracks. 
+                But Precision would be lower: 45/(45+20) = 69% — many of its "crack" predictions are false alarms.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-2-wrong">
+                <i class="fa-solid fa-times-circle"></i> Think carefully: Recall asks "of all actual cracks (50), 
+                how many did we find (45)?" That's 90%. Precision asks "of all predictions of 'crack' (45+20=65), 
+                how many were right (45)?" That's only 69%.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 9: CODE PEEK ==================== -->
+    <div id="code-peek" class="ch-section">
+        <div class="section-badge red"><i class="fa-solid fa-code"></i> Code Peek</div>
+        <h2>Supervised Learning in Code <span class="gradient-text">👀</span></h2>
+
+        <h3>Regression Example: Concrete Strength Prediction</h3>
+        <div class="code-peek">
+            <div class="code-peek-header">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <span>concrete_strength.py — Supervised Regression</span>
+            </div>
+            <pre><span class="comment"># Supervised Learning: Predict concrete compressive strength</span>
+<span class="comment"># Input: mix design parameters → Output: 28-day strength (MPa)</span>
+
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split
+<span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestRegressor
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> mean_absolute_error, r2_score
+
+<span class="comment"># Step 1: Load labeled data (200 concrete samples)</span>
+<span class="type">data</span> = load_data(<span class="string">"concrete_tests.csv"</span>)
+<span class="comment"># Columns: cement, water, aggregate, admixture, curing_temp → strength_28d</span>
+
+<span class="comment"># Step 2: Split into training (80%) and testing (20%)</span>
+<span class="type">X</span> = data[[<span class="string">"cement"</span>, <span class="string">"water"</span>, <span class="string">"aggregate"</span>, <span class="string">"admixture"</span>, <span class="string">"curing_temp"</span>]]
+<span class="type">y</span> = data[<span class="string">"strength_28d"</span>]
+<span class="type">X_train</span>, <span class="type">X_test</span>, <span class="type">y_train</span>, <span class="type">y_test</span> = train_test_split(X, y, test_size=<span class="number">0.2</span>)
+
+<span class="comment"># Step 3: Train the model (learning phase)</span>
+<span class="type">model</span> = RandomForestRegressor(n_estimators=<span class="number">100</span>)
+<span class="type">model</span>.fit(<span class="type">X_train</span>, <span class="type">y_train</span>)    <span class="comment"># ← LEARNING HAPPENS HERE</span>
+
+<span class="comment"># Step 4: Evaluate on test data (never seen during training)</span>
+<span class="type">predictions</span> = model.predict(<span class="type">X_test</span>)
+<span class="keyword">print</span>(<span class="string">f"MAE: {mean_absolute_error(y_test, predictions):.1f} MPa"</span>)
+<span class="keyword">print</span>(<span class="string">f"R²: {r2_score(y_test, predictions):.3f}"</span>)
+<span class="comment"># → MAE: 2.8 MPa | R²: 0.924 (excellent!)</span>
+
+<span class="comment"># Step 5: Predict for a NEW mix design</span>
+<span class="type">new_mix</span> = [[<span class="number">350</span>, <span class="number">175</span>, <span class="number">1100</span>, <span class="number">5.0</span>, <span class="number">25</span>]]
+<span class="type">predicted_strength</span> = model.predict(new_mix)
+<span class="comment"># → 38.7 MPa (predicted 28-day compressive strength)</span></pre>
+            <div class="code-explanation">
+                <i class="fa-solid fa-info-circle"></i>
+                The pattern is always: Load Data → Split → Train → Evaluate → Predict. The 
+                <code>train_test_split</code> is critical — it ensures you test on data the model hasn't seen, 
+                preventing over-optimistic results.
+            </div>
+        </div>
+
+        <h3>Classification Example: Slope Stability</h3>
+        <div class="code-peek">
+            <div class="code-peek-header">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <span>slope_stability.py — Supervised Classification</span>
+            </div>
+            <pre><span class="comment"># Classify slope stability: Stable / Marginally Stable / Unstable</span>
+
+<span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> GradientBoostingClassifier
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> classification_report
+
+<span class="comment"># Labeled data: 500 slopes with known stability outcomes</span>
+<span class="type">features</span> = [<span class="string">"slope_angle"</span>, <span class="string">"soil_cohesion"</span>, <span class="string">"friction_angle"</span>,
+            <span class="string">"water_table"</span>, <span class="string">"slope_height"</span>, <span class="string">"rainfall_intensity"</span>]
+
+<span class="type">X_train</span>, <span class="type">X_test</span>, <span class="type">y_train</span>, <span class="type">y_test</span> = train_test_split(
+    data[features], data[<span class="string">"stability_class"</span>], test_size=<span class="number">0.2</span>
+)
+
+<span class="type">model</span> = GradientBoostingClassifier(n_estimators=<span class="number">200</span>, max_depth=<span class="number">5</span>)
+<span class="type">model</span>.fit(<span class="type">X_train</span>, <span class="type">y_train</span>)
+
+<span class="comment"># Evaluate</span>
+<span class="keyword">print</span>(classification_report(<span class="type">y_test</span>, model.predict(<span class="type">X_test</span>)))
+<span class="comment">#              precision  recall  f1-score</span>
+<span class="comment"># Stable          0.94     0.97     0.95</span>
+<span class="comment"># Marginal        0.82     0.78     0.80</span>
+<span class="comment"># Unstable        0.91     0.89     0.90</span>
+
+<span class="comment"># Predict for a new slope</span>
+<span class="type">new_slope</span> = [[<span class="number">35</span>, <span class="number">15</span>, <span class="number">28</span>, <span class="number">2.5</span>, <span class="number">12</span>, <span class="number">50</span>]]  <span class="comment"># 35° angle, c'=15 kPa, φ'=28°...</span>
+<span class="keyword">print</span>(model.predict(new_slope))  <span class="comment"># → "Marginally Stable"</span>
+<span class="keyword">print</span>(model.predict_proba(new_slope))
+<span class="comment"># → [0.12, 0.71, 0.17]  (12% Stable, 71% Marginal, 17% Unstable)</span></pre>
+            <div class="code-explanation">
+                <i class="fa-solid fa-info-circle"></i>
+                Notice <code>predict_proba()</code> — it gives you confidence levels, not just a label. The 
+                model says this slope is 71% likely "Marginally Stable." An engineer can use these probabilities 
+                for risk assessment, not just a binary decision.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 10: FINAL QUIZ ==================== -->
+    <div id="quiz" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-trophy"></i> Assessment</div>
+        <h2>Chapter Summary & Final Quiz <span class="gradient-text">🎯</span></h2>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Supervised = Labeled Data</h4>
+                <p>The model learns from input-output pairs where the correct answer is known. It maps patterns from inputs to outputs.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Two Task Types</h4>
+                <p>Regression (predict numbers) vs Classification (predict categories). Same learning process, different output types.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Overfitting is the Enemy</h4>
+                <p>A model that memorizes training data is useless. Use validation, regularization, and proper train-test splitting.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Evaluation Matters</h4>
+                <p>R², MAE for regression. Accuracy, Precision, Recall for classification. Always evaluate on unseen test data.</p>
+            </div>
+        </div>
+
+        <div class="quiz-block" id="quiz-3">
+            <h4><i class="fa-solid fa-trophy"></i> Final Challenge</h4>
+            <div class="quiz-question">
+                You train a crack detection model that achieves 99% accuracy on the training data but only 
+                62% accuracy on new bridge photos. What is the most likely problem?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">A</span>
+                    <span>Underfitting — the model is too simple</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">B</span>
+                    <span>Overfitting — the model memorized the training data instead of learning general patterns</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">C</span>
+                    <span>The training data was too large</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">D</span>
+                    <span>The model needs more epochs of training</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-3-correct">
+                <i class="fa-solid fa-check-circle"></i> <strong>Exactly!</strong> 99% on training but 62% on 
+                new data is the textbook definition of overfitting. The model memorized the specific training 
+                photos instead of learning what cracks actually look like. Solutions: more diverse training data, 
+                regularization, simpler model, or data augmentation.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-3-wrong">
+                <i class="fa-solid fa-times-circle"></i> The key clue: <strong>high training accuracy + low test 
+                accuracy</strong> = overfitting. The model performs perfectly on data it has seen (memorization) 
+                but poorly on new data (no generalization). This is the opposite of underfitting.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CHAPTER NAV FOOTER ==================== -->
+    <div class="chapter-nav-footer">
+        <a href="chapter1.html" class="ch-nav-link">
+            <span class="ch-nav-label"><i class="fa-solid fa-arrow-left"></i> Previous</span>
+            <span class="ch-nav-title">Ch 01 — AI vs Machine Learning</span>
+            <span class="ch-nav-desc">The foundation: dam vs river</span>
+        </a>
+        <a href="chapter3.html" class="ch-nav-link next">
+            <span class="ch-nav-label">Next Chapter <i class="fa-solid fa-arrow-right"></i></span>
+            <span class="ch-nav-title">Ch 03 — Unsupervised Learning</span>
+            <span class="ch-nav-desc">The Mapper: GIS Clustering</span>
+        </a>
+    </div>
+
+    <footer class="footer-section">
+        <div class="footer-bottom">
+            <span>&copy; 2026 The Civil Engineer's Guide to AI — Chapter 02: Supervised Learning</span>
+        </div>
+    </footer>
+
+    <a href="index.html" class="back-home" title="Back to Home"><i class="fa-solid fa-house"></i></a>
+
+    <script src="js/chapter2.js"></script>
+</body>
+</html>

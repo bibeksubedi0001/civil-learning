@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.8 Association Rules &amp; Pattern Mining | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn association rule mining with Apriori and FP-growth algorithms. Explore support, confidence, and lift metrics applied to construction defect co-occurrence, material procurement patterns, and safety incident correlations.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.8
+            </div>
+            <h1 class="chapter-hero__title">Association Rules &amp; Pattern Mining</h1>
+            <p class="chapter-hero__subtitle">
+                When one defect appears on a job site, which others tend to follow?
+                Association rule mining discovers hidden co-occurrence patterns
+                buried in inspection logs, procurement records, and incident
+                databases &mdash; turning thousands of categorical observations into
+                actionable &ldquo;if X then Y&rdquo; rules that help engineers
+                anticipate problems before they cascade.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY PATTERN MINING MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-pattern-mining">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why Pattern Mining Matters in Civil Engineering</h2>
+                        <p>
+                            A large construction firm might close out 50,000 defect
+                            reports per year across dozens of projects. Each report
+                            records the defect type (cracking, spalling, honeycombing,
+                            rebar exposure, delamination, efflorescence &hellip;), the
+                            structural element involved, the material batch, the
+                            subcontractor, the weather conditions, and more. Within
+                            that mountain of records are patterns that no human can
+                            reliably spot at scale:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Defect co-occurrence</strong> &mdash; If cracking
+                                appears in a concrete column, spalling follows within
+                                six months 72% of the time.
+                            </li>
+                            <li>
+                                <strong>Procurement correlations</strong> &mdash; Projects
+                                that source both cement and aggregate from Supplier X
+                                in summer months see a 3x spike in early-age cracking.
+                            </li>
+                            <li>
+                                <strong>Safety incident chains</strong> &mdash; Near-miss
+                                reports involving scaffolding AND wet conditions are
+                                followed by a recordable injury within 10 working days
+                                40% of the time.
+                            </li>
+                            <li>
+                                <strong>Maintenance bundles</strong> &mdash; Bridge decks
+                                that need pothole repair almost always also need joint
+                                seal replacement, suggesting a single mobilisation saves
+                                cost.
+                            </li>
+                        </ul>
+                        <p>
+                            Association rule mining provides the mathematical framework
+                            to extract, quantify, and rank these patterns automatically.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine a veteran site inspector who, after decades of
+                            experience, has developed an uncanny intuition: &ldquo;If I
+                            see honeycombing in the column, I always check the beam
+                            soffit nearby for rebar exposure &mdash; they tend to travel
+                            together.&rdquo; Association rule mining is the algorithmic
+                            version of that inspector. It systematically examines every
+                            possible combination of defects across every inspection
+                            record, quantifies how often they co-occur, and ranks the
+                            strongest associations &mdash; no decades of experience
+                            required.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: CORE CONCEPTS
+             ========================================== -->
+        <section class="ch-section" id="core-concepts">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Transactions, Items, and Itemsets</h2>
+                        <p>
+                            Association rule mining borrows its vocabulary from retail
+                            (the classic &ldquo;market basket&rdquo; problem), but the
+                            concepts map directly to civil engineering:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Item</strong> &mdash; A single observable event
+                                or attribute. In retail, an item is a product (bread,
+                                milk). In CE, an item might be a defect type
+                                (<em>cracking</em>), a material (<em>Type I cement</em>),
+                                or a condition (<em>high humidity</em>).
+                            </li>
+                            <li>
+                                <strong>Transaction</strong> &mdash; A collection of items
+                                observed together. In retail, a receipt. In CE, a single
+                                inspection report listing all defects found on one
+                                structural element.
+                            </li>
+                            <li>
+                                <strong>Itemset</strong> &mdash; Any subset of items.
+                                {cracking, spalling} is a 2-itemset. We call it
+                                <em>frequent</em> if it appears in at least a minimum
+                                fraction of all transactions.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Key Metrics: Support, Confidence, and Lift</h2>
+                        <p>
+                            Three metrics determine how interesting an association rule
+                            {X} &rarr; {Y} is:
+                        </p>
+
+                        <h3><i class="fa-solid fa-layer-group"></i> Support</h3>
+                        <p>
+                            The fraction of transactions that contain both X and Y.
+                            It measures <em>how common</em> the pattern is.
+                        </p>
+                        <pre><code>Support(X &rarr; Y) = P(X &cup; Y) = Count(X &cup; Y) / N</code></pre>
+                        <p>
+                            <strong>CE example:</strong> Out of 1,000 inspection reports,
+                            120 contain both &ldquo;cracking&rdquo; and
+                            &ldquo;spalling.&rdquo; Support = 120 / 1000 = 0.12 (12%).
+                            A minimum support threshold filters out rare, unreliable
+                            patterns.
+                        </p>
+
+                        <h3><i class="fa-solid fa-percentage"></i> Confidence</h3>
+                        <p>
+                            The conditional probability of finding Y given X is present.
+                            It measures <em>how reliable</em> the rule is.
+                        </p>
+                        <pre><code>Confidence(X &rarr; Y) = P(Y | X) = Support(X &cup; Y) / Support(X)</code></pre>
+                        <p>
+                            <strong>CE example:</strong> &ldquo;Cracking&rdquo; appears
+                            in 200 reports. Of those, 120 also have &ldquo;spalling.&rdquo;
+                            Confidence = 120 / 200 = 0.60 (60%). This means: when we see
+                            cracking, spalling co-occurs 60% of the time.
+                        </p>
+
+                        <h3><i class="fa-solid fa-arrow-up-right-dots"></i> Lift</h3>
+                        <p>
+                            Lift compares the observed co-occurrence to what we would
+                            expect if X and Y were independent. It measures <em>how
+                            much more</em> likely they are to co-occur than by chance.
+                        </p>
+                        <pre><code>Lift(X &rarr; Y) = Confidence(X &rarr; Y) / Support(Y)</code></pre>
+                        <p>
+                            <strong>CE example:</strong> Spalling appears in 300 of
+                            1,000 reports (Support(Y) = 0.30). Lift = 0.60 / 0.30 = 2.0.
+                            A lift of 2.0 means cracking and spalling co-occur <em>twice
+                            as often</em> as we would expect if they were independent.
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Lift &gt; 1</strong> &mdash; Positive association.
+                                Items appear together more than expected.
+                            </li>
+                            <li>
+                                <strong>Lift = 1</strong> &mdash; Independent. No
+                                meaningful association.
+                            </li>
+                            <li>
+                                <strong>Lift &lt; 1</strong> &mdash; Negative association.
+                                Items avoid each other.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Additional Interestingness Measures</h3>
+                        <p>
+                            While support, confidence, and lift are the classic trio,
+                            practitioners also use:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Conviction</strong> &mdash; Measures the degree
+                                to which X appearing without Y would violate the rule.
+                                Higher values indicate stronger association.
+                            </li>
+                            <li>
+                                <strong>Leverage</strong> &mdash; The difference between
+                                the observed frequency of X and Y together and the
+                                expected frequency under independence. Positive leverage
+                                means co-occurrence is higher than expected.
+                            </li>
+                            <li>
+                                <strong>Zhang's metric</strong> &mdash; Captures both
+                                positive and negative associations on a [-1, 1] scale,
+                                useful for detecting items that actively repel each other.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: THE APRIORI ALGORITHM
+             ========================================== -->
+        <section class="ch-section" id="apriori-algorithm">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sitemap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Apriori Algorithm</h2>
+                        <p>
+                            Apriori (Agrawal &amp; Srikant, 1994) is the foundational
+                            algorithm for mining frequent itemsets. Its key insight is
+                            the <strong>Apriori property</strong>: if an itemset is
+                            infrequent, all of its supersets must also be infrequent.
+                            This allows massive pruning of the search space.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step-by-Step Process</h3>
+                        <ol>
+                            <li>
+                                <strong>Scan 1 &mdash; Find frequent 1-itemsets:</strong>
+                                Count how often each individual item appears across all
+                                transactions. Keep only those meeting the minimum support
+                                threshold.
+                            </li>
+                            <li>
+                                <strong>Generate candidates:</strong> Combine frequent
+                                (k-1)-itemsets to form candidate k-itemsets. Apply the
+                                Apriori property to prune candidates that contain an
+                                infrequent subset.
+                            </li>
+                            <li>
+                                <strong>Scan k &mdash; Count candidate support:</strong>
+                                Scan all transactions again, counting support for each
+                                surviving candidate. Keep only those meeting minimum
+                                support.
+                            </li>
+                            <li>
+                                <strong>Repeat</strong> until no new frequent itemsets
+                                are found.
+                            </li>
+                            <li>
+                                <strong>Generate rules:</strong> From each frequent
+                                itemset, generate all possible rules and compute
+                                confidence. Keep only those meeting minimum confidence.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Picture a quality manager reviewing 1,000 concrete inspection
+                            reports. First, she tallies each defect individually:
+                            cracking appears 200 times, spalling 300 times, honeycombing
+                            150 times, rebar exposure 80 times. She sets a threshold of
+                            10% (100 reports) and discards rebar exposure from further
+                            analysis. Next, she looks at <em>pairs</em>: cracking +
+                            spalling = 120, cracking + honeycombing = 40, spalling +
+                            honeycombing = 90. Only cracking + spalling passes the 10%
+                            threshold. She then checks triples, but since cracking +
+                            honeycombing was infrequent, any triple containing both must
+                            also be infrequent (Apriori property), so she prunes it
+                            without counting. That is Apriori in action.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Apriori Limitations</h3>
+                        <ul>
+                            <li>
+                                <strong>Multiple database scans</strong> &mdash; Each
+                                candidate generation pass requires a full scan of all
+                                transactions. With millions of inspection records, this
+                                becomes a bottleneck.
+                            </li>
+                            <li>
+                                <strong>Candidate explosion</strong> &mdash; With many
+                                items (e.g., hundreds of defect codes), the number of
+                                candidate itemsets can grow combinatorially.
+                            </li>
+                            <li>
+                                <strong>Threshold sensitivity</strong> &mdash; Too-low
+                                support produces thousands of spurious rules; too-high
+                                support misses important but rare patterns.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: FP-GROWTH ALGORITHM
+             ========================================== -->
+        <section class="ch-section" id="fp-growth">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>FP-Growth: A Faster Alternative</h2>
+                        <p>
+                            FP-Growth (Han, Pei &amp; Yin, 2000) addresses Apriori's
+                            bottlenecks by compressing the transaction database into a
+                            compact data structure called an <strong>FP-tree</strong>
+                            (Frequent Pattern tree). It then mines frequent itemsets
+                            directly from the tree without candidate generation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-branch"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How FP-Growth Works</h3>
+                        <ol>
+                            <li>
+                                <strong>First scan &mdash; frequency count:</strong>
+                                Count item frequencies and discard infrequent items.
+                                Sort remaining items by descending frequency.
+                            </li>
+                            <li>
+                                <strong>Build FP-tree:</strong> Insert each transaction
+                                (sorted by item frequency) into a prefix tree. Shared
+                                prefixes are merged, with each node storing a counter.
+                                A header table links nodes for the same item.
+                            </li>
+                            <li>
+                                <strong>Mine conditional pattern bases:</strong> For each
+                                item, extract its <em>conditional pattern base</em>
+                                (the set of prefix paths leading to that item) and build
+                                a <em>conditional FP-tree</em>.
+                            </li>
+                            <li>
+                                <strong>Recurse:</strong> Recursively mine conditional
+                                FP-trees to find all frequent itemsets. No candidate
+                                generation is needed.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Apriori vs. FP-Growth: When to Use Which</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Criterion</th>
+                                    <th style="text-align:left; padding:0.6rem;">Apriori</th>
+                                    <th style="text-align:left; padding:0.6rem;">FP-Growth</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Database scans</td>
+                                    <td style="padding:0.6rem;">k scans (one per level)</td>
+                                    <td style="padding:0.6rem;">2 scans only</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Candidate generation</td>
+                                    <td style="padding:0.6rem;">Yes (can explode)</td>
+                                    <td style="padding:0.6rem;">No</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Memory usage</td>
+                                    <td style="padding:0.6rem;">Low (candidates in batches)</td>
+                                    <td style="padding:0.6rem;">High (entire FP-tree in RAM)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Speed on dense data</td>
+                                    <td style="padding:0.6rem;">Slow</td>
+                                    <td style="padding:0.6rem;">Fast</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem;">Best for CE use</td>
+                                    <td style="padding:0.6rem;">Small defect databases</td>
+                                    <td style="padding:0.6rem;">Large inspection logs</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Civil Engineering Applications</h2>
+                        <p>
+                            Association rules move beyond academic curiosity when applied
+                            to real construction and infrastructure data. Here are four
+                            major application domains.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-circle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>1. Construction Defect Co-Occurrence</h3>
+                        <p>
+                            Mining inspection databases reveals which defects tend to
+                            travel together. Discovered rules inform preventive action:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>{cracking} &rarr; {spalling}</strong>
+                                (conf = 0.62, lift = 2.1) &mdash; When cracking is found,
+                                inspect for incipient spalling even if not yet visible.
+                            </li>
+                            <li>
+                                <strong>{honeycombing, cold joint} &rarr; {rebar exposure}</strong>
+                                (conf = 0.48, lift = 3.5) &mdash; Both honeycombing and
+                                cold joints together strongly predict rebar exposure,
+                                suggesting inadequate vibration during a pour interruption.
+                            </li>
+                            <li>
+                                <strong>{efflorescence} &rarr; {delamination}</strong>
+                                (conf = 0.35, lift = 1.8) &mdash; Efflorescence signals
+                                moisture pathways that eventually cause delamination.
+                            </li>
+                        </ul>
+                        <p>
+                            These rules allow project managers to create targeted
+                            inspection checklists: when one defect is found, the
+                            checklist automatically flags co-occurring defects for
+                            follow-up inspection.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-truck-loading"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>2. Material Procurement Patterns</h3>
+                        <p>
+                            Procurement records are natural transactions: each purchase
+                            order lists multiple materials. Mining reveals:
+                        </p>
+                        <ul>
+                            <li>
+                                Materials frequently ordered together, enabling bulk
+                                negotiation and combined shipping.
+                            </li>
+                            <li>
+                                Supplier-material-quality associations: certain
+                                supplier combinations correlate with downstream quality
+                                issues (e.g., Supplier A cement + Supplier B admixture
+                                &rarr; higher slump variability).
+                            </li>
+                            <li>
+                                Seasonal procurement patterns that drive inventory
+                                planning.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>3. Safety Incident Correlations</h3>
+                        <p>
+                            Each safety report is a transaction containing contributing
+                            factors: weather, activity type, PPE status, time of day,
+                            experience level, and incident type. Association rules
+                            identify high-risk combinations:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>{rain, scaffolding, afternoon shift}</strong>
+                                &rarr; <strong>{slip/fall incident}</strong>
+                                (conf = 0.41, lift = 4.2)
+                            </li>
+                            <li>
+                                <strong>{new worker, excavation, no spotter}</strong>
+                                &rarr; <strong>{struck-by near-miss}</strong>
+                                (conf = 0.33, lift = 3.8)
+                            </li>
+                        </ul>
+                        <p>
+                            Safety managers can use these rules to trigger targeted
+                            toolbox talks and enhanced supervision when the antecedent
+                            conditions are present.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>4. Bridge Maintenance Bundling</h3>
+                        <p>
+                            Bridge management systems store element-level inspection
+                            data across thousands of structures. Mining reveals
+                            maintenance actions that frequently co-occur:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>{deck pothole repair} &rarr; {joint seal replacement}</strong>
+                                (conf = 0.71, lift = 2.4) &mdash; Scheduling both in a
+                                single lane closure reduces traffic disruption and
+                                mobilisation costs.
+                            </li>
+                            <li>
+                                <strong>{bearing pad replacement, paint system failure}</strong>
+                                &rarr; <strong>{substructure concrete repair}</strong>
+                                (conf = 0.55, lift = 2.9) &mdash; Bearing failure and
+                                coating failure expose substructure elements to
+                                accelerated deterioration.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: FREQUENT ITEMSETS DEEP DIVE
+             ========================================== -->
+        <section class="ch-section" id="frequent-itemsets">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Frequent Itemsets: The Foundation</h2>
+                        <p>
+                            Before rules can be generated, the algorithm must discover
+                            which itemsets are <em>frequent</em> &mdash; that is, which
+                            combinations of items appear together in at least a minimum
+                            fraction (min_support) of all transactions.
+                        </p>
+                        <p>
+                            The number of possible itemsets grows exponentially with the
+                            number of items. With <em>n</em> distinct items, there are
+                            2<sup>n</sup> - 1 possible non-empty subsets. For a modest
+                            defect taxonomy of 20 codes, that is over one million
+                            possible itemsets. The Apriori property (and FP-Growth's
+                            tree compression) makes this tractable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-filter"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Maximal vs. Closed Frequent Itemsets</h3>
+                        <p>
+                            Mining all frequent itemsets can produce an overwhelming
+                            number of results. Two important subsets help manage this:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Closed frequent itemset</strong> &mdash; A
+                                frequent itemset is <em>closed</em> if no proper superset
+                                has the same support. Closed itemsets retain all support
+                                information while being far fewer in number.
+                            </li>
+                            <li>
+                                <strong>Maximal frequent itemset</strong> &mdash; A
+                                frequent itemset is <em>maximal</em> if no proper
+                                superset is frequent. Maximal itemsets are the most
+                                compact representation but lose support information for
+                                subsets.
+                            </li>
+                        </ul>
+                        <p>
+                            <strong>CE context:</strong> When mining a bridge inspection
+                            database, closed itemsets let you say &ldquo;{cracking,
+                            spalling, delamination} appears in exactly 47 inspections
+                            and no larger defect set has that same count,&rdquo; giving
+                            the most informative non-redundant summary.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Choosing Minimum Support and Confidence</h3>
+                        <p>
+                            There is no universal &ldquo;right&rdquo; threshold.
+                            Guidelines for CE applications:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>High-frequency defects</strong> (cracking,
+                                spalling): min_support = 5&ndash;15%. Patterns are common
+                                enough to be statistically reliable.
+                            </li>
+                            <li>
+                                <strong>Rare but critical events</strong> (structural
+                                collapse precursors, safety fatalities): min_support =
+                                0.5&ndash;2%. Rarity does not mean unimportance.
+                            </li>
+                            <li>
+                                <strong>Confidence threshold</strong>: Typically
+                                30&ndash;70%. Below 30%, rules are too unreliable for
+                                action. Above 70%, you may miss nuanced patterns.
+                            </li>
+                            <li>
+                                <strong>Lift threshold</strong>: Keep rules with
+                                lift &gt; 1.2 to ensure non-trivial associations.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: DEMO 1 — ASSOCIATION RULE EXPLORER
+             ========================================== -->
+        <section class="ch-section" id="demo-rule-explorer">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Interactive Demo 1: Association Rule Explorer</h2>
+                        <p>
+                            Toggle defect items in and out of transactions, adjust
+                            minimum support and confidence thresholds, and watch the
+                            Apriori algorithm discover rules in real time. Each
+                            discovered rule shows its support, confidence, and lift.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel" id="demo1-panel">
+                    <h3><i class="fa-solid fa-sliders"></i> Rule Explorer Controls</h3>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                        <div>
+                            <label style="display:block; font-weight:600; margin-bottom:0.5rem; color:var(--text-primary);">
+                                <i class="fa-solid fa-database"></i> Transaction Database
+                            </label>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.75rem;">
+                                Toggle items in each inspection transaction.
+                            </p>
+                            <div id="txn-editor" style="max-height:280px; overflow-y:auto; border:1px solid var(--border-subtle); border-radius:8px; padding:0.75rem;"></div>
+                            <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+                                <button id="btn-add-txn" style="padding:0.4rem 0.9rem; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                                    <i class="fa-solid fa-plus"></i> Add Transaction
+                                </button>
+                                <button id="btn-random-txns" style="padding:0.4rem 0.9rem; border:1px solid var(--accent-secondary); background:transparent; color:var(--accent-secondary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                                    <i class="fa-solid fa-shuffle"></i> Random Dataset
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-weight:600; margin-bottom:0.5rem; color:var(--text-primary);">
+                                <i class="fa-solid fa-gear"></i> Mining Parameters
+                            </label>
+                            <div style="margin-bottom:1rem;">
+                                <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                    Min Support: <span id="sup-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">0.20</span>
+                                </label>
+                                <input type="range" id="min-support" min="0.05" max="0.80" step="0.05" value="0.20"
+                                    style="width:100%; accent-color:var(--accent-primary); margin-top:0.3rem;">
+                            </div>
+                            <div style="margin-bottom:1rem;">
+                                <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                    Min Confidence: <span id="conf-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">0.50</span>
+                                </label>
+                                <input type="range" id="min-confidence" min="0.10" max="1.00" step="0.05" value="0.50"
+                                    style="width:100%; accent-color:var(--accent-primary); margin-top:0.3rem;">
+                            </div>
+                            <div style="margin-bottom:1rem;">
+                                <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                    Min Lift: <span id="lift-val" style="color:var(--accent-warm); font-family:'JetBrains Mono',monospace;">1.00</span>
+                                </label>
+                                <input type="range" id="min-lift" min="0.50" max="5.00" step="0.10" value="1.00"
+                                    style="width:100%; accent-color:var(--accent-warm); margin-top:0.3rem;">
+                            </div>
+                            <button id="btn-mine" style="width:100%; padding:0.6rem; background:var(--gradient-main); border:none; border-radius:8px; color:var(--text-inverse); font-weight:600; cursor:pointer; font-size:0.95rem;">
+                                <i class="fa-solid fa-play"></i> Mine Rules
+                            </button>
+                        </div>
+                    </div>
+
+                    <h4 style="color:var(--text-primary); margin-bottom:0.5rem;">
+                        <i class="fa-solid fa-list-check"></i> Discovered Rules
+                        <span id="rule-count" style="font-size:0.85rem; color:var(--text-secondary); font-weight:400; margin-left:0.5rem;"></span>
+                    </h4>
+                    <div id="rules-output" style="max-height:320px; overflow-y:auto; border:1px solid var(--border-subtle); border-radius:8px; padding:0.75rem; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary);">
+                        Click &ldquo;Mine Rules&rdquo; to discover association rules from your transactions.
+                    </div>
+
+                    <div id="freq-itemsets-output" style="margin-top:1rem;">
+                        <h4 style="color:var(--text-primary); margin-bottom:0.5rem;">
+                            <i class="fa-solid fa-cubes"></i> Frequent Itemsets
+                        </h4>
+                        <div id="freq-output" style="border:1px solid var(--border-subtle); border-radius:8px; padding:0.75rem; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary);">
+                            Frequent itemsets will appear here after mining.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ BLOCK 1 & 2
+             ========================================== -->
+        <section class="ch-section" id="quiz-section-1">
+            <div class="section-container">
+
+                <div class="quiz-block" id="quiz1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 1: Support Calculation</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            A bridge inspection database contains 500 reports.
+                            &ldquo;Cracking&rdquo; appears in 150 reports.
+                            &ldquo;Spalling&rdquo; appears in 200 reports.
+                            Both appear together in 75 reports. What is the
+                            <strong>support</strong> of the rule
+                            {cracking} &rarr; {spalling}?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                A) 0.30 (150/500)
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="true">
+                                B) 0.15 (75/500)
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                C) 0.50 (75/150)
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                D) 0.375 (75/200)
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz1-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> Support = Count(X &cup; Y) / N = 75 / 500 = 0.15.
+                            Support measures how frequently the itemset {cracking, spalling}
+                            appears in the entire database, not the conditional probability.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz1-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> Support = Count(X &cup; Y) / N = 75 / 500 = 0.15.
+                            Option C would be the <em>confidence</em>, and option A is just
+                            the support of cracking alone.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-block" id="quiz2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 2: Lift Interpretation</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            A rule {honeycombing} &rarr; {rebar exposure} has a
+                            lift of 3.5. Which statement is correct?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                A) Honeycombing and rebar exposure are negatively correlated.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                B) Honeycombing appears 3.5 times more often than rebar exposure.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="true">
+                                C) Honeycombing and rebar exposure co-occur 3.5 times more often than expected under independence.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                D) The rule has 35% confidence.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz2-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> Lift = Confidence / Support(consequent).
+                            A lift of 3.5 means these defects co-occur 3.5 times more
+                            frequently than they would if they were independent events.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz2-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> Lift measures how much more likely
+                            the items are to co-occur compared to independence. Lift = 3.5
+                            means they appear together 3.5x more than expected by chance.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 2 — DEFECT CO-OCCURRENCE HEATMAP
+             ========================================== -->
+        <section class="ch-section" id="demo-heatmap">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Interactive Demo 2: Defect Co-Occurrence Heatmap</h2>
+                        <p>
+                            This canvas-based heatmap visualises the lift between every
+                            pair of construction defects. Brighter cells indicate
+                            stronger associations. Hover over cells to see exact values.
+                            Adjust the number of synthetic inspection reports to see how
+                            sample size affects the stability of the metrics.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel" id="demo2-panel">
+                    <h3><i class="fa-solid fa-table-cells-large"></i> Defect Co-Occurrence Matrix (Lift)</h3>
+
+                    <div style="display:flex; gap:1.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                Inspection Reports: <span id="n-reports-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">200</span>
+                            </label>
+                            <input type="range" id="n-reports" min="50" max="2000" step="50" value="200"
+                                style="width:200px; accent-color:var(--accent-primary); display:block; margin-top:0.3rem;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                Metric:
+                            </label>
+                            <select id="heatmap-metric" style="padding:0.3rem 0.6rem; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; font-size:0.85rem; margin-top:0.3rem; display:block;">
+                                <option value="lift">Lift</option>
+                                <option value="confidence">Confidence</option>
+                                <option value="support">Support</option>
+                            </select>
+                        </div>
+                        <button id="btn-regenerate" style="padding:0.5rem 1rem; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; align-self:flex-end;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Regenerate Data
+                        </button>
+                    </div>
+
+                    <div style="position:relative; width:100%; max-width:640px; margin:0 auto;">
+                        <canvas id="heatmap-canvas" style="width:100%; border-radius:8px; cursor:crosshair;"></canvas>
+                        <div id="heatmap-tooltip" style="position:absolute; display:none; background:var(--bg-card); border:1px solid var(--border-active); border-radius:6px; padding:0.5rem 0.75rem; font-size:0.82rem; font-family:'JetBrains Mono',monospace; color:var(--text-primary); pointer-events:none; z-index:10; white-space:nowrap;"></div>
+                    </div>
+
+                    <div id="heatmap-stats" style="margin-top:1rem; font-size:0.85rem; color:var(--text-secondary); text-align:center;"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: PRACTICAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="practical-workflow">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Practical Workflow for CE Practitioners</h2>
+                        <p>
+                            A step-by-step guide to applying association rule mining
+                            on a real construction quality database:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Define transactions:</strong> Decide what
+                                constitutes a &ldquo;basket.&rdquo; Options include:
+                                one inspection report per element, all defects found
+                                on one floor during one visit, or all issues on one
+                                project in one month.
+                            </li>
+                            <li>
+                                <strong>Encode items:</strong> Map defect codes,
+                                material types, weather conditions, and other categorical
+                                variables to binary item presence/absence.
+                            </li>
+                            <li>
+                                <strong>Set thresholds:</strong> Start with moderate
+                                min_support (0.05&ndash;0.10) and min_confidence (0.30).
+                                Iterate based on the number of rules produced.
+                            </li>
+                            <li>
+                                <strong>Run the algorithm:</strong> Use Apriori for
+                                small datasets (&lt;10,000 transactions) or FP-Growth
+                                for larger ones. Python's <code>mlxtend</code> library
+                                provides both implementations.
+                            </li>
+                            <li>
+                                <strong>Filter and rank:</strong> Sort rules by lift,
+                                then filter by domain relevance. Not every statistical
+                                association is actionable.
+                            </li>
+                            <li>
+                                <strong>Validate with domain experts:</strong> Present
+                                top rules to experienced site engineers. Do the
+                                associations make physical sense? Rules that surprise
+                                experts are the most valuable.
+                            </li>
+                            <li>
+                                <strong>Operationalise:</strong> Embed validated rules
+                                into inspection checklists, procurement dashboards, or
+                                safety alert systems.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Python Example with mlxtend</h3>
+                        <pre><code>import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+
+# Each row = one inspection, columns = defect types (1/0)
+df = pd.DataFrame({
+    'cracking':     [1,1,0,1,1,0,1,0,1,1],
+    'spalling':     [1,0,1,1,1,1,0,1,1,0],
+    'honeycombing': [0,1,0,0,1,0,1,0,0,1],
+    'rebar_expose': [0,1,0,0,0,0,1,0,0,0],
+    'delamination': [1,0,1,0,1,1,0,1,0,0],
+    'efflorescence':[0,0,1,0,0,1,0,1,0,0]
+})
+
+# Step 1: Find frequent itemsets (min support = 20%)
+freq = apriori(df, min_support=0.2, use_colnames=True)
+
+# Step 2: Generate rules (min confidence = 50%)
+rules = association_rules(freq, metric='confidence',
+                          min_threshold=0.5)
+
+# Step 3: Sort by lift
+rules_sorted = rules.sort_values('lift', ascending=False)
+print(rules_sorted[['antecedents','consequents',
+                     'support','confidence','lift']])</code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: PITFALLS & BEST PRACTICES
+             ========================================== -->
+        <section class="ch-section" id="pitfalls">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Pitfalls and Best Practices</h2>
+                        <ul>
+                            <li>
+                                <strong>Spurious correlations:</strong> With enough items,
+                                some high-lift rules will be coincidental. Always check
+                                that a rule has physical plausibility. &ldquo;If the
+                                inspection was on a Tuesday, then cracking&rdquo; is
+                                almost certainly noise.
+                            </li>
+                            <li>
+                                <strong>Simpson's paradox:</strong> An association that
+                                holds in aggregate data may reverse when data is split by
+                                project type or region. Always check rules within
+                                meaningful subgroups.
+                            </li>
+                            <li>
+                                <strong>Redundant rules:</strong> Apriori can produce
+                                thousands of rules, many near-duplicates. Use pruning
+                                strategies: remove rules whose confidence does not improve
+                                when an item is added to the antecedent.
+                            </li>
+                            <li>
+                                <strong>Temporal blindness:</strong> Standard association
+                                rules ignore time ordering. {cracking} &rarr; {spalling}
+                                does not prove cracking <em>causes</em> spalling. For
+                                causal reasoning, combine with sequential pattern mining
+                                or domain expertise.
+                            </li>
+                            <li>
+                                <strong>Class imbalance:</strong> If &ldquo;no defect&rdquo;
+                                dominates the database, even modest co-occurrence can
+                                produce misleadingly high lift. Pre-filter to transactions
+                                that contain at least one defect.
+                            </li>
+                            <li>
+                                <strong>Continuous variables:</strong> Association rules
+                                require categorical data. Discretise continuous variables
+                                (temperature into bins, strength into pass/fail) carefully;
+                                bin choice affects discovered rules.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Association rules are like the correlations a structural
+                            engineer observes between foundation settlement and wall
+                            cracking. Seeing them together frequently does not prove
+                            one caused the other &mdash; both might be caused by a
+                            third factor (poor soil compaction). The rules tell you
+                            <em>where to look</em>, not <em>what caused what</em>.
+                            They are a flashlight, not a verdict.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ BLOCK 3 & 4
+             ========================================== -->
+        <section class="ch-section" id="quiz-section-2">
+            <div class="section-container">
+
+                <div class="quiz-block" id="quiz3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 3: Apriori Property</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            The Apriori property states that if an itemset is infrequent,
+                            then all of its supersets must also be infrequent. How does
+                            this help the algorithm?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                A) It increases the confidence of discovered rules.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                B) It reduces the number of database scans to exactly one.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="true">
+                                C) It allows pruning of candidate itemsets without counting their support, reducing computation.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                D) It guarantees that all discovered rules are causal.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz3-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> The Apriori property enables
+                            massive pruning: if {A, B} is infrequent, then {A, B, C},
+                            {A, B, D}, etc. can be discarded without scanning the
+                            database, dramatically reducing the search space.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz3-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> The Apriori property allows
+                            pruning candidate itemsets: if a subset is infrequent,
+                            all supersets can be skipped without counting their support.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-block" id="quiz4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 4: FP-Growth Advantage</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            What is the primary advantage of FP-Growth over Apriori?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                A) FP-Growth always produces fewer rules.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                B) FP-Growth does not require a minimum support threshold.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="true">
+                                C) FP-Growth avoids costly candidate generation by compressing data into an FP-tree and needs only two database scans.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                D) FP-Growth uses less memory than Apriori.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz4-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> FP-Growth compresses the database
+                            into a prefix tree (FP-tree) and mines frequent patterns
+                            directly from the tree. It needs only 2 database scans
+                            (vs. k scans for Apriori) and avoids generating candidate
+                            itemsets entirely.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz4-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> FP-Growth's main advantage is
+                            eliminating candidate generation by using an FP-tree data
+                            structure, and requiring only 2 database scans. It actually
+                            uses <em>more</em> memory than Apriori (the entire FP-tree
+                            must fit in RAM).
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Key Takeaways</h2>
+                        <ul>
+                            <li>
+                                Association rule mining discovers &ldquo;if X then Y&rdquo;
+                                patterns in categorical data. The three core metrics are
+                                <strong>support</strong> (frequency), <strong>confidence</strong>
+                                (reliability), and <strong>lift</strong> (departure from
+                                independence).
+                            </li>
+                            <li>
+                                <strong>Apriori</strong> builds frequent itemsets
+                                level-by-level, using the downward-closure property to
+                                prune candidates. Simple but can be slow on large datasets.
+                            </li>
+                            <li>
+                                <strong>FP-Growth</strong> compresses data into an FP-tree
+                                and mines patterns without candidate generation. Faster
+                                but more memory-intensive.
+                            </li>
+                            <li>
+                                In civil engineering, association rules reveal defect
+                                co-occurrences, procurement correlations, safety incident
+                                chains, and maintenance bundling opportunities.
+                            </li>
+                            <li>
+                                Rules show <em>correlation</em>, not <em>causation</em>.
+                                Always validate discovered rules with domain expertise
+                                before operationalising them.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub7.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.7 Anomaly Detection
+        </a>
+        <a href="sub9.html" class="chapter-nav__link next">
+            3.9 Evaluating UL Models <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var CU = window.ChapterUtils;
+        var getColors = CU.getColors;
+        var initCanvas = CU.initCanvas;
+
+        /* ============================================
+           HERO CANVAS — Floating connected nodes
+           ============================================ */
+        (function heroAnim() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var raf, nodes = [];
+            var NUM = 40;
+
+            function setup() {
+                var info = initCanvas(canvas);
+                var ctx = info.ctx, w = info.w, h = info.h;
+                nodes = [];
+                for (var i = 0; i < NUM; i++) {
+                    nodes.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.6,
+                        vy: (Math.random() - 0.5) * 0.6,
+                        r: 2 + Math.random() * 3
+                    });
+                }
+                return { ctx: ctx, w: w, h: h };
+            }
+
+            var state = setup();
+
+            function draw() {
+                var c = getColors();
+                var ctx = state.ctx, w = state.w, h = state.h;
+                ctx.clearRect(0, 0, w, h);
+
+                /* Move nodes */
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    n.x += n.vx; n.y += n.vy;
+                    if (n.x < 0 || n.x > w) n.vx *= -1;
+                    if (n.y < 0 || n.y > h) n.vy *= -1;
+                }
+
+                /* Draw edges for co-occurring items */
+                for (var i = 0; i < nodes.length; i++) {
+                    for (var j = i + 1; j < nodes.length; j++) {
+                        var dx = nodes[i].x - nodes[j].x;
+                        var dy = nodes[i].y - nodes[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.strokeStyle = c.TEAL;
+                            ctx.globalAlpha = 0.15 * (1 - dist / 120);
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+
+                /* Draw nodes */
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+                    ctx.fillStyle = i % 3 === 0 ? c.TEAL : (i % 3 === 1 ? c.CYAN : c.AMBER);
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                raf = requestAnimationFrame(draw);
+            }
+
+            draw();
+
+            window.addEventListener('resize', function () {
+                cancelAnimationFrame(raf);
+                state = setup();
+                draw();
+            });
+        })();
+
+        /* ============================================
+           DEMO 1: ASSOCIATION RULE EXPLORER
+           ============================================ */
+        (function ruleExplorer() {
+            var ITEMS = ['Cracking', 'Spalling', 'Honeycombing', 'Rebar Exposure',
+                         'Delamination', 'Efflorescence', 'Cold Joint', 'Scaling'];
+
+            var transactions = [];
+            var txnEditorEl = document.getElementById('txn-editor');
+            var rulesOutputEl = document.getElementById('rules-output');
+            var freqOutputEl = document.getElementById('freq-output');
+            var ruleCountEl = document.getElementById('rule-count');
+            var supSlider = document.getElementById('min-support');
+            var confSlider = document.getElementById('min-confidence');
+            var liftSlider = document.getElementById('min-lift');
+            var supVal = document.getElementById('sup-val');
+            var confVal = document.getElementById('conf-val');
+            var liftVal = document.getElementById('lift-val');
+
+            if (!txnEditorEl) return;
+
+            /* Default transactions */
+            function defaultData() {
+                return [
+                    [1,1,0,0,1,0,0,0],
+                    [1,0,1,1,0,0,0,0],
+                    [0,1,0,0,1,1,0,0],
+                    [1,1,0,0,0,0,1,0],
+                    [1,1,1,0,1,0,0,1],
+                    [0,1,0,0,0,1,0,0],
+                    [1,0,1,1,0,0,1,0],
+                    [0,0,0,0,1,1,0,1],
+                    [1,1,0,0,1,0,0,0],
+                    [1,1,1,0,0,0,0,1]
+                ];
+            }
+
+            function randomData() {
+                var data = [];
+                var nTxn = 8 + Math.floor(Math.random() * 12);
+                /* Base rates for each item */
+                var rates = [0.55, 0.50, 0.30, 0.15, 0.35, 0.25, 0.20, 0.18];
+                /* Inject correlations */
+                for (var t = 0; t < nTxn; t++) {
+                    var row = [];
+                    for (var i = 0; i < ITEMS.length; i++) {
+                        row.push(Math.random() < rates[i] ? 1 : 0);
+                    }
+                    /* If cracking, boost spalling probability */
+                    if (row[0] === 1 && row[1] === 0 && Math.random() < 0.55) row[1] = 1;
+                    /* If honeycombing + cold joint, boost rebar exposure */
+                    if (row[2] === 1 && row[6] === 1 && Math.random() < 0.65) row[3] = 1;
+                    /* If efflorescence, boost delamination */
+                    if (row[5] === 1 && row[4] === 0 && Math.random() < 0.45) row[4] = 1;
+                    data.push(row);
+                }
+                return data;
+            }
+
+            function renderTxnEditor() {
+                var html = '<table style="width:100%; border-collapse:collapse; font-size:0.78rem;">';
+                html += '<thead><tr style="border-bottom:1px solid var(--border-subtle);">';
+                html += '<th style="padding:0.3rem; color:var(--text-muted); text-align:left;">#</th>';
+                for (var i = 0; i < ITEMS.length; i++) {
+                    html += '<th style="padding:0.3rem; color:var(--text-secondary); text-align:center; font-size:0.7rem; max-width:60px; word-wrap:break-word;">' + ITEMS[i] + '</th>';
+                }
+                html += '<th style="padding:0.3rem;"></th></tr></thead><tbody>';
+
+                for (var t = 0; t < transactions.length; t++) {
+                    html += '<tr style="border-bottom:1px solid var(--border-subtle);">';
+                    html += '<td style="padding:0.3rem; color:var(--text-muted); font-family:\'JetBrains Mono\',monospace;">T' + (t + 1) + '</td>';
+                    for (var i = 0; i < ITEMS.length; i++) {
+                        var checked = transactions[t][i] ? 'checked' : '';
+                        html += '<td style="text-align:center; padding:0.3rem;">';
+                        html += '<input type="checkbox" ' + checked + ' data-txn="' + t + '" data-item="' + i + '" style="accent-color:var(--accent-primary); cursor:pointer;">';
+                        html += '</td>';
+                    }
+                    html += '<td style="padding:0.3rem;"><button class="btn-del-txn" data-txn="' + t + '" style="background:none; border:none; color:var(--accent-danger); cursor:pointer; font-size:0.85rem;" title="Remove transaction"><i class="fa-solid fa-xmark"></i></button></td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+                txnEditorEl.innerHTML = html;
+
+                /* Bind checkbox toggles */
+                var checkboxes = txnEditorEl.querySelectorAll('input[type="checkbox"]');
+                for (var c = 0; c < checkboxes.length; c++) {
+                    checkboxes[c].addEventListener('change', function () {
+                        var ti = parseInt(this.getAttribute('data-txn'));
+                        var ii = parseInt(this.getAttribute('data-item'));
+                        transactions[ti][ii] = this.checked ? 1 : 0;
+                    });
+                }
+
+                /* Bind delete buttons */
+                var delBtns = txnEditorEl.querySelectorAll('.btn-del-txn');
+                for (var d = 0; d < delBtns.length; d++) {
+                    delBtns[d].addEventListener('click', function () {
+                        var ti = parseInt(this.getAttribute('data-txn'));
+                        transactions.splice(ti, 1);
+                        renderTxnEditor();
+                    });
+                }
+            }
+
+            /* Apriori implementation */
+            function apriori(txns, minSup, minConf, minLift) {
+                var N = txns.length;
+                if (N === 0) return { freq: [], rules: [] };
+
+                /* Helper: get support of an itemset (array of indices) */
+                function support(itemset) {
+                    var count = 0;
+                    for (var t = 0; t < N; t++) {
+                        var has = true;
+                        for (var k = 0; k < itemset.length; k++) {
+                            if (txns[t][itemset[k]] !== 1) { has = false; break; }
+                        }
+                        if (has) count++;
+                    }
+                    return count / N;
+                }
+
+                /* Find frequent 1-itemsets */
+                var freqItemsets = [];
+                var current = [];
+                for (var i = 0; i < ITEMS.length; i++) {
+                    var s = support([i]);
+                    if (s >= minSup) {
+                        current.push([i]);
+                        freqItemsets.push({ items: [i], support: s });
+                    }
+                }
+
+                /* Level-wise generation */
+                while (current.length > 0) {
+                    var candidates = [];
+                    for (var a = 0; a < current.length; a++) {
+                        for (var b = a + 1; b < current.length; b++) {
+                            /* Join: merge if first k-2 items match */
+                            var ia = current[a], ib = current[b];
+                            var canJoin = true;
+                            for (var x = 0; x < ia.length - 1; x++) {
+                                if (ia[x] !== ib[x]) { canJoin = false; break; }
+                            }
+                            if (canJoin && ia[ia.length - 1] < ib[ib.length - 1]) {
+                                var merged = ia.concat([ib[ib.length - 1]]);
+                                candidates.push(merged);
+                            }
+                        }
+                    }
+
+                    current = [];
+                    for (var c = 0; c < candidates.length; c++) {
+                        var s = support(candidates[c]);
+                        if (s >= minSup) {
+                            current.push(candidates[c]);
+                            freqItemsets.push({ items: candidates[c], support: s });
+                        }
+                    }
+                }
+
+                /* Generate rules from frequent itemsets of size >= 2 */
+                var rules = [];
+                for (var f = 0; f < freqItemsets.length; f++) {
+                    var fi = freqItemsets[f];
+                    if (fi.items.length < 2) continue;
+
+                    /* Generate all non-empty proper subsets as antecedents */
+                    var subsets = [];
+                    var n = fi.items.length;
+                    for (var mask = 1; mask < (1 << n) - 1; mask++) {
+                        var ante = [], cons = [];
+                        for (var bit = 0; bit < n; bit++) {
+                            if (mask & (1 << bit)) ante.push(fi.items[bit]);
+                            else cons.push(fi.items[bit]);
+                        }
+                        if (ante.length > 0 && cons.length > 0) {
+                            subsets.push({ ante: ante, cons: cons });
+                        }
+                    }
+
+                    for (var s = 0; s < subsets.length; s++) {
+                        var supAnte = support(subsets[s].ante);
+                        var supCons = support(subsets[s].cons);
+                        var conf = supAnte > 0 ? fi.support / supAnte : 0;
+                        var lift = (supCons > 0 && supAnte > 0) ? conf / supCons : 0;
+
+                        if (conf >= minConf && lift >= minLift) {
+                            rules.push({
+                                ante: subsets[s].ante,
+                                cons: subsets[s].cons,
+                                support: fi.support,
+                                confidence: conf,
+                                lift: lift
+                            });
+                        }
+                    }
+                }
+
+                rules.sort(function (a, b) { return b.lift - a.lift; });
+                return { freq: freqItemsets, rules: rules };
+            }
+
+            function itemNames(indices) {
+                return indices.map(function (i) { return ITEMS[i]; }).join(', ');
+            }
+
+            function mineAndDisplay() {
+                var minSup = parseFloat(supSlider.value);
+                var minConf = parseFloat(confSlider.value);
+                var minLift = parseFloat(liftSlider.value);
+
+                var result = apriori(transactions, minSup, minConf, minLift);
+
+                /* Display frequent itemsets */
+                if (result.freq.length === 0) {
+                    freqOutputEl.innerHTML = '<span style="color:var(--accent-warm);">No frequent itemsets found. Try lowering the minimum support.</span>';
+                } else {
+                    var fhtml = '<table style="width:100%; border-collapse:collapse;">';
+                    fhtml += '<tr style="border-bottom:1px solid var(--border-subtle);"><th style="text-align:left; padding:0.3rem;">Itemset</th><th style="text-align:right; padding:0.3rem;">Support</th></tr>';
+                    for (var i = 0; i < result.freq.length; i++) {
+                        var fi = result.freq[i];
+                        fhtml += '<tr style="border-bottom:1px solid var(--border-subtle);">';
+                        fhtml += '<td style="padding:0.3rem; color:var(--accent-primary);">{' + itemNames(fi.items) + '}</td>';
+                        fhtml += '<td style="padding:0.3rem; text-align:right;">' + fi.support.toFixed(3) + '</td>';
+                        fhtml += '</tr>';
+                    }
+                    fhtml += '</table>';
+                    freqOutputEl.innerHTML = fhtml;
+                }
+
+                /* Display rules */
+                if (result.rules.length === 0) {
+                    rulesOutputEl.innerHTML = '<span style="color:var(--accent-warm);">No rules meet the current thresholds. Try adjusting parameters.</span>';
+                    ruleCountEl.textContent = '(0 rules)';
+                } else {
+                    ruleCountEl.textContent = '(' + result.rules.length + ' rule' + (result.rules.length > 1 ? 's' : '') + ')';
+                    var rhtml = '<table style="width:100%; border-collapse:collapse;">';
+                    rhtml += '<tr style="border-bottom:1px solid var(--border-subtle);">';
+                    rhtml += '<th style="text-align:left; padding:0.3rem;">Rule</th>';
+                    rhtml += '<th style="text-align:right; padding:0.3rem;">Sup</th>';
+                    rhtml += '<th style="text-align:right; padding:0.3rem;">Conf</th>';
+                    rhtml += '<th style="text-align:right; padding:0.3rem;">Lift</th>';
+                    rhtml += '</tr>';
+                    for (var i = 0; i < result.rules.length; i++) {
+                        var r = result.rules[i];
+                        var liftColor = r.lift > 2 ? 'var(--accent-success)' : (r.lift > 1.5 ? 'var(--accent-primary)' : 'var(--text-secondary)');
+                        rhtml += '<tr style="border-bottom:1px solid var(--border-subtle);">';
+                        rhtml += '<td style="padding:0.4rem 0.3rem;">';
+                        rhtml += '<span style="color:var(--accent-secondary);">{' + itemNames(r.ante) + '}</span>';
+                        rhtml += ' <i class="fa-solid fa-arrow-right" style="color:var(--text-muted); font-size:0.7rem; margin:0 0.3rem;"></i> ';
+                        rhtml += '<span style="color:var(--accent-primary);">{' + itemNames(r.cons) + '}</span>';
+                        rhtml += '</td>';
+                        rhtml += '<td style="text-align:right; padding:0.3rem;">' + r.support.toFixed(3) + '</td>';
+                        rhtml += '<td style="text-align:right; padding:0.3rem;">' + r.confidence.toFixed(3) + '</td>';
+                        rhtml += '<td style="text-align:right; padding:0.3rem; color:' + liftColor + '; font-weight:600;">' + r.lift.toFixed(2) + '</td>';
+                        rhtml += '</tr>';
+                    }
+                    rhtml += '</table>';
+                    rulesOutputEl.innerHTML = rhtml;
+                }
+            }
+
+            /* Slider value display */
+            supSlider.addEventListener('input', function () { supVal.textContent = parseFloat(this.value).toFixed(2); });
+            confSlider.addEventListener('input', function () { confVal.textContent = parseFloat(this.value).toFixed(2); });
+            liftSlider.addEventListener('input', function () { liftVal.textContent = parseFloat(this.value).toFixed(2); });
+
+            /* Buttons */
+            document.getElementById('btn-mine').addEventListener('click', mineAndDisplay);
+
+            document.getElementById('btn-add-txn').addEventListener('click', function () {
+                var row = [];
+                for (var i = 0; i < ITEMS.length; i++) row.push(0);
+                transactions.push(row);
+                renderTxnEditor();
+            });
+
+            document.getElementById('btn-random-txns').addEventListener('click', function () {
+                transactions = randomData();
+                renderTxnEditor();
+            });
+
+            /* Init */
+            transactions = defaultData();
+            renderTxnEditor();
+        })();
+
+        /* ============================================
+           DEMO 2: DEFECT CO-OCCURRENCE HEATMAP
+           ============================================ */
+        (function heatmapDemo() {
+            var canvas = document.getElementById('heatmap-canvas');
+            if (!canvas) return;
+
+            var tooltip = document.getElementById('heatmap-tooltip');
+            var statsEl = document.getElementById('heatmap-stats');
+            var nSlider = document.getElementById('n-reports');
+            var nValEl = document.getElementById('n-reports-val');
+            var metricSel = document.getElementById('heatmap-metric');
+            var regenBtn = document.getElementById('btn-regenerate');
+
+            var DEFECTS = ['Cracking', 'Spalling', 'Honeycomb', 'Rebar Exp.', 'Delamination', 'Effloresce', 'Cold Joint', 'Scaling'];
+            var ND = DEFECTS.length;
+
+            /* Base occurrence rates */
+            var BASE_RATES = [0.40, 0.35, 0.18, 0.10, 0.25, 0.15, 0.12, 0.14];
+
+            /* Correlation boosters: [i, j, boost_probability] */
+            var CORRELATIONS = [
+                [0, 1, 0.55],  /* cracking -> spalling */
+                [2, 3, 0.60],  /* honeycombing -> rebar exposure */
+                [5, 4, 0.45],  /* efflorescence -> delamination */
+                [6, 3, 0.50],  /* cold joint -> rebar exposure */
+                [0, 4, 0.30],  /* cracking -> delamination */
+                [1, 7, 0.35],  /* spalling -> scaling */
+                [6, 2, 0.40]   /* cold joint -> honeycombing */
+            ];
+
+            var matrixData = null; /* { support[][], confidence[][], lift[][], counts[], N } */
+
+            function generateData(N) {
+                var txns = [];
+                for (var t = 0; t < N; t++) {
+                    var row = [];
+                    for (var i = 0; i < ND; i++) {
+                        row.push(Math.random() < BASE_RATES[i] ? 1 : 0);
+                    }
+                    /* Apply correlations */
+                    for (var c = 0; c < CORRELATIONS.length; c++) {
+                        var ci = CORRELATIONS[c][0], cj = CORRELATIONS[c][1], cp = CORRELATIONS[c][2];
+                        if (row[ci] === 1 && row[cj] === 0 && Math.random() < cp) row[cj] = 1;
+                    }
+                    txns.push(row);
+                }
+
+                /* Compute metrics */
+                var counts = new Array(ND).fill(0);
+                var pairCounts = [];
+                for (var i = 0; i < ND; i++) {
+                    pairCounts.push(new Array(ND).fill(0));
+                }
+
+                for (var t = 0; t < N; t++) {
+                    for (var i = 0; i < ND; i++) {
+                        if (txns[t][i] === 1) {
+                            counts[i]++;
+                            for (var j = 0; j < ND; j++) {
+                                if (txns[t][j] === 1) pairCounts[i][j]++;
+                            }
+                        }
+                    }
+                }
+
+                var support = [], confidence = [], lift = [];
+                for (var i = 0; i < ND; i++) {
+                    support.push(new Array(ND).fill(0));
+                    confidence.push(new Array(ND).fill(0));
+                    lift.push(new Array(ND).fill(0));
+                }
+
+                for (var i = 0; i < ND; i++) {
+                    for (var j = 0; j < ND; j++) {
+                        var sup = pairCounts[i][j] / N;
+                        support[i][j] = sup;
+                        var conf = counts[i] > 0 ? pairCounts[i][j] / counts[i] : 0;
+                        confidence[i][j] = conf;
+                        var supJ = counts[j] / N;
+                        lift[i][j] = supJ > 0 ? conf / supJ : 0;
+                    }
+                }
+
+                matrixData = { support: support, confidence: confidence, lift: lift, counts: counts, N: N };
+            }
+
+            function getMetricMatrix() {
+                var m = metricSel.value;
+                return matrixData[m];
+            }
+
+            function getMetricRange(matrix) {
+                var min = Infinity, max = -Infinity;
+                for (var i = 0; i < ND; i++) {
+                    for (var j = 0; j < ND; j++) {
+                        if (i === j) continue;
+                        if (matrix[i][j] < min) min = matrix[i][j];
+                        if (matrix[i][j] > max) max = matrix[i][j];
+                    }
+                }
+                return { min: min, max: max };
+            }
+
+            function drawHeatmap() {
+                var c = getColors();
+                var dpr = window.devicePixelRatio || 1;
+                var rect = canvas.getBoundingClientRect();
+                var size = Math.min(rect.width, 640);
+                canvas.width = size * dpr;
+                canvas.height = size * dpr;
+                canvas.style.height = size + 'px';
+                var ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+
+                var margin = 90;
+                var cellSize = (size - margin) / ND;
+
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, size, size);
+
+                var matrix = getMetricMatrix();
+                var range = getMetricRange(matrix);
+
+                /* Draw cells */
+                for (var i = 0; i < ND; i++) {
+                    for (var j = 0; j < ND; j++) {
+                        var x = margin + j * cellSize;
+                        var y = margin + i * cellSize;
+                        var val = matrix[i][j];
+
+                        if (i === j) {
+                            ctx.fillStyle = c.DIM;
+                        } else {
+                            var t = range.max > range.min ? (val - range.min) / (range.max - range.min) : 0;
+                            /* Color interpolation: low = cool blue, high = hot teal/amber */
+                            var r, g, b;
+                            if (t < 0.5) {
+                                var t2 = t / 0.5;
+                                r = Math.round(10 + t2 * 30);
+                                g = Math.round(30 + t2 * 150);
+                                b = Math.round(80 + t2 * 100);
+                            } else {
+                                var t2 = (t - 0.5) / 0.5;
+                                r = Math.round(40 + t2 * 200);
+                                g = Math.round(180 + t2 * 60);
+                                b = Math.round(180 - t2 * 130);
+                            }
+                            ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+                        }
+                        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+                        /* Value text for larger cells */
+                        if (cellSize > 45) {
+                            ctx.fillStyle = c.WHITE;
+                            ctx.font = '11px "JetBrains Mono", monospace';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(val.toFixed(2), x + cellSize / 2, y + cellSize / 2);
+                        }
+                    }
+                }
+
+                /* Row labels (antecedent) */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (var i = 0; i < ND; i++) {
+                    ctx.fillText(DEFECTS[i], margin - 6, margin + i * cellSize + cellSize / 2);
+                }
+
+                /* Column labels (consequent) */
+                ctx.textAlign = 'left';
+                for (var j = 0; j < ND; j++) {
+                    ctx.save();
+                    ctx.translate(margin + j * cellSize + cellSize / 2, margin - 6);
+                    ctx.rotate(-Math.PI / 4);
+                    ctx.fillText(DEFECTS[j], 0, 0);
+                    ctx.restore();
+                }
+
+                /* Title */
+                ctx.fillStyle = c.WHITE;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                var metricLabel = metricSel.value.charAt(0).toUpperCase() + metricSel.value.slice(1);
+                ctx.fillText(metricLabel + ' Matrix (' + matrixData.N + ' reports)', margin, 4);
+
+                /* Stats */
+                var maxLift = 0, maxI = 0, maxJ = 0;
+                for (var i = 0; i < ND; i++) {
+                    for (var j = 0; j < ND; j++) {
+                        if (i !== j && matrixData.lift[i][j] > maxLift) {
+                            maxLift = matrixData.lift[i][j];
+                            maxI = i; maxJ = j;
+                        }
+                    }
+                }
+                statsEl.textContent = 'Strongest association (by lift): {' + DEFECTS[maxI] + '} \u2192 {' + DEFECTS[maxJ] + '} | Lift = ' + maxLift.toFixed(2) +
+                    ' | Conf = ' + matrixData.confidence[maxI][maxJ].toFixed(2) + ' | Sup = ' + matrixData.support[maxI][maxJ].toFixed(3);
+
+                /* Store for tooltip */
+                canvas._margin = margin;
+                canvas._cellSize = cellSize;
+                canvas._matrix = matrix;
+                canvas._metricLabel = metricLabel;
+            }
+
+            /* Tooltip on hover */
+            canvas.addEventListener('mousemove', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+
+                var margin = canvas._margin || 90;
+                var cellSize = canvas._cellSize || 50;
+
+                var col = Math.floor((mx - margin) / cellSize);
+                var row = Math.floor((my - margin) / cellSize);
+
+                if (row >= 0 && row < ND && col >= 0 && col < ND) {
+                    var val = canvas._matrix[row][col];
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (mx + 15) + 'px';
+                    tooltip.style.top = (my - 10) + 'px';
+                    if (row === col) {
+                        tooltip.innerHTML = DEFECTS[row] + ' (diagonal)';
+                    } else {
+                        tooltip.innerHTML = '{' + DEFECTS[row] + '} &rarr; {' + DEFECTS[col] + '}<br>' +
+                            (canvas._metricLabel || 'Value') + ': <strong>' + val.toFixed(3) + '</strong><br>' +
+                            'Lift: ' + matrixData.lift[row][col].toFixed(2) + ' | Conf: ' + matrixData.confidence[row][col].toFixed(2);
+                    }
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function () {
+                tooltip.style.display = 'none';
+            });
+
+            /* Controls */
+            nSlider.addEventListener('input', function () {
+                nValEl.textContent = this.value;
+            });
+            nSlider.addEventListener('change', function () {
+                generateData(parseInt(this.value));
+                drawHeatmap();
+            });
+
+            metricSel.addEventListener('change', function () {
+                if (matrixData) drawHeatmap();
+            });
+
+            regenBtn.addEventListener('click', function () {
+                generateData(parseInt(nSlider.value));
+                drawHeatmap();
+            });
+
+            /* Resize handler */
+            var resizeTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    if (matrixData) drawHeatmap();
+                }, 200);
+            });
+
+            /* Theme change handler */
+            var themeObserver = new MutationObserver(function () {
+                if (matrixData) drawHeatmap();
+            });
+            themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            /* Init */
+            generateData(200);
+            drawHeatmap();
+        })();
+
+        /* ============================================
+           QUIZ HANDLER (local override)
+           ============================================ */
+        window.checkQuiz = function (btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var options = block.querySelectorAll('.quiz-option');
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+
+            for (var i = 0; i < options.length; i++) {
+                options[i].disabled = true;
+                options[i].style.pointerEvents = 'none';
+                if (options[i].getAttribute('data-correct') === 'true') {
+                    options[i].style.borderColor = 'var(--accent-success)';
+                    options[i].style.background = 'rgba(34,197,94,0.1)';
+                }
+            }
+
+            if (!isCorrect) {
+                btn.style.borderColor = 'var(--accent-danger)';
+                btn.style.background = 'rgba(239,68,68,0.1)';
+            }
+
+            var correctFb = document.getElementById(quizId + '-correct');
+            var wrongFb = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctFb) correctFb.style.display = 'block';
+            if (!isCorrect && wrongFb) wrongFb.style.display = 'block';
+        };
+
+    })();
+    </script>
+
+</body>
+</html>

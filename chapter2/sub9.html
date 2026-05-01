@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.9 Overfitting, Underfitting &amp; Regularization | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Understand overfitting, underfitting, the bias-variance tradeoff, and regularization techniques (L1, L2, Elastic Net, dropout, early stopping) with interactive demos and civil engineering analogies.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.9
+            </div>
+            <h1 class="chapter-hero__title">Overfitting, Underfitting &amp; Regularization</h1>
+            <p class="chapter-hero__subtitle">
+                A model that memorises every crack in one specific bridge deck is useless
+                on the next bridge. A model so simple it predicts the same strength for
+                every concrete mix is equally useless. Finding the sweet spot between
+                <em>too specific</em> and <em>too generic</em> is one of the most
+                important skills in applied machine learning &mdash; and it mirrors a
+                challenge every civil engineer already understands: designing for the
+                particular without losing the general.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Goldilocks Problem of Machine Learning</h2>
+                        <p>
+                            A geotechnical engineer collects soil samples from a construction
+                            site: 12 boreholes, each with unique moisture content, grain-size
+                            distribution, and Atterberg limits. She could design a foundation
+                            tailored exactly to each borehole &mdash; but that foundation
+                            would fail at the 13th borehole. Alternatively, she could use the
+                            same standard foundation everywhere &mdash; safe, but wasteful and
+                            sometimes inadequate.
+                        </p>
+                        <p>
+                            Machine learning models face the same dilemma. An <strong>overfit</strong>
+                            model memorises the training data (including its noise and quirks)
+                            and fails on new data. An <strong>underfit</strong> model is too
+                            simple to capture real patterns and performs poorly everywhere.
+                            The goal is the sweet spot: a model complex enough to learn the
+                            true signal, but constrained enough to generalise.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This sub-chapter dissects the <strong>bias-variance tradeoff</strong>, the
+                    formal framework behind the overfitting/underfitting problem. We will then
+                    explore <strong>regularization</strong> &mdash; a family of techniques that
+                    deliberately constrain models to improve generalisation. These techniques
+                    include L1 (Lasso), L2 (Ridge), Elastic Net, dropout, and early stopping.
+                </p>
+
+                <p>In this sub-chapter, we will cover:</p>
+
+                <ul>
+                    <li>The bias-variance tradeoff and why every model navigates it</li>
+                    <li>Overfitting: when your model memorises noise instead of learning signal</li>
+                    <li>Underfitting: when your model is too simple to capture the real relationship</li>
+                    <li>The sweet spot: how to find the right model complexity</li>
+                    <li>Regularization: L1 (Lasso), L2 (Ridge), and Elastic Net</li>
+                    <li>Dropout and early stopping for neural networks</li>
+                    <li>Civil engineering analogies for every concept</li>
+                    <li>Two interactive demos to visualise these ideas in action</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds on Sub-chapter 2.1 (Core ML Concepts) and
+                        Sub-chapter 2.3 (Linear Regression). You should be comfortable with
+                        training vs. testing data, loss functions, and polynomial regression.
+                        The evaluation metrics from Sub-chapter 2.8 will help you interpret
+                        the demo outputs.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: BIAS-VARIANCE TRADEOFF
+             ========================================== -->
+        <section class="ch-section" id="bias-variance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    The Bias-Variance Tradeoff
+                </h2>
+
+                <p>
+                    Every prediction error can be decomposed into three components:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Error Decomposition
+                    </div>
+                    <pre><code>Total Error = Bias^2 + Variance + Irreducible Noise
+
+Bias      = Error from wrong assumptions (too simple model)
+Variance  = Error from sensitivity to training data fluctuations
+Noise     = Random error inherent in the data (cannot be eliminated)</code></pre>
+                </div>
+
+                <p>
+                    <strong>Bias</strong> measures how far off your model's average prediction
+                    is from the true value. A high-bias model makes strong assumptions &mdash;
+                    for example, assuming the relationship between concrete strength and
+                    water-cement ratio is perfectly linear, when in reality it follows a curve.
+                    No matter how much data you give it, the model will systematically miss the
+                    true pattern.
+                </p>
+
+                <p>
+                    <strong>Variance</strong> measures how much your model's predictions change
+                    when trained on different subsets of data. A high-variance model is
+                    extremely sensitive to the specific training samples. Train it on Monday's
+                    data and it predicts one thing; train it on Tuesday's data and it predicts
+                    something completely different. It has effectively memorised the noise in
+                    each dataset.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy: The Surveyor</h3>
+                        <p>
+                            Imagine a surveyor measuring the elevation of a benchmark point.
+                            <strong>Bias</strong> is like a systematic error in the instrument:
+                            every reading is 5 cm too high, no matter how many measurements
+                            are taken. <strong>Variance</strong> is like random wobble in the
+                            readings: each measurement scatters around the true value. A good
+                            instrument has both low bias (accurate) and low variance (precise).
+                            In machine learning, we seek models that are both accurate (low
+                            bias) and stable (low variance).
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The tradeoff arises because reducing one tends to increase the other:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Simple models</strong> (few parameters) have high bias but
+                        low variance. They under-learn the data but are stable across
+                        different training sets.
+                    </li>
+                    <li>
+                        <strong>Complex models</strong> (many parameters) have low bias but
+                        high variance. They can capture intricate patterns but are overly
+                        sensitive to the specific training data.
+                    </li>
+                </ul>
+
+                <p>
+                    The goal is to find the <strong>sweet spot</strong> where the total error
+                    (bias squared plus variance) is minimised. This is the fundamental
+                    challenge of model selection.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-chart-line"></i> The Classic U-Shaped Curve
+                    </div>
+                    <pre><code>   Error
+    |
+    |  \                             /
+    |   \   Test Error             /
+    |    \                       /
+    |     \                    /       High Variance
+    |      \       Sweet     /         (Overfitting)
+    |       \      Spot    /
+    |        \_________  /
+    |                  \/
+    |   High Bias       \_________    Train Error
+    |  (Underfitting)              \________
+    |
+    +--------------------------------------------->
+              Model Complexity (e.g. polynomial degree)
+
+As complexity increases:
+  - Training error decreases monotonically (model fits data better)
+  - Test error first decreases (less bias), then increases (more variance)
+  - The sweet spot is where test error is minimised</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: OVERFITTING
+             ========================================== -->
+        <section class="ch-section" id="overfitting">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    Overfitting: Memorising the Noise
+                </h2>
+
+                <p>
+                    Overfitting occurs when a model learns the training data <em>too well</em>,
+                    capturing not just the underlying pattern but also the random noise, outliers,
+                    and quirks specific to that particular dataset. The result: excellent
+                    performance on training data, terrible performance on new, unseen data.
+                </p>
+
+                <h3>Symptoms of Overfitting</h3>
+
+                <ul>
+                    <li>Training error is very low (near zero)</li>
+                    <li>Validation/test error is much higher than training error</li>
+                    <li>The gap between training and test error grows as model complexity increases</li>
+                    <li>The model's predictions are erratic and unstable on new data</li>
+                    <li>Small changes in input produce wildly different outputs</li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy: The Over-Customised Foundation</h3>
+                        <p>
+                            Imagine designing a foundation system based on a single borehole
+                            at one corner of the site. You optimise the pile length, diameter,
+                            and reinforcement for the exact soil profile at that one location.
+                            The design works perfectly there &mdash; but move 20 metres to
+                            where the clay layer is thicker and the sand lens is absent, and
+                            your "perfect" design fails. You have overfit your design to one
+                            specific sample of the ground conditions.
+                        </p>
+                        <p>
+                            A seasoned geotechnical engineer uses multiple boreholes,
+                            incorporates uncertainty, and designs for a range of plausible
+                            conditions &mdash; just as a well-regularised model learns from
+                            the overall trend, not from individual data points.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Common Causes</h3>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-database"></i>
+                        <span>Insufficient Training Data</span>
+                    </div>
+                    <p>
+                        When training data is scarce, the model has limited examples to
+                        learn from. With only 30 concrete cylinder test results, a model
+                        with 20 parameters can essentially memorise each sample. More data
+                        dilutes the influence of individual noise points and helps the model
+                        find the true underlying relationship.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        <span>Excessive Model Complexity</span>
+                    </div>
+                    <p>
+                        A 15th-degree polynomial fitted to 20 data points will pass through
+                        (or near) every point, producing wild oscillations between them.
+                        The model has enough "knobs" to contort itself into any shape,
+                        matching noise rather than signal. This is the most common cause
+                        of overfitting: the model has more capacity than the data warrants.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-stopwatch"></i>
+                        <span>Training for Too Long</span>
+                    </div>
+                    <p>
+                        In iterative training (gradient descent, neural networks), each
+                        epoch refines the model's fit. Early epochs capture the big patterns;
+                        later epochs start fitting the noise. If you train for 10,000 epochs
+                        when 500 would suffice, you are effectively polishing noise into
+                        your model.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-broom"></i>
+                        <span>Noisy or Unclean Data</span>
+                    </div>
+                    <p>
+                        Data with measurement errors, mislabelled examples, or outliers
+                        provides the model with "fake patterns" to learn. If a few concrete
+                        strength tests have typos (280 MPa instead of 28 MPa), a complex
+                        model will bend itself to accommodate those points, corrupting its
+                        predictions for legitimate data.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: UNDERFITTING
+             ========================================== -->
+        <section class="ch-section" id="underfitting">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                    Underfitting: Too Simple to Learn
+                </h2>
+
+                <p>
+                    Underfitting is the opposite problem: the model is too simple to capture
+                    the underlying relationship in the data. It performs poorly on <em>both</em>
+                    training and test data because it has not learned the pattern at all.
+                </p>
+
+                <h3>Symptoms of Underfitting</h3>
+
+                <ul>
+                    <li>Both training and test errors are high</li>
+                    <li>Training and test errors are similar (both bad)</li>
+                    <li>The model's predictions are flat or overly simplistic</li>
+                    <li>Adding more training data does not improve performance</li>
+                    <li>The learning curve plateaus early at a high error</li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy: The One-Size-Fits-All Foundation</h3>
+                        <p>
+                            Using the same 600mm-diameter, 12-metre-long driven pile for every
+                            project &mdash; a 3-storey office building on clay, a 30-storey
+                            tower on rock, a waterfront warehouse on fill &mdash; is the
+                            structural equivalent of underfitting. The design is so generic
+                            that it is grossly over-conservative for simple cases, grossly
+                            under-designed for complex ones, and optimal for none. It ignores
+                            the actual ground conditions, building loads, and site constraints.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Common Causes</h3>
+
+                <ul>
+                    <li>
+                        <strong>Model too simple:</strong> Fitting a straight line to data
+                        that follows a quadratic or exponential curve.
+                    </li>
+                    <li>
+                        <strong>Important features missing:</strong> Predicting concrete
+                        strength without including water-cement ratio, curing time, or
+                        aggregate type.
+                    </li>
+                    <li>
+                        <strong>Too much regularization:</strong> Overly aggressive
+                        regularization can strangle the model, preventing it from learning
+                        even legitimate patterns. (We will see this in Demo 2.)
+                    </li>
+                    <li>
+                        <strong>Insufficient training:</strong> Stopping gradient descent
+                        after just a few epochs, before the model has had a chance to converge.
+                    </li>
+                </ul>
+
+                <h3>Diagnosing the Problem: Training vs. Test Error</h3>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-stethoscope"></i> Diagnostic Table
+                    </div>
+                    <pre><code>Condition            | Train Error | Test Error | Diagnosis
+---------------------+-------------+------------+-------------------
+Both high, similar   |    HIGH     |    HIGH    | UNDERFITTING
+Train low, test high |    LOW      |    HIGH    | OVERFITTING
+Both low, similar    |    LOW      |    LOW     | GOOD FIT (sweet spot)
+
+Key Insight:
+  - If train error is already high, the model cannot even learn the
+    training data. Adding more data or regularization will NOT help.
+    You need a more complex model or better features.
+  - If train error is low but test error is high, the model has
+    learned the training data but cannot generalise. Regularization,
+    more data, or a simpler model can help.</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE SWEET SPOT
+             ========================================== -->
+        <section class="ch-section" id="sweet-spot">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    Finding the Sweet Spot
+                </h2>
+
+                <p>
+                    The sweet spot is the model complexity at which the test error is
+                    minimised. To the left, underfitting dominates (high bias). To the right,
+                    overfitting dominates (high variance). The sweet spot balances both.
+                </p>
+
+                <p>
+                    In practice, we find the sweet spot through:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Cross-validation:</strong> Split the data into k folds,
+                        train on k-1 folds, and validate on the remaining fold. Repeat k
+                        times and average the validation error. This gives a robust estimate
+                        of generalisation performance. (Covered in detail in Sub-chapter 2.8.)
+                    </li>
+                    <li>
+                        <strong>Learning curves:</strong> Plot training and validation error
+                        as a function of training set size or model complexity. The gap
+                        between the two curves tells you whether you are overfitting or
+                        underfitting.
+                    </li>
+                    <li>
+                        <strong>Regularization:</strong> Instead of manually selecting model
+                        complexity, add a penalty term that automatically constrains the
+                        model. This is the focus of the next sections.
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy: Design Codes</h3>
+                        <p>
+                            Structural design codes (Eurocode, ACI, IS codes) are essentially
+                            regularization for civil engineering. They prevent engineers from
+                            overfitting to a specific scenario by imposing minimum requirements,
+                            safety factors, and design constraints. A design code says: "Even
+                            if your specific analysis says you can use 10mm bars at 300mm
+                            spacing, you must use at least 12mm bars at 200mm spacing." This
+                            regularization sacrifices a tiny amount of optimality for a large
+                            gain in robustness across variable real-world conditions.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: DEMO 1 - OVERFITTING VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-overfitting">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Overfitting Visualiser
+                </h2>
+
+                <p>
+                    Use the polynomial degree slider to fit curves of increasing complexity to
+                    noisy data. Watch how the training error (red) and test error (blue)
+                    diverge as the polynomial degree grows. The classic U-shaped test error
+                    curve reveals the sweet spot where generalisation is best.
+                </p>
+
+                <div class="demo-container" id="overfit-demo-container">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="overfit-degree-slider">
+                                <i class="fa-solid fa-sliders"></i> Polynomial Degree:
+                                <span id="overfit-degree-label">1</span>
+                            </label>
+                            <input type="range" id="overfit-degree-slider" min="1" max="15" value="1" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="overfit-noise-slider">
+                                <i class="fa-solid fa-wave-square"></i> Noise Level:
+                                <span id="overfit-noise-label">0.30</span>
+                            </label>
+                            <input type="range" id="overfit-noise-slider" min="5" max="80" value="30" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="overfit-npoints-slider">
+                                <i class="fa-solid fa-braille"></i> Training Points:
+                                <span id="overfit-npoints-label">20</span>
+                            </label>
+                            <input type="range" id="overfit-npoints-slider" min="8" max="60" value="20" step="1">
+                        </div>
+                        <div class="control-group">
+                            <button id="overfit-regen-btn" class="demo-btn">
+                                <i class="fa-solid fa-rotate"></i> Regenerate Data
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-stats" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                        <span class="demo-stat" id="overfit-stat-train">Train MSE: --</span>
+                        <span class="demo-stat" id="overfit-stat-test">Test MSE: --</span>
+                        <span class="demo-stat" id="overfit-stat-diagnosis">Diagnosis: --</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div>
+                            <p style="text-align:center;font-weight:600;margin-bottom:8px;">Polynomial Fit</p>
+                            <canvas id="overfit-fit-canvas" style="width:100%;height:350px;border-radius:8px;"></canvas>
+                        </div>
+                        <div>
+                            <p style="text-align:center;font-weight:600;margin-bottom:8px;">Train vs Test Error</p>
+                            <canvas id="overfit-error-canvas" style="width:100%;height:350px;border-radius:8px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>What to Explore</span>
+                    </div>
+                    <p>
+                        Start with degree 1 (a straight line) and slowly increase the
+                        polynomial degree. Watch how the red fit line begins hugging the
+                        training points more closely, but the blue test error on the right
+                        chart starts rising after the sweet spot. Try increasing the noise
+                        level to see how the sweet spot shifts. With more noise, the optimal
+                        degree tends to be lower because there is more randomness to
+                        memorise. With more training points, overfitting becomes harder
+                        because the model cannot memorise as many individual samples.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: REGULARIZATION OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="regularization">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Regularization: Taming Model Complexity
+                </h2>
+
+                <p>
+                    Regularization is the deliberate introduction of constraints that prevent
+                    a model from fitting the training data <em>too</em> closely. Instead of
+                    choosing a simpler model architecture, we keep the complex model but add
+                    a <strong>penalty term</strong> to the loss function that discourages large
+                    or unnecessary parameter values.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Regularized Loss Function
+                    </div>
+                    <pre><code>Regularized Loss = Original Loss + lambda * Penalty(weights)
+
+Where:
+  - Original Loss = e.g. MSE = (1/n) * SUM(y_i - y_hat_i)^2
+  - lambda (lambda) = regularization strength (hyperparameter)
+  - Penalty = a function of the model weights
+
+lambda = 0   -->  No regularization (original loss only)
+lambda = inf -->  Maximum regularization (weights forced to zero)</code></pre>
+                </div>
+
+                <p>
+                    The hyperparameter <strong>lambda</strong> controls the tradeoff between
+                    fitting the data and keeping the weights small. A small lambda applies
+                    gentle regularization; a large lambda aggressively penalises complexity,
+                    potentially causing underfitting. The optimal lambda is found through
+                    cross-validation.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: L2 REGULARIZATION (RIDGE)
+             ========================================== -->
+        <section class="ch-section" id="l2-ridge">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-dot"></i>
+                    L2 Regularization (Ridge Regression)
+                </h2>
+
+                <p>
+                    L2 regularization adds the <strong>sum of squared weights</strong> to the
+                    loss function. This is called Ridge regression when applied to linear
+                    models.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Ridge (L2) Loss
+                    </div>
+                    <pre><code>L2 Penalty = lambda * SUM(w_j^2)
+
+Ridge Loss = MSE + lambda * SUM(w_j^2)
+
+Effect:
+  - Shrinks all weights toward zero (but never exactly to zero)
+  - Large weights are penalised quadratically (a weight of 10 incurs
+    100x the penalty of a weight of 1)
+  - Distributes the model's capacity across all features
+  - Effective when many features contribute small amounts</code></pre>
+                </div>
+
+                <p>
+                    Geometrically, L2 regularization constrains the weight vector to lie
+                    within a hypersphere. The loss contours intersect this sphere at a point
+                    where all weights are small but non-zero.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy</h3>
+                        <p>
+                            L2 regularization is like a building code requirement for
+                            <strong>ductility</strong>. The code does not eliminate any
+                            structural member, but it limits how much load any single member
+                            carries. If one column wants to take 80% of the lateral load
+                            (a very "large weight"), the code imposes capacity limits that
+                            distribute the load more evenly across all columns. Every column
+                            participates, but none dominates excessively.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: L1 REGULARIZATION (LASSO)
+             ========================================== -->
+        <section class="ch-section" id="l1-lasso">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diamond"></i>
+                    L1 Regularization (Lasso)
+                </h2>
+
+                <p>
+                    L1 regularization adds the <strong>sum of absolute weights</strong> to the
+                    loss function. This is called Lasso (Least Absolute Shrinkage and Selection
+                    Operator) when applied to linear models.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Lasso (L1) Loss
+                    </div>
+                    <pre><code>L1 Penalty = lambda * SUM(|w_j|)
+
+Lasso Loss = MSE + lambda * SUM(|w_j|)
+
+Effect:
+  - Drives some weights exactly to zero (feature selection!)
+  - Produces sparse models with fewer active features
+  - Useful when you suspect only a few features truly matter
+  - Less effective when features are correlated (picks one, drops others)</code></pre>
+                </div>
+
+                <p>
+                    The key difference from L2: L1 can produce <strong>sparse</strong> models
+                    where many coefficients are exactly zero. This makes Lasso a powerful
+                    tool for <strong>automatic feature selection</strong>. In a model with 50
+                    input features, Lasso might discover that only 8 truly matter and set
+                    the remaining 42 weights to zero.
+                </p>
+
+                <p>
+                    Geometrically, L1 constrains weights to a hypercube (diamond shape in 2D).
+                    The loss contours tend to intersect the corners of this diamond, which
+                    correspond to axis-aligned solutions where some weights are exactly zero.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy</h3>
+                        <p>
+                            L1 regularization is like a cost-optimisation exercise that
+                            <strong>eliminates unnecessary members</strong> from a truss. If
+                            a truss has 30 members but only 18 carry significant load, an
+                            optimisation algorithm with an L1-style penalty will zero out the
+                            12 redundant members entirely, producing a lighter, simpler
+                            structure. This is exactly what Lasso does to model features:
+                            it does not just shrink unimportant weights &mdash; it removes
+                            them completely.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: ELASTIC NET
+             ========================================== -->
+        <section class="ch-section" id="elastic-net">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-half-stroke"></i>
+                    Elastic Net: Best of Both Worlds
+                </h2>
+
+                <p>
+                    Elastic Net combines L1 and L2 penalties, blending the feature-selection
+                    ability of Lasso with the stability of Ridge.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Elastic Net Loss
+                    </div>
+                    <pre><code>Elastic Net = MSE + lambda * [ alpha * SUM(|w_j|) + (1-alpha) * SUM(w_j^2) ]
+
+Where:
+  alpha = 1.0  -->  Pure Lasso (L1)
+  alpha = 0.0  -->  Pure Ridge (L2)
+  alpha = 0.5  -->  Equal blend
+
+Advantages:
+  - Handles correlated features better than pure L1
+  - Can select groups of correlated features together
+  - Provides sparsity (from L1) + stability (from L2)
+  - Ideal when feature count >> sample count</code></pre>
+                </div>
+
+                <p>
+                    Elastic Net is particularly useful in civil engineering applications where
+                    input features are often correlated. For example, in a concrete mix design
+                    model, water content and water-cement ratio are strongly correlated. Pure
+                    Lasso might arbitrarily pick one and drop the other. Elastic Net handles
+                    this gracefully by grouping correlated features together.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison Summary</h3>
+                        <div class="code-peek" style="margin-top:12px;">
+                            <pre><code>Method       | Penalty       | Sparsity | Correlated Features
+-------------+---------------+----------+--------------------
+Ridge (L2)   | SUM(w_j^2)    | No       | Keeps all, shrinks
+Lasso (L1)   | SUM(|w_j|)    | Yes      | Picks one, drops rest
+Elastic Net  | L1 + L2 blend | Partial  | Groups together</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: DROPOUT
+             ========================================== -->
+        <section class="ch-section" id="dropout">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-network-wired"></i>
+                    Dropout: Regularization for Neural Networks
+                </h2>
+
+                <p>
+                    Dropout is a regularization technique designed specifically for neural
+                    networks. During each training iteration, dropout randomly "turns off"
+                    a fraction of neurons (typically 20-50%), forcing the network to learn
+                    redundant representations. At test time, all neurons are active, but their
+                    outputs are scaled down to account for the dropout rate.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Dropout Mechanism
+                    </div>
+                    <pre><code>Training Phase (dropout_rate = 0.5):
+  For each training batch:
+    - Randomly select 50% of neurons in each layer
+    - Set their outputs to zero (temporarily "dead")
+    - Forward/backward pass uses only surviving neurons
+    - Next batch: different random neurons are dropped
+
+Testing Phase:
+    - ALL neurons are active (no dropping)
+    - Multiply each neuron's output by (1 - dropout_rate)
+    - This approximates the average of all possible sub-networks
+
+Effect:
+  - Prevents co-adaptation (neurons cannot rely on specific partners)
+  - Each neuron must learn independently useful features
+  - Equivalent to training an ensemble of many smaller networks
+  - Dramatically reduces overfitting in deep networks</code></pre>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy</h3>
+                        <p>
+                            Dropout is like <strong>robustness testing through redundancy</strong>.
+                            Imagine designing a bridge where, during the design verification
+                            phase, you randomly remove 30% of the structural members and check
+                            if the bridge still stands. If any single member's removal causes
+                            collapse, your design lacks redundancy. By repeatedly testing with
+                            random member removals, you force the design to distribute loads
+                            across multiple paths &mdash; exactly what dropout does to neural
+                            network weights.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: EARLY STOPPING
+             ========================================== -->
+        <section class="ch-section" id="early-stopping">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand"></i>
+                    Early Stopping: Knowing When to Quit
+                </h2>
+
+                <p>
+                    Early stopping is perhaps the simplest regularization technique: monitor
+                    the validation error during training, and stop when it starts increasing.
+                    The training error will continue decreasing, but the validation error
+                    will begin to rise as the model starts memorising noise.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-chart-line"></i> Early Stopping Strategy
+                    </div>
+                    <pre><code>Epoch:    1    50   100  200  500  1000  2000  5000
+Train:  0.95  0.42  0.21  0.08  0.02  0.005  0.001  0.0002
+Valid:  0.98  0.45  0.24  0.15  0.13  0.18   0.25   0.42
+                                        ^
+                                        |
+                              STOP HERE (patience = 100 epochs)
+
+Early Stopping Algorithm:
+  1. Train model, recording validation loss after each epoch
+  2. Track the best validation loss seen so far
+  3. If validation loss has not improved for "patience" epochs, STOP
+  4. Restore the model weights from the best epoch
+  5. The "patience" hyperparameter controls how long you wait</code></pre>
+                </div>
+
+                <p>
+                    Early stopping is an example of <strong>implicit regularization</strong>.
+                    It does not change the loss function but limits the model's effective
+                    complexity by restricting how long it trains. The number of training
+                    epochs effectively controls model complexity: more epochs = more complex
+                    model = higher risk of overfitting.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Civil Engineering Analogy</h3>
+                        <p>
+                            Early stopping is like knowing when to stop optimising a structural
+                            design. The first few iterations of optimisation yield dramatic
+                            improvements &mdash; reducing member sizes, saving material costs.
+                            But after a point, further "optimisation" starts shaving safety
+                            margins, removing redundancy, and making the design brittle against
+                            unexpected loads. A wise engineer stops optimising before the
+                            design becomes too finely tuned to the assumed loading conditions.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: SUMMARY TABLE
+             ========================================== -->
+        <section class="ch-section" id="summary-table">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-table-columns"></i>
+                    Regularization Techniques at a Glance
+                </h2>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-table"></i> Summary Comparison
+                    </div>
+                    <pre><code>Technique        | How It Works                  | When to Use
+-----------------+-------------------------------+---------------------------
+L2 (Ridge)       | Penalises sum of w^2          | Many features, all relevant
+L1 (Lasso)       | Penalises sum of |w|          | Feature selection needed
+Elastic Net      | Blend of L1 + L2              | Correlated features
+Dropout          | Randomly deactivate neurons   | Deep neural networks
+Early Stopping   | Stop training at best val err | Any iterative model
+
+Key Hyperparameters:
+  - lambda: regularization strength (L1, L2, Elastic Net)
+  - alpha: L1/L2 mixing ratio (Elastic Net)
+  - dropout_rate: fraction of neurons dropped (Dropout)
+  - patience: epochs to wait before stopping (Early Stopping)</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: DEMO 2 - REGULARIZATION STRENGTH
+             ========================================== -->
+        <section class="ch-section" id="demo-regularization">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Regularization Strength
+                </h2>
+
+                <p>
+                    Adjust the regularization strength (lambda) and toggle between L1 and L2
+                    penalties. Watch how the coefficient magnitudes shrink as lambda increases.
+                    With L1, some coefficients snap to exactly zero (feature selection). With
+                    L2, all coefficients shrink proportionally but none reach zero.
+                </p>
+
+                <div class="demo-container" id="reg-demo-container">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="reg-lambda-slider">
+                                <i class="fa-solid fa-sliders"></i> Regularization Strength (log lambda):
+                                <span id="reg-lambda-label">-2.0</span>
+                            </label>
+                            <input type="range" id="reg-lambda-slider" min="-40" max="30" value="-20" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="reg-type-select">
+                                <i class="fa-solid fa-layer-group"></i> Regularization Type:
+                            </label>
+                            <select id="reg-type-select" style="padding:6px 12px;border-radius:6px;background:var(--card-bg);color:var(--text-primary);border:1px solid var(--border-color);font-family:inherit;">
+                                <option value="L2">L2 (Ridge)</option>
+                                <option value="L1">L1 (Lasso)</option>
+                                <option value="EN">Elastic Net (alpha=0.5)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="reg-degree-slider">
+                                <i class="fa-solid fa-chart-line"></i> Polynomial Degree:
+                                <span id="reg-degree-label">6</span>
+                            </label>
+                            <input type="range" id="reg-degree-slider" min="2" max="12" value="6" step="1">
+                        </div>
+                        <div class="control-group">
+                            <button id="reg-regen-btn" class="demo-btn">
+                                <i class="fa-solid fa-rotate"></i> Regenerate Data
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-stats" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                        <span class="demo-stat" id="reg-stat-train">Train MSE: --</span>
+                        <span class="demo-stat" id="reg-stat-test">Test MSE: --</span>
+                        <span class="demo-stat" id="reg-stat-nonzero">Non-zero coefficients: --</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div>
+                            <p style="text-align:center;font-weight:600;margin-bottom:8px;">Regularized Fit</p>
+                            <canvas id="reg-fit-canvas" style="width:100%;height:350px;border-radius:8px;"></canvas>
+                        </div>
+                        <div>
+                            <p style="text-align:center;font-weight:600;margin-bottom:8px;">Coefficient Magnitudes</p>
+                            <canvas id="reg-coeff-canvas" style="width:100%;height:350px;border-radius:8px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>What to Explore</span>
+                    </div>
+                    <p>
+                        Start with low lambda (left) and observe the wiggly, overfit curve.
+                        Slowly increase lambda and watch the curve smooth out. Switch between
+                        L1 and L2 to see the key difference: L1 drives bars on the right
+                        chart to exactly zero, while L2 shrinks them proportionally. Try
+                        Elastic Net to see the hybrid behaviour. If you push lambda too high,
+                        the curve flattens completely &mdash; that is underfitting caused by
+                        excessive regularization.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: PRACTICAL GUIDELINES
+             ========================================== -->
+        <section class="ch-section" id="practical-guidelines">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Practical Guidelines for Civil Engineers
+                </h2>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-1"></i>
+                        <span>Start Simple, Add Complexity as Needed</span>
+                    </div>
+                    <p>
+                        Begin with a simple model (linear regression, low-degree polynomial).
+                        If training and validation errors are both high (underfitting), gradually
+                        increase complexity. If the training error is low but validation error
+                        is high (overfitting), add regularization or reduce complexity. This
+                        mirrors good engineering practice: start with a simple analysis, add
+                        sophistication only when the simple model is inadequate.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-2"></i>
+                        <span>Always Use a Validation Set</span>
+                    </div>
+                    <p>
+                        Never evaluate your model only on training data. Always hold out a
+                        validation set (or use cross-validation) to get an honest estimate
+                        of generalisation performance. In civil engineering terms: do not
+                        claim your structural design is adequate just because it passes the
+                        load case you designed for. Test it against a range of realistic
+                        load combinations.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-3"></i>
+                        <span>Use Regularization by Default</span>
+                    </div>
+                    <p>
+                        When using linear models, prefer Ridge or Lasso over plain
+                        least-squares regression. The computational cost is negligible, and
+                        the generalisation benefit is almost always positive. When training
+                        neural networks, always include dropout and early stopping. Think of
+                        regularization as a safety factor: it costs almost nothing but provides
+                        substantial protection against overfitting.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-4"></i>
+                        <span>Tune Hyperparameters with Cross-Validation</span>
+                    </div>
+                    <p>
+                        The regularization strength lambda should be tuned using k-fold
+                        cross-validation (Sub-chapter 2.8). Try a range of values on a
+                        logarithmic scale (e.g., 0.001, 0.01, 0.1, 1, 10, 100) and select
+                        the value that minimises the average validation error. Do not pick
+                        lambda based on training error alone &mdash; that defeats the purpose
+                        of regularization.
+                    </p>
+                </div>
+
+                <div class="concept-block">
+                    <div class="concept-block__header">
+                        <i class="fa-solid fa-5"></i>
+                        <span>Collect More Data When Possible</span>
+                    </div>
+                    <p>
+                        The most robust cure for overfitting is more data. More training
+                        samples reduce variance without increasing bias. If you can run
+                        additional lab tests, collect more sensor readings, or obtain more
+                        inspection reports, do so. Regularization is a substitute for data
+                        when data is expensive or limited &mdash; not a replacement for
+                        good data collection practices.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Test your understanding of overfitting, underfitting, and regularization.
+                    Each question reinforces a key concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A neural network predicting concrete compressive strength achieves
+                        a training RMSE of 0.5 MPa and a test RMSE of 12.3 MPa. What is the
+                        most likely diagnosis?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Underfitting &mdash; the model is too simple
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Overfitting &mdash; the model has memorised the training data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Good fit &mdash; the training error is very low
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Irreducible noise &mdash; the data is inherently unpredictable
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The enormous gap
+                        between training error (0.5 MPa) and test error (12.3 MPa) is the
+                        hallmark of overfitting. The model has memorised the training data
+                        (achieving near-zero error) but fails to generalise to new data.
+                        Regularization, more training data, or a simpler architecture would help.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key diagnostic
+                        clue is the <strong>large gap</strong> between training and test error.
+                        A training RMSE of 0.5 MPa shows the model has learned the training data
+                        almost perfectly, but the test RMSE of 12.3 MPa shows it cannot generalise.
+                        This is classic <strong>overfitting</strong>.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        You are building a model to predict traffic flow using 40 features
+                        (temperature, time of day, road width, lane count, etc.), but you
+                        suspect that only 8-10 features actually matter. Which regularization
+                        technique is most appropriate?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> L2 (Ridge) &mdash; it will shrink all features equally
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> L1 (Lasso) &mdash; it will drive irrelevant features to exactly zero
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Dropout &mdash; it randomly removes features during training
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Early stopping &mdash; it will prevent overfitting automatically
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! L1 (Lasso)
+                        regularization is the ideal choice when you need <strong>feature
+                        selection</strong>. It drives the coefficients of irrelevant features
+                        to exactly zero, producing a sparse model with only the truly important
+                        features. Ridge would shrink all 40 features but keep them all active.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. When you need to
+                        identify which features matter (feature selection), <strong>L1 (Lasso)</strong>
+                        is the best choice because it drives unimportant feature weights to
+                        exactly zero. Ridge keeps all features active (just smaller), and
+                        dropout is for neural networks, not feature selection.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        An engineer increases the regularization strength (lambda) in a Ridge
+                        regression model for predicting beam deflection. What happens?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> Training error decreases, test error increases
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Both training and test error decrease
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Training error increases, test error may initially decrease then increase
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Training error stays the same, test error decreases
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! As lambda increases,
+                        the model is increasingly constrained, so training error rises (the
+                        model can no longer fit the training data as closely). Test error may
+                        initially decrease (as overfitting is reduced) but eventually increases
+                        too (as the model becomes too constrained &mdash; underfitting). This
+                        is the U-shaped curve for test error as a function of lambda.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Increasing lambda
+                        <strong>constrains</strong> the model more, which always increases
+                        training error (the model fits training data less closely). Test error
+                        follows a U-shape: it decreases as overfitting is corrected, then
+                        increases as the model becomes too simple (underfitting).
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        Which civil engineering analogy best captures the concept of an overfit
+                        model?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Using the same standard foundation for every project regardless of soil conditions
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Applying a safety factor of 3.0 to every structural member
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Designing a foundation based on one specific soil sample that fails at other locations
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Using multiple load combinations in structural analysis
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! An overfit model is
+                        like designing for one specific soil sample &mdash; it performs perfectly
+                        at that one location but fails elsewhere. Option A describes
+                        <strong>underfitting</strong> (too generic), option B describes
+                        <strong>excessive regularization</strong>, and option D describes
+                        <strong>cross-validation</strong>.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Overfitting means
+                        the model is <strong>too specific</strong> to its training data, just
+                        like designing a foundation for one specific soil sample. It works
+                        perfectly at that location but fails everywhere else. Using the same
+                        foundation everywhere is <strong>underfitting</strong> (too generic).
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ol>
+                            <li>
+                                <strong>Bias-Variance Tradeoff:</strong> Every model navigates
+                                a tradeoff between underfitting (high bias, low variance) and
+                                overfitting (low bias, high variance). The goal is to minimise
+                                the total error.
+                            </li>
+                            <li>
+                                <strong>Overfitting</strong> occurs when the model memorises
+                                noise and fails to generalise. Symptoms: low training error,
+                                high test error.
+                            </li>
+                            <li>
+                                <strong>Underfitting</strong> occurs when the model is too
+                                simple. Symptoms: high training error, high test error.
+                            </li>
+                            <li>
+                                <strong>L2 (Ridge)</strong> shrinks all weights toward zero
+                                but never eliminates features. Best for many small contributions.
+                            </li>
+                            <li>
+                                <strong>L1 (Lasso)</strong> drives some weights to exactly
+                                zero, performing automatic feature selection. Best when few
+                                features matter.
+                            </li>
+                            <li>
+                                <strong>Elastic Net</strong> blends L1 and L2, handling
+                                correlated features gracefully.
+                            </li>
+                            <li>
+                                <strong>Dropout</strong> randomly deactivates neurons during
+                                training, forcing the network to learn redundant representations.
+                            </li>
+                            <li>
+                                <strong>Early Stopping</strong> halts training when validation
+                                error stops improving, implicitly limiting model complexity.
+                            </li>
+                            <li>
+                                Regularization is like a <strong>design code</strong> for ML:
+                                it sacrifices a small amount of training performance for a large
+                                gain in real-world robustness.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In Sub-chapter 2.10, we will apply everything from Chapter 2 to a
+                        comprehensive <strong>Civil Engineering Case Study</strong>. You will
+                        see data preprocessing, feature engineering, model selection, evaluation
+                        metrics, and regularization working together on a real-world engineering
+                        dataset. The concepts from this sub-chapter will be critical for
+                        understanding why the case study model is regularized and how we
+                        diagnose overfitting during development.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub8.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.8 Model Evaluation
+        </a>
+        <a href="sub10.html" class="chapter-nav__link next">
+            2.10 CE Case Study <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var U = window.ChapterUtils;
+        var $ = U.$, $$ = U.$$;
+
+        /* ======================================================
+           HERO CANVAS ANIMATION
+           ====================================================== */
+        (function heroAnim() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var dpr = window.devicePixelRatio || 1;
+            var ctx, w, h;
+
+            function resize() {
+                var rect = canvas.parentElement.getBoundingClientRect();
+                w = rect.width; h = rect.height;
+                canvas.width = w * dpr; canvas.height = h * dpr;
+                ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            var particles = [];
+            for (var i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * 1200,
+                    y: Math.random() * 600,
+                    r: Math.random() * 2 + 1,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4
+                });
+            }
+
+            function draw() {
+                var c = U.getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Draw connecting lines
+                for (var a = 0; a < particles.length; a++) {
+                    for (var b = a + 1; b < particles.length; b++) {
+                        var dx = particles[a].x - particles[b].x;
+                        var dy = particles[a].y - particles[b].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 150) {
+                            ctx.strokeStyle = c.TEAL;
+                            ctx.globalAlpha = (1 - dist / 150) * 0.15;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[a].x, particles[a].y);
+                            ctx.lineTo(particles[b].x, particles[b].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                // Draw particles
+                for (var p = 0; p < particles.length; p++) {
+                    var pt = particles[p];
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+                    ctx.fillStyle = c.TEAL;
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    pt.x += pt.vx; pt.y += pt.vy;
+                    if (pt.x < 0 || pt.x > w) pt.vx *= -1;
+                    if (pt.y < 0 || pt.y > h) pt.vy *= -1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        /* ======================================================
+           DEMO 1: OVERFITTING VISUALISER
+           ====================================================== */
+        (function overfitDemo() {
+            var fitCanvas = document.getElementById('overfit-fit-canvas');
+            var errCanvas = document.getElementById('overfit-error-canvas');
+            if (!fitCanvas || !errCanvas) return;
+
+            var degreeSlider = document.getElementById('overfit-degree-slider');
+            var noiseSlider = document.getElementById('overfit-noise-slider');
+            var npointsSlider = document.getElementById('overfit-npoints-slider');
+            var regenBtn = document.getElementById('overfit-regen-btn');
+
+            var degreeLabel = document.getElementById('overfit-degree-label');
+            var noiseLabel = document.getElementById('overfit-noise-label');
+            var npointsLabel = document.getElementById('overfit-npoints-label');
+
+            var fitCtx, fitW, fitH, errCtx, errW, errH;
+            var trainX = [], trainY = [], testX = [], testY = [];
+
+            // True function: a smooth curve
+            function trueFunc(x) {
+                return 0.5 * Math.sin(2.5 * x) + 0.3 * Math.cos(1.2 * x) + 0.1 * x;
+            }
+
+            function generateData() {
+                var n = parseInt(npointsSlider.value);
+                var noise = parseInt(noiseSlider.value) / 100;
+                trainX = []; trainY = []; testX = []; testY = [];
+                for (var i = 0; i < n; i++) {
+                    var x = (i / (n - 1)) * 2 - 1; // [-1, 1]
+                    trainX.push(x);
+                    trainY.push(trueFunc(x) + (Math.random() - 0.5) * 2 * noise);
+                }
+                // Test set: different random samples
+                var nTest = 40;
+                for (var j = 0; j < nTest; j++) {
+                    var tx = Math.random() * 2 - 1;
+                    testX.push(tx);
+                    testY.push(trueFunc(tx) + (Math.random() - 0.5) * 2 * noise);
+                }
+            }
+
+            // Polynomial regression via normal equation with numerical stability
+            function polyFit(xs, ys, degree) {
+                var n = xs.length;
+                var cols = degree + 1;
+
+                // Build Vandermonde matrix
+                var X = [];
+                for (var i = 0; i < n; i++) {
+                    var row = [];
+                    for (var j = 0; j < cols; j++) {
+                        row.push(Math.pow(xs[i], j));
+                    }
+                    X.push(row);
+                }
+
+                // X^T * X
+                var XtX = [];
+                for (var a = 0; a < cols; a++) {
+                    XtX.push([]);
+                    for (var b = 0; b < cols; b++) {
+                        var s = 0;
+                        for (var k = 0; k < n; k++) s += X[k][a] * X[k][b];
+                        // Tikhonov regularization for numerical stability only
+                        if (a === b) s += 1e-10;
+                        XtX[a].push(s);
+                    }
+                }
+
+                // X^T * y
+                var XtY = [];
+                for (var a2 = 0; a2 < cols; a2++) {
+                    var s2 = 0;
+                    for (var k2 = 0; k2 < n; k2++) s2 += X[k2][a2] * ys[k2];
+                    XtY.push(s2);
+                }
+
+                // Solve via Gaussian elimination
+                var coeffs = solveLinear(XtX, XtY);
+                return coeffs;
+            }
+
+            function solveLinear(A, b) {
+                var n = b.length;
+                // Augmented matrix
+                var aug = [];
+                for (var i = 0; i < n; i++) {
+                    aug.push(A[i].slice());
+                    aug[i].push(b[i]);
+                }
+                // Forward elimination with partial pivoting
+                for (var col = 0; col < n; col++) {
+                    var maxRow = col;
+                    for (var row = col + 1; row < n; row++) {
+                        if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
+                    }
+                    var tmp = aug[col]; aug[col] = aug[maxRow]; aug[maxRow] = tmp;
+                    if (Math.abs(aug[col][col]) < 1e-12) continue;
+                    for (var row2 = col + 1; row2 < n; row2++) {
+                        var factor = aug[row2][col] / aug[col][col];
+                        for (var j = col; j <= n; j++) {
+                            aug[row2][j] -= factor * aug[col][j];
+                        }
+                    }
+                }
+                // Back substitution
+                var x = new Array(n);
+                for (var i2 = n - 1; i2 >= 0; i2--) {
+                    x[i2] = aug[i2][n];
+                    for (var j2 = i2 + 1; j2 < n; j2++) {
+                        x[i2] -= aug[i2][j2] * x[j2];
+                    }
+                    x[i2] /= aug[i2][i2];
+                    if (!isFinite(x[i2])) x[i2] = 0;
+                }
+                return x;
+            }
+
+            function polyEval(coeffs, x) {
+                var y = 0;
+                for (var i = 0; i < coeffs.length; i++) {
+                    y += coeffs[i] * Math.pow(x, i);
+                }
+                return y;
+            }
+
+            function mse(coeffs, xs, ys) {
+                var total = 0;
+                for (var i = 0; i < xs.length; i++) {
+                    var err = ys[i] - polyEval(coeffs, xs[i]);
+                    total += err * err;
+                }
+                return total / xs.length;
+            }
+
+            function resize() {
+                var dpr = window.devicePixelRatio || 1;
+                var r1 = fitCanvas.getBoundingClientRect();
+                fitCanvas.width = r1.width * dpr; fitCanvas.height = r1.height * dpr;
+                fitCtx = fitCanvas.getContext('2d'); fitCtx.scale(dpr, dpr);
+                fitW = r1.width; fitH = r1.height;
+
+                var r2 = errCanvas.getBoundingClientRect();
+                errCanvas.width = r2.width * dpr; errCanvas.height = r2.height * dpr;
+                errCtx = errCanvas.getContext('2d'); errCtx.scale(dpr, dpr);
+                errW = r2.width; errH = r2.height;
+            }
+
+            function drawFit() {
+                var c = U.getColors();
+                var degree = parseInt(degreeSlider.value);
+                var coeffs = polyFit(trainX, trainY, degree);
+                var trainErr = mse(coeffs, trainX, trainY);
+                var testErr = mse(coeffs, testX, testY);
+
+                var pad = { top: 30, right: 20, bottom: 40, left: 50 };
+                var plotW = fitW - pad.left - pad.right;
+                var plotH = fitH - pad.top - pad.bottom;
+
+                fitCtx.clearRect(0, 0, fitW, fitH);
+
+                // Background
+                fitCtx.fillStyle = c.BG;
+                fitCtx.fillRect(0, 0, fitW, fitH);
+
+                // Grid
+                fitCtx.strokeStyle = c.GRID;
+                fitCtx.lineWidth = 1;
+                for (var gy = 0; gy <= 5; gy++) {
+                    var yy = pad.top + (gy / 5) * plotH;
+                    fitCtx.beginPath(); fitCtx.moveTo(pad.left, yy); fitCtx.lineTo(pad.left + plotW, yy); fitCtx.stroke();
+                }
+                for (var gx = 0; gx <= 5; gx++) {
+                    var xx = pad.left + (gx / 5) * plotW;
+                    fitCtx.beginPath(); fitCtx.moveTo(xx, pad.top); fitCtx.lineTo(xx, pad.top + plotH); fitCtx.stroke();
+                }
+
+                // Axes
+                fitCtx.strokeStyle = c.STROKE;
+                fitCtx.lineWidth = 1;
+                fitCtx.beginPath();
+                fitCtx.moveTo(pad.left, pad.top);
+                fitCtx.lineTo(pad.left, pad.top + plotH);
+                fitCtx.lineTo(pad.left + plotW, pad.top + plotH);
+                fitCtx.stroke();
+
+                // Data range
+                var allY = trainY.concat(testY);
+                var yMin = -1.5, yMax = 1.5;
+                for (var di = 0; di < allY.length; di++) {
+                    if (allY[di] < yMin) yMin = allY[di] - 0.2;
+                    if (allY[di] > yMax) yMax = allY[di] + 0.2;
+                }
+
+                function toScreenX(x) { return pad.left + ((x + 1) / 2) * plotW; }
+                function toScreenY(y) { return pad.top + plotH - ((y - yMin) / (yMax - yMin)) * plotH; }
+
+                // True function
+                fitCtx.strokeStyle = c.DIM;
+                fitCtx.setLineDash([4, 4]);
+                fitCtx.lineWidth = 1.5;
+                fitCtx.beginPath();
+                for (var tx = -1; tx <= 1.001; tx += 0.01) {
+                    var sy = toScreenY(trueFunc(tx));
+                    if (tx === -1) fitCtx.moveTo(toScreenX(tx), sy);
+                    else fitCtx.lineTo(toScreenX(tx), sy);
+                }
+                fitCtx.stroke();
+                fitCtx.setLineDash([]);
+
+                // Polynomial fit curve
+                fitCtx.strokeStyle = c.TEAL;
+                fitCtx.lineWidth = 2.5;
+                fitCtx.beginPath();
+                var firstPt = true;
+                for (var fx = -1; fx <= 1.001; fx += 0.005) {
+                    var fy = polyEval(coeffs, fx);
+                    var sy2 = toScreenY(fy);
+                    // Clamp to plot area
+                    sy2 = Math.max(pad.top - 20, Math.min(pad.top + plotH + 20, sy2));
+                    if (firstPt) { fitCtx.moveTo(toScreenX(fx), sy2); firstPt = false; }
+                    else fitCtx.lineTo(toScreenX(fx), sy2);
+                }
+                fitCtx.stroke();
+
+                // Training points
+                for (var ti = 0; ti < trainX.length; ti++) {
+                    fitCtx.beginPath();
+                    fitCtx.arc(toScreenX(trainX[ti]), toScreenY(trainY[ti]), 4, 0, Math.PI * 2);
+                    fitCtx.fillStyle = c.RED;
+                    fitCtx.fill();
+                }
+
+                // Test points
+                for (var tsi = 0; tsi < testX.length; tsi++) {
+                    fitCtx.beginPath();
+                    fitCtx.arc(toScreenX(testX[tsi]), toScreenY(testY[tsi]), 3, 0, Math.PI * 2);
+                    fitCtx.fillStyle = c.CYAN;
+                    fitCtx.globalAlpha = 0.5;
+                    fitCtx.fill();
+                    fitCtx.globalAlpha = 1;
+                }
+
+                // Legend
+                fitCtx.font = '11px Inter, sans-serif';
+                fitCtx.fillStyle = c.RED;
+                fitCtx.fillRect(pad.left + 10, pad.top + 8, 12, 12);
+                fitCtx.fillStyle = c.TEXT;
+                fitCtx.textAlign = 'left';
+                fitCtx.fillText('Train', pad.left + 26, pad.top + 18);
+
+                fitCtx.fillStyle = c.CYAN;
+                fitCtx.fillRect(pad.left + 70, pad.top + 8, 12, 12);
+                fitCtx.fillStyle = c.TEXT;
+                fitCtx.fillText('Test', pad.left + 86, pad.top + 18);
+
+                fitCtx.fillStyle = c.DIM;
+                fitCtx.fillRect(pad.left + 120, pad.top + 8, 12, 12);
+                fitCtx.fillStyle = c.TEXT;
+                fitCtx.fillText('True f(x)', pad.left + 136, pad.top + 18);
+
+                // Update stats
+                document.getElementById('overfit-stat-train').textContent = 'Train MSE: ' + trainErr.toFixed(4);
+                document.getElementById('overfit-stat-test').textContent = 'Test MSE: ' + testErr.toFixed(4);
+
+                var diagnosis = 'Good Fit';
+                if (trainErr > 0.1 && testErr > 0.1) diagnosis = 'Underfitting';
+                else if (testErr > trainErr * 3 && testErr > 0.05) diagnosis = 'Overfitting';
+                document.getElementById('overfit-stat-diagnosis').textContent = 'Diagnosis: ' + diagnosis;
+
+                return { trainErr: trainErr, testErr: testErr };
+            }
+
+            function drawErrorCurves() {
+                var c = U.getColors();
+                var maxDeg = 15;
+                var trainErrors = [];
+                var testErrors = [];
+
+                for (var d = 1; d <= maxDeg; d++) {
+                    var coeffs = polyFit(trainX, trainY, d);
+                    trainErrors.push(mse(coeffs, trainX, trainY));
+                    testErrors.push(mse(coeffs, testX, testY));
+                }
+
+                var pad = { top: 30, right: 20, bottom: 40, left: 55 };
+                var plotW = errW - pad.left - pad.right;
+                var plotH = errH - pad.top - pad.bottom;
+
+                errCtx.clearRect(0, 0, errW, errH);
+                errCtx.fillStyle = c.BG;
+                errCtx.fillRect(0, 0, errW, errH);
+
+                // Find max error for scale (cap at reasonable level)
+                var maxErr = 0;
+                for (var mi = 0; mi < testErrors.length; mi++) {
+                    var te = Math.min(testErrors[mi], 5);
+                    if (te > maxErr) maxErr = te;
+                }
+                for (var mi2 = 0; mi2 < trainErrors.length; mi2++) {
+                    var tre = Math.min(trainErrors[mi2], 5);
+                    if (tre > maxErr) maxErr = tre;
+                }
+                maxErr = Math.max(maxErr * 1.1, 0.1);
+
+                // Grid
+                errCtx.strokeStyle = c.GRID;
+                errCtx.lineWidth = 1;
+                for (var gy = 0; gy <= 5; gy++) {
+                    var yy = pad.top + (gy / 5) * plotH;
+                    errCtx.beginPath(); errCtx.moveTo(pad.left, yy); errCtx.lineTo(pad.left + plotW, yy); errCtx.stroke();
+                }
+
+                // Axes
+                errCtx.strokeStyle = c.STROKE;
+                errCtx.lineWidth = 1;
+                errCtx.beginPath();
+                errCtx.moveTo(pad.left, pad.top);
+                errCtx.lineTo(pad.left, pad.top + plotH);
+                errCtx.lineTo(pad.left + plotW, pad.top + plotH);
+                errCtx.stroke();
+
+                // Axis labels
+                errCtx.fillStyle = c.TEXT;
+                errCtx.font = '11px Inter, sans-serif';
+                errCtx.textAlign = 'center';
+                errCtx.fillText('Polynomial Degree', pad.left + plotW / 2, pad.top + plotH + 30);
+
+                errCtx.save();
+                errCtx.translate(14, pad.top + plotH / 2);
+                errCtx.rotate(-Math.PI / 2);
+                errCtx.fillText('MSE', 0, 0);
+                errCtx.restore();
+
+                // Degree labels on x-axis
+                for (var dl = 1; dl <= maxDeg; dl++) {
+                    var dx = pad.left + ((dl - 1) / (maxDeg - 1)) * plotW;
+                    errCtx.fillStyle = c.TEXT;
+                    errCtx.font = '10px Inter, sans-serif';
+                    errCtx.textAlign = 'center';
+                    errCtx.fillText(dl.toString(), dx, pad.top + plotH + 14);
+                }
+
+                function errToY(e) {
+                    return pad.top + plotH - (Math.min(e, 5) / maxErr) * plotH;
+                }
+
+                // Train error curve
+                errCtx.strokeStyle = c.RED;
+                errCtx.lineWidth = 2;
+                errCtx.beginPath();
+                for (var ti = 0; ti < trainErrors.length; ti++) {
+                    var ex = pad.left + (ti / (maxDeg - 1)) * plotW;
+                    var ey = errToY(trainErrors[ti]);
+                    if (ti === 0) errCtx.moveTo(ex, ey); else errCtx.lineTo(ex, ey);
+                }
+                errCtx.stroke();
+
+                // Test error curve
+                errCtx.strokeStyle = c.CYAN;
+                errCtx.lineWidth = 2;
+                errCtx.beginPath();
+                for (var tsi = 0; tsi < testErrors.length; tsi++) {
+                    var ex2 = pad.left + (tsi / (maxDeg - 1)) * plotW;
+                    var ey2 = errToY(testErrors[tsi]);
+                    if (tsi === 0) errCtx.moveTo(ex2, ey2); else errCtx.lineTo(ex2, ey2);
+                }
+                errCtx.stroke();
+
+                // Current degree marker
+                var curDeg = parseInt(degreeSlider.value);
+                var markerX = pad.left + ((curDeg - 1) / (maxDeg - 1)) * plotW;
+                errCtx.strokeStyle = c.AMBER;
+                errCtx.lineWidth = 1.5;
+                errCtx.setLineDash([4, 4]);
+                errCtx.beginPath();
+                errCtx.moveTo(markerX, pad.top);
+                errCtx.lineTo(markerX, pad.top + plotH);
+                errCtx.stroke();
+                errCtx.setLineDash([]);
+
+                // Markers on curves at current degree
+                var curTrainY = errToY(trainErrors[curDeg - 1]);
+                var curTestY = errToY(testErrors[curDeg - 1]);
+                errCtx.beginPath(); errCtx.arc(markerX, curTrainY, 5, 0, Math.PI * 2);
+                errCtx.fillStyle = c.RED; errCtx.fill();
+                errCtx.beginPath(); errCtx.arc(markerX, curTestY, 5, 0, Math.PI * 2);
+                errCtx.fillStyle = c.CYAN; errCtx.fill();
+
+                // Legend
+                errCtx.font = '11px Inter, sans-serif';
+                errCtx.fillStyle = c.RED;
+                errCtx.fillRect(pad.left + 10, pad.top + 8, 12, 12);
+                errCtx.fillStyle = c.TEXT;
+                errCtx.textAlign = 'left';
+                errCtx.fillText('Train Error', pad.left + 26, pad.top + 18);
+
+                errCtx.fillStyle = c.CYAN;
+                errCtx.fillRect(pad.left + 100, pad.top + 8, 12, 12);
+                errCtx.fillStyle = c.TEXT;
+                errCtx.fillText('Test Error', pad.left + 116, pad.top + 18);
+
+                // Sweet spot label
+                var minTestIdx = 0;
+                var minTestErr = testErrors[0];
+                for (var mti = 1; mti < testErrors.length; mti++) {
+                    if (testErrors[mti] < minTestErr) { minTestErr = testErrors[mti]; minTestIdx = mti; }
+                }
+                var ssX = pad.left + (minTestIdx / (maxDeg - 1)) * plotW;
+                var ssY = errToY(minTestErr);
+                errCtx.fillStyle = c.GREEN;
+                errCtx.font = 'bold 11px Inter, sans-serif';
+                errCtx.textAlign = 'center';
+                errCtx.fillText('Sweet Spot (deg ' + (minTestIdx + 1) + ')', ssX, ssY - 12);
+                errCtx.beginPath(); errCtx.arc(ssX, ssY, 6, 0, Math.PI * 2);
+                errCtx.strokeStyle = c.GREEN; errCtx.lineWidth = 2; errCtx.stroke();
+            }
+
+            function redraw() {
+                degreeLabel.textContent = degreeSlider.value;
+                noiseLabel.textContent = (parseInt(noiseSlider.value) / 100).toFixed(2);
+                npointsLabel.textContent = npointsSlider.value;
+                resize();
+                drawFit();
+                drawErrorCurves();
+            }
+
+            degreeSlider.addEventListener('input', redraw);
+            noiseSlider.addEventListener('input', function() { generateData(); redraw(); });
+            npointsSlider.addEventListener('input', function() { generateData(); redraw(); });
+            regenBtn.addEventListener('click', function() { generateData(); redraw(); });
+
+            generateData();
+            resize();
+            redraw();
+            window.addEventListener('resize', function() { resize(); redraw(); });
+        })();
+
+        /* ======================================================
+           DEMO 2: REGULARIZATION STRENGTH VISUALISER
+           ====================================================== */
+        (function regDemo() {
+            var fitCanvas = document.getElementById('reg-fit-canvas');
+            var coeffCanvas = document.getElementById('reg-coeff-canvas');
+            if (!fitCanvas || !coeffCanvas) return;
+
+            var lambdaSlider = document.getElementById('reg-lambda-slider');
+            var typeSelect = document.getElementById('reg-type-select');
+            var degreeSlider = document.getElementById('reg-degree-slider');
+            var regenBtn = document.getElementById('reg-regen-btn');
+
+            var lambdaLabel = document.getElementById('reg-lambda-label');
+            var degreeLabel = document.getElementById('reg-degree-label');
+
+            var fitCtx, fitW, fitH, coeffCtx, coeffW, coeffH;
+            var trainX = [], trainY = [], testX = [], testY = [];
+
+            function trueFunc(x) {
+                return 0.5 * Math.sin(2.5 * x) + 0.3 * Math.cos(1.2 * x) + 0.1 * x;
+            }
+
+            function generateData() {
+                var noise = 0.3;
+                trainX = []; trainY = []; testX = []; testY = [];
+                for (var i = 0; i < 25; i++) {
+                    var x = (i / 24) * 2 - 1;
+                    trainX.push(x);
+                    trainY.push(trueFunc(x) + (Math.random() - 0.5) * 2 * noise);
+                }
+                for (var j = 0; j < 40; j++) {
+                    var tx = Math.random() * 2 - 1;
+                    testX.push(tx);
+                    testY.push(trueFunc(tx) + (Math.random() - 0.5) * 2 * noise);
+                }
+            }
+
+            // Regularized polynomial fit
+            function regPolyFit(xs, ys, degree, lambda, type) {
+                var n = xs.length;
+                var cols = degree + 1;
+
+                // Build Vandermonde matrix
+                var X = [];
+                for (var i = 0; i < n; i++) {
+                    var row = [];
+                    for (var j = 0; j < cols; j++) {
+                        row.push(Math.pow(xs[i], j));
+                    }
+                    X.push(row);
+                }
+
+                if (type === 'L1' || type === 'EN') {
+                    // Coordinate descent for L1 / Elastic Net
+                    return coordinateDescent(X, ys, cols, lambda, type);
+                }
+
+                // L2 (Ridge): closed-form solution
+                // (X^T X + lambda * I) * w = X^T y
+                var XtX = [];
+                for (var a = 0; a < cols; a++) {
+                    XtX.push([]);
+                    for (var b = 0; b < cols; b++) {
+                        var s = 0;
+                        for (var k = 0; k < n; k++) s += X[k][a] * X[k][b];
+                        if (a === b && a > 0) s += lambda; // Don't regularize intercept
+                        XtX[a].push(s);
+                    }
+                }
+
+                var XtY = [];
+                for (var a2 = 0; a2 < cols; a2++) {
+                    var s2 = 0;
+                    for (var k2 = 0; k2 < n; k2++) s2 += X[k2][a2] * ys[k2];
+                    XtY.push(s2);
+                }
+
+                return solveLinear(XtX, XtY);
+            }
+
+            function solveLinear(A, b) {
+                var n = b.length;
+                var aug = [];
+                for (var i = 0; i < n; i++) {
+                    aug.push(A[i].slice());
+                    aug[i].push(b[i]);
+                }
+                for (var col = 0; col < n; col++) {
+                    var maxRow = col;
+                    for (var row = col + 1; row < n; row++) {
+                        if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
+                    }
+                    var tmp = aug[col]; aug[col] = aug[maxRow]; aug[maxRow] = tmp;
+                    if (Math.abs(aug[col][col]) < 1e-12) continue;
+                    for (var row2 = col + 1; row2 < n; row2++) {
+                        var factor = aug[row2][col] / aug[col][col];
+                        for (var j = col; j <= n; j++) {
+                            aug[row2][j] -= factor * aug[col][j];
+                        }
+                    }
+                }
+                var x = new Array(n);
+                for (var i2 = n - 1; i2 >= 0; i2--) {
+                    x[i2] = aug[i2][n];
+                    for (var j2 = i2 + 1; j2 < n; j2++) {
+                        x[i2] -= aug[i2][j2] * x[j2];
+                    }
+                    x[i2] /= aug[i2][i2];
+                    if (!isFinite(x[i2])) x[i2] = 0;
+                }
+                return x;
+            }
+
+            // Coordinate descent for L1 / Elastic Net
+            function coordinateDescent(X, y, cols, lambda, type) {
+                var n = X.length;
+                var w = new Array(cols);
+                for (var i = 0; i < cols; i++) w[i] = 0;
+
+                var l1Ratio = type === 'L1' ? 1.0 : 0.5; // Elastic Net: alpha=0.5
+                var l1Lambda = lambda * l1Ratio;
+                var l2Lambda = lambda * (1 - l1Ratio);
+
+                for (var iter = 0; iter < 500; iter++) {
+                    for (var j = 0; j < cols; j++) {
+                        // Compute residual without feature j
+                        var rho = 0;
+                        for (var i2 = 0; i2 < n; i2++) {
+                            var pred = 0;
+                            for (var k = 0; k < cols; k++) {
+                                if (k !== j) pred += X[i2][k] * w[k];
+                            }
+                            rho += X[i2][j] * (y[i2] - pred);
+                        }
+                        rho /= n;
+
+                        // Compute z_j = sum of X_ij^2
+                        var zj = 0;
+                        for (var i3 = 0; i3 < n; i3++) zj += X[i3][j] * X[i3][j];
+                        zj /= n;
+
+                        if (j === 0) {
+                            // Don't regularize intercept
+                            w[j] = rho / zj;
+                        } else {
+                            // Soft thresholding for L1 component
+                            if (rho > l1Lambda) {
+                                w[j] = (rho - l1Lambda) / (zj + l2Lambda);
+                            } else if (rho < -l1Lambda) {
+                                w[j] = (rho + l1Lambda) / (zj + l2Lambda);
+                            } else {
+                                w[j] = 0;
+                            }
+                        }
+                    }
+                }
+                return w;
+            }
+
+            function polyEval(coeffs, x) {
+                var y = 0;
+                for (var i = 0; i < coeffs.length; i++) {
+                    y += coeffs[i] * Math.pow(x, i);
+                }
+                return y;
+            }
+
+            function mse(coeffs, xs, ys) {
+                var total = 0;
+                for (var i = 0; i < xs.length; i++) {
+                    var err = ys[i] - polyEval(coeffs, xs[i]);
+                    total += err * err;
+                }
+                return total / xs.length;
+            }
+
+            function resize() {
+                var dpr = window.devicePixelRatio || 1;
+                var r1 = fitCanvas.getBoundingClientRect();
+                fitCanvas.width = r1.width * dpr; fitCanvas.height = r1.height * dpr;
+                fitCtx = fitCanvas.getContext('2d'); fitCtx.scale(dpr, dpr);
+                fitW = r1.width; fitH = r1.height;
+
+                var r2 = coeffCanvas.getBoundingClientRect();
+                coeffCanvas.width = r2.width * dpr; coeffCanvas.height = r2.height * dpr;
+                coeffCtx = coeffCanvas.getContext('2d'); coeffCtx.scale(dpr, dpr);
+                coeffW = r2.width; coeffH = r2.height;
+            }
+
+            function drawFit(coeffs) {
+                var c = U.getColors();
+                var pad = { top: 30, right: 20, bottom: 40, left: 50 };
+                var plotW = fitW - pad.left - pad.right;
+                var plotH = fitH - pad.top - pad.bottom;
+
+                fitCtx.clearRect(0, 0, fitW, fitH);
+                fitCtx.fillStyle = c.BG;
+                fitCtx.fillRect(0, 0, fitW, fitH);
+
+                // Grid
+                fitCtx.strokeStyle = c.GRID;
+                fitCtx.lineWidth = 1;
+                for (var gy = 0; gy <= 5; gy++) {
+                    var yy = pad.top + (gy / 5) * plotH;
+                    fitCtx.beginPath(); fitCtx.moveTo(pad.left, yy); fitCtx.lineTo(pad.left + plotW, yy); fitCtx.stroke();
+                }
+
+                // Axes
+                fitCtx.strokeStyle = c.STROKE;
+                fitCtx.lineWidth = 1;
+                fitCtx.beginPath();
+                fitCtx.moveTo(pad.left, pad.top);
+                fitCtx.lineTo(pad.left, pad.top + plotH);
+                fitCtx.lineTo(pad.left + plotW, pad.top + plotH);
+                fitCtx.stroke();
+
+                var yMin = -1.5, yMax = 1.5;
+                var allY = trainY.concat(testY);
+                for (var di = 0; di < allY.length; di++) {
+                    if (allY[di] < yMin) yMin = allY[di] - 0.2;
+                    if (allY[di] > yMax) yMax = allY[di] + 0.2;
+                }
+
+                function toSX(x) { return pad.left + ((x + 1) / 2) * plotW; }
+                function toSY(y) { return pad.top + plotH - ((y - yMin) / (yMax - yMin)) * plotH; }
+
+                // True function (dashed)
+                fitCtx.strokeStyle = c.DIM;
+                fitCtx.setLineDash([4, 4]);
+                fitCtx.lineWidth = 1.5;
+                fitCtx.beginPath();
+                for (var tx = -1; tx <= 1.001; tx += 0.01) {
+                    var sy = toSY(trueFunc(tx));
+                    if (tx === -1) fitCtx.moveTo(toSX(tx), sy);
+                    else fitCtx.lineTo(toSX(tx), sy);
+                }
+                fitCtx.stroke();
+                fitCtx.setLineDash([]);
+
+                // Regularized fit
+                fitCtx.strokeStyle = c.TEAL;
+                fitCtx.lineWidth = 2.5;
+                fitCtx.beginPath();
+                var first = true;
+                for (var fx = -1; fx <= 1.001; fx += 0.005) {
+                    var fy = polyEval(coeffs, fx);
+                    var sy2 = toSY(fy);
+                    sy2 = Math.max(pad.top - 20, Math.min(pad.top + plotH + 20, sy2));
+                    if (first) { fitCtx.moveTo(toSX(fx), sy2); first = false; }
+                    else fitCtx.lineTo(toSX(fx), sy2);
+                }
+                fitCtx.stroke();
+
+                // Training points
+                for (var ti = 0; ti < trainX.length; ti++) {
+                    fitCtx.beginPath();
+                    fitCtx.arc(toSX(trainX[ti]), toSY(trainY[ti]), 4, 0, Math.PI * 2);
+                    fitCtx.fillStyle = c.RED;
+                    fitCtx.fill();
+                }
+
+                // Legend
+                fitCtx.font = '11px Inter, sans-serif';
+                fitCtx.fillStyle = c.RED;
+                fitCtx.fillRect(pad.left + 10, pad.top + 8, 12, 12);
+                fitCtx.fillStyle = c.TEXT;
+                fitCtx.textAlign = 'left';
+                fitCtx.fillText('Train', pad.left + 26, pad.top + 18);
+
+                fitCtx.fillStyle = c.DIM;
+                fitCtx.fillRect(pad.left + 70, pad.top + 8, 12, 12);
+                fitCtx.fillStyle = c.TEXT;
+                fitCtx.fillText('True f(x)', pad.left + 86, pad.top + 18);
+
+                fitCtx.fillStyle = c.TEAL;
+                fitCtx.fillRect(pad.left + 140, pad.top + 8, 12, 12);
+                fitCtx.fillStyle = c.TEXT;
+                fitCtx.fillText('Reg. Fit', pad.left + 156, pad.top + 18);
+            }
+
+            function drawCoeffs(coeffs) {
+                var c = U.getColors();
+                var pad = { top: 30, right: 20, bottom: 40, left: 50 };
+                var plotW = coeffW - pad.left - pad.right;
+                var plotH = coeffH - pad.top - pad.bottom;
+
+                coeffCtx.clearRect(0, 0, coeffW, coeffH);
+                coeffCtx.fillStyle = c.BG;
+                coeffCtx.fillRect(0, 0, coeffW, coeffH);
+
+                // Axes
+                coeffCtx.strokeStyle = c.STROKE;
+                coeffCtx.lineWidth = 1;
+                coeffCtx.beginPath();
+                coeffCtx.moveTo(pad.left, pad.top);
+                coeffCtx.lineTo(pad.left, pad.top + plotH);
+                coeffCtx.lineTo(pad.left + plotW, pad.top + plotH);
+                coeffCtx.stroke();
+
+                // Find max abs coefficient for scale (skip intercept)
+                var maxAbs = 0.1;
+                for (var i = 1; i < coeffs.length; i++) {
+                    if (Math.abs(coeffs[i]) > maxAbs) maxAbs = Math.abs(coeffs[i]);
+                }
+                maxAbs *= 1.15;
+
+                var barCount = coeffs.length - 1; // skip intercept
+                var barWidth = Math.min(plotW / barCount * 0.6, 30);
+                var barGap = (plotW - barWidth * barCount) / (barCount + 1);
+
+                // Zero line
+                var zeroY = pad.top + plotH / 2;
+                coeffCtx.strokeStyle = c.DIM;
+                coeffCtx.setLineDash([3, 3]);
+                coeffCtx.beginPath();
+                coeffCtx.moveTo(pad.left, zeroY);
+                coeffCtx.lineTo(pad.left + plotW, zeroY);
+                coeffCtx.stroke();
+                coeffCtx.setLineDash([]);
+
+                // Bars
+                var nonZero = 0;
+                for (var bi = 0; bi < barCount; bi++) {
+                    var coeff = coeffs[bi + 1]; // skip intercept
+                    var barH = (coeff / maxAbs) * (plotH / 2);
+                    var bx = pad.left + barGap + bi * (barWidth + barGap);
+                    var by = zeroY - barH;
+                    if (barH < 0) { by = zeroY; barH = -barH; }
+
+                    if (Math.abs(coeffs[bi + 1]) > 1e-6) nonZero++;
+
+                    coeffCtx.fillStyle = Math.abs(coeffs[bi + 1]) < 1e-6 ? c.DIM : c.TEAL;
+                    coeffCtx.fillRect(bx, by, barWidth, barH);
+
+                    // Label
+                    coeffCtx.fillStyle = c.TEXT;
+                    coeffCtx.font = '10px Inter, sans-serif';
+                    coeffCtx.textAlign = 'center';
+                    coeffCtx.fillText('w' + (bi + 1), bx + barWidth / 2, pad.top + plotH + 14);
+                }
+
+                // Y-axis labels
+                coeffCtx.fillStyle = c.TEXT;
+                coeffCtx.font = '10px Inter, sans-serif';
+                coeffCtx.textAlign = 'right';
+                coeffCtx.fillText(maxAbs.toFixed(1), pad.left - 5, pad.top + 12);
+                coeffCtx.fillText('0', pad.left - 5, zeroY + 4);
+                coeffCtx.fillText((-maxAbs).toFixed(1), pad.left - 5, pad.top + plotH);
+
+                document.getElementById('reg-stat-nonzero').textContent = 'Non-zero coefficients: ' + nonZero + '/' + barCount;
+            }
+
+            function redraw() {
+                var logLambda = parseInt(lambdaSlider.value) / 10;
+                lambdaLabel.textContent = logLambda.toFixed(1);
+                degreeLabel.textContent = degreeSlider.value;
+                var lambda = Math.pow(10, logLambda);
+                var degree = parseInt(degreeSlider.value);
+                var type = typeSelect.value;
+
+                var coeffs = regPolyFit(trainX, trainY, degree, lambda, type);
+                var trainErr = mse(coeffs, trainX, trainY);
+                var testErr = mse(coeffs, testX, testY);
+
+                document.getElementById('reg-stat-train').textContent = 'Train MSE: ' + trainErr.toFixed(4);
+                document.getElementById('reg-stat-test').textContent = 'Test MSE: ' + testErr.toFixed(4);
+
+                resize();
+                drawFit(coeffs);
+                drawCoeffs(coeffs);
+            }
+
+            lambdaSlider.addEventListener('input', redraw);
+            typeSelect.addEventListener('change', redraw);
+            degreeSlider.addEventListener('input', redraw);
+            regenBtn.addEventListener('click', function() { generateData(); redraw(); });
+
+            generateData();
+            resize();
+            redraw();
+            window.addEventListener('resize', function() { resize(); redraw(); });
+        })();
+
+        /* ======================================================
+           THEME CHANGE OBSERVER
+           ====================================================== */
+        var themeObserver = new MutationObserver(function() {
+            // Redraw canvases on theme change
+            window.dispatchEvent(new Event('resize'));
+        });
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+
+    })();
+    </script>
+
+</body>
+</html>

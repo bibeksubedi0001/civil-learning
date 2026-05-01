@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.10 CE Case Study: Site Response Analysis | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="End-to-end supervised learning case study predicting seismic site response (ground motion amplification) from soil properties using ML. Capstone sub-chapter for Chapter 2.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.10
+            </div>
+            <h1 class="chapter-hero__title">CE Case Study: Site Response Analysis</h1>
+            <p class="chapter-hero__subtitle">
+                Everything we have learned in Chapter 2 converges here. In this capstone
+                case study we walk through an end-to-end supervised learning project that
+                every geotechnical and earthquake engineer will recognise: predicting how
+                a soil deposit amplifies earthquake ground motion &mdash; the classic
+                <em>site response</em> problem. From raw borehole logs to a deployed
+                prediction model, every step of the ML pipeline comes to life.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 50 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why Site Response Matters</h2>
+                        <p>
+                            The 1985 Mexico City earthquake originated more than 350 km away,
+                            yet it devastated a city built on soft lake-bed sediments. The
+                            soil deposit acted like a bowl of jelly on a shaking table:
+                            ground motion that was modest at the bedrock level was amplified
+                            two to five times by the time it reached the surface. Thousands
+                            of structures collapsed, most of them founded on the softest soils.
+                        </p>
+                        <p>
+                            <strong>Site response analysis</strong> quantifies this
+                            amplification. Traditional methods rely on 1-D wave-propagation
+                            theory (e.g. SHAKE, DEEPSOIL), which requires detailed shear-wave
+                            velocity profiles, dynamic soil properties, and significant
+                            computational effort for every new site. Can supervised learning
+                            offer a faster, data-driven alternative &mdash; trained on
+                            thousands of existing analyses &mdash; that predicts the
+                            amplification factor directly from routinely available soil
+                            parameters?
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This sub-chapter is the <strong>capstone</strong> of Chapter 2. We will
+                    apply every concept covered so far &mdash; feature engineering, model
+                    selection, training-testing splits, cross-validation, evaluation metrics,
+                    overfitting countermeasures &mdash; to a single, realistic geotechnical
+                    problem. By the end, you will have seen the complete ML pipeline in action
+                    and be ready to tackle similar problems on your own projects.
+                </p>
+
+                <p>The pipeline we will follow:</p>
+
+                <ol>
+                    <li><strong>Problem definition</strong> &mdash; what are we predicting and why?</li>
+                    <li><strong>Data collection</strong> &mdash; gathering borehole logs, shear-wave velocity profiles, and earthquake records</li>
+                    <li><strong>Feature engineering</strong> &mdash; deriving predictive features like Vs30 from raw data</li>
+                    <li><strong>Model selection</strong> &mdash; comparing Linear Regression, Random Forest, and SVM</li>
+                    <li><strong>Training &amp; evaluation</strong> &mdash; cross-validation and performance metrics</li>
+                    <li><strong>Results interpretation</strong> &mdash; feature importance and residual analysis</li>
+                    <li><strong>Deployment considerations</strong> &mdash; moving from notebook to field tool</li>
+                </ol>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This capstone draws on material from every preceding sub-chapter in
+                        Chapter 2. In particular, make sure you are comfortable with:
+                        Sub-chapter 2.1 (Core ML Concepts), 2.3 (Linear Regression),
+                        2.5 (Random Forest), 2.7 (Support Vector Machines), 2.8 (Model
+                        Evaluation), and 2.9 (Overfitting &amp; Regularization).
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: PROBLEM DEFINITION
+             ========================================== -->
+        <section class="ch-section" id="problem-definition">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    Step 1: Problem Definition
+                </h2>
+
+                <p>
+                    Before writing a single line of code, we need a crisp problem statement.
+                    In site response analysis, the quantity we care about most is the
+                    <strong>site amplification factor (AF)</strong>: the ratio of spectral
+                    acceleration at the ground surface to that at the bedrock for a given
+                    period. A higher AF means the soil deposit amplifies ground motion more.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Target Variable
+                    </div>
+                    <pre><code>Amplification Factor (AF) = Sa(surface) / Sa(bedrock)
+
+Where:
+  Sa(surface)  = Spectral acceleration at ground surface
+  Sa(bedrock)  = Spectral acceleration at bedrock (input motion)
+
+Typical range: 0.5 (de-amplification) to 5.0+ (strong amplification)
+Depends on:    soil type, layer thickness, shear-wave velocity, input motion intensity</code></pre>
+                </div>
+
+                <p>
+                    We frame this as a <strong>regression</strong> problem: given a set of
+                    measurable soil and earthquake properties, predict the continuous-valued
+                    amplification factor. This is squarely in the domain of supervised
+                    learning &mdash; we have labelled examples (existing site response
+                    analyses) where both the input features and the output AF are known.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why Not Classification?</h3>
+                        <p>
+                            We could bin the amplification factor into categories (e.g.
+                            "Low", "Medium", "High") and treat it as classification. However,
+                            civil engineers need a <em>number</em> to plug into structural
+                            design equations. Regression preserves the continuous nature of
+                            AF and is far more useful in practice.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Scope and Assumptions</h3>
+
+                <ul>
+                    <li>
+                        We focus on <strong>1-D site response</strong>: vertically
+                        propagating shear waves through horizontal soil layers. This covers
+                        the vast majority of practical applications.
+                    </li>
+                    <li>
+                        We predict AF at a <strong>single spectral period</strong> (e.g.
+                        T = 0.5 s). Extending to multiple periods is straightforward by
+                        training separate models or using multi-output regression.
+                    </li>
+                    <li>
+                        We assume access to <strong>standard geotechnical investigation
+                        data</strong>: borehole logs, SPT blow counts, shear-wave velocity
+                        measurements, and earthquake recording metadata.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: DATA COLLECTION
+             ========================================== -->
+        <section class="ch-section" id="data-collection">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-database"></i>
+                    Step 2: Data Collection
+                </h2>
+
+                <p>
+                    Real site response datasets are compiled by running hundreds or thousands
+                    of 1-D ground response analyses (e.g. using SHAKE or DEEPSOIL) across a
+                    variety of soil profiles and input motions. For this case study, we
+                    describe a realistic synthetic dataset with 2 000 records. Each record
+                    represents one site-motion pair and contains the following raw fields:
+                </p>
+
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Description</th>
+                                <th>Typical Range</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>depth_to_bedrock</code></td>
+                                <td>Total thickness of soil above bedrock (m)</td>
+                                <td>5 &ndash; 100 m</td>
+                                <td>Borehole log</td>
+                            </tr>
+                            <tr>
+                                <td><code>avg_vs</code></td>
+                                <td>Depth-weighted average shear-wave velocity (m/s)</td>
+                                <td>100 &ndash; 760 m/s</td>
+                                <td>MASW / downhole test</td>
+                            </tr>
+                            <tr>
+                                <td><code>vs_surface</code></td>
+                                <td>Shear-wave velocity of the topmost layer (m/s)</td>
+                                <td>80 &ndash; 400 m/s</td>
+                                <td>MASW / downhole test</td>
+                            </tr>
+                            <tr>
+                                <td><code>num_layers</code></td>
+                                <td>Number of distinct soil layers</td>
+                                <td>2 &ndash; 15</td>
+                                <td>Borehole log</td>
+                            </tr>
+                            <tr>
+                                <td><code>avg_spt_n</code></td>
+                                <td>Average SPT-N value over the profile</td>
+                                <td>3 &ndash; 60</td>
+                                <td>SPT test</td>
+                            </tr>
+                            <tr>
+                                <td><code>plasticity_index</code></td>
+                                <td>Average plasticity index (PI) of cohesive layers</td>
+                                <td>0 &ndash; 50</td>
+                                <td>Atterberg limits</td>
+                            </tr>
+                            <tr>
+                                <td><code>water_table_depth</code></td>
+                                <td>Depth to groundwater table (m)</td>
+                                <td>0 &ndash; 20 m</td>
+                                <td>Borehole log</td>
+                            </tr>
+                            <tr>
+                                <td><code>pga_bedrock</code></td>
+                                <td>Peak ground acceleration of input motion (g)</td>
+                                <td>0.01 &ndash; 0.60 g</td>
+                                <td>Earthquake record</td>
+                            </tr>
+                            <tr>
+                                <td><code>magnitude</code></td>
+                                <td>Earthquake moment magnitude (Mw)</td>
+                                <td>4.5 &ndash; 8.0</td>
+                                <td>Seismological catalogue</td>
+                            </tr>
+                            <tr>
+                                <td><code>distance</code></td>
+                                <td>Closest distance to rupture surface (km)</td>
+                                <td>5 &ndash; 200 km</td>
+                                <td>Seismological catalogue</td>
+                            </tr>
+                            <tr>
+                                <td><code>AF</code></td>
+                                <td>Amplification factor at T = 0.5 s (target)</td>
+                                <td>0.5 &ndash; 5.0</td>
+                                <td>SHAKE / DEEPSOIL output</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Data Quality Checklist</span>
+                    </div>
+                    <p>
+                        Before modelling, we would inspect the dataset for: (1) missing
+                        values &mdash; some boreholes lack Vs measurements, so we might
+                        impute from SPT correlations; (2) outliers &mdash; unrealistic AF
+                        values may indicate numerical instability in the SHAKE run;
+                        (3) class imbalance &mdash; most sites have moderate AF, very few
+                        have extreme amplification; (4) unit consistency &mdash; ensure all
+                        velocities are in m/s, all depths in metres, etc.
+                    </p>
+                </div>
+
+                <h3>Data Splitting Strategy</h3>
+
+                <p>
+                    We reserve <strong>80 %</strong> of the data (1 600 records) for training
+                    and <strong>20 %</strong> (400 records) for final testing. Within the
+                    training set, we use <strong>5-fold cross-validation</strong> for
+                    hyperparameter tuning, as covered in Sub-chapter 2.8.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Data Split (Python-style pseudocode)
+                    </div>
+                    <pre><code>from sklearn.model_selection import train_test_split, cross_val_score
+
+X = df[feature_columns]
+y = df['AF']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=42
+)
+
+# 5-fold CV used within X_train for model tuning</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: FEATURE ENGINEERING
+             ========================================== -->
+        <section class="ch-section" id="feature-engineering">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Step 3: Feature Engineering
+                </h2>
+
+                <p>
+                    Raw measurements rarely enter a model directly. Feature engineering is
+                    the process of transforming and combining raw variables into features
+                    that encode domain knowledge and make the model's job easier.
+                </p>
+
+                <h3>Derived Feature: Vs30</h3>
+
+                <p>
+                    The single most important derived feature in earthquake engineering is
+                    <strong>Vs30</strong> &mdash; the time-averaged shear-wave velocity in
+                    the upper 30 metres of the soil profile. It is used worldwide for site
+                    classification (NEHRP Site Classes A through E) and is a required
+                    parameter in modern ground motion prediction equations.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Vs30 Calculation
+                    </div>
+                    <pre><code>Vs30 = 30 / sum( h_i / Vs_i )
+
+Where:
+  h_i  = thickness of layer i within the top 30 m
+  Vs_i = shear-wave velocity of layer i
+
+Site Classification (NEHRP / Eurocode 8):
+  Class A  (Hard rock):      Vs30 > 1500 m/s
+  Class B  (Rock):           760 < Vs30 <= 1500
+  Class C  (Dense soil):     360 < Vs30 <= 760
+  Class D  (Stiff soil):     180 < Vs30 <= 360
+  Class E  (Soft soil):      Vs30 < 180</code></pre>
+                </div>
+
+                <h3>Additional Derived Features</h3>
+
+                <ul>
+                    <li>
+                        <strong>Impedance contrast</strong> &mdash; ratio of bedrock Vs to
+                        average soil Vs. Higher contrast leads to stronger amplification due
+                        to trapped energy at the soil-bedrock interface.
+                    </li>
+                    <li>
+                        <strong>Fundamental period (T<sub>0</sub>)</strong> &mdash;
+                        estimated as 4H/Vs (quarter-wavelength approximation), where H is
+                        the total soil column depth and Vs is the average shear-wave
+                        velocity. When the earthquake's dominant period is close to
+                        T<sub>0</sub>, resonance occurs.
+                    </li>
+                    <li>
+                        <strong>log(PGA<sub>bedrock</sub>)</strong> &mdash; the logarithm of
+                        the bedrock PGA. Ground motion parameters in earthquake engineering
+                        are typically log-normally distributed, so working in log space
+                        linearises the relationship.
+                    </li>
+                    <li>
+                        <strong>Vs30 / depth_to_bedrock</strong> &mdash; a proxy for the
+                        overall "stiffness gradient" of the deposit. High values indicate a
+                        thin, stiff deposit; low values indicate a thick, soft deposit.
+                    </li>
+                    <li>
+                        <strong>SPT-N / depth</strong> &mdash; normalised blow count that
+                        accounts for increasing confining pressure. Similar concept to the
+                        (N<sub>1</sub>)<sub>60</sub> correction used in liquefaction analysis.
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Engineering Is Domain Knowledge</h3>
+                        <p>
+                            Notice that every derived feature above comes from decades of
+                            earthquake engineering research. Vs30, impedance contrast, and
+                            the fundamental period are not arbitrary combinations &mdash; they
+                            have clear physical meaning. This is where civil engineering
+                            expertise becomes a superpower in machine learning. A data
+                            scientist without domain knowledge might never think to compute
+                            the impedance contrast or the quarter-wavelength period, yet these
+                            features dramatically improve model accuracy.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Final Feature Set</h3>
+
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Feature</th>
+                                <th>Type</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1</td><td>Vs30</td><td>Derived</td><td>Primary site parameter</td></tr>
+                            <tr><td>2</td><td>depth_to_bedrock</td><td>Raw</td><td>Soil column thickness</td></tr>
+                            <tr><td>3</td><td>impedance_contrast</td><td>Derived</td><td>Vs_bedrock / avg_vs</td></tr>
+                            <tr><td>4</td><td>fundamental_period</td><td>Derived</td><td>4H / avg_vs</td></tr>
+                            <tr><td>5</td><td>log_pga_bedrock</td><td>Derived</td><td>log10(pga_bedrock)</td></tr>
+                            <tr><td>6</td><td>magnitude</td><td>Raw</td><td>Earthquake Mw</td></tr>
+                            <tr><td>7</td><td>distance</td><td>Raw</td><td>Closest distance to rupture</td></tr>
+                            <tr><td>8</td><td>avg_spt_n</td><td>Raw</td><td>Average blow count</td></tr>
+                            <tr><td>9</td><td>plasticity_index</td><td>Raw</td><td>Cohesive soil indicator</td></tr>
+                            <tr><td>10</td><td>water_table_depth</td><td>Raw</td><td>Saturation indicator</td></tr>
+                            <tr><td>11</td><td>vs_gradient</td><td>Derived</td><td>Vs30 / depth_to_bedrock</td></tr>
+                            <tr><td>12</td><td>norm_spt</td><td>Derived</td><td>avg_spt_n / depth_to_bedrock</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>
+                    All features are standardised (zero mean, unit variance) before feeding
+                    them to Linear Regression and SVM. Random Forest does not require
+                    standardisation but is not harmed by it either.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: MODEL SELECTION
+             ========================================== -->
+        <section class="ch-section" id="model-selection">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Step 4: Model Selection
+                </h2>
+
+                <p>
+                    We compare three supervised learning algorithms, each representing a
+                    different modelling philosophy. This mirrors a common workflow in
+                    practice: start simple, add complexity only if the data warrants it.
+                </p>
+
+                <h3>Candidate 1: Ridge Regression (Linear)</h3>
+
+                <p>
+                    A regularised linear model (L2 penalty) &mdash; our <strong>baseline</strong>.
+                    It assumes a linear relationship between features and AF. Fast to train,
+                    easy to interpret, and provides a floor for comparison. If a linear model
+                    performs well, there may be no need for more complex approaches.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Ridge Regression
+                    </div>
+                    <pre><code>AF = w0 + w1*Vs30 + w2*depth + w3*impedance + ... + w12*norm_spt
+
+Loss = MSE + alpha * sum(w_i^2)   # L2 regularization
+
+alpha (regularization strength) tuned via cross-validation
+Typical best alpha: 1.0 to 10.0</code></pre>
+                </div>
+
+                <h3>Candidate 2: Random Forest</h3>
+
+                <p>
+                    An ensemble of decision trees, each trained on a bootstrap sample. Random
+                    Forest captures non-linear relationships and feature interactions
+                    automatically. It is robust to outliers and does not require feature
+                    scaling. The main hyperparameters are the number of trees, maximum depth,
+                    and minimum samples per leaf.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Random Forest Hyperparameters
+                    </div>
+                    <pre><code>n_estimators  = [100, 200, 500]    # number of trees
+max_depth     = [10, 20, None]     # tree depth limit
+min_samples_leaf = [2, 5, 10]      # minimum leaf size
+max_features  = ['sqrt', 0.5]      # features per split
+
+Grid search with 5-fold CV over the training set</code></pre>
+                </div>
+
+                <h3>Candidate 3: Support Vector Regression (SVR)</h3>
+
+                <p>
+                    SVR with an RBF kernel maps the input features into a high-dimensional
+                    space where a linear fit captures non-linear relationships. It is
+                    particularly effective when the number of features is moderate relative
+                    to the number of samples. Key hyperparameters are C (regularisation),
+                    epsilon (insensitivity tube), and gamma (RBF kernel width).
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> SVR Hyperparameters
+                    </div>
+                    <pre><code>kernel  = 'rbf'
+C       = [0.1, 1, 10, 100]       # regularization
+epsilon = [0.01, 0.05, 0.1]       # tube width
+gamma   = ['scale', 'auto']       # kernel coefficient
+
+Grid search with 5-fold CV over the training set</code></pre>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why These Three?</h3>
+                        <p>
+                            Ridge Regression is the simplest interpretable baseline. Random
+                            Forest is the go-to non-linear model for tabular data and provides
+                            built-in feature importance. SVR with RBF is a strong
+                            kernel-based learner that often excels when data is not too large.
+                            Together, they span the complexity spectrum from linear to
+                            highly non-linear.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: TRAINING & EVALUATION
+             ========================================== -->
+        <section class="ch-section" id="training-evaluation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-column"></i>
+                    Step 5: Training &amp; Evaluation
+                </h2>
+
+                <p>
+                    Each model is trained on the 1 600-record training set using 5-fold
+                    cross-validation for hyperparameter tuning. The best configuration of
+                    each model is then evaluated on the held-out 400-record test set. The
+                    metrics we report are:
+                </p>
+
+                <ul>
+                    <li><strong>R<sup>2</sup></strong> &mdash; coefficient of determination (closer to 1 is better)</li>
+                    <li><strong>RMSE</strong> &mdash; root mean squared error (lower is better)</li>
+                    <li><strong>MAE</strong> &mdash; mean absolute error (lower is better)</li>
+                    <li><strong>CV RMSE</strong> &mdash; average RMSE across 5 cross-validation folds (indicates generalisation)</li>
+                </ul>
+
+                <h3>Cross-Validation Results (Training Set)</h3>
+
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>CV R<sup>2</sup> (mean)</th>
+                                <th>CV RMSE (mean)</th>
+                                <th>CV MAE (mean)</th>
+                                <th>Training Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><i class="fa-solid fa-chart-line"></i> Ridge Regression</td>
+                                <td>0.72</td>
+                                <td>0.41</td>
+                                <td>0.32</td>
+                                <td>&lt; 1 s</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-tree"></i> Random Forest</td>
+                                <td>0.93</td>
+                                <td>0.21</td>
+                                <td>0.15</td>
+                                <td>~12 s</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-circle-nodes"></i> SVR (RBF)</td>
+                                <td>0.88</td>
+                                <td>0.27</td>
+                                <td>0.20</td>
+                                <td>~45 s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Test Set Results (Final Evaluation)</h3>
+
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Test R<sup>2</sup></th>
+                                <th>Test RMSE</th>
+                                <th>Test MAE</th>
+                                <th>Overfit?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><i class="fa-solid fa-chart-line"></i> Ridge Regression</td>
+                                <td>0.71</td>
+                                <td>0.42</td>
+                                <td>0.33</td>
+                                <td>No (high bias)</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-tree"></i> Random Forest</td>
+                                <td>0.92</td>
+                                <td>0.22</td>
+                                <td>0.16</td>
+                                <td>Minimal</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-circle-nodes"></i> SVR (RBF)</td>
+                                <td>0.87</td>
+                                <td>0.28</td>
+                                <td>0.21</td>
+                                <td>Minimal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interpreting the Results</h3>
+                        <p>
+                            <strong>Ridge Regression</strong> achieves R<sup>2</sup> = 0.71,
+                            meaning it explains 71 % of the variance in AF. This is
+                            respectable but leaves significant prediction error. The
+                            relationship between soil properties and amplification is
+                            inherently non-linear &mdash; a linear model cannot fully capture
+                            resonance effects, impedance trapping, and nonlinear soil
+                            behaviour.
+                        </p>
+                        <p>
+                            <strong>Random Forest</strong> is the clear winner with
+                            R<sup>2</sup> = 0.92 and test RMSE of 0.22. The gap between
+                            CV and test metrics is small, indicating excellent
+                            generalisation. The ensemble approach effectively captures the
+                            non-linear interactions between Vs30, depth, and input motion
+                            intensity.
+                        </p>
+                        <p>
+                            <strong>SVR</strong> performs well (R<sup>2</sup> = 0.87) but
+                            falls short of Random Forest. Its computational cost is also
+                            significantly higher, scaling roughly as O(n<sup>2</sup>) to
+                            O(n<sup>3</sup>) with sample size.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: RESULTS INTERPRETATION
+             ========================================== -->
+        <section class="ch-section" id="results-interpretation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Step 6: Results Interpretation
+                </h2>
+
+                <p>
+                    A model that scores well on metrics is necessary but not sufficient. We
+                    also need to understand <em>why</em> it makes the predictions it does
+                    and <em>where</em> it fails. This is especially critical in civil
+                    engineering, where a misguided prediction could lead to structural damage
+                    or loss of life.
+                </p>
+
+                <h3>Feature Importance (Random Forest)</h3>
+
+                <p>
+                    Random Forest provides built-in feature importance scores based on the
+                    average reduction in impurity (Gini importance) or the decrease in
+                    out-of-bag accuracy when a feature is permuted. Our model yields the
+                    following ranking:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-ranking-star"></i> Feature Importance Ranking
+                    </div>
+                    <pre><code>Rank  Feature                Importance
+----  --------------------   ----------
+ 1    impedance_contrast       0.243
+ 2    Vs30                     0.198
+ 3    fundamental_period       0.157
+ 4    log_pga_bedrock          0.112
+ 5    depth_to_bedrock         0.089
+ 6    magnitude                0.064
+ 7    distance                 0.042
+ 8    plasticity_index         0.035
+ 9    avg_spt_n                0.027
+10    water_table_depth        0.018
+11    vs_gradient              0.010
+12    norm_spt                 0.005</code></pre>
+                </div>
+
+                <p>
+                    The top three features &mdash; impedance contrast, Vs30, and fundamental
+                    period &mdash; together account for nearly 60 % of the model's predictive
+                    power. These are precisely the features that earthquake engineers know to
+                    be physically controlling: a sharp velocity contrast traps seismic energy,
+                    low Vs30 indicates soft soil prone to amplification, and the fundamental
+                    period governs resonance.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Physics-Consistent Feature Importance</h3>
+                        <p>
+                            The fact that the ML model independently identifies impedance
+                            contrast and Vs30 as the most important features is a strong
+                            validation signal. If the model had instead ranked, say,
+                            water_table_depth as the most important feature, we would suspect
+                            data leakage, a proxy variable, or a bug in the pipeline. ML
+                            results should always be sanity-checked against domain knowledge.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Residual Analysis</h3>
+
+                <p>
+                    Residuals (predicted AF minus observed AF) reveal systematic patterns
+                    that summary metrics might miss. We examine:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Residuals vs. predicted value</strong> &mdash; ideally
+                        randomly scattered around zero. A funnel shape indicates
+                        heteroscedasticity (prediction uncertainty grows with AF).
+                    </li>
+                    <li>
+                        <strong>Residuals vs. Vs30</strong> &mdash; if the model
+                        systematically over-predicts AF for very soft soils (Vs30 &lt; 150)
+                        or under-predicts for stiff soils, we may need to add interaction
+                        terms or train separate models for different site classes.
+                    </li>
+                    <li>
+                        <strong>Histogram of residuals</strong> &mdash; should be
+                        approximately normal and centred at zero. A skewed distribution
+                        suggests the model has a systematic bias in one direction.
+                    </li>
+                </ul>
+
+                <p>
+                    For our Random Forest model, the residuals are approximately normally
+                    distributed with mean near zero and standard deviation of 0.22 (matching
+                    the RMSE). There is a slight tendency to under-predict extreme
+                    amplification (AF &gt; 4.0), which is expected given that extreme events
+                    are rare in the training data. This is a known challenge and can be
+                    addressed with oversampling or a specialised high-AF model.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-chart-area"></i> Residual Summary (Random Forest)
+                    </div>
+                    <pre><code>Residuals = Predicted AF - Observed AF
+
+Mean residual:        0.003   (near zero = unbiased)
+Std of residuals:     0.218   (matches RMSE)
+Min residual:        -0.89    (worst under-prediction)
+Max residual:         0.72    (worst over-prediction)
+
+95% of predictions fall within +/- 0.44 of the true AF</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEPLOYMENT CONSIDERATIONS
+             ========================================== -->
+        <section class="ch-section" id="deployment">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-rocket"></i>
+                    Step 7: Deployment Considerations
+                </h2>
+
+                <p>
+                    A trained model sitting in a Jupyter notebook is not useful to the field
+                    engineer standing at a borehole. Deployment bridges the gap between
+                    research and practice.
+                </p>
+
+                <h3>Deployment Options</h3>
+
+                <ul>
+                    <li>
+                        <strong>REST API</strong> &mdash; Wrap the model in a lightweight
+                        web service (e.g. Flask or FastAPI). The engineer enters soil
+                        properties through a web form or sends a JSON request, and receives
+                        the predicted AF instantly. Ideal for office-based design work.
+                    </li>
+                    <li>
+                        <strong>Spreadsheet plug-in</strong> &mdash; Export the Random
+                        Forest as an ONNX model and call it from an Excel add-in. Many
+                        geotechnical engineers live in spreadsheets, so meeting them where
+                        they are reduces adoption friction.
+                    </li>
+                    <li>
+                        <strong>Mobile app</strong> &mdash; A field-ready app that accepts
+                        borehole log data (even manually entered) and returns predicted AF
+                        on-site. Useful during preliminary site investigations when
+                        full site response analysis is not yet justified.
+                    </li>
+                    <li>
+                        <strong>Embedded in BIM</strong> &mdash; Integrate the model into
+                        Building Information Modelling workflows so structural engineers can
+                        automatically fetch site-specific amplification factors during seismic
+                        design.
+                    </li>
+                </ul>
+
+                <h3>Monitoring and Retraining</h3>
+
+                <p>
+                    Once deployed, the model needs ongoing care:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Input validation</strong> &mdash; Reject requests with
+                        features outside the training range (e.g. Vs30 &gt; 800 m/s when the
+                        model was trained on Vs30 up to 760). Extrapolation is dangerous.
+                    </li>
+                    <li>
+                        <strong>Drift detection</strong> &mdash; If new site investigation
+                        data consistently falls outside the model's training distribution,
+                        the model may become stale. Periodic retraining with new data is
+                        essential.
+                    </li>
+                    <li>
+                        <strong>Uncertainty quantification</strong> &mdash; Report
+                        prediction intervals, not just point estimates. A prediction of
+                        AF = 2.5 +/- 0.4 is far more useful than AF = 2.5 alone.
+                    </li>
+                    <li>
+                        <strong>Audit trail</strong> &mdash; Log every prediction with its
+                        input features, model version, and timestamp. This is critical for
+                        regulatory compliance and forensic engineering.
+                    </li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>A Word of Caution</span>
+                    </div>
+                    <p>
+                        An ML-based site response predictor should be viewed as a
+                        <strong>screening tool</strong>, not a replacement for rigorous
+                        site-specific analysis. For critical structures (hospitals, nuclear
+                        facilities, major bridges), full 1-D or 2-D site response analysis
+                        remains the standard of care. The ML model excels for rapid
+                        preliminary assessment, parametric studies, and situations where
+                        detailed Vs profiles are not yet available.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: PIPELINE SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="pipeline-summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Pipeline Summary
+                </h2>
+
+                <p>
+                    Let us consolidate the entire pipeline into a single view. Every step
+                    below maps directly to a concept covered in Chapter 2:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Define the Problem</h3>
+                        <p>
+                            Predict site amplification factor (AF) from soil and earthquake
+                            properties. Regression problem. Target: continuous AF at T = 0.5 s.
+                            <span class="process-step__ref">(Sub-chapter 2.1)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Collect &amp; Clean Data</h3>
+                        <p>
+                            2 000 records from SHAKE/DEEPSOIL runs. Handle missing Vs with
+                            SPT correlations. Remove outliers. 80/20 train-test split.
+                            <span class="process-step__ref">(Sub-chapter 2.2)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Engineer Features</h3>
+                        <p>
+                            Derive Vs30, impedance contrast, fundamental period, log(PGA).
+                            12 total features. Standardise for linear models and SVM.
+                            <span class="process-step__ref">(Sub-chapter 2.2)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Select &amp; Train Models</h3>
+                        <p>
+                            Ridge Regression, Random Forest, SVR. Grid search with 5-fold CV.
+                            Random Forest selected as best performer (R<sup>2</sup> = 0.92).
+                            <span class="process-step__ref">(Sub-chapters 2.3, 2.5, 2.7)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Evaluate &amp; Interpret</h3>
+                        <p>
+                            Test RMSE = 0.22, MAE = 0.16. Feature importance confirms
+                            physics (impedance contrast, Vs30 dominant). Residuals ~normal.
+                            <span class="process-step__ref">(Sub-chapters 2.8, 2.9)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">6</div>
+                    <div class="process-step__content">
+                        <h3>Deploy &amp; Monitor</h3>
+                        <p>
+                            REST API or spreadsheet plug-in. Input validation, drift
+                            detection, uncertainty reporting, audit logging.
+                            <span class="process-step__ref">(Beyond Chapter 2)</span>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DEMO 1: INTERACTIVE SOIL PROFILE BUILDER
+             ========================================== -->
+        <section class="ch-section" id="demo-soil-profile">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Interactive Soil Profile Builder
+                </h2>
+
+                <p>
+                    Build a soil profile by stacking layers with adjustable properties. The
+                    model computes Vs30, impedance contrast, and the estimated fundamental
+                    period in real time, then predicts the site amplification factor using
+                    a simplified regression model. Experiment with soft versus stiff soils,
+                    shallow versus deep profiles, and see how the predicted AF responds.
+                </p>
+
+                <div class="demo-panel" id="soil-profile-demo">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-layer-group"></i>
+                        Soil Profile Builder &amp; AF Predictor
+                    </div>
+                    <div class="demo-panel__body" style="display:flex;flex-wrap:wrap;gap:20px;">
+
+                        <!-- Controls Column -->
+                        <div style="flex:1;min-width:280px;">
+                            <div class="demo-control-group">
+                                <label class="demo-label">Number of Layers</label>
+                                <input type="range" id="sp-num-layers" min="2" max="8" value="4" class="demo-slider">
+                                <span class="demo-value" id="sp-num-layers-val">4</span>
+                            </div>
+
+                            <div id="sp-layer-controls"></div>
+
+                            <div class="demo-control-group">
+                                <label class="demo-label">Bedrock Vs (m/s)</label>
+                                <input type="range" id="sp-bedrock-vs" min="600" max="2000" value="1200" step="50" class="demo-slider">
+                                <span class="demo-value" id="sp-bedrock-vs-val">1200</span>
+                            </div>
+
+                            <div class="demo-control-group">
+                                <label class="demo-label">Bedrock PGA (g)</label>
+                                <input type="range" id="sp-pga" min="1" max="60" value="15" class="demo-slider">
+                                <span class="demo-value" id="sp-pga-val">0.15</span>
+                            </div>
+
+                            <div class="demo-stats" id="sp-stats">
+                                <div class="demo-stat"><span class="demo-stat__label">Vs30:</span> <span id="sp-vs30">--</span> m/s</div>
+                                <div class="demo-stat"><span class="demo-stat__label">Site Class:</span> <span id="sp-site-class">--</span></div>
+                                <div class="demo-stat"><span class="demo-stat__label">Impedance Contrast:</span> <span id="sp-impedance">--</span></div>
+                                <div class="demo-stat"><span class="demo-stat__label">Fund. Period (T0):</span> <span id="sp-t0">--</span> s</div>
+                                <div class="demo-stat"><span class="demo-stat__label">Total Depth:</span> <span id="sp-depth">--</span> m</div>
+                                <div class="demo-stat" style="margin-top:8px;font-size:1.1em;font-weight:700;">
+                                    <span class="demo-stat__label">Predicted AF:</span>
+                                    <span id="sp-af" style="color:var(--accent-primary);">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Column -->
+                        <div style="flex:1;min-width:300px;">
+                            <canvas id="sp-canvas" style="width:100%;height:420px;border-radius:8px;"></canvas>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DEMO 2: MODEL COMPARISON DASHBOARD
+             ========================================== -->
+        <section class="ch-section" id="demo-model-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    Demo 2: Model Comparison Dashboard
+                </h2>
+
+                <p>
+                    Toggle between the three models and watch the accuracy metrics update
+                    in real time. Adjust the training data size to see how each model
+                    responds to limited data. Notice how Random Forest maintains strong
+                    performance across data sizes while Ridge Regression plateaus quickly.
+                </p>
+
+                <div class="demo-panel" id="model-comparison-demo">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-chart-bar"></i>
+                        Model Performance Dashboard
+                    </div>
+                    <div class="demo-panel__body" style="display:flex;flex-wrap:wrap;gap:20px;">
+
+                        <!-- Controls -->
+                        <div style="flex:1;min-width:260px;">
+                            <div class="demo-control-group">
+                                <label class="demo-label">Training Set Size</label>
+                                <input type="range" id="mc-data-size" min="50" max="2000" value="1600" step="50" class="demo-slider">
+                                <span class="demo-value" id="mc-data-size-val">1600</span>
+                            </div>
+
+                            <div class="demo-control-group">
+                                <label class="demo-label">Active Models</label>
+                                <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+                                    <label class="demo-checkbox-label">
+                                        <input type="checkbox" id="mc-ridge" checked>
+                                        <span><i class="fa-solid fa-chart-line"></i> Ridge Regression</span>
+                                    </label>
+                                    <label class="demo-checkbox-label">
+                                        <input type="checkbox" id="mc-rf" checked>
+                                        <span><i class="fa-solid fa-tree"></i> Random Forest</span>
+                                    </label>
+                                    <label class="demo-checkbox-label">
+                                        <input type="checkbox" id="mc-svr" checked>
+                                        <span><i class="fa-solid fa-circle-nodes"></i> SVR (RBF)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="demo-control-group">
+                                <label class="demo-label">Metric</label>
+                                <select id="mc-metric" class="demo-select">
+                                    <option value="r2">R-squared</option>
+                                    <option value="rmse">RMSE</option>
+                                    <option value="mae">MAE</option>
+                                </select>
+                            </div>
+
+                            <div class="demo-stats" id="mc-stats">
+                                <div class="demo-stat"><span class="demo-stat__label">Ridge R<sup>2</sup>:</span> <span id="mc-ridge-val">--</span></div>
+                                <div class="demo-stat"><span class="demo-stat__label">RF R<sup>2</sup>:</span> <span id="mc-rf-val">--</span></div>
+                                <div class="demo-stat"><span class="demo-stat__label">SVR R<sup>2</sup>:</span> <span id="mc-svr-val">--</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Canvas -->
+                        <div style="flex:1.3;min-width:320px;">
+                            <canvas id="mc-canvas" style="width:100%;height:380px;border-radius:8px;"></canvas>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What We Learned</h3>
+                        <ol>
+                            <li>
+                                <strong>Domain knowledge is the secret weapon.</strong>
+                                Features like Vs30, impedance contrast, and fundamental period
+                                &mdash; all rooted in earthquake engineering theory &mdash;
+                                dramatically outperform raw measurements.
+                            </li>
+                            <li>
+                                <strong>Start simple, add complexity only if needed.</strong>
+                                Ridge Regression provides a fast, interpretable baseline.
+                                Random Forest delivered significantly better accuracy because
+                                the underlying relationship is non-linear.
+                            </li>
+                            <li>
+                                <strong>Cross-validation prevents self-deception.</strong>
+                                All three models showed similar CV and test performance,
+                                confirming that none was severely overfitting.
+                            </li>
+                            <li>
+                                <strong>Feature importance should match physics.</strong>
+                                If ML identifies physically meaningful features as most
+                                important, the model is likely learning the right patterns.
+                                If it does not, investigate data leakage or engineering errors.
+                            </li>
+                            <li>
+                                <strong>Residual analysis catches what metrics miss.</strong>
+                                Our model slightly under-predicts extreme amplification &mdash;
+                                a finding that would be invisible from R<sup>2</sup> alone.
+                            </li>
+                            <li>
+                                <strong>Deployment is part of the project.</strong>
+                                A model is only useful if it reaches the practitioner. Plan
+                                for input validation, uncertainty quantification, and
+                                retraining from day one.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ SECTION
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Check Your Understanding
+                </h2>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz1">
+                    <div class="quiz-block__question">
+                        <span class="quiz-number">Q1</span>
+                        Why is site response prediction framed as regression rather than
+                        classification?
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                            Classification algorithms are too slow for geotechnical data
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="true">
+                            The amplification factor is a continuous value needed for
+                            structural design calculations
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                            Regression models are always more accurate than classifiers
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                            Site response can only be measured on a continuous scale
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz1-correct">
+                        <i class="fa-solid fa-check-circle"></i>
+                        Correct! Engineers need a numeric AF value (e.g. 2.3) to plug into
+                        design equations. Binning into categories like "Low" or "High"
+                        would lose the precision required for structural analysis.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz1-wrong">
+                        <i class="fa-solid fa-times-circle"></i>
+                        Not quite. The key reason is that AF is a continuous quantity needed
+                        for design calculations. Classification would discard valuable
+                        numerical precision.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz2">
+                    <div class="quiz-block__question">
+                        <span class="quiz-number">Q2</span>
+                        Which derived feature was ranked most important by the Random Forest
+                        model, and why does this make physical sense?
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                            log(PGA) &mdash; because earthquake intensity directly controls
+                            soil nonlinearity
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                            Vs30 &mdash; because it is the standard site classification
+                            parameter worldwide
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="true">
+                            Impedance contrast &mdash; because a sharp velocity jump at the
+                            soil-bedrock interface traps and amplifies seismic energy
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                            Plasticity index &mdash; because clay behaviour dominates
+                            dynamic response
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz2-correct">
+                        <i class="fa-solid fa-check-circle"></i>
+                        Correct! Impedance contrast (bedrock Vs / soil Vs) controls how
+                        much energy is reflected back into the soil column at the interface,
+                        directly governing the degree of amplification.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz2-wrong">
+                        <i class="fa-solid fa-times-circle"></i>
+                        Not quite. While all features contribute, impedance contrast was
+                        ranked #1 because the velocity jump at the soil-bedrock boundary
+                        is the primary physical driver of ground motion amplification.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz3">
+                    <div class="quiz-block__question">
+                        <span class="quiz-number">Q3</span>
+                        The Random Forest model slightly under-predicts AF for extreme
+                        amplification (AF &gt; 4.0). What is the most likely reason?
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                            The model is overfitting to the majority of data points
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                            SVR would handle extreme values better due to its kernel trick
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="true">
+                            Extreme amplification events are rare in the training data, so
+                            the model has fewer examples to learn from in that range
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                            Ridge regularization suppresses large predicted values
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz3-correct">
+                        <i class="fa-solid fa-check-circle"></i>
+                        Correct! This is a classic data imbalance issue. Most records have
+                        moderate AF values, so the ensemble averages tend to pull extreme
+                        predictions towards the centre. Oversampling rare extreme cases or
+                        training a specialised model can help.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz3-wrong">
+                        <i class="fa-solid fa-times-circle"></i>
+                        Not quite. The primary cause is data imbalance: extreme AF values
+                        are underrepresented in the training set, so the model has
+                        insufficient examples to learn that tail of the distribution.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz4">
+                    <div class="quiz-block__question">
+                        <span class="quiz-number">Q4</span>
+                        Why should the deployed model reject input queries with Vs30 values
+                        far outside its training range (e.g. Vs30 = 50 m/s or 1200 m/s)?
+                    </div>
+                    <div class="quiz-options">
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                            The model would crash if given unexpected input values
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="true">
+                            ML models do not extrapolate reliably; predictions outside the
+                            training data range are untrustworthy
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                            Extreme Vs30 values always indicate measurement errors
+                        </button>
+                        <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                            Regulatory standards prohibit using ML for out-of-range inputs
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz4-correct">
+                        <i class="fa-solid fa-check-circle"></i>
+                        Correct! ML models interpolate well within the training domain but
+                        extrapolation is fundamentally unreliable. The model has no data to
+                        learn the relationship in those extreme regions, so its predictions
+                        there are essentially guesses.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz4-wrong">
+                        <i class="fa-solid fa-times-circle"></i>
+                        Not quite. The core issue is that ML models learn patterns from
+                        training data and cannot reliably extrapolate beyond that range.
+                        Predictions for out-of-range inputs have no empirical support.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             CHAPTER 2 WRAP-UP
+             ========================================== -->
+        <section class="ch-section" id="chapter-wrapup">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    Chapter 2 Complete
+                </h2>
+
+                <p>
+                    Congratulations &mdash; you have completed Chapter 2: Supervised Learning.
+                    From the foundations of regression and classification through to this
+                    capstone site response analysis, you now have a solid grasp of the most
+                    widely used branch of machine learning. You understand how to frame a
+                    problem, engineer features, select and train models, evaluate performance,
+                    interpret results, and think about deployment.
+                </p>
+
+                <p>
+                    In <strong>Chapter 3: Unsupervised Learning</strong>, we will explore
+                    algorithms that work without labelled data &mdash; clustering,
+                    dimensionality reduction, and anomaly detection. These techniques are
+                    invaluable for discovering hidden patterns in structural health monitoring
+                    data, grouping similar soil profiles, and detecting anomalies in
+                    construction quality control.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-forward"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Comes Next</h3>
+                        <p>
+                            Chapter 3 opens with unsupervised learning fundamentals and
+                            quickly moves to K-means clustering (imagine automatically
+                            grouping hundreds of soil samples into distinct categories),
+                            principal component analysis (reducing a 50-sensor structural
+                            monitoring dataset to its key dimensions), and anomaly detection
+                            (flagging the one bridge accelerometer reading that does not fit
+                            the pattern). The transition from supervised to unsupervised
+                            learning is one of the most exciting leaps in applied ML.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub9.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.9 Overfitting &amp; Regularization
+        </a>
+        <a href="../chapter3/index.html" class="chapter-nav__link next">
+            Chapter 3: Unsupervised Learning <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var U = window.ChapterUtils;
+        var $ = U.$, $$ = U.$$;
+        var getColors = U.getColors, initCanvas = U.initCanvas;
+        var lerp = U.lerp, rand = U.rand, clamp = U.clamp;
+
+        /* ======================================================
+           HERO CANVAS: Seismic wave animation
+           ====================================================== */
+        (function () {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            var t = 0;
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Draw layered soil strata as horizontal bands
+                var layers = [
+                    { y: 0, h: h * 0.15, color: 'rgba(45,212,191,0.04)' },
+                    { y: h * 0.15, h: h * 0.20, color: 'rgba(34,211,238,0.03)' },
+                    { y: h * 0.35, h: h * 0.25, color: 'rgba(251,191,36,0.03)' },
+                    { y: h * 0.60, h: h * 0.20, color: 'rgba(239,68,68,0.03)' },
+                    { y: h * 0.80, h: h * 0.20, color: 'rgba(255,255,255,0.02)' }
+                ];
+                layers.forEach(function (l) {
+                    ctx.fillStyle = l.color;
+                    ctx.fillRect(0, l.y, w, l.h);
+                });
+
+                // Seismic wave propagation (bottom-up S-waves)
+                for (var waveIdx = 0; waveIdx < 5; waveIdx++) {
+                    var phase = t * 0.02 + waveIdx * 1.2;
+                    var baseY = h - (waveIdx * h * 0.18) - 20;
+                    var amplitude = 15 + waveIdx * 8; // amplification as waves travel up
+
+                    ctx.strokeStyle = waveIdx < 2 ? c.DIM : (waveIdx < 4 ? 'rgba(45,212,191,0.08)' : 'rgba(45,212,191,0.15)');
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    for (var px = 0; px < w; px += 3) {
+                        var y = baseY + Math.sin(px * 0.015 + phase) * amplitude;
+                        if (px === 0) ctx.moveTo(px, y);
+                        else ctx.lineTo(px, y);
+                    }
+                    ctx.stroke();
+                }
+
+                // Floating particles
+                for (var pi = 0; pi < 30; pi++) {
+                    var px = ((pi * 137.5 + t * 0.3) % (w + 40)) - 20;
+                    var py = ((pi * 89.3 + t * 0.15) % (h + 40)) - 20;
+                    var radius = 1 + Math.sin(t * 0.03 + pi) * 0.8;
+                    ctx.fillStyle = c.DIM;
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                t++;
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ======================================================
+           DEMO 1: SOIL PROFILE BUILDER
+           ====================================================== */
+        (function () {
+            var canvas = document.getElementById('sp-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            var numLayersSlider = document.getElementById('sp-num-layers');
+            var numLayersVal = document.getElementById('sp-num-layers-val');
+            var bedrockVsSlider = document.getElementById('sp-bedrock-vs');
+            var bedrockVsVal = document.getElementById('sp-bedrock-vs-val');
+            var pgaSlider = document.getElementById('sp-pga');
+            var pgaVal = document.getElementById('sp-pga-val');
+            var layerControlsDiv = document.getElementById('sp-layer-controls');
+
+            var soilTypes = [
+                { name: 'Soft Clay', vsRange: [80, 160], color: '#e74c3c', spt: [3, 8] },
+                { name: 'Medium Clay', vsRange: [140, 250], color: '#e67e22', spt: [8, 20] },
+                { name: 'Stiff Clay', vsRange: [220, 380], color: '#f39c12', spt: [18, 35] },
+                { name: 'Loose Sand', vsRange: [100, 200], color: '#3498db', spt: [5, 15] },
+                { name: 'Dense Sand', vsRange: [250, 450], color: '#2980b9', spt: [25, 50] },
+                { name: 'Gravel', vsRange: [350, 600], color: '#27ae60', spt: [30, 60] },
+                { name: 'Silt', vsRange: [120, 220], color: '#9b59b6', spt: [5, 18] },
+                { name: 'Fill', vsRange: [80, 180], color: '#95a5a6', spt: [3, 12] }
+            ];
+
+            function buildLayerControls(n) {
+                layerControlsDiv.innerHTML = '';
+                for (var i = 0; i < n; i++) {
+                    var div = document.createElement('div');
+                    div.className = 'demo-control-group';
+                    div.style.cssText = 'border:1px solid var(--border-color,rgba(255,255,255,0.08));border-radius:8px;padding:10px;margin-bottom:8px;';
+                    var defaultType = i === 0 ? 7 : (i < n - 1 ? (i % 2 === 0 ? 0 : 3) : 5);
+                    var defaultThick = Math.max(2, Math.round(30 / n));
+                    div.innerHTML =
+                        '<div style="font-weight:600;font-size:0.82rem;margin-bottom:6px;color:var(--text-secondary);">Layer ' + (i + 1) + '</div>' +
+                        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+                        '  <select class="demo-select sp-type" data-layer="' + i + '" style="flex:1;min-width:100px;">' +
+                        soilTypes.map(function (st, si) {
+                            return '<option value="' + si + '"' + (si === defaultType ? ' selected' : '') + '>' + st.name + '</option>';
+                        }).join('') +
+                        '  </select>' +
+                        '  <label style="font-size:0.75rem;color:var(--text-secondary);">Thickness (m):</label>' +
+                        '  <input type="range" class="demo-slider sp-thick" data-layer="' + i + '" min="1" max="30" value="' + defaultThick + '" style="width:80px;">' +
+                        '  <span class="demo-value sp-thick-val">' + defaultThick + '</span>' +
+                        '  <label style="font-size:0.75rem;color:var(--text-secondary);">Vs:</label>' +
+                        '  <input type="range" class="demo-slider sp-vs" data-layer="' + i + '" min="60" max="700" value="' + Math.round((soilTypes[defaultType].vsRange[0] + soilTypes[defaultType].vsRange[1]) / 2) + '" style="width:80px;">' +
+                        '  <span class="demo-value sp-vs-val">' + Math.round((soilTypes[defaultType].vsRange[0] + soilTypes[defaultType].vsRange[1]) / 2) + '</span>' +
+                        '</div>';
+                    layerControlsDiv.appendChild(div);
+                }
+
+                // Bind events
+                layerControlsDiv.querySelectorAll('.sp-thick').forEach(function (s) {
+                    s.addEventListener('input', function () {
+                        s.parentNode.querySelector('.sp-thick-val').textContent = s.value;
+                        update();
+                    });
+                });
+                layerControlsDiv.querySelectorAll('.sp-vs').forEach(function (s) {
+                    s.addEventListener('input', function () {
+                        s.parentNode.querySelector('.sp-vs-val').textContent = s.value;
+                        update();
+                    });
+                });
+                layerControlsDiv.querySelectorAll('.sp-type').forEach(function (sel) {
+                    sel.addEventListener('change', function () {
+                        var li = parseInt(sel.getAttribute('data-layer'));
+                        var st = soilTypes[parseInt(sel.value)];
+                        var avgVs = Math.round((st.vsRange[0] + st.vsRange[1]) / 2);
+                        var vsSlider = layerControlsDiv.querySelectorAll('.sp-vs')[li];
+                        if (vsSlider) {
+                            vsSlider.value = avgVs;
+                            vsSlider.parentNode.querySelector('.sp-vs-val').textContent = avgVs;
+                        }
+                        update();
+                    });
+                });
+
+                update();
+            }
+
+            function getLayers() {
+                var layers = [];
+                var n = parseInt(numLayersSlider.value);
+                var thickSliders = layerControlsDiv.querySelectorAll('.sp-thick');
+                var vsSliders = layerControlsDiv.querySelectorAll('.sp-vs');
+                var typeSelects = layerControlsDiv.querySelectorAll('.sp-type');
+                for (var i = 0; i < n; i++) {
+                    var ti = typeSelects[i] ? parseInt(typeSelects[i].value) : 0;
+                    layers.push({
+                        thickness: thickSliders[i] ? parseFloat(thickSliders[i].value) : 5,
+                        vs: vsSliders[i] ? parseFloat(vsSliders[i].value) : 200,
+                        type: soilTypes[ti],
+                        typeIndex: ti
+                    });
+                }
+                return layers;
+            }
+
+            function computeVs30(layers) {
+                var travelTime = 0;
+                var depthCovered = 0;
+                for (var i = 0; i < layers.length; i++) {
+                    var remaining = 30 - depthCovered;
+                    if (remaining <= 0) break;
+                    var usable = Math.min(layers[i].thickness, remaining);
+                    travelTime += usable / layers[i].vs;
+                    depthCovered += usable;
+                }
+                if (depthCovered < 30) {
+                    // Extend with last layer's Vs
+                    travelTime += (30 - depthCovered) / layers[layers.length - 1].vs;
+                }
+                return 30 / travelTime;
+            }
+
+            function siteClass(vs30) {
+                if (vs30 > 1500) return 'A (Hard Rock)';
+                if (vs30 > 760) return 'B (Rock)';
+                if (vs30 > 360) return 'C (Dense Soil)';
+                if (vs30 > 180) return 'D (Stiff Soil)';
+                return 'E (Soft Soil)';
+            }
+
+            function predictAF(vs30, impedance, t0, logPGA) {
+                // Simplified physics-inspired regression model for demo purposes
+                // AF increases with impedance contrast and decreases with Vs30
+                var base = 0.3;
+                var vsContrib = Math.max(0, 2.5 - vs30 / 200);
+                var impContrib = impedance * 0.35;
+                var periodContrib = Math.min(t0, 2.0) * 0.4;
+                var pgaContrib = Math.max(0, -logPGA * 0.3); // Stronger motion -> more nonlinearity -> less amplification
+                var af = base + vsContrib + impContrib + periodContrib + pgaContrib;
+                return clamp(af, 0.5, 5.0);
+            }
+
+            function update() {
+                var layers = getLayers();
+                var bedrockVs = parseFloat(bedrockVsSlider.value);
+                var pga = parseInt(pgaSlider.value) / 100;
+
+                var totalDepth = 0;
+                var weightedVs = 0;
+                for (var i = 0; i < layers.length; i++) {
+                    totalDepth += layers[i].thickness;
+                    weightedVs += layers[i].thickness / layers[i].vs;
+                }
+                var avgVs = totalDepth / weightedVs;
+                var vs30 = computeVs30(layers);
+                var impedance = bedrockVs / avgVs;
+                var t0 = 4 * totalDepth / avgVs;
+                var logPGA = Math.log10(pga);
+                var af = predictAF(vs30, impedance, t0, logPGA);
+
+                document.getElementById('sp-vs30').textContent = vs30.toFixed(0);
+                document.getElementById('sp-site-class').textContent = siteClass(vs30);
+                document.getElementById('sp-impedance').textContent = impedance.toFixed(2);
+                document.getElementById('sp-t0').textContent = t0.toFixed(2);
+                document.getElementById('sp-depth').textContent = totalDepth.toFixed(1);
+                document.getElementById('sp-af').textContent = af.toFixed(2);
+
+                drawProfile(layers, bedrockVs, af);
+            }
+
+            function drawProfile(layers, bedrockVs, af) {
+                resize();
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Background
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var pad = { top: 30, bottom: 50, left: 60, right: 30 };
+                var plotW = w - pad.left - pad.right;
+                var plotH = h - pad.top - pad.bottom;
+
+                // Calculate total depth including bedrock
+                var totalDepth = 0;
+                layers.forEach(function (l) { totalDepth += l.thickness; });
+                var displayDepth = totalDepth + 10; // Show some bedrock
+
+                // Title
+                ctx.fillStyle = c.WHITE;
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Soil Profile & Vs Distribution', w / 2, 18);
+
+                // Split plot into two halves: profile (left) and Vs bars (right)
+                var profileW = plotW * 0.45;
+                var gapW = plotW * 0.05;
+                var vsPlotW = plotW * 0.50;
+
+                // Draw soil profile (left side)
+                var cumDepth = 0;
+                var maxVs = bedrockVs;
+                layers.forEach(function (l) { if (l.vs > maxVs) maxVs = l.vs; });
+
+                for (var li = 0; li < layers.length; li++) {
+                    var layer = layers[li];
+                    var y1 = pad.top + (cumDepth / displayDepth) * plotH;
+                    var y2 = pad.top + ((cumDepth + layer.thickness) / displayDepth) * plotH;
+                    var layerH = y2 - y1;
+
+                    // Soil fill with type color
+                    var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+                    ctx.fillStyle = dark
+                        ? layer.type.color + '33'
+                        : layer.type.color + '22';
+                    ctx.fillRect(pad.left, y1, profileW, layerH);
+
+                    // Border
+                    ctx.strokeStyle = layer.type.color + '88';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(pad.left, y1, profileW, layerH);
+
+                    // Label
+                    if (layerH > 14) {
+                        ctx.fillStyle = c.WHITE;
+                        ctx.font = '11px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        var label = layer.type.name + ' (Vs=' + layer.vs + ')';
+                        ctx.fillText(label, pad.left + profileW / 2, y1 + layerH / 2 + 4);
+                    }
+
+                    // Vs bar (right side)
+                    var barW = (layer.vs / maxVs) * vsPlotW * 0.85;
+                    var barX = pad.left + profileW + gapW;
+                    ctx.fillStyle = layer.type.color + 'AA';
+                    ctx.fillRect(barX, y1 + 2, barW, layerH - 4);
+
+                    // Vs value
+                    ctx.fillStyle = c.TEXT;
+                    ctx.font = '10px JetBrains Mono, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(layer.vs + ' m/s', barX + barW + 4, y1 + layerH / 2 + 4);
+
+                    cumDepth += layer.thickness;
+                }
+
+                // Bedrock
+                var bedrockY = pad.top + (cumDepth / displayDepth) * plotH;
+                var bedrockH = plotH - (bedrockY - pad.top);
+                ctx.fillStyle = 'rgba(100,100,100,0.2)';
+                ctx.fillRect(pad.left, bedrockY, profileW, bedrockH);
+                ctx.strokeStyle = 'rgba(100,100,100,0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 3]);
+                ctx.beginPath();
+                ctx.moveTo(pad.left, bedrockY);
+                ctx.lineTo(pad.left + profileW, bedrockY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = c.MUTED;
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('BEDROCK (Vs=' + bedrockVs + ')', pad.left + profileW / 2, bedrockY + 16);
+
+                // Bedrock Vs bar
+                var brBarX = pad.left + profileW + gapW;
+                var brBarW = (bedrockVs / maxVs) * vsPlotW * 0.85;
+                ctx.fillStyle = 'rgba(100,100,100,0.4)';
+                ctx.fillRect(brBarX, bedrockY + 2, brBarW, Math.min(bedrockH - 4, 20));
+
+                // Depth axis
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '10px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                for (var d = 0; d <= displayDepth; d += Math.ceil(displayDepth / 6)) {
+                    var dy = pad.top + (d / displayDepth) * plotH;
+                    ctx.fillText(d + ' m', pad.left - 6, dy + 4);
+                    ctx.strokeStyle = c.GRID;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(pad.left, dy);
+                    ctx.lineTo(pad.left + profileW, dy);
+                    ctx.stroke();
+                }
+
+                // Axis labels
+                ctx.save();
+                ctx.translate(12, pad.top + plotH / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Depth (m)', 0, 0);
+                ctx.restore();
+
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Vs (m/s)', pad.left + profileW + gapW + vsPlotW / 2, h - 10);
+
+                // AF badge
+                ctx.fillStyle = c.TEAL;
+                ctx.font = 'bold 14px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('AF = ' + af.toFixed(2), w - pad.right, h - 12);
+            }
+
+            numLayersSlider.addEventListener('input', function () {
+                numLayersVal.textContent = numLayersSlider.value;
+                buildLayerControls(parseInt(numLayersSlider.value));
+            });
+
+            bedrockVsSlider.addEventListener('input', function () {
+                bedrockVsVal.textContent = bedrockVsSlider.value;
+                update();
+            });
+
+            pgaSlider.addEventListener('input', function () {
+                pgaVal.textContent = (parseInt(pgaSlider.value) / 100).toFixed(2);
+                update();
+            });
+
+            buildLayerControls(4);
+            resize();
+            window.addEventListener('resize', function () { resize(); update(); });
+        })();
+
+        /* ======================================================
+           DEMO 2: MODEL COMPARISON DASHBOARD
+           ====================================================== */
+        (function () {
+            var canvas = document.getElementById('mc-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            var dataSizeSlider = document.getElementById('mc-data-size');
+            var dataSizeVal = document.getElementById('mc-data-size-val');
+            var ridgeCheck = document.getElementById('mc-ridge');
+            var rfCheck = document.getElementById('mc-rf');
+            var svrCheck = document.getElementById('mc-svr');
+            var metricSelect = document.getElementById('mc-metric');
+
+            // Simulated learning curves for each model
+            // Performance as a function of training size
+            function ridgePerf(n) {
+                // Linear model plateaus early
+                var r2 = 0.55 + 0.17 * (1 - Math.exp(-n / 200));
+                var rmse = 0.52 - 0.12 * (1 - Math.exp(-n / 200));
+                var mae = 0.42 - 0.10 * (1 - Math.exp(-n / 200));
+                return { r2: Math.min(r2, 0.73), rmse: Math.max(rmse, 0.40), mae: Math.max(mae, 0.32) };
+            }
+
+            function rfPerf(n) {
+                // RF improves steadily with data
+                var r2 = 0.60 + 0.33 * (1 - Math.exp(-n / 500));
+                var rmse = 0.48 - 0.28 * (1 - Math.exp(-n / 500));
+                var mae = 0.38 - 0.23 * (1 - Math.exp(-n / 500));
+                return { r2: Math.min(r2, 0.93), rmse: Math.max(rmse, 0.20), mae: Math.max(mae, 0.15) };
+            }
+
+            function svrPerf(n) {
+                // SVR moderate improvement
+                var r2 = 0.50 + 0.38 * (1 - Math.exp(-n / 400));
+                var rmse = 0.55 - 0.28 * (1 - Math.exp(-n / 400));
+                var mae = 0.44 - 0.24 * (1 - Math.exp(-n / 400));
+                return { r2: Math.min(r2, 0.88), rmse: Math.max(rmse, 0.27), mae: Math.max(mae, 0.20) };
+            }
+
+            function update() {
+                var n = parseInt(dataSizeSlider.value);
+                var metric = metricSelect.value;
+
+                var rp = ridgePerf(n);
+                var rfp = rfPerf(n);
+                var sp = svrPerf(n);
+
+                // Update stats
+                var metricLabel = metric === 'r2' ? 'R\u00B2' : metric.toUpperCase();
+                document.getElementById('mc-ridge-val').innerHTML = 'Ridge ' + metricLabel + ': ' + rp[metric].toFixed(3);
+                document.getElementById('mc-rf-val').innerHTML = 'RF ' + metricLabel + ': ' + rfp[metric].toFixed(3);
+                document.getElementById('mc-svr-val').innerHTML = 'SVR ' + metricLabel + ': ' + sp[metric].toFixed(3);
+
+                drawBars(n, metric);
+            }
+
+            function drawBars(n, metric) {
+                resize();
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var pad = { top: 40, bottom: 60, left: 55, right: 20 };
+                var plotW = w - pad.left - pad.right;
+                var plotH = h - pad.top - pad.bottom;
+
+                // Title
+                ctx.fillStyle = c.WHITE;
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                var metricName = metric === 'r2' ? 'R-squared' : metric.toUpperCase();
+                ctx.fillText('Model ' + metricName + ' vs Training Size (n=' + n + ')', w / 2, 22);
+
+                // Draw learning curves
+                var models = [];
+                if (ridgeCheck.checked) models.push({ name: 'Ridge', fn: ridgePerf, color: c.AMBER, icon: 'chart-line' });
+                if (rfCheck.checked) models.push({ name: 'Random Forest', fn: rfPerf, color: c.TEAL, icon: 'tree' });
+                if (svrCheck.checked) models.push({ name: 'SVR (RBF)', fn: svrPerf, color: c.CYAN, icon: 'circle-nodes' });
+
+                if (models.length === 0) {
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '14px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Select at least one model', w / 2, h / 2);
+                    return;
+                }
+
+                // Determine y-axis range
+                var yMin, yMax;
+                if (metric === 'r2') { yMin = 0.4; yMax = 1.0; }
+                else if (metric === 'rmse') { yMin = 0; yMax = 0.7; }
+                else { yMin = 0; yMax = 0.6; }
+
+                // Grid
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                var numGridY = 6;
+                for (var gi = 0; gi <= numGridY; gi++) {
+                    var gy = pad.top + (gi / numGridY) * plotH;
+                    ctx.beginPath();
+                    ctx.moveTo(pad.left, gy);
+                    ctx.lineTo(pad.left + plotW, gy);
+                    ctx.stroke();
+
+                    var label = (yMax - (gi / numGridY) * (yMax - yMin)).toFixed(2);
+                    ctx.fillStyle = c.TEXT;
+                    ctx.font = '10px JetBrains Mono, monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(label, pad.left - 6, gy + 4);
+                }
+
+                // X-axis grid
+                var xSteps = [100, 200, 500, 1000, 1500, 2000];
+                xSteps.forEach(function (xs) {
+                    var x = pad.left + ((xs - 50) / 1950) * plotW;
+                    ctx.strokeStyle = c.GRID;
+                    ctx.beginPath();
+                    ctx.moveTo(x, pad.top);
+                    ctx.lineTo(x, pad.top + plotH);
+                    ctx.stroke();
+
+                    ctx.fillStyle = c.TEXT;
+                    ctx.font = '10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(xs, x, pad.top + plotH + 16);
+                });
+
+                // Axis labels
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Training Set Size', pad.left + plotW / 2, h - 8);
+
+                ctx.save();
+                ctx.translate(14, pad.top + plotH / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText(metricName, 0, 0);
+                ctx.restore();
+
+                // Draw curves
+                var dataPoints = [];
+                for (var di = 50; di <= 2000; di += 25) dataPoints.push(di);
+
+                models.forEach(function (model) {
+                    ctx.strokeStyle = model.color;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    var started = false;
+                    dataPoints.forEach(function (dp) {
+                        var perf = model.fn(dp);
+                        var val = perf[metric];
+                        var x = pad.left + ((dp - 50) / 1950) * plotW;
+                        var y = pad.top + ((yMax - val) / (yMax - yMin)) * plotH;
+                        if (!started) { ctx.moveTo(x, y); started = true; }
+                        else ctx.lineTo(x, y);
+                    });
+                    ctx.stroke();
+
+                    // Current point marker
+                    var currentPerf = model.fn(n);
+                    var cx = pad.left + ((n - 50) / 1950) * plotW;
+                    var cy = pad.top + ((yMax - currentPerf[metric]) / (yMax - yMin)) * plotH;
+
+                    ctx.fillStyle = model.color;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = c.BG;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Value label at current point
+                    ctx.fillStyle = model.color;
+                    ctx.font = 'bold 11px JetBrains Mono, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(currentPerf[metric].toFixed(3), cx + 10, cy - 6);
+                });
+
+                // Vertical line at current n
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                var currentX = pad.left + ((n - 50) / 1950) * plotW;
+                ctx.beginPath();
+                ctx.moveTo(currentX, pad.top);
+                ctx.lineTo(currentX, pad.top + plotH);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Legend
+                var legendX = pad.left + plotW - 10;
+                var legendY = pad.top + 14;
+                models.forEach(function (model, mi) {
+                    ctx.fillStyle = model.color;
+                    ctx.fillRect(legendX - 80, legendY + mi * 18 - 8, 12, 12);
+                    ctx.fillStyle = c.TEXT;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(model.name, legendX - 64, legendY + mi * 18 + 2);
+                });
+
+                // Bar chart section at bottom right (current values)
+                var barSection = plotW * 0.3;
+                var barY0 = pad.top + plotH + 28;
+                var barH = 10;
+                var barMaxW = barSection;
+
+                models.forEach(function (model, mi) {
+                    var val = model.fn(n)[metric];
+                    var barW;
+                    if (metric === 'r2') {
+                        barW = ((val - yMin) / (yMax - yMin)) * barMaxW;
+                    } else {
+                        barW = ((yMax - val) / (yMax - yMin)) * barMaxW;
+                    }
+                    var bx = w - pad.right - barSection;
+                    var by = barY0 + mi * (barH + 4);
+
+                    // Bar background
+                    ctx.fillStyle = c.DIM;
+                    ctx.fillRect(bx, by, barMaxW, barH);
+
+                    // Bar fill
+                    ctx.fillStyle = model.color;
+                    ctx.fillRect(bx, by, Math.max(0, barW), barH);
+                });
+            }
+
+            dataSizeSlider.addEventListener('input', function () {
+                dataSizeVal.textContent = dataSizeSlider.value;
+                update();
+            });
+
+            metricSelect.addEventListener('change', update);
+            ridgeCheck.addEventListener('change', update);
+            rfCheck.addEventListener('change', update);
+            svrCheck.addEventListener('change', update);
+
+            resize();
+            update();
+            window.addEventListener('resize', function () { resize(); update(); });
+        })();
+
+        /* ======================================================
+           THEME CHANGE OBSERVER
+           ====================================================== */
+        var themeObserver = new MutationObserver(function () {
+            window.dispatchEvent(new Event('resize'));
+        });
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+
+    })();
+    </script>
+
+</body>
+</html>

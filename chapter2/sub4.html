@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.4 Classification Basics | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn the fundamentals of classification in machine learning through a civil engineering lens. Understand binary and multi-class classification, decision boundaries, k-nearest neighbours, confusion matrices, and real-world applications such as pass/fail testing, soil classification, and safety compliance.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.4
+            </div>
+            <h1 class="chapter-hero__title">Classification Basics</h1>
+            <p class="chapter-hero__subtitle">
+                Not every engineering question asks "how much?" Sometimes the question is
+                "which category?" &mdash; does this concrete specimen pass or fail? Is this
+                soil sample sand, clay, or silt? Is this structure safe or non-compliant?
+                Classification is the branch of supervised learning that answers categorical
+                questions, and it is everywhere in civil engineering practice.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>From "How Much?" to "Which One?"</h2>
+                        <p>
+                            In Sub-chapters 2.2 and 2.3 you built regression models that predicted
+                            a <strong>continuous number</strong> &mdash; concrete strength in MPa,
+                            settlement in millimetres, stress in kPa. The output lived on a smooth
+                            number line with infinite possible values.
+                        </p>
+                        <p>
+                            But many engineering decisions are categorical. A building inspector
+                            does not say "the structure is 73.4% safe." They say <em>pass</em> or
+                            <em>fail</em>. A geotechnical report does not say "the soil is 0.62
+                            along the clay-sand continuum." It says <strong>clay</strong>,
+                            <strong>sand</strong>, or <strong>silt</strong>. These are
+                            <em>classification</em> problems, and they require a different family
+                            of algorithms that output discrete <strong>class labels</strong>
+                            instead of continuous numbers.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Classification is arguably the most common machine learning task in civil
+                    engineering practice. Every quality control check, every safety inspection,
+                    every material categorisation, and every damage detection pipeline is, at its
+                    core, a classification problem. By the end of this sub-chapter you will
+                    understand how classifiers work, when to use them, and how to evaluate
+                    whether they are performing well.
+                </p>
+
+                <p>
+                    We will cover:
+                </p>
+
+                <ul>
+                    <li>The difference between classification and regression</li>
+                    <li>Binary vs. multi-class classification</li>
+                    <li>Decision boundaries &mdash; how classifiers carve up feature space</li>
+                    <li>The k-Nearest Neighbours (k-NN) algorithm &mdash; your first classifier</li>
+                    <li>The confusion matrix &mdash; the essential evaluation tool</li>
+                    <li>Real-world civil engineering applications</li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: CLASSIFICATION VS REGRESSION
+             ========================================== -->
+        <section class="ch-section" id="classification-vs-regression">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-branch"></i>
+                    Classification vs. Regression
+                </h2>
+
+                <p>
+                    Both classification and regression are <strong>supervised learning</strong>
+                    tasks. They both learn from labelled training data. The difference is in the
+                    nature of the label:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Regression</h3>
+                        <p>
+                            The label is a <strong>continuous number</strong>. The model outputs a
+                            value on a number line. Examples: predicting concrete strength (32.7 MPa),
+                            settlement (14.2 mm), or traffic volume (8,350 vehicles/day). The loss
+                            function measures how far the prediction is from the true value
+                            (e.g., mean squared error).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Classification</h3>
+                        <p>
+                            The label is a <strong>discrete category</strong> (also called a
+                            <em>class</em>). The model outputs one of a finite set of labels.
+                            Examples: pass/fail, sand/clay/silt, damaged/undamaged,
+                            low-risk/medium-risk/high-risk. The loss function measures how often
+                            the prediction matches the true label (e.g., accuracy, or more
+                            nuanced metrics like precision and recall).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>The Key Distinction</span>
+                    </div>
+                    <p>
+                        If the label is a number on a continuum, it is regression. If the label is
+                        a category (even if categories happen to be numbered, like soil group 1, 2,
+                        3), it is classification. The numbers in classification are just
+                        <em>identifiers</em> &mdash; "class 3" is not "more" than "class 1" in
+                        any arithmetic sense.
+                    </p>
+                </div>
+
+                <p>
+                    Interestingly, some problems can be framed either way. Consider concrete
+                    strength: you could predict the exact value in MPa (regression) or predict
+                    whether the specimen exceeds a threshold of 25 MPa (classification). The
+                    framing depends on the engineering question you need to answer.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Regression vs. Classification Framing
+                    </div>
+                    <pre><code>Regression:   f(cement, w/c, age) = 32.7 MPa   (continuous)
+Classification: f(cement, w/c, age) = "Pass"    (category: Pass if > 25 MPa)
+
+Same features, same data &mdash; different question, different output type.</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: BINARY VS MULTI-CLASS
+             ========================================== -->
+        <section class="ch-section" id="binary-vs-multiclass">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Binary vs. Multi-class Classification
+                </h2>
+
+                <p>
+                    Classification problems fall into two categories based on the number of
+                    possible labels:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Binary Classification</h3>
+                        <p>
+                            Exactly <strong>two</strong> classes. The model answers a yes/no
+                            question. Civil engineering examples:
+                        </p>
+                        <ul>
+                            <li><strong>Pass / Fail</strong> &mdash; does a concrete cube meet the
+                                specified characteristic strength?</li>
+                            <li><strong>Safe / Unsafe</strong> &mdash; does a structure comply with
+                                safety regulations after an earthquake?</li>
+                            <li><strong>Cracked / Uncracked</strong> &mdash; does an image of a
+                                bridge deck show visible cracking?</li>
+                            <li><strong>Liquefaction / No Liquefaction</strong> &mdash; will this
+                                soil layer liquefy under the design earthquake?</li>
+                        </ul>
+                        <p>
+                            Conventionally, one class is called <em>positive</em> (the event of
+                            interest, e.g., "fail") and the other <em>negative</em> (e.g., "pass").
+                            This convention is important for understanding metrics like precision
+                            and recall.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3+</div>
+                    <div class="process-step__content">
+                        <h3>Multi-class Classification</h3>
+                        <p>
+                            <strong>Three or more</strong> classes. The model picks one label from
+                            a larger set. Civil engineering examples:
+                        </p>
+                        <ul>
+                            <li><strong>Soil type</strong> &mdash; classify a sample as sand, clay,
+                                silt, gravel, or peat based on particle size distribution, Atterberg
+                                limits, and moisture content.</li>
+                            <li><strong>Damage grade</strong> &mdash; label a post-earthquake
+                                building as grade 0 (none), 1 (slight), 2 (moderate), 3 (severe),
+                                or 4 (collapse) following the EMS-98 scale.</li>
+                            <li><strong>Traffic level-of-service</strong> &mdash; classify an
+                                intersection as LOS A, B, C, D, E, or F based on delay.</li>
+                            <li><strong>Rock quality designation</strong> &mdash; very poor, poor,
+                                fair, good, or excellent based on core recovery.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Ordinal vs. Nominal Classes</span>
+                    </div>
+                    <p>
+                        Some multi-class problems have a natural order (damage grade 0 &lt; 1
+                        &lt; 2 &lt; 3 &lt; 4). These are <strong>ordinal</strong>. Others have
+                        no inherent order (sand, clay, silt). These are <strong>nominal</strong>.
+                        Standard classifiers treat all classes as unordered &mdash; they do not
+                        know that misclassifying grade 3 as grade 4 is "closer" than
+                        misclassifying grade 3 as grade 0. For ordinal problems, specialised
+                        techniques (ordinal regression) can exploit the ordering, but basic
+                        classifiers still work well in many cases.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: DECISION BOUNDARIES
+             ========================================== -->
+        <section class="ch-section" id="decision-boundaries">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-border-all"></i>
+                    Decision Boundaries
+                </h2>
+
+                <p>
+                    Every classifier, regardless of how sophisticated it is, does one fundamental
+                    thing: it <strong>divides the feature space into regions</strong>, one region
+                    per class. The borders between these regions are called
+                    <strong>decision boundaries</strong>.
+                </p>
+
+                <p>
+                    Imagine plotting every soil sample on a 2D chart with "plasticity index" on
+                    the x-axis and "liquid limit" on the y-axis. Sand samples cluster in the
+                    lower-left, clay samples in the upper-right, and silt samples somewhere
+                    between. A classifier draws invisible lines (or curves) through this space,
+                    separating the sand zone from the clay zone from the silt zone. When a new
+                    sample arrives, the classifier checks which zone it falls into and assigns
+                    the corresponding label.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-draw-polygon"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Shape of Decision Boundaries</h3>
+                        <p>
+                            Different algorithms produce different boundary shapes:
+                        </p>
+                        <ul>
+                            <li><strong>Linear classifiers</strong> (logistic regression, linear
+                                SVM) draw straight lines (or hyperplanes in higher dimensions).
+                                Simple and interpretable, but struggle when classes are not
+                                linearly separable.</li>
+                            <li><strong>k-Nearest Neighbours</strong> produces jagged, locally
+                                adaptive boundaries that conform to the shape of the data clusters.
+                                Flexible but sensitive to noise.</li>
+                            <li><strong>Decision trees</strong> create axis-aligned rectangular
+                                regions. Easy to interpret, but the staircase boundaries can be
+                                a poor fit for smooth class transitions.</li>
+                            <li><strong>Neural networks</strong> can learn arbitrary curved
+                                boundaries. Powerful but require large datasets and are harder
+                                to interpret.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    The concept of decision boundaries is central to understanding
+                    classification. When you visualise a classifier's boundaries overlaid on the
+                    training data, you can immediately see whether the model has learned a
+                    reasonable separation or is drawing bizarre, overly complex boundaries that
+                    chase individual noisy points (overfitting).
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Analogy: Zoning Maps</span>
+                    </div>
+                    <p>
+                        Think of decision boundaries like a zoning map in urban planning.
+                        The map divides a city into residential, commercial, and industrial
+                        zones. Each parcel of land falls into exactly one zone. The boundary
+                        lines are the "decision boundaries." A classifier does exactly the same
+                        thing, but in feature space instead of geographic space.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE NEAREST NEIGHBOUR IDEA
+             ========================================== -->
+        <section class="ch-section" id="nearest-neighbour-idea">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-location-dot"></i>
+                    The Nearest-Neighbour Idea
+                </h2>
+
+                <p>
+                    Before diving into the formal k-NN algorithm, let us build the intuition.
+                    Suppose you are a junior geotechnical engineer on site. You pull a soil
+                    sample from a borehole and want to classify it. You do not have time for
+                    a full sieve analysis, but you have a notebook of past samples with their
+                    lab-confirmed classifications and a few quick field measurements (moisture
+                    content, colour, feel).
+                </p>
+
+                <p>
+                    What would you do? You would flip through your notebook, find the past
+                    sample that is <em>most similar</em> to the one in your hand, and assume
+                    the new sample belongs to the same class. That is <strong>1-nearest
+                    neighbour classification</strong>.
+                </p>
+
+                <p>
+                    But relying on a single past sample is risky &mdash; what if that one sample
+                    was mislabelled or unusual? A more robust approach: find the
+                    <strong>k closest</strong> past samples and take a <strong>majority
+                    vote</strong>. If 4 out of 5 nearest samples are clay, classify the new
+                    sample as clay, even if the single closest sample happens to be silt. That
+                    is <strong>k-nearest neighbours</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why k-NN Is Special</h3>
+                        <p>
+                            k-NN is one of the simplest machine learning algorithms. It has
+                            <strong>no training phase</strong> &mdash; it simply memorises the
+                            entire training dataset. All the computation happens at prediction
+                            time, when the algorithm searches for the k nearest neighbours.
+                            This makes it a <em>lazy learner</em> (as opposed to <em>eager
+                            learners</em> like regression, which do their heavy lifting during
+                            training).
+                        </p>
+                        <p>
+                            Despite its simplicity, k-NN is surprisingly effective for many
+                            problems, especially when classes form clear clusters in feature space.
+                            It is also fully non-parametric &mdash; it makes no assumptions about
+                            the shape of the decision boundary.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: HOW K-NN WORKS
+             ========================================== -->
+        <section class="ch-section" id="how-knn-works">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    How k-NN Works: Step by Step
+                </h2>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Store the training data</h3>
+                        <p>
+                            k-NN has no traditional "training." It simply stores all training
+                            examples &mdash; their features and their labels. Think of it as
+                            building a reference library of past test results.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Receive a new, unlabelled sample</h3>
+                        <p>
+                            A new soil sample arrives with measured features (e.g., moisture
+                            content = 28%, liquid limit = 42) but no class label. The goal is
+                            to predict its class.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Compute distances to all training points</h3>
+                        <p>
+                            Measure the distance from the new sample to every stored training
+                            sample in feature space. The most common distance metric is
+                            <strong>Euclidean distance</strong>:
+                        </p>
+                        <div class="code-peek" style="margin:12px 0;">
+                            <div class="code-peek__header">
+                                <i class="fa-solid fa-code"></i> Euclidean Distance
+                            </div>
+                            <pre><code>d(a, b) = sqrt( (a1 - b1)^2 + (a2 - b2)^2 + ... + (an - bn)^2 )</code></pre>
+                        </div>
+                        <p>
+                            Where a and b are two samples and a<sub>i</sub>, b<sub>i</sub> are
+                            their feature values. This is the straight-line distance in
+                            n-dimensional feature space.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Find the k nearest neighbours</h3>
+                        <p>
+                            Sort all training samples by distance and pick the k closest ones.
+                            The value of k is a <strong>hyperparameter</strong> that you choose
+                            before running the algorithm (more on choosing k shortly).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Take a majority vote</h3>
+                        <p>
+                            Count how many of the k neighbours belong to each class. The class
+                            with the most votes wins. If k = 5 and the neighbours are
+                            {clay, clay, sand, clay, silt}, the prediction is <strong>clay</strong>
+                            (3 out of 5).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Feature Scaling Is Critical</span>
+                    </div>
+                    <p>
+                        If moisture content ranges from 5 to 50 (%) and liquid limit ranges from
+                        20 to 80, the Euclidean distance will be dominated by the larger-scale
+                        feature. A difference of 10 in liquid limit will outweigh a difference of
+                        10 in moisture content, even if the latter is more informative. Always
+                        <strong>normalise or standardise</strong> your features before using k-NN.
+                        This is the same lesson you learned in regression, but it is even more
+                        critical here because k-NN relies entirely on distances.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CHOOSING K
+             ========================================== -->
+        <section class="ch-section" id="choosing-k">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Choosing k: The Bias-Variance Trade-off
+                </h2>
+
+                <p>
+                    The value of k controls the trade-off between a <strong>flexible</strong>
+                    model (small k) and a <strong>stable</strong> model (large k):
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-minimize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Small k (e.g., k = 1 or 3)</h3>
+                        <ul>
+                            <li>The decision boundary is highly irregular and conforms tightly to
+                                the training data.</li>
+                            <li>Sensitive to noise &mdash; a single mislabelled point can create
+                                an "island" of the wrong class.</li>
+                            <li>Low bias, high variance &mdash; the model captures fine details
+                                but may overfit.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-maximize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Large k (e.g., k = 15 or 25)</h3>
+                        <ul>
+                            <li>The decision boundary is smoother and more generalised.</li>
+                            <li>Robust to noise &mdash; individual mislabelled points are
+                                outvoted by the majority.</li>
+                            <li>High bias, low variance &mdash; the model may miss genuine local
+                                patterns.</li>
+                            <li>At the extreme, if k equals the total number of training samples,
+                                the model always predicts the most common class &mdash; useless.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In practice, k is chosen by <strong>cross-validation</strong>: try several
+                    values of k, evaluate each on a held-out validation set, and pick the one
+                    that gives the best accuracy (or F1-score, depending on the problem).
+                    Common starting points are k = 3, 5, or 7. For binary classification, use
+                    an <strong>odd</strong> k to avoid ties.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Rule of Thumb</span>
+                    </div>
+                    <p>
+                        A classic heuristic is k = sqrt(n), where n is the number of training
+                        samples. If you have 100 soil samples, start with k = 10. But always
+                        validate &mdash; the optimal k depends on the data, not on a formula.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CE APPLICATION - PASS/FAIL TESTS
+             ========================================== -->
+        <section class="ch-section" id="ce-pass-fail">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    CE Application: Pass/Fail Structural Tests
+                </h2>
+
+                <p>
+                    Every concrete cube test, every steel rebar tensile test, and every pile
+                    load test ends with a binary verdict: <strong>pass</strong> or
+                    <strong>fail</strong>. Traditionally, the verdict comes from comparing a
+                    measured value to a code-specified threshold. But what if you want to
+                    <em>predict</em> the verdict before the test is complete?
+                </p>
+
+                <p>
+                    Consider a scenario: a concrete plant produces cubes and needs early
+                    warning of potential failures. By measuring quick-turnaround properties
+                    (7-day strength, ultrasonic pulse velocity, rebound hammer reading) as
+                    features, you can train a binary classifier to predict whether the 28-day
+                    strength will exceed the characteristic strength.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-industry"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Features for a Pass/Fail Classifier</h3>
+                        <ul>
+                            <li>7-day compressive strength (MPa)</li>
+                            <li>Ultrasonic pulse velocity (km/s)</li>
+                            <li>Rebound hammer reading (Schmidt number)</li>
+                            <li>Water-cement ratio (from batch record)</li>
+                            <li>Cement content (kg/m<sup>3</sup>)</li>
+                        </ul>
+                        <p>
+                            <strong>Label</strong>: Pass (28-day strength &ge; f<sub>ck</sub>) or
+                            Fail (28-day strength &lt; f<sub>ck</sub>).
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    A k-NN classifier trained on historical test data can flag suspicious
+                    batches within 7 days, giving the plant time to investigate before the
+                    concrete is placed in the structure. This is <em>proactive</em> quality
+                    control, enabled by classification.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATION - SOIL CLASSIFICATION
+             ========================================== -->
+        <section class="ch-section" id="ce-soil-classification">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mountain"></i>
+                    CE Application: Soil Type Classification
+                </h2>
+
+                <p>
+                    Soil classification is one of the most natural applications of classification
+                    algorithms in civil engineering. The Unified Soil Classification System (USCS)
+                    and the AASHTO system both assign soil to discrete categories based on
+                    measured properties.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Traditional Approach</h3>
+                        <p>
+                            A geotechnical engineer performs a sieve analysis (particle size
+                            distribution) and Atterberg limits tests (liquid limit, plastic limit).
+                            They then consult the USCS flowchart to assign the soil to a category:
+                            well-graded gravel (GW), poorly-graded sand (SP), lean clay (CL),
+                            elastic silt (MH), and so on.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>ML Approach</h3>
+                        <p>
+                            Collect a database of past soil samples with their measured properties
+                            and confirmed classifications. Train a classifier (k-NN, decision tree,
+                            or more advanced methods) to predict the class from the measurements.
+                            The classifier can:
+                        </p>
+                        <ul>
+                            <li>Automate the classification, reducing human error in reading the
+                                flowchart</li>
+                            <li>Handle borderline cases more consistently</li>
+                            <li>Incorporate additional features (colour, moisture content, field
+                                descriptions) that the flowchart ignores</li>
+                            <li>Provide confidence levels ("85% likely clay, 15% likely silt")</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    For our interactive demo below, we simplify to three soil types &mdash;
+                    <strong>sand</strong>, <strong>clay</strong>, and <strong>silt</strong>
+                    &mdash; plotted in a 2D feature space. In practice, you would have more
+                    features and more categories, but the k-NN algorithm works exactly the
+                    same way.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: CE APPLICATION - SAFETY COMPLIANCE
+             ========================================== -->
+        <section class="ch-section" id="ce-safety-compliance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    CE Application: Safety Compliance
+                </h2>
+
+                <p>
+                    Structural safety compliance is inherently a classification problem. After
+                    an earthquake, hurricane, or flood, engineers must inspect structures and
+                    classify them as <strong>safe for occupancy</strong>,
+                    <strong>restricted use</strong>, or <strong>unsafe</strong>. This triage
+                    must be done quickly, often for thousands of buildings.
+                </p>
+
+                <p>
+                    Machine learning classifiers can assist by processing sensor data
+                    (accelerometers, strain gauges, tilt sensors) and structural properties
+                    (building age, material type, number of stories) to produce rapid safety
+                    classifications. This does not replace expert inspection, but it can
+                    prioritise which buildings need urgent attention.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-circle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Cost of Misclassification</h3>
+                        <p>
+                            In safety applications, not all errors are equal. Classifying an
+                            unsafe building as safe (a <strong>false negative</strong>) is far
+                            more dangerous than classifying a safe building as unsafe (a
+                            <strong>false positive</strong>). The false positive wastes
+                            resources; the false negative risks lives. This asymmetry means you
+                            cannot rely on simple accuracy &mdash; you need the confusion matrix
+                            to understand <em>what kinds</em> of errors the model makes.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 1 - K-NN CLASSIFIER
+             ========================================== -->
+        <section class="ch-section" id="demo-knn">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: k-NN Classifier
+                </h2>
+
+                <p>
+                    Click on the canvas below to place data points. Use the class selector to
+                    switch between <strong>Class A</strong> (e.g., pass) and <strong>Class B</strong>
+                    (e.g., fail). As you add points, the decision boundary updates in real time.
+                    Adjust k with the slider and watch how the boundary changes from jagged
+                    (small k) to smooth (large k).
+                </p>
+
+                <div class="demo-panel" id="demo-panel-knn">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-crosshairs"></i> Click to Place Points &mdash; Watch the Decision Boundary</h3>
+                        <p>
+                            Left-click to add a point of the selected class. The coloured
+                            background shows the predicted class for every location.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls" style="flex-wrap:wrap; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label for="knn-class-select" style="font-size:0.88rem; color:var(--text-secondary);">Class:</label>
+                            <select id="knn-class-select" style="padding:4px 10px; border-radius:6px; border:1px solid var(--border-primary); background:var(--bg-secondary); color:var(--text-primary); font-size:0.88rem;">
+                                <option value="0">Class A (Teal)</option>
+                                <option value="1">Class B (Amber)</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label for="knn-k-slider" style="font-size:0.88rem; color:var(--text-secondary);">k =</label>
+                            <input type="range" id="knn-k-slider" min="1" max="15" value="3" style="width:120px;">
+                            <span id="knn-k-value" style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; min-width:24px;">3</span>
+                        </div>
+                        <button id="knn-clear" class="demo-btn" title="Clear all points">
+                            <i class="fa-solid fa-trash-can"></i> Clear
+                        </button>
+                        <button id="knn-sample" class="demo-btn" title="Add sample data">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Sample Data
+                        </button>
+                    </div>
+                    <canvas id="knn-canvas" style="width:100%; height:450px; border-radius:8px; cursor:crosshair;"></canvas>
+                    <div id="knn-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="knn-count-a">Class A: 0</span>
+                        <span id="knn-count-b">Class B: 0</span>
+                        <span id="knn-total">Total: 0</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: THE CONFUSION MATRIX
+             ========================================== -->
+        <section class="ch-section" id="confusion-matrix">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-table-cells"></i>
+                    The Confusion Matrix
+                </h2>
+
+                <p>
+                    Accuracy alone is not enough to evaluate a classifier. If 95% of concrete
+                    cubes pass and only 5% fail, a model that blindly predicts "pass" for every
+                    sample achieves 95% accuracy &mdash; but it misses every single failure.
+                    In safety-critical engineering, that is catastrophic.
+                </p>
+
+                <p>
+                    The <strong>confusion matrix</strong> (also called an error matrix) is the
+                    most important evaluation tool for classifiers. It shows exactly how the
+                    model's predictions compare to the true labels, broken down by class.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-grip"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Structure of a Binary Confusion Matrix</h3>
+                        <div style="overflow-x:auto; margin:16px 0;">
+                            <table style="width:100%; max-width:500px; margin:0 auto; border-collapse:collapse; font-size:0.9rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="padding:10px; border-bottom:2px solid var(--border-primary);"></th>
+                                        <th style="padding:10px; border-bottom:2px solid var(--border-primary); text-align:center; color:var(--accent-teal);">Predicted Positive</th>
+                                        <th style="padding:10px; border-bottom:2px solid var(--border-primary); text-align:center; color:var(--accent-amber, #fbbf24);">Predicted Negative</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:10px; font-weight:600;">Actual Positive</td>
+                                        <td style="padding:10px; text-align:center; background:rgba(34,197,94,0.1);"><strong>TP</strong><br><span style="font-size:0.8rem;">True Positive</span></td>
+                                        <td style="padding:10px; text-align:center; background:rgba(239,68,68,0.1);"><strong>FN</strong><br><span style="font-size:0.8rem;">False Negative</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:10px; font-weight:600;">Actual Negative</td>
+                                        <td style="padding:10px; text-align:center; background:rgba(239,68,68,0.1);"><strong>FP</strong><br><span style="font-size:0.8rem;">False Positive</span></td>
+                                        <td style="padding:10px; text-align:center; background:rgba(34,197,94,0.1);"><strong>TN</strong><br><span style="font-size:0.8rem;">True Negative</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">TP</div>
+                    <div class="process-step__content">
+                        <h3>True Positive</h3>
+                        <p>
+                            The model predicted "positive" and the true label is also positive.
+                            Example: the model predicted "fail" and the cube actually failed.
+                            <strong>Correct prediction of the event of interest.</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">TN</div>
+                    <div class="process-step__content">
+                        <h3>True Negative</h3>
+                        <p>
+                            The model predicted "negative" and the true label is also negative.
+                            Example: the model predicted "pass" and the cube actually passed.
+                            <strong>Correct prediction of the non-event.</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">FP</div>
+                    <div class="process-step__content">
+                        <h3>False Positive (Type I Error)</h3>
+                        <p>
+                            The model predicted "positive" but the true label is negative.
+                            Example: the model predicted "fail" but the cube actually passed.
+                            This is a <strong>false alarm</strong>. It wastes resources (you
+                            investigate a batch that was fine) but does not endanger safety.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">FN</div>
+                    <div class="process-step__content">
+                        <h3>False Negative (Type II Error)</h3>
+                        <p>
+                            The model predicted "negative" but the true label is positive.
+                            Example: the model predicted "pass" but the cube actually failed.
+                            This is a <strong>missed detection</strong>. In safety-critical
+                            applications, this is the most dangerous error type.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: METRICS FROM THE CONFUSION MATRIX
+             ========================================== -->
+        <section class="ch-section" id="confusion-metrics">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Metrics Derived from the Confusion Matrix
+                </h2>
+
+                <p>
+                    The four cells of the confusion matrix give rise to several important
+                    metrics. Each captures a different aspect of classifier performance:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Key Metrics
+                    </div>
+                    <pre><code>Accuracy    = (TP + TN) / (TP + TN + FP + FN)
+             "How often is the model correct overall?"
+
+Precision   = TP / (TP + FP)
+             "Of all samples predicted positive, how many actually are?"
+
+Recall      = TP / (TP + FN)
+  (Sensitivity) "Of all actual positives, how many did the model catch?"
+
+F1-Score    = 2 * (Precision * Recall) / (Precision + Recall)
+             "Harmonic mean of precision and recall &mdash; balances both."</code></pre>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Which Metric Matters Most?</h3>
+                        <p>
+                            It depends on the engineering context:
+                        </p>
+                        <ul>
+                            <li><strong>Safety-critical (structural inspection)</strong>: Maximise
+                                <em>recall</em>. Missing a genuinely unsafe building (false
+                                negative) is unacceptable. You would rather have false alarms
+                                than missed detections.</li>
+                            <li><strong>Cost-sensitive (extra testing)</strong>: Balance
+                                <em>precision</em> and recall. Every false positive triggers an
+                                expensive re-test. You want to avoid unnecessary costs while still
+                                catching failures.</li>
+                            <li><strong>Balanced classes</strong>: <em>Accuracy</em> is reasonable
+                                when the classes are roughly equal in size. When classes are
+                                imbalanced (95% pass, 5% fail), accuracy is misleading.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>The Precision-Recall Trade-off</span>
+                    </div>
+                    <p>
+                        Increasing recall (catching more true positives) usually decreases
+                        precision (more false positives). Imagine lowering the pass/fail
+                        threshold: you catch every failure, but you also flag many passing
+                        samples. There is no free lunch &mdash; the F1-score helps you find
+                        the sweet spot, and domain expertise determines where to set the bar.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: INTERACTIVE DEMO 2 - CONFUSION MATRIX BUILDER
+             ========================================== -->
+        <section class="ch-section" id="demo-confusion-matrix">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Confusion Matrix Builder
+                </h2>
+
+                <p>
+                    Imagine you have a set of concrete cube test results. For each cube, you
+                    know the <strong>actual</strong> outcome (pass or fail) and the
+                    <strong>predicted</strong> outcome from your classifier. Click the buttons
+                    below to add predictions and watch the confusion matrix and derived metrics
+                    update in real time.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-cm">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-table-cells-large"></i> Build a Confusion Matrix</h3>
+                        <p>
+                            Click a button to record a prediction outcome. The matrix and
+                            metrics update instantly.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls" style="flex-wrap:wrap; gap:10px;">
+                        <button id="cm-tp" class="demo-btn" style="border-color:var(--accent-teal, #2dd4bf);">
+                            <i class="fa-solid fa-check"></i> True Positive
+                        </button>
+                        <button id="cm-tn" class="demo-btn" style="border-color:var(--accent-teal, #2dd4bf);">
+                            <i class="fa-solid fa-check"></i> True Negative
+                        </button>
+                        <button id="cm-fp" class="demo-btn" style="border-color:#ef4444;">
+                            <i class="fa-solid fa-xmark"></i> False Positive
+                        </button>
+                        <button id="cm-fn" class="demo-btn" style="border-color:#ef4444;">
+                            <i class="fa-solid fa-xmark"></i> False Negative
+                        </button>
+                        <button id="cm-clear" class="demo-btn" title="Reset matrix">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button id="cm-sample" class="demo-btn" title="Load sample data">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Sample Data
+                        </button>
+                    </div>
+                    <canvas id="cm-canvas" style="width:100%; height:420px; border-radius:8px;"></canvas>
+                    <div id="cm-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="cm-accuracy">Accuracy: &mdash;</span>
+                        <span id="cm-precision">Precision: &mdash;</span>
+                        <span id="cm-recall">Recall: &mdash;</span>
+                        <span id="cm-f1">F1-Score: &mdash;</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: PRACTICAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="classification-workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    The Classification Workflow
+                </h2>
+
+                <p>
+                    Building a classification model follows a similar workflow to regression,
+                    with a few key differences in evaluation:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Define the problem</h3>
+                        <p>
+                            What are the classes? Is this binary or multi-class? Which class is
+                            "positive"? What are the consequences of each error type? These
+                            decisions drive everything that follows.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Collect and label data</h3>
+                        <p>
+                            Gather training data with confirmed class labels. Labels must be
+                            reliable &mdash; if your soil classifications are inconsistent
+                            between lab technicians, the classifier will learn that noise.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Feature engineering and scaling</h3>
+                        <p>
+                            Select relevant features, handle missing values, and normalise.
+                            For distance-based algorithms like k-NN, scaling is essential.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Split into train and test sets</h3>
+                        <p>
+                            Ensure both sets contain representative proportions of each class.
+                            Use <strong>stratified splitting</strong> to maintain class ratios.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Train, tune, and evaluate</h3>
+                        <p>
+                            Train the classifier, tune hyperparameters (e.g., k in k-NN) using
+                            cross-validation, and evaluate on the test set using the confusion
+                            matrix and appropriate metrics.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">6</div>
+                    <div class="process-step__content">
+                        <h3>Interpret and deploy</h3>
+                        <p>
+                            Examine the confusion matrix to understand error types. If false
+                            negatives are unacceptable, adjust the decision threshold or choose
+                            an algorithm that allows cost-sensitive learning. Deploy only when
+                            the error profile is acceptable for the engineering context.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: PRACTICAL TIPS
+             ========================================== -->
+        <section class="ch-section" id="practical-tips">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    Practical Tips for Civil Engineers
+                </h2>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 1: Always Look at the Confusion Matrix</span>
+                    </div>
+                    <p>
+                        Never evaluate a classifier by accuracy alone, especially when classes
+                        are imbalanced. A model with 97% accuracy that misses every single failure
+                        is worse than useless in quality control. The confusion matrix shows you
+                        <em>where</em> the model is failing and lets you make informed decisions
+                        about whether those failures are acceptable.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 2: Understand the Cost of Errors</span>
+                    </div>
+                    <p>
+                        In structural safety, a false negative (declaring a damaged building safe)
+                        can cost lives. In material testing, a false positive (flagging a good
+                        batch as defective) costs money. Before choosing a metric, understand the
+                        real-world consequences of each error type. Optimise for the metric that
+                        reflects the engineering risk.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 3: Start Simple</span>
+                    </div>
+                    <p>
+                        k-NN is an excellent starting point. It requires no assumptions about the
+                        data distribution, is easy to implement, and its predictions are
+                        interpretable ("the 5 closest past samples were all clay"). Use it as a
+                        baseline. If its performance is sufficient, you may not need anything more
+                        complex. If it is not, its errors will guide you toward better algorithms.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 4: Watch for Class Imbalance</span>
+                    </div>
+                    <p>
+                        If 95% of your specimens pass and only 5% fail, the classifier will be
+                        biased toward predicting "pass." Techniques to handle imbalance include
+                        <strong>oversampling</strong> the minority class, <strong>undersampling</strong>
+                        the majority class, or using <strong>class weights</strong> to penalise
+                        errors on the minority class more heavily. We will explore these techniques
+                        in later sub-chapters.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-brain"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Answer the following questions to check your grasp of classification
+                    fundamentals. Each question relates to civil engineering applications
+                    covered in this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A geotechnical lab classifies soil samples into four categories (sand,
+                        clay, silt, gravel) based on particle size distribution and Atterberg
+                        limits. What type of ML problem is this?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Binary classification
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Multi-class classification
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Regression
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Unsupervised learning
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Four discrete categories
+                        (sand, clay, silt, gravel) make this a multi-class classification problem.
+                        The labels are categorical, not continuous, and there are more than two
+                        classes.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The output is one of
+                        four discrete categories, making this a <strong>multi-class
+                        classification</strong> problem. It is not binary (more than 2 classes),
+                        not regression (the output is categorical, not continuous), and it is
+                        supervised because we have labelled training data.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        In a k-NN classifier with k = 7, you classify a new soil sample. The 7
+                        nearest neighbours have the following labels: clay, sand, clay, clay,
+                        silt, clay, sand. What is the predicted class?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Sand (closest neighbour wins)
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> Clay (majority vote: 4 out of 7)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Silt (rarest class gets priority)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Cannot determine without distance values
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! k-NN uses majority voting.
+                        Among the 7 neighbours, clay appears 4 times, sand 2 times, and silt 1
+                        time. Clay has the most votes and is the predicted class.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. k-NN uses
+                        <strong>majority voting</strong> among the k nearest neighbours. Clay
+                        appears 4 out of 7 times, so clay wins the vote. The distance values
+                        are used to <em>find</em> the neighbours, not to break the vote (in
+                        standard k-NN).
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        A concrete quality classifier has the following confusion matrix:
+                        TP = 12, FP = 3, FN = 8, TN = 77. The "positive" class is "fail."
+                        What is the recall, and why is it concerning?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> Recall = 0.89 &mdash; the model catches most failures
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Recall = 0.60 &mdash; the model misses 40% of actual failures
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Recall = 0.80 &mdash; acceptable for quality control
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Recall = 0.94 &mdash; the high TN count ensures good recall
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Recall = TP / (TP + FN) =
+                        12 / (12 + 8) = 0.60. The model catches only 60% of actual failures,
+                        missing 40%. In quality control where "fail" means substandard concrete,
+                        missing 40% of failures is a serious safety concern. The model needs
+                        improvement, particularly in reducing false negatives.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Recall =
+                        TP / (TP + FN) = 12 / (12 + 8) = <strong>0.60</strong>. This means the
+                        model catches only 60% of actual failures and <strong>misses 40%</strong>.
+                        For safety-critical quality control, this is dangerously low. Note that TN
+                        does not appear in the recall formula.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        You train a k-NN classifier with k = 1 on a soil classification dataset.
+                        On the training data, you achieve 100% accuracy. On the test data,
+                        accuracy drops to 72%. What is happening?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> The test data contains different soil types than the training data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> k = 1 is too large and the model is underfitting
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> k = 1 causes overfitting &mdash; each training point is its own nearest neighbour, so training accuracy is always 100%
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> 72% test accuracy proves the model is excellent
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! With k = 1, the nearest
+                        neighbour of any training point is itself, guaranteeing 100% training
+                        accuracy. This is trivial memorisation, not learning. The large gap
+                        between training accuracy (100%) and test accuracy (72%) is the classic
+                        signature of <strong>overfitting</strong>. Increasing k would smooth the
+                        decision boundary and likely improve test accuracy.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. With k = 1, each
+                        training point is its own nearest neighbour, so training accuracy is
+                        trivially 100% &mdash; the model has <strong>memorised</strong> the data.
+                        The drop to 72% on test data is the hallmark of
+                        <strong>overfitting</strong>. A larger k would reduce overfitting by
+                        smoothing the decision boundary.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 18: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul>
+                            <li>
+                                <strong>Classification</strong> predicts discrete categories (pass/fail,
+                                sand/clay/silt), unlike regression which predicts continuous values.
+                            </li>
+                            <li>
+                                <strong>Binary classification</strong> has two classes;
+                                <strong>multi-class</strong> has three or more. The same algorithms
+                                apply to both, with minor adaptations.
+                            </li>
+                            <li>
+                                <strong>Decision boundaries</strong> divide feature space into regions,
+                                one per class. Different algorithms produce different boundary shapes.
+                            </li>
+                            <li>
+                                <strong>k-Nearest Neighbours (k-NN)</strong> classifies a new sample
+                                by majority vote among the k closest training samples. Small k gives
+                                flexible but noisy boundaries; large k gives smooth but potentially
+                                biased boundaries.
+                            </li>
+                            <li>
+                                <strong>Feature scaling</strong> is critical for distance-based
+                                algorithms. Always normalise before using k-NN.
+                            </li>
+                            <li>
+                                The <strong>confusion matrix</strong> is the essential evaluation tool
+                                for classifiers. It reveals TP, TN, FP, and FN separately.
+                            </li>
+                            <li>
+                                <strong>Accuracy</strong> is misleading for imbalanced classes.
+                                Use <strong>precision</strong>, <strong>recall</strong>, and
+                                <strong>F1-score</strong> for a nuanced evaluation.
+                            </li>
+                            <li>
+                                In <strong>safety-critical</strong> civil engineering applications,
+                                minimising false negatives (maximising recall) is often more important
+                                than maximising overall accuracy.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>Coming Up Next</span>
+                    </div>
+                    <p>
+                        In Sub-chapter 2.5, we introduce <strong>Logistic Regression</strong>
+                        &mdash; a classifier that not only assigns a class label but also outputs
+                        a <strong>probability</strong>. Instead of just "pass" or "fail," it tells
+                        you "82% likely to pass." This probabilistic output is invaluable for
+                        risk-based decision-making in civil engineering practice.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub3.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.3 Polynomial Regression
+        </a>
+        <a href="sub5.html" class="chapter-nav__link next">
+            2.5 Logistic Regression <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+                POINT_FILL: isDark ? '#fff' : '#333',
+                CANVAS_BG: isDark ? '#0f1117' : '#f8f9fa'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a+(b-a)*t; };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); };
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED CLASSIFICATION DOTS
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var animId;
+            var time = 0;
+            var particles = [];
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                initParticles();
+            }
+
+            function initParticles() {
+                particles = [];
+                var count = Math.floor(w * h / 2800);
+                for (var i = 0; i < count; i++) {
+                    particles.push({
+                        x: rand(0, w),
+                        y: rand(0, h),
+                        cls: Math.random() < 0.5 ? 0 : 1,
+                        r: rand(2, 5),
+                        vx: rand(-0.3, 0.3),
+                        vy: rand(-0.3, 0.3),
+                        phase: rand(0, Math.PI * 2)
+                    });
+                }
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Draw a moving decision boundary line
+                var angle = Math.sin(time * 0.3) * 0.4;
+                var cx = w / 2 + Math.sin(time * 0.2) * w * 0.1;
+                var cy = h / 2 + Math.cos(time * 0.15) * h * 0.1;
+                var len = Math.max(w, h) * 1.5;
+                var dx = Math.cos(angle) * len;
+                var dy = Math.sin(angle) * len;
+
+                ctx.save();
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(cx - dx, cy - dy);
+                ctx.lineTo(cx + dx, cy + dy);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                // Update and draw particles
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0) p.x = w;
+                    if (p.x > w) p.x = 0;
+                    if (p.y < 0) p.y = h;
+                    if (p.y > h) p.y = 0;
+
+                    var alpha = 0.25 + 0.15 * Math.sin(time + p.phase);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.cls === 0
+                        ? c.TEAL.replace(')', ',' + alpha + ')').replace('rgb', 'rgba').replace('#2dd4bf', 'rgba(45,212,191,' + alpha + ')')
+                        : c.AMBER.replace(')', ',' + alpha + ')').replace('rgb', 'rgba').replace('#fbbf24', 'rgba(251,191,36,' + alpha + ')');
+                    ctx.fillStyle = p.cls === 0
+                        ? 'rgba(45,212,191,' + alpha + ')'
+                        : 'rgba(251,191,36,' + alpha + ')';
+                    ctx.fill();
+                }
+
+                time += 0.016;
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function() {
+                cancelAnimationFrame(animId);
+                resize();
+                draw();
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: K-NN CLASSIFIER
+           ============================================== */
+        (function initKNNDemo() {
+            var canvas = document.getElementById('knn-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var points = []; // {x, y, cls}  (cls: 0 or 1)
+            var kSlider = document.getElementById('knn-k-slider');
+            var kValueSpan = document.getElementById('knn-k-value');
+            var classSelect = document.getElementById('knn-class-select');
+            var clearBtn = document.getElementById('knn-clear');
+            var sampleBtn = document.getElementById('knn-sample');
+            var countASpan = document.getElementById('knn-count-a');
+            var countBSpan = document.getElementById('knn-count-b');
+            var totalSpan = document.getElementById('knn-total');
+            var boundaryImageData = null;
+            var needsRedraw = true;
+            var rafId = null;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                needsRedraw = true;
+            }
+
+            function getK() {
+                return parseInt(kSlider.value, 10);
+            }
+
+            function euclidean(ax, ay, bx, by) {
+                var dx = ax - bx, dy = ay - by;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            function knnClassify(px, py, k) {
+                if (points.length === 0) return -1;
+                var dists = [];
+                for (var i = 0; i < points.length; i++) {
+                    dists.push({ d: euclidean(px, py, points[i].x, points[i].y), cls: points[i].cls });
+                }
+                dists.sort(function(a, b) { return a.d - b.d; });
+                var votes = [0, 0];
+                var nk = Math.min(k, dists.length);
+                for (var j = 0; j < nk; j++) {
+                    votes[dists[j].cls]++;
+                }
+                return votes[0] >= votes[1] ? 0 : 1;
+            }
+
+            function drawBoundary() {
+                var c = getColors();
+                var k = getK();
+                var step = 8; // pixel step for performance
+                var dpr = window.devicePixelRatio || 1;
+
+                ctx.clearRect(0, 0, w, h);
+
+                // Fill background
+                ctx.fillStyle = c.CANVAS_BG;
+                ctx.fillRect(0, 0, w, h);
+
+                if (points.length >= 2) {
+                    // Draw decision region pixel-by-pixel (sampled)
+                    for (var gx = 0; gx < w; gx += step) {
+                        for (var gy = 0; gy < h; gy += step) {
+                            var cls = knnClassify(gx, gy, k);
+                            if (cls === 0) {
+                                ctx.fillStyle = 'rgba(45,212,191,0.12)';
+                            } else {
+                                ctx.fillStyle = 'rgba(251,191,36,0.12)';
+                            }
+                            ctx.fillRect(gx, gy, step, step);
+                        }
+                    }
+                }
+
+                // Draw grid
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                for (var x = 0; x < w; x += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, h);
+                    ctx.stroke();
+                }
+                for (var y = 0; y < h; y += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(w, y);
+                    ctx.stroke();
+                }
+
+                // Draw points
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = p.cls === 0 ? c.TEAL : c.AMBER;
+                    ctx.fill();
+                    ctx.strokeStyle = p.cls === 0 ? 'rgba(45,212,191,0.6)' : 'rgba(251,191,36,0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Inner dot
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = c.BG;
+                    ctx.fill();
+                }
+
+                needsRedraw = false;
+            }
+
+            function updateStats() {
+                var countA = 0, countB = 0;
+                for (var i = 0; i < points.length; i++) {
+                    if (points[i].cls === 0) countA++;
+                    else countB++;
+                }
+                if (countASpan) countASpan.textContent = 'Class A: ' + countA;
+                if (countBSpan) countBSpan.textContent = 'Class B: ' + countB;
+                if (totalSpan) totalSpan.textContent = 'Total: ' + points.length;
+            }
+
+            function scheduleRedraw() {
+                needsRedraw = true;
+                if (!rafId) {
+                    rafId = requestAnimationFrame(function() {
+                        rafId = null;
+                        if (needsRedraw) {
+                            drawBoundary();
+                            updateStats();
+                        }
+                    });
+                }
+            }
+
+            // Click handler
+            canvas.addEventListener('click', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var cls = parseInt(classSelect.value, 10);
+                points.push({ x: mx, y: my, cls: cls });
+                scheduleRedraw();
+            });
+
+            // K slider
+            kSlider.addEventListener('input', function() {
+                kValueSpan.textContent = kSlider.value;
+                scheduleRedraw();
+            });
+
+            // Clear
+            clearBtn.addEventListener('click', function() {
+                points = [];
+                scheduleRedraw();
+            });
+
+            // Sample data
+            sampleBtn.addEventListener('click', function() {
+                points = [];
+                // Class A cluster (top-left region)
+                for (var i = 0; i < 18; i++) {
+                    points.push({
+                        x: rand(w * 0.1, w * 0.45),
+                        y: rand(h * 0.1, h * 0.45),
+                        cls: 0
+                    });
+                }
+                // Class A secondary cluster (bottom-left)
+                for (var j = 0; j < 8; j++) {
+                    points.push({
+                        x: rand(w * 0.05, w * 0.35),
+                        y: rand(h * 0.55, h * 0.85),
+                        cls: 0
+                    });
+                }
+                // Class B cluster (right region)
+                for (var m = 0; m < 18; m++) {
+                    points.push({
+                        x: rand(w * 0.55, w * 0.9),
+                        y: rand(h * 0.15, h * 0.85),
+                        cls: 1
+                    });
+                }
+                // A few noisy/overlap points
+                for (var n = 0; n < 4; n++) {
+                    points.push({
+                        x: rand(w * 0.4, w * 0.6),
+                        y: rand(h * 0.3, h * 0.7),
+                        cls: Math.random() < 0.5 ? 0 : 1
+                    });
+                }
+                scheduleRedraw();
+            });
+
+            // Theme change observer
+            var observer = new MutationObserver(function() { scheduleRedraw(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            resize();
+            drawBoundary();
+            updateStats();
+            window.addEventListener('resize', function() {
+                resize();
+                scheduleRedraw();
+            });
+        })();
+
+        /* ==============================================
+           DEMO 2: CONFUSION MATRIX BUILDER
+           ============================================== */
+        (function initCMDemo() {
+            var canvas = document.getElementById('cm-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var matrix = { tp: 0, tn: 0, fp: 0, fn: 0 };
+
+            var tpBtn = document.getElementById('cm-tp');
+            var tnBtn = document.getElementById('cm-tn');
+            var fpBtn = document.getElementById('cm-fp');
+            var fnBtn = document.getElementById('cm-fn');
+            var clearBtn = document.getElementById('cm-clear');
+            var sampleBtn = document.getElementById('cm-sample');
+
+            var accSpan = document.getElementById('cm-accuracy');
+            var precSpan = document.getElementById('cm-precision');
+            var recSpan = document.getElementById('cm-recall');
+            var f1Span = document.getElementById('cm-f1');
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function computeMetrics() {
+                var total = matrix.tp + matrix.tn + matrix.fp + matrix.fn;
+                if (total === 0) return { accuracy: null, precision: null, recall: null, f1: null };
+                var acc = (matrix.tp + matrix.tn) / total;
+                var prec = (matrix.tp + matrix.fp) > 0 ? matrix.tp / (matrix.tp + matrix.fp) : null;
+                var rec = (matrix.tp + matrix.fn) > 0 ? matrix.tp / (matrix.tp + matrix.fn) : null;
+                var f1 = (prec !== null && rec !== null && (prec + rec) > 0)
+                    ? 2 * prec * rec / (prec + rec)
+                    : null;
+                return { accuracy: acc, precision: prec, recall: rec, f1: f1 };
+            }
+
+            function fmt(v) {
+                return v === null ? '\u2014' : v.toFixed(3);
+            }
+
+            function drawMatrix() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.CANVAS_BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var total = matrix.tp + matrix.tn + matrix.fp + matrix.fn;
+
+                // Layout
+                var pad = 30;
+                var labelW = 100;
+                var matrixX = labelW + pad;
+                var matrixY = 70 + pad;
+                var cellW = Math.min((w - matrixX - pad * 2) / 2, 180);
+                var cellH = Math.min((h - matrixY - pad * 2 - 80) / 2, 120);
+                var centerX = matrixX + cellW;
+                var centerY = matrixY + cellH;
+
+                // Title
+                ctx.font = '600 16px Inter, sans-serif';
+                ctx.fillStyle = c.WHITE;
+                ctx.textAlign = 'center';
+                ctx.fillText('Confusion Matrix', w / 2, 30);
+
+                // Column headers
+                ctx.font = '500 13px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.textAlign = 'center';
+                ctx.fillText('Predicted Positive', matrixX + cellW * 0.5, matrixY - 14);
+                ctx.fillStyle = c.AMBER;
+                ctx.fillText('Predicted Negative', matrixX + cellW * 1.5, matrixY - 14);
+
+                // Row headers
+                ctx.save();
+                ctx.font = '500 13px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillStyle = c.TEAL;
+                ctx.fillText('Actual', matrixX - 12, matrixY + cellH * 0.45);
+                ctx.fillText('Positive', matrixX - 12, matrixY + cellH * 0.45 + 16);
+                ctx.fillStyle = c.AMBER;
+                ctx.fillText('Actual', matrixX - 12, matrixY + cellH * 1.45);
+                ctx.fillText('Negative', matrixX - 12, matrixY + cellH * 1.45 + 16);
+                ctx.restore();
+
+                // Draw cells
+                var cells = [
+                    { x: matrixX, y: matrixY, val: matrix.tp, label: 'TP', color: c.GREEN, bg: 'rgba(34,197,94,0.12)' },
+                    { x: matrixX + cellW, y: matrixY, val: matrix.fn, label: 'FN', color: c.RED, bg: 'rgba(239,68,68,0.12)' },
+                    { x: matrixX, y: matrixY + cellH, val: matrix.fp, label: 'FP', color: c.RED, bg: 'rgba(239,68,68,0.12)' },
+                    { x: matrixX + cellW, y: matrixY + cellH, val: matrix.tn, label: 'TN', color: c.GREEN, bg: 'rgba(34,197,94,0.12)' }
+                ];
+
+                for (var i = 0; i < cells.length; i++) {
+                    var cell = cells[i];
+
+                    // Cell background
+                    ctx.fillStyle = cell.bg;
+                    ctx.fillRect(cell.x + 2, cell.y + 2, cellW - 4, cellH - 4);
+
+                    // Cell border
+                    ctx.strokeStyle = c.STROKE;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(cell.x + 2, cell.y + 2, cellW - 4, cellH - 4);
+
+                    // Value
+                    ctx.font = '700 32px JetBrains Mono, monospace';
+                    ctx.fillStyle = cell.color;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(cell.val), cell.x + cellW / 2, cell.y + cellH / 2 - 8);
+
+                    // Label
+                    ctx.font = '500 12px Inter, sans-serif';
+                    ctx.fillStyle = c.MUTED;
+                    ctx.fillText(cell.label, cell.x + cellW / 2, cell.y + cellH / 2 + 22);
+
+                    // Percentage
+                    if (total > 0) {
+                        var pct = ((cell.val / total) * 100).toFixed(1) + '%';
+                        ctx.font = '400 11px JetBrains Mono, monospace';
+                        ctx.fillStyle = c.MUTED;
+                        ctx.fillText(pct, cell.x + cellW / 2, cell.y + cellH / 2 + 38);
+                    }
+                }
+
+                // Metrics bar at bottom
+                var metrics = computeMetrics();
+                var barY = matrixY + cellH * 2 + 30;
+                var barItems = [
+                    { label: 'Accuracy', val: metrics.accuracy, color: c.CYAN },
+                    { label: 'Precision', val: metrics.precision, color: c.TEAL },
+                    { label: 'Recall', val: metrics.recall, color: c.AMBER },
+                    { label: 'F1-Score', val: metrics.f1, color: c.PURPLE }
+                ];
+
+                var barW = Math.min(cellW * 2, w - matrixX - pad);
+                var itemW = barW / barItems.length;
+
+                for (var j = 0; j < barItems.length; j++) {
+                    var item = barItems[j];
+                    var ix = matrixX + j * itemW;
+
+                    ctx.font = '500 11px Inter, sans-serif';
+                    ctx.fillStyle = c.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(item.label, ix + itemW / 2, barY);
+
+                    ctx.font = '600 18px JetBrains Mono, monospace';
+                    ctx.fillStyle = item.color;
+                    ctx.fillText(fmt(item.val), ix + itemW / 2, barY + 24);
+
+                    // Mini bar
+                    if (item.val !== null) {
+                        var barMaxW = itemW * 0.7;
+                        var barH = 5;
+                        var bx = ix + (itemW - barMaxW) / 2;
+                        var by = barY + 34;
+                        ctx.fillStyle = c.DIM;
+                        ctx.fillRect(bx, by, barMaxW, barH);
+                        ctx.fillStyle = item.color;
+                        ctx.fillRect(bx, by, barMaxW * item.val, barH);
+                    }
+                }
+
+                ctx.textBaseline = 'alphabetic';
+            }
+
+            function updateStatsText() {
+                var m = computeMetrics();
+                if (accSpan) accSpan.innerHTML = 'Accuracy: ' + fmt(m.accuracy);
+                if (precSpan) precSpan.innerHTML = 'Precision: ' + fmt(m.precision);
+                if (recSpan) recSpan.innerHTML = 'Recall: ' + fmt(m.recall);
+                if (f1Span) f1Span.innerHTML = 'F1-Score: ' + fmt(m.f1);
+            }
+
+            function refresh() {
+                drawMatrix();
+                updateStatsText();
+            }
+
+            tpBtn.addEventListener('click', function() { matrix.tp++; refresh(); });
+            tnBtn.addEventListener('click', function() { matrix.tn++; refresh(); });
+            fpBtn.addEventListener('click', function() { matrix.fp++; refresh(); });
+            fnBtn.addEventListener('click', function() { matrix.fn++; refresh(); });
+
+            clearBtn.addEventListener('click', function() {
+                matrix = { tp: 0, tn: 0, fp: 0, fn: 0 };
+                refresh();
+            });
+
+            sampleBtn.addEventListener('click', function() {
+                // Simulate a realistic concrete quality control scenario
+                matrix = { tp: 14, tn: 68, fp: 5, fn: 3 };
+                refresh();
+            });
+
+            // Theme observer
+            var observer = new MutationObserver(function() { refresh(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            resize();
+            refresh();
+            window.addEventListener('resize', function() {
+                resize();
+                refresh();
+            });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

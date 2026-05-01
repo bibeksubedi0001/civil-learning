@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.2 K-Means Clustering | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master K-Means clustering through a civil engineering lens. Learn the algorithm step by step, choose the right K with elbow and silhouette methods, cluster soil samples and traffic data, and explore interactive demos.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.2
+            </div>
+            <h1 class="chapter-hero__title">K-Means Clustering</h1>
+            <p class="chapter-hero__subtitle">
+                The workhorse of unsupervised learning &mdash; discover how K-Means partitions
+                data into meaningful groups by iteratively refining cluster centres, much like
+                an engineer zoning a construction site into regions of similar soil properties.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Sorting Without Labels</h2>
+                        <p>
+                            You are a geotechnical engineer on a large infrastructure project. The
+                            site investigation has produced 500 soil samples, each characterised by
+                            moisture content, liquid limit, plastic limit, grain size distribution,
+                            and dry density. Nobody has classified these samples yet. Your task:
+                            organise them into meaningful groups so that each zone of the site can be
+                            treated with the right foundation strategy.
+                        </p>
+                        <p>
+                            You could eyeball spreadsheet rows for hours. Or you could let
+                            <strong>K-Means clustering</strong> do the heavy lifting &mdash;
+                            automatically partitioning those 500 samples into K distinct groups where
+                            samples within each group are as similar as possible. That is exactly what
+                            this sub-chapter teaches you to do.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    K-Means is arguably the most widely used clustering algorithm in all of machine
+                    learning. Its elegance lies in its simplicity: initialise K cluster centres
+                    (centroids), assign each data point to the nearest centroid, recompute centroids
+                    as group averages, and repeat until convergence. Despite this simplicity, K-Means
+                    is remarkably effective across a huge range of practical applications, from
+                    market segmentation in business to soil classification in civil engineering.
+                </p>
+                <p>
+                    In this sub-chapter, we will dissect every step of the algorithm, build
+                    intuition through civil engineering analogies, explore how to choose the right
+                    number of clusters, examine limitations, and interact with two hands-on demos
+                    that let you watch K-Means work in real time.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds directly on Sub-chapter 3.1, where we introduced
+                        unsupervised learning fundamentals and clustering as a concept. You should
+                        understand what clustering means and why it differs from supervised
+                        classification. We will also reference Euclidean distance, so basic vector
+                        geometry is helpful.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHAT IS K-MEANS?
+             ========================================== -->
+        <section class="ch-section" id="what-is-kmeans">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bullseye"></i>
+                    What is K-Means?
+                </h2>
+
+                <p>
+                    K-Means is a <strong>partition-based clustering algorithm</strong> that divides a
+                    dataset of N data points into exactly K non-overlapping clusters. Each cluster is
+                    represented by its <strong>centroid</strong> &mdash; the arithmetic mean of all
+                    points assigned to that cluster. The algorithm's goal is to minimise the total
+                    <strong>within-cluster sum of squares (WCSS)</strong>, also called
+                    <strong>inertia</strong>: the sum of squared distances between each point and its
+                    assigned centroid.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Objective Function</h3>
+                        <p>
+                            K-Means seeks to minimise the following objective (inertia):
+                        </p>
+                        <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;padding:12px 0;color:var(--accent-primary);">
+                            J = &Sigma;<sub>k=1</sub><sup>K</sup>
+                            &Sigma;<sub>x &isin; C<sub>k</sub></sub>
+                            || x &minus; &mu;<sub>k</sub> ||<sup>2</sup>
+                        </p>
+                        <p>
+                            Where <strong>C<sub>k</sub></strong> is the set of points assigned to
+                            cluster k, and <strong>&mu;<sub>k</sub></strong> is the centroid (mean)
+                            of cluster k. The double bars denote Euclidean distance. The algorithm
+                            minimises J by alternately assigning points to their nearest centroid and
+                            recomputing centroids. Convergence is guaranteed because each step can
+                            only decrease (or maintain) J.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The "K" in K-Means is a <strong>hyperparameter</strong> &mdash; a value you
+                    choose <em>before</em> running the algorithm. It tells the algorithm how many
+                    clusters to create. Choosing K wisely is one of the most critical decisions in
+                    clustering, and we will dedicate an entire section to it later.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>K-Means is like placing K site offices on a construction
+                            site.</strong> Imagine you are managing a sprawling infrastructure
+                            project and need to position K temporary site offices so that every
+                            worker on site has the shortest possible walk to their nearest office.
+                        </p>
+                        <p>
+                            You start by placing the offices at random locations. Then you ask each
+                            worker to go to the nearest office. Once everyone is assigned, you notice
+                            that some offices are too far from the workers they serve. So you
+                            <em>move each office to the centre of its assigned group of workers</em>.
+                            Workers re-evaluate and may switch to a different, now-closer office.
+                            You repeat this process until the offices stop moving. The final
+                            positions minimise the total walking distance &mdash; exactly like
+                            K-Means minimises WCSS.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: THE ALGORITHM STEP BY STEP
+             ========================================== -->
+        <section class="ch-section" id="algorithm-steps">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ol"></i>
+                    The K-Means Algorithm Step by Step
+                </h2>
+
+                <p>
+                    K-Means follows a simple iterative procedure that converges to a local optimum.
+                    Let us walk through every step in detail, building intuition for what happens
+                    internally at each stage.
+                </p>
+
+                <!-- Step 1 -->
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Choose K and Initialise Centroids</h3>
+                        <p>
+                            Decide on the number of clusters K. Then select K initial centroid
+                            positions. The simplest approach is <strong>random initialisation</strong>:
+                            pick K data points at random and use their coordinates as the starting
+                            centroids. A smarter approach is <strong>K-Means++</strong>, which spaces
+                            initial centroids far apart to avoid poor starting configurations.
+                        </p>
+                        <p>
+                            In civil engineering terms, this is like randomly placing K survey flags
+                            across a construction site before deciding how to group soil samples by
+                            proximity.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Assign Each Point to the Nearest Centroid</h3>
+                        <p>
+                            For every data point in the dataset, compute the Euclidean distance to
+                            each of the K centroids. Assign the point to the cluster whose centroid
+                            is closest. After this step, every data point belongs to exactly one
+                            cluster, and each cluster has at least conceptually a set of assigned
+                            points (though some may be empty in edge cases).
+                        </p>
+                        <p>
+                            Imagine telling every worker on site: "Walk to the nearest site office."
+                            Each worker evaluates distances and picks the closest one.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Recompute Centroids</h3>
+                        <p>
+                            For each cluster, compute the mean (average) of all points currently
+                            assigned to it. This new mean becomes the cluster's updated centroid.
+                            The centroid literally moves to the "centre of gravity" of its members.
+                        </p>
+                        <p>
+                            If Cluster 2 contains points at coordinates (2, 3), (4, 5), and (6, 1),
+                            its new centroid becomes ((2+4+6)/3, (3+5+1)/3) = (4, 3). The site
+                            office relocates to the average position of all workers assigned to it.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Repeat Until Convergence</h3>
+                        <p>
+                            Go back to Step 2 and re-assign all points to the nearest (updated)
+                            centroid. Then recompute centroids again. Repeat this assign-update cycle
+                            until one of two stopping conditions is met:
+                        </p>
+                        <ul>
+                            <li><strong>No point changes its cluster assignment</strong> between iterations (full convergence).</li>
+                            <li><strong>Centroid movement falls below a threshold</strong> (approximate convergence).</li>
+                            <li><strong>A maximum number of iterations</strong> is reached (safety stop).</li>
+                        </ul>
+                        <p>
+                            Each iteration strictly decreases (or maintains) the inertia J, so the
+                            algorithm is guaranteed to converge. However, it may converge to a
+                            <em>local</em> optimum that is not the global best &mdash; which is why
+                            initialisation matters so much.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Convergence Guarantee</span>
+                    </div>
+                    <p>
+                        K-Means always converges because the assignment step never increases the
+                        objective J (each point moves to its nearest centroid, reducing or
+                        maintaining its contribution to J), and the update step also never increases
+                        J (the mean minimises the sum of squared deviations). Since J is bounded
+                        below by zero and each step reduces it, the algorithm must stop in finite
+                        time.
+                    </p>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Pseudocode: K-Means</span>
+                    </div>
+<pre><code>function KMeans(data, K):
+    centroids = initialise_randomly(data, K)
+    repeat:
+        // Assignment step
+        for each point x in data:
+            assign x to cluster with nearest centroid
+
+        // Update step
+        for each cluster k = 1 to K:
+            centroid[k] = mean of all points assigned to cluster k
+
+    until centroids do not change (or max iterations reached)
+    return clusters, centroids</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: INITIALISATION STRATEGIES
+             ========================================== -->
+        <section class="ch-section" id="initialisation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    Initialisation Strategies
+                </h2>
+
+                <p>
+                    The choice of initial centroid positions dramatically affects the final result.
+                    Poor initialisation can lead to suboptimal clusterings, empty clusters, or slow
+                    convergence. Two primary strategies dominate practice.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-dice"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Random Initialisation</h3>
+                        <p>
+                            The simplest approach: randomly select K data points from the dataset and
+                            use them as the initial centroids. This is fast and easy to implement, but
+                            it can produce wildly different results on different runs. If two initial
+                            centroids happen to land in the same dense region, one cluster may end up
+                            capturing most of the data while another captures almost none.
+                        </p>
+                        <p>
+                            <strong>Mitigation:</strong> Run K-Means multiple times with different
+                            random seeds and keep the result with the lowest inertia J. Libraries
+                            like scikit-learn default to 10 random restarts (<code>n_init=10</code>).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>K-Means++ Initialisation</h3>
+                        <p>
+                            K-Means++ (Arthur & Vassilvitskii, 2007) is a smarter initialisation that
+                            spreads centroids apart. The procedure is:
+                        </p>
+                        <ol>
+                            <li>Choose the first centroid uniformly at random from the data points.</li>
+                            <li>For each remaining data point, compute its distance to the nearest
+                                already-chosen centroid.</li>
+                            <li>Choose the next centroid with probability proportional to the squared
+                                distance &mdash; points far from existing centroids are more likely to
+                                be chosen.</li>
+                            <li>Repeat until all K centroids are selected.</li>
+                        </ol>
+                        <p>
+                            This dramatically reduces the chance of poor starting positions and
+                            provably yields an initialisation that is O(log K) competitive with the
+                            optimal solution. It is the default in most modern implementations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>K-Means++ is like strategic placement of emergency stations on a
+                            highway network.</strong> Rather than dropping stations at random
+                            locations (which might cluster them all in one city), you place the first
+                            station, then position each subsequent station far from the existing
+                            ones. This ensures broad coverage from the start, reducing iterations
+                            needed to converge on optimal positions.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: CHOOSING K - THE ELBOW METHOD
+             ========================================== -->
+        <section class="ch-section" id="choosing-k">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Choosing K: How Many Clusters?
+                </h2>
+
+                <p>
+                    K-Means requires you to specify K upfront. But in most real-world problems,
+                    the "correct" number of clusters is unknown. Choosing K too small forces
+                    dissimilar points into the same cluster. Choosing K too large fragments
+                    natural groups and introduces meaningless distinctions. Two widely used
+                    techniques help identify a good K.
+                </p>
+
+                <h3><i class="fa-solid fa-chart-line"></i> The Elbow Method</h3>
+
+                <p>
+                    Run K-Means for a range of K values (e.g., K = 1 to 10). For each K, record
+                    the inertia (WCSS). Plot inertia against K. As K increases, inertia always
+                    decreases (more clusters = smaller groups = lower within-cluster variance).
+                    Look for the "elbow" in the curve &mdash; the point where adding another
+                    cluster yields rapidly diminishing returns in inertia reduction.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-area"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Reading the Elbow Plot</h3>
+                        <p>
+                            The elbow point represents a balance between model complexity (more
+                            clusters) and explanatory power (lower inertia). Before the elbow,
+                            each additional cluster captures significant new structure. After the
+                            elbow, additional clusters provide only marginal improvement &mdash;
+                            you are essentially splitting existing groups rather than finding new
+                            ones.
+                        </p>
+                        <p>
+                            In civil engineering terms, think of it like adding survey boreholes to
+                            a site. The first few boreholes reveal major soil layer changes. Beyond
+                            a certain number, additional boreholes confirm what you already know
+                            rather than uncovering new geology. The elbow is where you get the best
+                            return on investigation effort.
+                        </p>
+                    </div>
+                </div>
+
+                <h3><i class="fa-solid fa-wave-square"></i> The Silhouette Method</h3>
+
+                <p>
+                    The silhouette score measures how similar a point is to its own cluster compared
+                    to neighbouring clusters. For each data point i:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Silhouette Coefficient</h3>
+                        <p>
+                            For each point <strong>i</strong>, compute:
+                        </p>
+                        <ul>
+                            <li><strong>a(i)</strong> = average distance from point i to all other
+                                points in the <em>same</em> cluster (cohesion).</li>
+                            <li><strong>b(i)</strong> = average distance from point i to all points
+                                in the <em>nearest neighbouring</em> cluster (separation).</li>
+                        </ul>
+                        <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;padding:8px 0;color:var(--accent-primary);">
+                            s(i) = (b(i) &minus; a(i)) / max(a(i), b(i))
+                        </p>
+                        <p>
+                            Values range from &minus;1 to +1. A score near +1 means the point is
+                            well-matched to its own cluster and poorly matched to neighbouring
+                            clusters. Near 0 means the point sits on the boundary between clusters.
+                            Near &minus;1 means the point may be assigned to the wrong cluster.
+                        </p>
+                        <p>
+                            The <strong>average silhouette score</strong> across all data points
+                            provides a global quality metric. Run K-Means for multiple K values and
+                            choose the K that maximises the average silhouette score.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Guidance</span>
+                    </div>
+                    <p>
+                        In practice, use <strong>both</strong> the elbow method and silhouette
+                        analysis together. The elbow gives a quick visual heuristic; the silhouette
+                        gives a quantitative score. When they agree, you can be confident in your
+                        choice of K. When they disagree, lean on domain knowledge &mdash; does the
+                        suggested K produce clusters that make physical sense for your engineering
+                        problem?
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: CE APPLICATION - SOIL SAMPLES
+             ========================================== -->
+        <section class="ch-section" id="ce-soil-samples">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mountain"></i>
+                    CE Application: Grouping Soil Samples
+                </h2>
+
+                <p>
+                    One of the most natural applications of K-Means in civil engineering is
+                    <strong>soil classification by measured properties</strong>. Rather than
+                    relying solely on traditional classification systems (like the Unified Soil
+                    Classification System), K-Means can discover data-driven groupings based on
+                    actual measured parameters from site investigations.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Scenario: Highway Embankment Investigation</h3>
+                        <p>
+                            A highway project requires earthworks along a 15 km corridor. Site
+                            investigation yields 400 soil samples with five measured properties:
+                            moisture content (%), liquid limit (%), plasticity index, percentage
+                            passing 75 &mu;m sieve, and unconfined compressive strength (kPa).
+                        </p>
+                        <p>
+                            Traditional classification would bin each sample into a USCS group. But
+                            K-Means can reveal more nuanced, site-specific groupings that reflect
+                            the actual variability of the corridor. For instance, it might discover
+                            that what USCS calls "CL" at this site actually contains two distinct
+                            sub-populations with very different moisture-strength relationships
+                            &mdash; information critical for embankment design.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Normalise the Features</h3>
+                        <p>
+                            Since moisture content (%) and UCS (kPa) have very different scales,
+                            normalise all features to zero mean and unit variance before clustering.
+                            Without normalisation, the feature with the largest numerical range
+                            dominates the distance calculations, and the clustering effectively
+                            ignores the smaller-scale features.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Run K-Means for Multiple K Values</h3>
+                        <p>
+                            Run K-Means with K = 2 through K = 8. Record the inertia and average
+                            silhouette score for each. The elbow plot suggests K = 4, and the
+                            silhouette analysis confirms it with a peak average score of 0.62.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Interpret the Clusters with Domain Knowledge</h3>
+                        <p>
+                            With K = 4, the engineer examines cluster centroids and discovers:
+                            Cluster A is a stiff, low-plasticity clay; Cluster B is a soft,
+                            high-moisture alluvial deposit; Cluster C is a well-graded granular
+                            material; and Cluster D is an intermediate silty clay. Each cluster maps
+                            to a distinct zone along the corridor, enabling differentiated design.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Python: Clustering Soil Samples</span>
+                    </div>
+<pre><code>from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+# Assume soil_data is (400, 5) array:
+# [moisture, liquid_limit, PI, pct_passing_75um, UCS]
+scaler = StandardScaler()
+X = scaler.fit_transform(soil_data)
+
+# Run K-Means with the elbow-method winner
+kmeans = KMeans(n_clusters=4, init='k-means++', n_init=10,
+                random_state=42)
+labels = kmeans.fit_predict(X)
+
+# Each sample now has a cluster label: 0, 1, 2, or 3
+# Map clusters to engineering descriptions using centroids
+centroids_original = scaler.inverse_transform(kmeans.cluster_centers_)
+for k, c in enumerate(centroids_original):
+    print(f"Cluster {k}: MC={c[0]:.1f}%, LL={c[1]:.1f}%, "
+          f"PI={c[2]:.1f}, Pass75={c[3]:.0f}%, UCS={c[4]:.0f} kPa")</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CE APPLICATION - TRAFFIC FLOW
+             ========================================== -->
+        <section class="ch-section" id="ce-traffic">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-traffic-light"></i>
+                    CE Application: Clustering Traffic Flow Patterns
+                </h2>
+
+                <p>
+                    Transportation engineers deal with enormous volumes of traffic sensor data.
+                    K-Means can identify distinct traffic flow regimes &mdash; patterns that repeat
+                    day after day &mdash; and support signal timing, capacity planning, and
+                    congestion management.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Scenario: Urban Intersection Analysis</h3>
+                        <p>
+                            An inductive loop detector at a major intersection records vehicle
+                            count, average speed, and occupancy (percentage of time the detector
+                            is occupied) every 15 minutes for 90 days. That yields 8,640 data
+                            points, each characterised by three features.
+                        </p>
+                        <p>
+                            Running K-Means with K = 4 might reveal: <strong>Cluster 1</strong> =
+                            free-flow conditions (high speed, low count, low occupancy);
+                            <strong>Cluster 2</strong> = moderate congestion (reduced speed,
+                            higher count); <strong>Cluster 3</strong> = heavy congestion (low
+                            speed, high occupancy); <strong>Cluster 4</strong> = off-peak/nighttime
+                            (very low count and occupancy). Mapping clusters back to timestamps
+                            reveals which hours and days experience each regime.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Why K-Means Works Well Here</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Traffic flow states tend to form compact, roughly spherical clusters
+                            in the (count, speed, occupancy) feature space. This is exactly the
+                            kind of structure K-Means is designed for. The clear separation between
+                            free flow, congestion, and off-peak makes K-Means an excellent first
+                            tool for this problem. If traffic patterns are more complex (e.g.,
+                            non-spherical clusters or overlapping regimes), more advanced methods
+                            like DBSCAN or Gaussian Mixture Models may be needed.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Scaling Matters</span>
+                    </div>
+                    <p>
+                        Vehicle count might range from 0 to 200 per interval, speed from 5 to
+                        80 km/h, and occupancy from 0 to 100%. Always standardise features before
+                        running K-Means. Without standardisation, the feature with the broadest
+                        numerical range dominates the distance metric, and the algorithm effectively
+                        clusters on that single feature alone.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: LIMITATIONS OF K-MEANS
+             ========================================== -->
+        <section class="ch-section" id="limitations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Limitations of K-Means
+                </h2>
+
+                <p>
+                    K-Means is powerful but not universal. Understanding its limitations is
+                    essential for knowing when to use it and when to reach for alternatives.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-dice"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensitivity to Initialisation</h3>
+                        <p>
+                            Because K-Means converges to a <strong>local optimum</strong>, the
+                            final clustering depends on the initial centroid positions. Two runs
+                            with different random seeds can produce very different results. This is
+                            especially problematic when clusters are not well separated.
+                        </p>
+                        <p>
+                            <strong>Mitigation:</strong> Use K-Means++ initialisation and run the
+                            algorithm multiple times (e.g., <code>n_init=10</code>), keeping the
+                            result with the lowest inertia.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-question"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Requires Specifying K in Advance</h3>
+                        <p>
+                            You must decide the number of clusters before running the algorithm.
+                            In many engineering scenarios, the "true" number of groups is unknown.
+                            While the elbow method and silhouette analysis help, they do not always
+                            give a clear answer &mdash; especially when clusters have different
+                            sizes, densities, or degrees of overlap.
+                        </p>
+                        <p>
+                            <strong>Alternative:</strong> Algorithms like DBSCAN or HDBSCAN
+                            determine the number of clusters automatically from the data's density
+                            structure.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Assumes Spherical, Equally Sized Clusters</h3>
+                        <p>
+                            K-Means uses Euclidean distance, which implicitly assumes clusters are
+                            spherical (isotropic) in feature space and roughly the same size. When
+                            clusters are elongated, irregularly shaped, or vastly different in size,
+                            K-Means can produce poor results &mdash; splitting large clusters or
+                            merging distinct but adjacent ones.
+                        </p>
+                        <p>
+                            For example, if one soil type is abundant and another is rare, K-Means
+                            may split the abundant type into two clusters while absorbing the rare
+                            type into its larger neighbour.
+                        </p>
+                        <p>
+                            <strong>Alternative:</strong> Gaussian Mixture Models (GMMs) can handle
+                            elliptical clusters of different sizes by modelling each cluster as a
+                            full covariance Gaussian.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-virus"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensitive to Outliers</h3>
+                        <p>
+                            Because centroids are computed as means, a single extreme outlier can
+                            pull a centroid far from the bulk of its cluster. In site investigation
+                            data, outliers are common &mdash; a sample might be contaminated, a
+                            sensor might misread, or a genuinely unusual geological feature might
+                            be encountered.
+                        </p>
+                        <p>
+                            <strong>Mitigation:</strong> Remove or cap outliers before clustering,
+                            or use K-Medoids (PAM), which uses medians instead of means and is
+                            therefore more robust to outliers.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Scaling Dependency</h3>
+                        <p>
+                            K-Means relies on Euclidean distance. If features are on different
+                            scales (e.g., moisture content in % versus shear strength in kPa), the
+                            feature with the largest numeric range will dominate clustering
+                            decisions. Always standardise or normalise features before running
+                            K-Means.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>When NOT to Use K-Means</span>
+                    </div>
+                    <p>
+                        Avoid K-Means when: clusters are not roughly spherical; the number of
+                        clusters is genuinely unknown and varies widely; the dataset contains many
+                        outliers; cluster sizes are vastly unequal; or features are categorical
+                        (K-Means needs numerical distances). In these cases, consider DBSCAN,
+                        hierarchical clustering, Gaussian Mixture Models, or K-Modes (for
+                        categorical data).
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: K-MEANS IN CONTEXT
+             ========================================== -->
+        <section class="ch-section" id="in-context">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    K-Means in the Clustering Landscape
+                </h2>
+
+                <p>
+                    K-Means is one tool in a rich toolkit of clustering algorithms. Understanding
+                    where it sits relative to others helps you choose the right method for your
+                    engineering problem.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison Table</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.95rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-active);">
+                                        <th style="text-align:left;padding:12px 16px;color:var(--accent-primary);font-weight:700;">Feature</th>
+                                        <th style="text-align:left;padding:12px 16px;color:var(--accent-secondary);font-weight:700;">K-Means</th>
+                                        <th style="text-align:left;padding:12px 16px;color:var(--accent-warm);font-weight:700;">DBSCAN</th>
+                                        <th style="text-align:left;padding:12px 16px;color:var(--accent-success);font-weight:700;">Hierarchical</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;font-weight:600;">Requires K?</td>
+                                        <td style="padding:10px 16px;">Yes</td>
+                                        <td style="padding:10px 16px;">No</td>
+                                        <td style="padding:10px 16px;">Cut-off needed</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;font-weight:600;">Cluster shape</td>
+                                        <td style="padding:10px 16px;">Spherical</td>
+                                        <td style="padding:10px 16px;">Arbitrary</td>
+                                        <td style="padding:10px 16px;">Arbitrary</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;font-weight:600;">Handles noise?</td>
+                                        <td style="padding:10px 16px;">Poorly</td>
+                                        <td style="padding:10px 16px;">Well</td>
+                                        <td style="padding:10px 16px;">Depends</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px;font-weight:600;">Scalability</td>
+                                        <td style="padding:10px 16px;">Excellent</td>
+                                        <td style="padding:10px 16px;">Good</td>
+                                        <td style="padding:10px 16px;">Limited</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:10px 16px;font-weight:600;">Interpretability</td>
+                                        <td style="padding:10px 16px;">High</td>
+                                        <td style="padding:10px 16px;">Moderate</td>
+                                        <td style="padding:10px 16px;">High (dendrogram)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 1 - STEP-BY-STEP K-MEANS
+             ========================================== -->
+        <section class="ch-section" id="demo-step-by-step">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Interactive Demo: Step-by-Step K-Means
+                </h2>
+
+                <p>
+                    This demo lets you control each iteration of K-Means manually. Generate random
+                    data points, initialise centroids, then step through the assign-update cycle one
+                    iteration at a time. Watch the centroids migrate and cluster assignments shift
+                    until convergence.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-stepwise">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-shoe-prints"></i> Step Through K-Means Iteration by Iteration</h3>
+                        <p>
+                            Click "Generate Data" to create sample points, then "Initialise" to
+                            place random centroids. Use "Step" to advance one full iteration
+                            (assign + update). Observe how centroids move and colours change.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <button id="step-generate" class="demo-btn" title="Generate random data points">
+                            <i class="fa-solid fa-shuffle"></i> Generate Data
+                        </button>
+                        <button id="step-init" class="demo-btn" title="Place initial centroids">
+                            <i class="fa-solid fa-location-crosshairs"></i> Initialise
+                        </button>
+                        <button id="step-next" class="demo-btn" title="Run one iteration">
+                            <i class="fa-solid fa-forward-step"></i> Step
+                        </button>
+                        <button id="step-run" class="demo-btn" title="Run to convergence">
+                            <i class="fa-solid fa-forward-fast"></i> Run All
+                        </button>
+                        <button id="step-reset" class="demo-btn" title="Reset everything">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <label style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:0.85rem;">
+                            <i class="fa-solid fa-layer-group"></i> K:
+                            <select id="step-k" style="background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 8px;">
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </label>
+                    </div>
+                    <canvas id="step-canvas" style="width:100%;height:480px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--canvas-bg);"></canvas>
+                    <div id="step-info" style="margin-top:12px;font-size:0.88rem;color:var(--text-secondary);min-height:24px;">
+                        Click "Generate Data" to begin. Then initialise centroids and step through each iteration.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 2 - ELBOW METHOD VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-elbow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Interactive Demo: Elbow Method Visualiser
+                </h2>
+
+                <p>
+                    See the elbow method in action. Generate data with a known number of natural
+                    clusters, then watch the inertia-vs-K plot build as K-Means runs for each K
+                    value. The elbow should appear near the true number of clusters.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-elbow">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-magnifying-glass-chart"></i> Find the Elbow</h3>
+                        <p>
+                            Choose the number of true clusters in the data, generate it, and then
+                            run the elbow analysis. The plot shows inertia (WCSS) for K = 1 to 8.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <label style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:0.85rem;">
+                            <i class="fa-solid fa-bullseye"></i> True clusters:
+                            <select id="elbow-true-k" style="background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 8px;">
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </label>
+                        <button id="elbow-generate" class="demo-btn" title="Generate clustered data">
+                            <i class="fa-solid fa-shuffle"></i> Generate Data
+                        </button>
+                        <button id="elbow-run" class="demo-btn" title="Run elbow analysis">
+                            <i class="fa-solid fa-chart-line"></i> Run Elbow Analysis
+                        </button>
+                        <button id="elbow-reset" class="demo-btn" title="Reset">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:280px;">
+                            <div style="text-align:center;font-size:0.82rem;font-weight:600;color:var(--accent-secondary);margin-bottom:6px;">
+                                <i class="fa-solid fa-braille"></i> Data Points
+                            </div>
+                            <canvas id="elbow-data-canvas" style="width:100%;height:360px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--canvas-bg);"></canvas>
+                        </div>
+                        <div style="flex:1;min-width:280px;">
+                            <div style="text-align:center;font-size:0.82rem;font-weight:600;color:var(--accent-warm);margin-bottom:6px;">
+                                <i class="fa-solid fa-chart-line"></i> Inertia vs K (Elbow Plot)
+                            </div>
+                            <canvas id="elbow-plot-canvas" style="width:100%;height:360px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--canvas-bg);"></canvas>
+                        </div>
+                    </div>
+                    <div id="elbow-info" style="margin-top:12px;font-size:0.88rem;color:var(--text-secondary);min-height:24px;">
+                        Choose the true number of clusters, generate data, then run the elbow analysis to see the inertia curve.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: PRACTICAL WORKFLOW SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    Practical Workflow for K-Means in Engineering
+                </h2>
+
+                <p>
+                    Here is a step-by-step workflow for applying K-Means to a real civil
+                    engineering dataset, from raw data to actionable insights.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Collect and Clean Data</h3>
+                        <p>
+                            Gather measurements from site investigations, sensors, or databases.
+                            Handle missing values (impute or remove). Remove or cap obvious
+                            outliers that could distort centroids.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Feature Selection and Scaling</h3>
+                        <p>
+                            Select features relevant to your engineering question. Standardise all
+                            features to zero mean and unit variance. Consider whether dimensionality
+                            reduction (PCA) is needed if you have many correlated features.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Determine K</h3>
+                        <p>
+                            Run the elbow method and silhouette analysis for a range of K values.
+                            Cross-check with domain knowledge: does the suggested K make engineering
+                            sense? If the elbow is ambiguous, test the top 2-3 candidates.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Run K-Means and Validate</h3>
+                        <p>
+                            Run K-Means with the chosen K, using K-Means++ initialisation and
+                            multiple restarts. Examine cluster centroids: do they correspond to
+                            physically distinct groups? Visualise clusters in 2D projections. Check
+                            cluster sizes for severe imbalances.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Apply to Engineering Decisions</h3>
+                        <p>
+                            Map clusters back to the physical domain. Assign soil zones on site
+                            plans. Differentiate design parameters by cluster. Use cluster labels
+                            as a new feature in downstream supervised models if needed.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: COMMON PITFALLS
+             ========================================== -->
+        <section class="ch-section" id="pitfalls">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bug"></i>
+                    Common Pitfalls and How to Avoid Them
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-unbalanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Forgetting to Scale Features</h3>
+                        <p>
+                            This is the most common beginner mistake. If one feature ranges from
+                            0 to 1000 and another from 0 to 1, the first feature will dominate all
+                            distance calculations. The resulting clusters will effectively be
+                            one-dimensional groupings based on that single feature. Always
+                            standardise before clustering.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clone"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Running K-Means Only Once</h3>
+                        <p>
+                            A single run may converge to a poor local optimum. Always run multiple
+                            times with different initialisations and select the best result (lowest
+                            inertia). In scikit-learn, set <code>n_init=10</code> or higher.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye-slash"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Blindly Trusting the Elbow</h3>
+                        <p>
+                            The elbow method does not always produce a clear elbow. Some datasets
+                            show a smooth curve with no obvious bend. In such cases, combine with
+                            silhouette analysis and, critically, use engineering judgement. If a
+                            geotechnical engineer knows the site has three distinct geological
+                            formations, K = 3 is defensible even if the elbow suggests K = 4.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Applying K-Means to Non-Spherical Data</h3>
+                        <p>
+                            If your data forms elongated, crescent-shaped, or nested clusters,
+                            K-Means will fail to capture the true structure. Visualise your data
+                            first (2D scatter plots or PCA projections) to check whether K-Means'
+                            spherical assumption is reasonable. If not, switch to DBSCAN,
+                            spectral clustering, or GMMs.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Check your grasp of K-Means clustering with these four questions. Each
+                    reinforces a core concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        What does the "K" in K-Means represent?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> The number of features in the dataset
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> The number of clusters to create
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> The number of iterations the algorithm runs
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> The number of data points in the dataset
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! K is a hyperparameter that
+                        specifies how many clusters the algorithm should partition the data into. It
+                        must be chosen before running the algorithm.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. K represents the
+                        <strong>number of clusters</strong>. It is set by the user before the
+                        algorithm runs. The algorithm then partitions all data points into exactly
+                        K groups.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        Why is feature scaling (standardisation) important before running K-Means?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> It makes the algorithm converge in fewer iterations
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> It removes outliers from the dataset
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> It prevents features with larger numeric ranges from dominating the distance metric
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> It is only required for datasets with more than 10 features
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! K-Means uses Euclidean
+                        distance. Without scaling, features with larger numerical ranges contribute
+                        disproportionately to distance calculations, effectively making the algorithm
+                        cluster based on one dominant feature while ignoring others.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The primary reason is that
+                        <strong>features with larger ranges dominate the Euclidean distance</strong>.
+                        For example, if moisture content ranges 5-50% and UCS ranges 50-5000 kPa, the
+                        UCS feature will control all cluster assignments unless both are standardised.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        In the elbow method, what does the "elbow" point represent?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> The K value where inertia reaches zero
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> The K value where the algorithm fails to converge
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> The K value where adding more clusters yields diminishing returns in inertia reduction
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The maximum K value that can be used with the dataset
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The elbow point is where the
+                        rate of inertia decrease sharply slows down. Before the elbow, each additional
+                        cluster captures significant new structure. After the elbow, additional clusters
+                        provide only marginal improvement, suggesting you are over-partitioning.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The elbow is the K value
+                        where <strong>diminishing returns</strong> begin. Adding clusters beyond this
+                        point gives only marginal reductions in inertia, meaning you are splitting
+                        already-coherent groups rather than finding new ones.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        Which is a fundamental limitation of K-Means?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> It cannot handle datasets with more than two features
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> It always finds the global optimum solution
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> It assumes clusters are spherical and equally sized
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> It requires labelled training data
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! K-Means uses Euclidean
+                        distance, which implicitly assumes spherical (isotropic) clusters of
+                        similar size. It struggles with elongated, irregular, or highly unequal
+                        clusters. Alternatives like DBSCAN or GMMs handle these shapes better.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. K-Means can handle any
+                        number of features and does <em>not</em> require labels (it is unsupervised).
+                        Its key limitation is the <strong>spherical cluster assumption</strong>:
+                        the Euclidean distance metric creates Voronoi-cell partitions that work best
+                        for compact, roughly equal-sized, blob-like clusters.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul>
+                            <li>K-Means partitions N data points into K clusters by iteratively
+                                assigning points to their nearest centroid and recomputing centroids
+                                as cluster means.</li>
+                            <li>The algorithm minimises the within-cluster sum of squares (inertia)
+                                and is guaranteed to converge, but only to a local optimum.</li>
+                            <li>Initialisation matters: use K-Means++ and multiple restarts to
+                                mitigate sensitivity to starting positions.</li>
+                            <li>Choose K using the elbow method (plot inertia vs K) and silhouette
+                                analysis (measure cluster cohesion vs separation), combined with
+                                domain knowledge.</li>
+                            <li>Always standardise features before running K-Means to prevent
+                                scale-dependent distortions.</li>
+                            <li>K-Means assumes spherical, equally sized clusters and is sensitive
+                                to outliers. Use DBSCAN, hierarchical clustering, or GMMs when
+                                these assumptions are violated.</li>
+                            <li>In civil engineering, K-Means is valuable for soil classification,
+                                traffic flow analysis, structural health monitoring, and any
+                                scenario where unlabelled data needs to be grouped by similarity.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Looking Ahead</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we explore <strong>hierarchical clustering</strong>,
+                        which does not require specifying K in advance and produces a dendrogram
+                        that reveals the nested structure of clusters at every level. This addresses
+                        one of K-Means' key limitations and provides a complementary perspective on
+                        grouping data.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub1.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.1 UL Fundamentals
+        </a>
+        <a href="sub3.html" class="chapter-nav__link next">
+            3.3 Hierarchical Clustering <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+
+        /* ==============================================
+           CLUSTER COLOUR PALETTE
+           ============================================== */
+        var CLUSTER_COLORS_DARK  = ['#2dd4bf','#22d3ee','#fbbf24','#ef4444','#a78bfa','#f472b6','#34d399','#fb923c'];
+        var CLUSTER_COLORS_LIGHT = ['#059669','#0284c7','#d97706','#dc2626','#7c3aed','#db2777','#16a34a','#ea580c'];
+
+        function clusterColors() {
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return dark ? CLUSTER_COLORS_DARK : CLUSTER_COLORS_LIGHT;
+        }
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED CLUSTERING PARTICLES
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var particles = [];
+            var centroids = [];
+            var K = 4;
+            var animFrame;
+
+            function resize() {
+                var r = initCanvas(canvas);
+                ctx = r.ctx; w = r.w; h = r.h;
+                if (particles.length === 0) generateParticles();
+            }
+
+            function generateParticles() {
+                particles = [];
+                centroids = [];
+                var cx = [w*0.25, w*0.75, w*0.5, w*0.3];
+                var cy = [h*0.3, h*0.7, h*0.5, h*0.8];
+                for (var k = 0; k < K; k++) {
+                    centroids.push({ x: cx[k], y: cy[k] });
+                    for (var i = 0; i < 25; i++) {
+                        particles.push({
+                            x: cx[k] + (Math.random()-0.5)*w*0.22,
+                            y: cy[k] + (Math.random()-0.5)*h*0.28,
+                            vx: (Math.random()-0.5)*0.3,
+                            vy: (Math.random()-0.5)*0.3,
+                            cluster: k,
+                            r: 2 + Math.random()*2
+                        });
+                    }
+                }
+            }
+
+            function animate() {
+                var cols = clusterColors();
+                ctx.clearRect(0, 0, w, h);
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                    ctx.fillStyle = cols[p.cluster % cols.length];
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+                for (var c = 0; c < centroids.length; c++) {
+                    var cn = centroids[c];
+                    ctx.beginPath();
+                    ctx.moveTo(cn.x-6, cn.y); ctx.lineTo(cn.x+6, cn.y);
+                    ctx.moveTo(cn.x, cn.y-6); ctx.lineTo(cn.x, cn.y+6);
+                    ctx.strokeStyle = cols[c % cols.length];
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                animFrame = requestAnimationFrame(animate);
+            }
+
+            resize();
+            animate();
+            window.addEventListener('resize', function(){ resize(); });
+            var thObs = new MutationObserver(function(){ resize(); });
+            thObs.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 1: STEP-BY-STEP K-MEANS
+           ============================================== */
+        (function initStepDemo() {
+            var canvas = document.getElementById('step-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var points = [];
+            var centroids = [];
+            var assignments = [];
+            var iteration = 0;
+            var converged = false;
+
+            function resize() {
+                var r = initCanvas(canvas);
+                ctx = r.ctx; w = r.w; h = r.h;
+                draw();
+            }
+
+            function draw() {
+                var cols = clusterColors();
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* grid */
+                ctx.strokeStyle = colors.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(w,gy); ctx.stroke();
+                }
+
+                /* draw assignment lines */
+                if (centroids.length > 0 && assignments.length === points.length) {
+                    for (var i = 0; i < points.length; i++) {
+                        var ci = assignments[i];
+                        if (ci >= 0 && ci < centroids.length) {
+                            ctx.beginPath();
+                            ctx.moveTo(points[i].x, points[i].y);
+                            ctx.lineTo(centroids[ci].x, centroids[ci].y);
+                            ctx.strokeStyle = cols[ci % cols.length];
+                            ctx.globalAlpha = 0.12;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+
+                /* draw points */
+                for (var j = 0; j < points.length; j++) {
+                    ctx.beginPath();
+                    ctx.arc(points[j].x, points[j].y, 5, 0, Math.PI*2);
+                    if (assignments.length === points.length && assignments[j] >= 0) {
+                        ctx.fillStyle = cols[assignments[j] % cols.length];
+                    } else {
+                        ctx.fillStyle = colors.MUTED;
+                    }
+                    ctx.fill();
+                }
+
+                /* draw centroids */
+                for (var c = 0; c < centroids.length; c++) {
+                    var cx = centroids[c].x, cy = centroids[c].y;
+                    ctx.beginPath();
+                    ctx.moveTo(cx-10, cy-10); ctx.lineTo(cx+10, cy+10);
+                    ctx.moveTo(cx+10, cy-10); ctx.lineTo(cx-10, cy+10);
+                    ctx.strokeStyle = cols[c % cols.length];
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    /* outer ring */
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 14, 0, Math.PI*2);
+                    ctx.strokeStyle = cols[c % cols.length];
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                /* iteration label */
+                ctx.fillStyle = colors.TEXT;
+                ctx.font = '13px Inter, sans-serif';
+                ctx.fillText('Iteration: ' + iteration + (converged ? ' (converged)' : ''), 12, 20);
+                ctx.fillText('Points: ' + points.length + '  |  K: ' + centroids.length, 12, 38);
+            }
+
+            function generateData() {
+                var K = parseInt(document.getElementById('step-k').value) || 3;
+                points = [];
+                centroids = [];
+                assignments = [];
+                iteration = 0;
+                converged = false;
+                var margin = 60;
+                var cxArr = [], cyArr = [];
+                for (var k = 0; k < K; k++) {
+                    cxArr.push(margin + Math.random()*(w - 2*margin));
+                    cyArr.push(margin + Math.random()*(h - 2*margin));
+                }
+                for (var k2 = 0; k2 < K; k2++) {
+                    var nPts = 25 + Math.floor(Math.random()*20);
+                    for (var i = 0; i < nPts; i++) {
+                        points.push({
+                            x: cxArr[k2] + (Math.random()-0.5)*w*0.2,
+                            y: cyArr[k2] + (Math.random()-0.5)*h*0.2
+                        });
+                    }
+                }
+                draw();
+                document.getElementById('step-info').textContent =
+                    'Generated ' + points.length + ' points. Click "Initialise" to place centroids.';
+            }
+
+            function initCentroids() {
+                if (points.length === 0) {
+                    document.getElementById('step-info').textContent = 'Generate data first!';
+                    return;
+                }
+                var K = parseInt(document.getElementById('step-k').value) || 3;
+                centroids = [];
+                assignments = [];
+                iteration = 0;
+                converged = false;
+                /* K-Means++ initialisation */
+                var idx = Math.floor(Math.random()*points.length);
+                centroids.push({ x: points[idx].x, y: points[idx].y });
+                for (var c = 1; c < K; c++) {
+                    var dists = [];
+                    var total = 0;
+                    for (var i = 0; i < points.length; i++) {
+                        var minD = Infinity;
+                        for (var j = 0; j < centroids.length; j++) {
+                            var dx = points[i].x - centroids[j].x;
+                            var dy = points[i].y - centroids[j].y;
+                            var d = dx*dx + dy*dy;
+                            if (d < minD) minD = d;
+                        }
+                        dists.push(minD);
+                        total += minD;
+                    }
+                    var r = Math.random()*total;
+                    var cum = 0;
+                    for (var i2 = 0; i2 < dists.length; i2++) {
+                        cum += dists[i2];
+                        if (cum >= r) {
+                            centroids.push({ x: points[i2].x, y: points[i2].y });
+                            break;
+                        }
+                    }
+                }
+                draw();
+                document.getElementById('step-info').textContent =
+                    'Centroids initialised (K-Means++). Click "Step" to run one iteration.';
+            }
+
+            function assignPoints() {
+                assignments = [];
+                for (var i = 0; i < points.length; i++) {
+                    var bestK = 0, bestD = Infinity;
+                    for (var c = 0; c < centroids.length; c++) {
+                        var dx = points[i].x - centroids[c].x;
+                        var dy = points[i].y - centroids[c].y;
+                        var d = dx*dx + dy*dy;
+                        if (d < bestD) { bestD = d; bestK = c; }
+                    }
+                    assignments.push(bestK);
+                }
+            }
+
+            function updateCentroids() {
+                var K = centroids.length;
+                var sums = [], counts = [];
+                for (var k = 0; k < K; k++) { sums.push({x:0,y:0}); counts.push(0); }
+                for (var i = 0; i < points.length; i++) {
+                    var cl = assignments[i];
+                    sums[cl].x += points[i].x;
+                    sums[cl].y += points[i].y;
+                    counts[cl]++;
+                }
+                var moved = false;
+                for (var k2 = 0; k2 < K; k2++) {
+                    if (counts[k2] > 0) {
+                        var nx = sums[k2].x / counts[k2];
+                        var ny = sums[k2].y / counts[k2];
+                        var dx = nx - centroids[k2].x;
+                        var dy = ny - centroids[k2].y;
+                        if (dx*dx + dy*dy > 0.5) moved = true;
+                        centroids[k2].x = nx;
+                        centroids[k2].y = ny;
+                    }
+                }
+                return moved;
+            }
+
+            function stepOnce() {
+                if (centroids.length === 0) {
+                    document.getElementById('step-info').textContent = 'Initialise centroids first!';
+                    return;
+                }
+                if (converged) {
+                    document.getElementById('step-info').textContent = 'Already converged at iteration ' + iteration + '!';
+                    return;
+                }
+                assignPoints();
+                var moved = updateCentroids();
+                iteration++;
+                if (!moved) converged = true;
+                draw();
+                document.getElementById('step-info').textContent = converged
+                    ? 'Converged after ' + iteration + ' iterations! Centroids stopped moving.'
+                    : 'Iteration ' + iteration + ' complete. Centroids moved. Click "Step" again.';
+            }
+
+            function runAll() {
+                if (centroids.length === 0) {
+                    document.getElementById('step-info').textContent = 'Initialise centroids first!';
+                    return;
+                }
+                var maxIter = 100;
+                while (!converged && iteration < maxIter) {
+                    assignPoints();
+                    var moved = updateCentroids();
+                    iteration++;
+                    if (!moved) converged = true;
+                }
+                draw();
+                document.getElementById('step-info').textContent =
+                    'Converged after ' + iteration + ' iterations. Final inertia shown by tightness of clusters.';
+            }
+
+            function reset() {
+                points = [];
+                centroids = [];
+                assignments = [];
+                iteration = 0;
+                converged = false;
+                draw();
+                document.getElementById('step-info').textContent =
+                    'Reset. Click "Generate Data" to begin.';
+            }
+
+            document.getElementById('step-generate').addEventListener('click', generateData);
+            document.getElementById('step-init').addEventListener('click', initCentroids);
+            document.getElementById('step-next').addEventListener('click', stepOnce);
+            document.getElementById('step-run').addEventListener('click', runAll);
+            document.getElementById('step-reset').addEventListener('click', reset);
+
+            resize();
+            window.addEventListener('resize', resize);
+            var obs1 = new MutationObserver(function(){ resize(); });
+            obs1.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2: ELBOW METHOD VISUALISER
+           ============================================== */
+        (function initElbowDemo() {
+            var dataCanvas = document.getElementById('elbow-data-canvas');
+            var plotCanvas = document.getElementById('elbow-plot-canvas');
+            if (!dataCanvas || !plotCanvas) return;
+
+            var dCtx, dW, dH;
+            var pCtx, pW, pH;
+            var points = [];
+            var elbowResults = []; /* [{k, inertia}] */
+            var trueLabels = [];
+
+            function resizeData() {
+                var r = initCanvas(dataCanvas);
+                dCtx = r.ctx; dW = r.w; dH = r.h;
+                drawData();
+            }
+            function resizePlot() {
+                var r = initCanvas(plotCanvas);
+                pCtx = r.ctx; pW = r.w; pH = r.h;
+                drawPlot();
+            }
+
+            function drawData() {
+                var colors = getColors();
+                var cols = clusterColors();
+                dCtx.clearRect(0, 0, dW, dH);
+
+                /* grid */
+                dCtx.strokeStyle = colors.GRID;
+                dCtx.lineWidth = 1;
+                for (var gx = 0; gx < dW; gx += 40) {
+                    dCtx.beginPath(); dCtx.moveTo(gx,0); dCtx.lineTo(gx,dH); dCtx.stroke();
+                }
+                for (var gy = 0; gy < dH; gy += 40) {
+                    dCtx.beginPath(); dCtx.moveTo(0,gy); dCtx.lineTo(dW,gy); dCtx.stroke();
+                }
+
+                for (var i = 0; i < points.length; i++) {
+                    dCtx.beginPath();
+                    dCtx.arc(points[i].x, points[i].y, 4, 0, Math.PI*2);
+                    dCtx.fillStyle = trueLabels.length > 0 ? cols[trueLabels[i] % cols.length] : colors.MUTED;
+                    dCtx.fill();
+                }
+                if (points.length === 0) {
+                    dCtx.fillStyle = colors.TEXT;
+                    dCtx.font = '14px Inter, sans-serif';
+                    dCtx.textAlign = 'center';
+                    dCtx.fillText('Click "Generate Data" to create points', dW/2, dH/2);
+                    dCtx.textAlign = 'left';
+                }
+            }
+
+            function drawPlot() {
+                var colors = getColors();
+                pCtx.clearRect(0, 0, pW, pH);
+
+                /* axes area */
+                var pad = { left:55, right:20, top:20, bottom:45 };
+                var plotW = pW - pad.left - pad.right;
+                var plotH = pH - pad.top - pad.bottom;
+
+                /* grid */
+                pCtx.strokeStyle = colors.GRID;
+                pCtx.lineWidth = 1;
+                for (var gx = pad.left; gx <= pW-pad.right; gx += plotW/8) {
+                    pCtx.beginPath(); pCtx.moveTo(gx,pad.top); pCtx.lineTo(gx,pH-pad.bottom); pCtx.stroke();
+                }
+                for (var gy = pad.top; gy <= pH-pad.bottom; gy += plotH/5) {
+                    pCtx.beginPath(); pCtx.moveTo(pad.left,gy); pCtx.lineTo(pW-pad.right,gy); pCtx.stroke();
+                }
+
+                /* axes */
+                pCtx.strokeStyle = colors.STROKE;
+                pCtx.lineWidth = 1.5;
+                pCtx.beginPath();
+                pCtx.moveTo(pad.left, pad.top);
+                pCtx.lineTo(pad.left, pH-pad.bottom);
+                pCtx.lineTo(pW-pad.right, pH-pad.bottom);
+                pCtx.stroke();
+
+                /* axis labels */
+                pCtx.fillStyle = colors.TEXT;
+                pCtx.font = '12px Inter, sans-serif';
+                pCtx.textAlign = 'center';
+                pCtx.fillText('K (number of clusters)', pW/2, pH - 5);
+                pCtx.save();
+                pCtx.translate(14, pH/2);
+                pCtx.rotate(-Math.PI/2);
+                pCtx.fillText('Inertia (WCSS)', 0, 0);
+                pCtx.restore();
+
+                if (elbowResults.length === 0) {
+                    pCtx.fillStyle = colors.TEXT;
+                    pCtx.font = '14px Inter, sans-serif';
+                    pCtx.textAlign = 'center';
+                    pCtx.fillText('Run elbow analysis to see the plot', pW/2, pH/2);
+                    pCtx.textAlign = 'left';
+                    return;
+                }
+
+                /* draw elbow curve */
+                var maxInertia = elbowResults[0].inertia;
+                var minInertia = elbowResults[elbowResults.length-1].inertia;
+                var range = maxInertia - minInertia || 1;
+
+                pCtx.beginPath();
+                for (var i = 0; i < elbowResults.length; i++) {
+                    var px = pad.left + (i / (elbowResults.length-1)) * plotW;
+                    var py = pad.top + (1 - (elbowResults[i].inertia - minInertia*0.8) / (maxInertia - minInertia*0.8)) * plotH;
+                    if (i === 0) pCtx.moveTo(px, py);
+                    else pCtx.lineTo(px, py);
+                }
+                pCtx.strokeStyle = getColors().TEAL;
+                pCtx.lineWidth = 2.5;
+                pCtx.stroke();
+
+                /* draw dots and K labels */
+                for (var j = 0; j < elbowResults.length; j++) {
+                    var dpx = pad.left + (j / (elbowResults.length-1)) * plotW;
+                    var dpy = pad.top + (1 - (elbowResults[j].inertia - minInertia*0.8) / (maxInertia - minInertia*0.8)) * plotH;
+                    pCtx.beginPath();
+                    pCtx.arc(dpx, dpy, 5, 0, Math.PI*2);
+                    pCtx.fillStyle = getColors().TEAL;
+                    pCtx.fill();
+                    pCtx.fillStyle = colors.TEXT;
+                    pCtx.font = '11px Inter, sans-serif';
+                    pCtx.textAlign = 'center';
+                    pCtx.fillText('K=' + elbowResults[j].k, dpx, pH - pad.bottom + 16);
+                }
+                pCtx.textAlign = 'left';
+            }
+
+            function generateData() {
+                var trueK = parseInt(document.getElementById('elbow-true-k').value) || 3;
+                points = [];
+                trueLabels = [];
+                elbowResults = [];
+                var margin = 50;
+                var centers = [];
+                for (var k = 0; k < trueK; k++) {
+                    centers.push({
+                        x: margin + Math.random()*(dW - 2*margin),
+                        y: margin + Math.random()*(dH - 2*margin)
+                    });
+                }
+                for (var k2 = 0; k2 < trueK; k2++) {
+                    var n = 30 + Math.floor(Math.random()*20);
+                    for (var i = 0; i < n; i++) {
+                        points.push({
+                            x: centers[k2].x + (Math.random()-0.5)*dW*0.18,
+                            y: centers[k2].y + (Math.random()-0.5)*dH*0.18
+                        });
+                        trueLabels.push(k2);
+                    }
+                }
+                drawData();
+                drawPlot();
+                document.getElementById('elbow-info').textContent =
+                    'Generated ' + points.length + ' points in ' + trueK + ' true clusters. Now click "Run Elbow Analysis".';
+            }
+
+            function runKMeans(data, K) {
+                /* quick K-Means for inertia calculation */
+                if (data.length === 0) return 0;
+                /* init centroids randomly */
+                var indices = [];
+                while (indices.length < K && indices.length < data.length) {
+                    var idx = Math.floor(Math.random()*data.length);
+                    if (indices.indexOf(idx) === -1) indices.push(idx);
+                }
+                var cents = indices.map(function(i){ return {x:data[i].x, y:data[i].y}; });
+                var assgn = [];
+                for (var iter = 0; iter < 50; iter++) {
+                    /* assign */
+                    assgn = [];
+                    for (var i = 0; i < data.length; i++) {
+                        var best = 0, bestD = Infinity;
+                        for (var c = 0; c < K; c++) {
+                            var dx = data[i].x - cents[c].x;
+                            var dy = data[i].y - cents[c].y;
+                            var d = dx*dx + dy*dy;
+                            if (d < bestD) { bestD = d; best = c; }
+                        }
+                        assgn.push(best);
+                    }
+                    /* update */
+                    var sums = [], counts = [];
+                    for (var c2 = 0; c2 < K; c2++) { sums.push({x:0,y:0}); counts.push(0); }
+                    for (var j = 0; j < data.length; j++) {
+                        sums[assgn[j]].x += data[j].x;
+                        sums[assgn[j]].y += data[j].y;
+                        counts[assgn[j]]++;
+                    }
+                    var moved = false;
+                    for (var c3 = 0; c3 < K; c3++) {
+                        if (counts[c3] > 0) {
+                            var nx = sums[c3].x/counts[c3];
+                            var ny = sums[c3].y/counts[c3];
+                            if (Math.abs(nx-cents[c3].x)>0.1 || Math.abs(ny-cents[c3].y)>0.1) moved=true;
+                            cents[c3].x = nx;
+                            cents[c3].y = ny;
+                        }
+                    }
+                    if (!moved) break;
+                }
+                /* compute inertia */
+                var inertia = 0;
+                for (var i2 = 0; i2 < data.length; i2++) {
+                    var dx2 = data[i2].x - cents[assgn[i2]].x;
+                    var dy2 = data[i2].y - cents[assgn[i2]].y;
+                    inertia += dx2*dx2 + dy2*dy2;
+                }
+                return inertia;
+            }
+
+            function runElbow() {
+                if (points.length === 0) {
+                    document.getElementById('elbow-info').textContent = 'Generate data first!';
+                    return;
+                }
+                elbowResults = [];
+                for (var k = 1; k <= 8; k++) {
+                    /* run 3 times, pick best */
+                    var bestInertia = Infinity;
+                    for (var run = 0; run < 3; run++) {
+                        var inertia = runKMeans(points, k);
+                        if (inertia < bestInertia) bestInertia = inertia;
+                    }
+                    elbowResults.push({ k: k, inertia: bestInertia });
+                }
+                drawPlot();
+                var trueK = parseInt(document.getElementById('elbow-true-k').value) || 3;
+                document.getElementById('elbow-info').textContent =
+                    'Elbow analysis complete. Look for the bend in the curve near K=' + trueK +
+                    ' (the true number of clusters). Inertia values plotted for K=1 through K=8.';
+            }
+
+            function reset() {
+                points = [];
+                trueLabels = [];
+                elbowResults = [];
+                drawData();
+                drawPlot();
+                document.getElementById('elbow-info').textContent =
+                    'Reset. Choose true clusters, generate data, then run the elbow analysis.';
+            }
+
+            document.getElementById('elbow-generate').addEventListener('click', generateData);
+            document.getElementById('elbow-run').addEventListener('click', runElbow);
+            document.getElementById('elbow-reset').addEventListener('click', reset);
+
+            resizeData();
+            resizePlot();
+            window.addEventListener('resize', function(){ resizeData(); resizePlot(); });
+            var obs2 = new MutationObserver(function(){ resizeData(); resizePlot(); });
+            obs2.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+        })();
+
+        /* ==============================================
+           SCROLL-TRIGGERED REVEAL ANIMATION
+           ============================================== */
+        (function initRevealAnimations() {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { observer.observe(el); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,2564 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.6 Decision Trees &amp; Random Forests | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master decision trees and random forests for civil engineering. Understand splitting criteria (Gini impurity, information gain), tree construction, pruning, overfitting, bagging, feature randomness, and ensemble voting with applications to material selection and structural risk assessment.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.6
+            </div>
+            <h1 class="chapter-hero__title">Decision Trees &amp; Random Forests</h1>
+            <p class="chapter-hero__subtitle">
+                If-then rules are the oldest form of engineering judgement. Decision trees
+                formalise that intuition into a learnable algorithm, and random forests
+                combine hundreds of trees into a robust ensemble that resists overfitting.
+                From choosing the right concrete mix to assessing the structural risk of
+                ageing bridges, these models speak the language of engineering decisions.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sitemap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Engineering Decisions as a Tree</h2>
+                        <p>
+                            Every civil engineer is already a decision tree. Consider how you
+                            might evaluate whether to use steel or concrete for a structural
+                            member: <em>Is the span longer than 12 metres? If yes, is the
+                            expected load cyclic? If yes, is the budget above a threshold?</em>
+                            Each question splits the problem into branches, and at the end of
+                            every path lies a recommendation. A decision tree algorithm does
+                            exactly this &mdash; but it <strong>learns</strong> the questions
+                            and thresholds from data.
+                        </p>
+                        <p>
+                            Where logistic regression draws a single smooth boundary through
+                            feature space, a decision tree carves the space into axis-aligned
+                            rectangles, each mapped to a class or a value. The result is a
+                            model that is inherently interpretable: you can print it, trace each
+                            prediction, and explain it to a project manager who has never heard
+                            the word "algorithm."
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    But single trees have a critical weakness &mdash; they <strong>overfit</strong>.
+                    Give a tree enough depth and it will memorise every quirk in the training
+                    data, including noise. Random forests solve this by training many trees on
+                    randomly perturbed versions of the data and averaging their votes. The
+                    ensemble is more accurate, more stable, and far more trustworthy than any
+                    individual tree.
+                </p>
+
+                <p>
+                    In this sub-chapter, we will cover:
+                </p>
+
+                <ul>
+                    <li>How decision trees split data using Gini impurity and information gain</li>
+                    <li>Recursive tree construction from root to leaves</li>
+                    <li>Pruning strategies to fight overfitting</li>
+                    <li>The Random Forest algorithm: bagging, feature randomness, ensemble voting</li>
+                    <li>Civil engineering applications: material selection decisions, structural risk assessment</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds on Sub-chapter 2.4 (Classification Basics) and
+                        2.5 (Logistic Regression). You should be comfortable with the confusion
+                        matrix, precision, recall, and the general idea of fitting a model to
+                        training data and evaluating it on unseen data.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHAT IS A DECISION TREE?
+             ========================================== -->
+        <section class="ch-section" id="what-is-a-tree">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    What Is a Decision Tree?
+                </h2>
+
+                <p>
+                    A decision tree is a flowchart-like structure where each
+                    <strong>internal node</strong> represents a test on a feature (e.g., "Is
+                    compressive strength &gt; 25 MPa?"), each <strong>branch</strong>
+                    represents the outcome of that test, and each <strong>leaf node</strong>
+                    represents a class label (for classification) or a predicted value (for
+                    regression).
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Root Node</h3>
+                        <p>
+                            The topmost node that considers the entire training dataset. The
+                            algorithm picks the feature and threshold that best separate the
+                            classes at this point. For example, it might find that the single
+                            most informative question is whether the water-cement ratio exceeds
+                            0.50.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Internal Nodes</h3>
+                        <p>
+                            Each internal node applies a binary test to one feature. The data
+                            that arrives at this node is split into two subsets: samples that
+                            pass the test go left, samples that fail go right. The algorithm
+                            repeats the process recursively on each subset.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Leaf Nodes</h3>
+                        <p>
+                            When the algorithm decides to stop splitting &mdash; because the
+                            node is pure (all samples belong to one class), or a depth limit
+                            has been reached, or there are too few samples &mdash; it creates
+                            a leaf. The leaf stores the majority class (classification) or the
+                            mean target value (regression).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>A Concrete Mix Design Tree</h3>
+                        <p>
+                            Imagine a tree that predicts whether a concrete batch will meet its
+                            28-day strength requirement. The root might ask: "Is W/C ratio
+                            &le; 0.45?" If yes, the left branch asks: "Is cement content
+                            &ge; 350 kg/m&sup3;?" If yes again, the leaf predicts
+                            <strong>Pass</strong>. If not, it checks the curing duration. Each
+                            path through the tree corresponds to a combination of mix parameters
+                            that the model has learned from historical test results.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The beauty of decision trees lies in their <strong>transparency</strong>.
+                    Unlike logistic regression, which produces a single equation with
+                    coefficients that can be hard to interpret for high-dimensional data, a
+                    decision tree can be printed as a set of nested if-else statements. Every
+                    prediction can be traced through the tree to understand exactly which
+                    features drove the outcome.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: SPLITTING CRITERIA
+             ========================================== -->
+        <section class="ch-section" id="splitting-criteria">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scissors"></i>
+                    Splitting Criteria: How Trees Choose Questions
+                </h2>
+
+                <p>
+                    The core challenge in building a decision tree is deciding <em>which
+                    feature</em> to split on and <em>at what threshold</em>. The algorithm
+                    tries every possible split and picks the one that produces the most
+                    "pure" child nodes &mdash; nodes where most samples belong to a single
+                    class. Purity is measured using one of two standard metrics: Gini impurity
+                    or information gain (entropy).
+                </p>
+
+                <h3 id="gini-impurity">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Gini Impurity
+                </h3>
+
+                <p>
+                    The Gini impurity measures the probability that a randomly chosen sample
+                    from a node would be misclassified if it were labelled according to the
+                    distribution of classes in that node. For a node with K classes:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Gini Impurity
+                    </div>
+                    <pre><code>            K
+Gini(t) = 1 - SUM  p(k|t)^2
+            k=1
+
+Where:
+  t      = the node being evaluated
+  p(k|t) = proportion of class k samples at node t
+  K      = total number of classes
+
+Example (binary classification):
+  Node with 80% class A, 20% class B:
+  Gini = 1 - (0.80^2 + 0.20^2)
+       = 1 - (0.64 + 0.04) = 0.32
+
+  Pure node (100% class A):
+  Gini = 1 - (1.00^2) = 0.00  (perfect purity)</code></pre>
+                </div>
+
+                <p>
+                    Gini impurity ranges from 0 (pure node) to 0.5 (maximum impurity for
+                    binary classification, where both classes are equally represented).
+                    The algorithm evaluates the <strong>weighted average</strong> Gini
+                    impurity of the two child nodes produced by a split and selects the split
+                    that minimises this weighted average.
+                </p>
+
+                <h3 id="information-gain">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    Information Gain (Entropy)
+                </h3>
+
+                <p>
+                    An alternative measure uses the concept of entropy from information theory.
+                    Entropy quantifies the disorder or uncertainty in a node:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Entropy &amp; Information Gain
+                    </div>
+                    <pre><code>                K
+Entropy(t) = - SUM  p(k|t) * log2( p(k|t) )
+                k=1
+
+Information Gain = Entropy(parent) - Weighted_Avg_Entropy(children)
+
+Example (binary classification):
+  Parent node: 50% class A, 50% class B
+  Entropy = -(0.5 * log2(0.5) + 0.5 * log2(0.5))
+          = -(0.5 * (-1) + 0.5 * (-1)) = 1.0  (maximum disorder)
+
+  After split:
+    Left child  (90% A, 10% B): Entropy = 0.469
+    Right child (20% A, 80% B): Entropy = 0.722
+
+  If left has 60 samples, right has 40:
+  Weighted Entropy = (60/100)*0.469 + (40/100)*0.722 = 0.570
+  Information Gain = 1.000 - 0.570 = 0.430</code></pre>
+                </div>
+
+                <p>
+                    The split with the <strong>highest information gain</strong> is chosen.
+                    Both Gini and entropy tend to produce very similar trees in practice. Gini
+                    is slightly faster to compute (no logarithm), which is why it is the
+                    default in most implementations like scikit-learn.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Civil Engineering Intuition</span>
+                    </div>
+                    <p>
+                        Think of Gini impurity as asking: "If I randomly grab two test specimens
+                        from this batch, how likely is it that they have different outcomes
+                        (pass vs. fail)?" A pure batch (all pass or all fail) has zero chance of
+                        disagreement &mdash; Gini = 0. A 50/50 batch has maximum disagreement
+                        &mdash; Gini = 0.5. The tree tries to sort specimens into the purest
+                        possible batches by asking the right questions.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: TREE CONSTRUCTION
+             ========================================== -->
+        <section class="ch-section" id="tree-construction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hammer"></i>
+                    Tree Construction: The Recursive Algorithm
+                </h2>
+
+                <p>
+                    Decision tree construction follows a simple recursive procedure, often
+                    called <strong>CART</strong> (Classification and Regression Trees):
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Start with All Data at the Root</h3>
+                        <p>
+                            The entire training set is placed at the root node. The algorithm
+                            computes the impurity of this node using Gini or entropy.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Find the Best Split</h3>
+                        <p>
+                            For every feature and every possible threshold, the algorithm
+                            computes the impurity reduction that would result from splitting
+                            the data at that point. With N samples and D features, this means
+                            evaluating up to N &times; D candidate splits. The split with the
+                            greatest impurity reduction wins.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Split and Recurse</h3>
+                        <p>
+                            The data is divided into two subsets based on the winning split.
+                            The algorithm then calls itself recursively on each subset, treating
+                            it as a new root node. This continues until a stopping criterion is
+                            met.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Create a Leaf</h3>
+                        <p>
+                            When a stopping criterion triggers &mdash; the node is pure, or the
+                            maximum depth is reached, or the number of samples falls below a
+                            minimum &mdash; the recursion halts and a leaf is created. The leaf
+                            stores the majority class (or class probabilities) for the samples
+                            that reached it.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> CART Pseudocode
+                    </div>
+                    <pre><code>function buildTree(data, depth):
+    if isPure(data) or depth >= maxDepth or len(data) < minSamples:
+        return createLeaf(majorityClass(data))
+
+    bestFeature, bestThreshold = findBestSplit(data)
+    leftData  = data[feature <= threshold]
+    rightData = data[feature >  threshold]
+
+    node = createNode(bestFeature, bestThreshold)
+    node.left  = buildTree(leftData,  depth + 1)
+    node.right = buildTree(rightData, depth + 1)
+    return node</code></pre>
+                </div>
+
+                <p>
+                    The algorithm is greedy &mdash; it picks the locally best split at each
+                    step without looking ahead. This makes it fast but means it may not find
+                    the globally optimal tree. In practice, this greedy strategy works
+                    remarkably well, especially when combined with ensemble methods that
+                    average over many trees.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: OVERFITTING & PRUNING
+             ========================================== -->
+        <section class="ch-section" id="overfitting-pruning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-cut"></i>
+                    Overfitting and Pruning
+                </h2>
+
+                <p>
+                    An unrestricted decision tree will keep splitting until every leaf contains
+                    a single sample or a perfectly pure subset. This produces a model that
+                    memorises the training data &mdash; including noise, outliers, and
+                    measurement errors. The tree may achieve 100% training accuracy but
+                    perform terribly on new data. This is <strong>overfitting</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Overfitting in Civil Engineering Context</h3>
+                        <p>
+                            Imagine building a decision tree to predict whether a soil sample
+                            is suitable for a foundation. If the tree memorises every test
+                            result, it might create a rule like "If moisture content = 23.7%
+                            and plasticity index = 14.2, then unsuitable." This rule perfectly
+                            classifies one training sample but is useless for a new sample with
+                            moisture content = 23.8%. The tree has memorised the data rather
+                            than learning the underlying pattern.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>
+                    <i class="fa-solid fa-arrow-down"></i>
+                    Pre-Pruning (Early Stopping)
+                </h3>
+
+                <p>
+                    Pre-pruning limits tree growth during construction by imposing constraints:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Maximum depth</strong> &mdash; Stop splitting when the tree
+                        reaches a specified depth. A depth of 5 means at most 5 levels of
+                        questions. This is the most commonly tuned hyperparameter.
+                    </li>
+                    <li>
+                        <strong>Minimum samples per split</strong> &mdash; Refuse to split a
+                        node if it contains fewer than a threshold number of samples (e.g., 20).
+                        This prevents the tree from creating specialised rules for tiny subsets.
+                    </li>
+                    <li>
+                        <strong>Minimum samples per leaf</strong> &mdash; Ensure every leaf
+                        has at least a certain number of samples. This guarantees that
+                        predictions are based on sufficient evidence.
+                    </li>
+                    <li>
+                        <strong>Minimum impurity decrease</strong> &mdash; Only split if the
+                        impurity reduction exceeds a threshold. Trivial splits that barely
+                        improve purity are rejected.
+                    </li>
+                </ul>
+
+                <h3>
+                    <i class="fa-solid fa-arrow-up"></i>
+                    Post-Pruning (Cost-Complexity Pruning)
+                </h3>
+
+                <p>
+                    Post-pruning grows a full tree first, then trims branches that do not
+                    significantly improve validation performance. The standard method is
+                    <strong>cost-complexity pruning</strong>, which adds a penalty proportional
+                    to the number of leaves. The total cost is:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Cost-Complexity Pruning
+                    </div>
+                    <pre><code>Cost_alpha(T) = Misclassification_cost(T) + alpha * |Leaves(T)|
+
+Where:
+  T                       = the pruned tree
+  Misclassification_cost  = fraction of misclassified training samples
+  alpha                   = complexity parameter (tuned via cross-validation)
+  |Leaves(T)|             = number of leaf nodes
+
+A larger alpha favours simpler trees with fewer leaves.
+A smaller alpha allows more complex trees.</code></pre>
+                </div>
+
+                <p>
+                    By varying alpha and evaluating on validation data, the engineer can find
+                    the sweet spot between a tree that is too simple (underfitting) and one
+                    that is too complex (overfitting). This is analogous to choosing the right
+                    level of detail in a finite element mesh &mdash; too coarse and you miss
+                    critical stress concentrations, too fine and you waste computation on noise.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: DECISION BOUNDARIES
+             ========================================== -->
+        <section class="ch-section" id="decision-boundaries">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-border-all"></i>
+                    Decision Boundaries: Rectangles, Not Lines
+                </h2>
+
+                <p>
+                    One of the most important differences between decision trees and linear
+                    models (like logistic regression) is the shape of the decision boundary.
+                    Logistic regression draws a single straight line (or hyperplane) through
+                    feature space. A decision tree, by contrast, creates <strong>axis-aligned
+                    rectangular regions</strong>.
+                </p>
+
+                <p>
+                    Each split in the tree corresponds to a horizontal or vertical cut in the
+                    feature plane. After several splits, the feature space is partitioned into
+                    a grid of rectangles, each assigned to a class. This has several
+                    implications:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Non-linear boundaries</strong> &mdash; Trees can capture
+                        complex, non-linear patterns without feature engineering. A staircase
+                        boundary that would require polynomial features in logistic regression
+                        emerges naturally from a sequence of splits.
+                    </li>
+                    <li>
+                        <strong>Axis-aligned constraint</strong> &mdash; Trees can only make
+                        cuts parallel to the feature axes. A diagonal boundary requires many
+                        small staircase steps, which can make the tree unnecessarily deep.
+                    </li>
+                    <li>
+                        <strong>Interpretability</strong> &mdash; Each rectangle maps to a
+                        specific combination of feature ranges. You can read off the conditions
+                        directly: "W/C &le; 0.45 AND curing days &ge; 14 implies Pass."
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Engineering Analogy: Zoning Regulations</h3>
+                        <p>
+                            Think of the decision boundary as a zoning map for a city. Each
+                            zone is a rectangle defined by coordinates (streets), and each
+                            zone has a designated use (residential, commercial, industrial).
+                            The zones are always aligned with the street grid &mdash; you
+                            cannot have a diagonal zone. Similarly, a decision tree's regions
+                            are always aligned with the feature axes.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: TREES FOR REGRESSION
+             ========================================== -->
+        <section class="ch-section" id="regression-trees">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Regression Trees
+                </h2>
+
+                <p>
+                    Decision trees are not limited to classification. In a
+                    <strong>regression tree</strong>, each leaf predicts a continuous value
+                    (typically the mean of the training samples that reach that leaf). The
+                    splitting criterion changes from Gini/entropy to <strong>variance
+                    reduction</strong>:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Regression Splitting Criterion
+                    </div>
+                    <pre><code>Variance Reduction = Var(parent) - Weighted_Avg_Var(children)
+
+The split that maximises variance reduction is chosen.
+Each leaf predicts the mean of its samples.</code></pre>
+                </div>
+
+                <p>
+                    For civil engineering, regression trees can predict quantities like
+                    deflection, settlement, or compressive strength. However, they produce
+                    step-function predictions &mdash; every sample in a leaf gets the same
+                    value &mdash; which can be less smooth than a linear model. Random forests
+                    partially address this by averaging many step functions.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 1 - INTERACTIVE TREE BUILDER
+             ========================================== -->
+        <section class="ch-section" id="demo-tree-builder">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Interactive Decision Tree Builder
+                </h2>
+
+                <p>
+                    Build your own decision tree step by step. Add split conditions on two
+                    features (W/C Ratio and Curing Days) and watch the tree grow on the
+                    canvas. The scatter plot shows how each split partitions the data into
+                    regions. Click <strong>Auto-Build</strong> to let the algorithm construct
+                    the optimal tree automatically, or <strong>Add Split</strong> to choose
+                    your own splits.
+                </p>
+
+                <div class="demo-container">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="tree-feature">Feature:</label>
+                            <select id="tree-feature">
+                                <option value="0">W/C Ratio</option>
+                                <option value="1">Curing Days</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="tree-threshold">Threshold: <span id="tree-threshold-val">0.50</span></label>
+                            <input type="range" id="tree-threshold" min="0" max="1" step="0.01" value="0.50">
+                        </div>
+                        <div class="control-group">
+                            <button id="tree-add-split" class="demo-btn">
+                                <i class="fa-solid fa-plus"></i> Add Split
+                            </button>
+                            <button id="tree-auto-build" class="demo-btn">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Build
+                            </button>
+                            <button id="tree-reset" class="demo-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-canvas-row" style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:300px;">
+                            <canvas id="tree-scatter-canvas" style="width:100%;height:380px;border-radius:12px;display:block;"></canvas>
+                            <p class="demo-caption" style="text-align:center;margin-top:6px;font-size:0.82rem;opacity:0.6;">Feature space partitioning</p>
+                        </div>
+                        <div style="flex:1;min-width:300px;">
+                            <canvas id="tree-structure-canvas" style="width:100%;height:380px;border-radius:12px;display:block;"></canvas>
+                            <p class="demo-caption" style="text-align:center;margin-top:6px;font-size:0.82rem;opacity:0.6;">Tree structure</p>
+                        </div>
+                    </div>
+                    <div class="demo-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;">
+                        <span id="tree-depth" class="demo-stat-badge">Depth: 0</span>
+                        <span id="tree-leaves" class="demo-stat-badge">Leaves: 1</span>
+                        <span id="tree-accuracy" class="demo-stat-badge">Accuracy: --</span>
+                        <span id="tree-gini" class="demo-stat-badge">Weighted Gini: --</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATION - MATERIAL SELECTION
+             ========================================== -->
+        <section class="ch-section" id="ce-material-selection">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-cubes"></i>
+                    CE Application: Material Selection Decisions
+                </h2>
+
+                <p>
+                    Material selection is inherently a decision tree problem. Engineers
+                    routinely evaluate materials against a hierarchy of criteria: strength
+                    requirements, durability constraints, cost limits, environmental exposure,
+                    and constructability. A decision tree can formalise this process using
+                    historical performance data.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Example: Reinforcement Selection</h3>
+                        <p>
+                            Consider selecting between carbon steel rebar, epoxy-coated rebar,
+                            stainless steel rebar, and fibre-reinforced polymer (FRP) bars for
+                            a bridge deck. A decision tree trained on past project data might
+                            learn:
+                        </p>
+                        <ul>
+                            <li>If chloride exposure is low AND budget is constrained: <strong>carbon steel</strong></li>
+                            <li>If chloride exposure is moderate AND design life &lt; 50 years: <strong>epoxy-coated</strong></li>
+                            <li>If chloride exposure is high AND design life &ge; 75 years: <strong>stainless steel</strong></li>
+                            <li>If magnetic interference is a concern: <strong>FRP bars</strong></li>
+                        </ul>
+                        <p>
+                            Each rule is directly traceable to the tree's splits, making it easy
+                            to audit and justify the recommendation in a design report.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The key advantage over logistic regression here is
+                    <strong>multi-class support with interpretability</strong>. Logistic
+                    regression requires one-vs-rest or softmax extensions for multi-class
+                    problems, and interpreting the coefficients becomes harder. A decision tree
+                    naturally handles any number of classes and produces human-readable rules.
+                </p>
+
+                <p>
+                    Feature importance scores from the tree reveal which material properties
+                    drive decisions most strongly. If chloride exposure dominates the first few
+                    splits, the engineer knows that corrosion resistance is the primary
+                    differentiator &mdash; a conclusion that aligns with engineering judgement
+                    and builds trust in the model.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: THE OVERFITTING PROBLEM
+             ========================================== -->
+        <section class="ch-section" id="overfitting-problem">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bug"></i>
+                    The Single-Tree Problem
+                </h2>
+
+                <p>
+                    Despite their interpretability, single decision trees have well-known
+                    weaknesses that limit their reliability in engineering applications:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>High variance</strong> &mdash; Small changes in the training
+                        data can produce completely different trees. Remove a few samples and
+                        the root split might change, cascading through the entire structure.
+                    </li>
+                    <li>
+                        <strong>Overfitting</strong> &mdash; Deep trees memorise noise. A tree
+                        trained on 200 concrete test results might achieve 99% training
+                        accuracy but only 72% on new batches.
+                    </li>
+                    <li>
+                        <strong>Greedy construction</strong> &mdash; The locally optimal split
+                        at each node may not lead to the globally optimal tree. A slightly
+                        suboptimal early split might enable much better splits downstream.
+                    </li>
+                    <li>
+                        <strong>Instability</strong> &mdash; The model lacks confidence
+                        estimation. A leaf with 3 samples voting 2-1 for "Pass" looks the same
+                        as a leaf with 300 samples voting 200-100.
+                    </li>
+                </ul>
+
+                <p>
+                    These problems motivated the development of ensemble methods &mdash;
+                    algorithms that combine multiple trees to produce a more robust and
+                    accurate predictor. The most successful of these is the
+                    <strong>random forest</strong>.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: RANDOM FORESTS - BAGGING
+             ========================================== -->
+        <section class="ch-section" id="random-forests-bagging">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-tree"></i>
+                    Random Forests: The Power of the Crowd
+                </h2>
+
+                <p>
+                    A random forest is an ensemble of decision trees, each trained on a
+                    slightly different version of the data. The final prediction is made by
+                    <strong>majority vote</strong> (classification) or
+                    <strong>averaging</strong> (regression). The two key ingredients that make
+                    this work are <strong>bagging</strong> and <strong>feature
+                    randomness</strong>.
+                </p>
+
+                <h3 id="bagging">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    Bootstrap Aggregating (Bagging)
+                </h3>
+
+                <p>
+                    Bagging is the first randomisation technique. For each tree in the forest,
+                    a new training set is created by <strong>sampling with replacement</strong>
+                    from the original data. This is called a bootstrap sample. If the original
+                    dataset has N samples, each bootstrap sample also has N samples, but some
+                    appear multiple times while others are left out (on average, about 37% of
+                    the data is excluded from each tree's training set).
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Bagging Procedure
+                    </div>
+                    <pre><code>Original data: [S1, S2, S3, S4, S5, S6, S7, S8, S9, S10]
+
+Bootstrap sample 1: [S3, S1, S7, S3, S9, S2, S5, S1, S8, S6]  (S4, S10 left out)
+Bootstrap sample 2: [S5, S2, S10, S8, S2, S4, S1, S6, S5, S3]  (S7, S9 left out)
+Bootstrap sample 3: [S9, S9, S4, S1, S6, S3, S8, S10, S2, S7]  (S5 left out)
+...
+Bootstrap sample B: [random sample with replacement]
+
+Each tree is trained on a different bootstrap sample.
+Prediction = majority vote across all B trees.</code></pre>
+                </div>
+
+                <p>
+                    The left-out samples (called <strong>out-of-bag</strong> or OOB samples)
+                    serve as a built-in validation set. OOB error is an estimate of the
+                    forest's generalisation performance without needing a separate test split.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Engineering Committee Analogy</h3>
+                        <p>
+                            Think of a random forest as a committee of structural engineers, each
+                            reviewing a project independently. Each engineer sees a slightly
+                            different subset of the test reports (bagging), and each focuses on
+                            different aspects of the design (feature randomness). When they vote,
+                            the committee's collective judgement is far more reliable than any
+                            single engineer's opinion. Individual biases and errors cancel out
+                            through aggregation.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: FEATURE RANDOMNESS
+             ========================================== -->
+        <section class="ch-section" id="feature-randomness">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-shuffle"></i>
+                    Feature Randomness: Decorrelating the Trees
+                </h2>
+
+                <p>
+                    Bagging alone is not enough. If one feature is overwhelmingly informative
+                    (e.g., W/C ratio for concrete strength), every tree will use it as the
+                    root split. The trees will be highly correlated, and averaging correlated
+                    predictions does not reduce variance much.
+                </p>
+
+                <p>
+                    Random forests add a second layer of randomness: at each split, only a
+                    <strong>random subset of features</strong> is considered as candidates.
+                    The typical choice is:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Feature Subset Size
+                    </div>
+                    <pre><code>Classification: m = sqrt(D)    (D = total number of features)
+Regression:     m = D / 3
+
+Example: Dataset with 16 features
+  Classification: each split considers sqrt(16) = 4 random features
+  Regression: each split considers 16/3 ~ 5 random features
+
+At every split in every tree, a NEW random subset is drawn.</code></pre>
+                </div>
+
+                <p>
+                    This forces the trees to explore different parts of the feature space. Some
+                    trees will find good splits using less obvious features that would be
+                    overshadowed in a full-feature search. The resulting trees are more diverse
+                    &mdash; they make different errors &mdash; and their average prediction is
+                    more accurate than any individual tree.
+                </p>
+
+                <p>
+                    The combination of bagging (data randomness) and feature subsampling
+                    (feature randomness) is what makes random forests so powerful. Each tree
+                    sees the problem from a slightly different angle, and the ensemble captures
+                    patterns that no single tree could find alone.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: ENSEMBLE VOTING
+             ========================================== -->
+        <section class="ch-section" id="ensemble-voting">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-check-to-slot"></i>
+                    Ensemble Voting and Prediction
+                </h2>
+
+                <p>
+                    Once all trees are trained, making a prediction is straightforward:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Pass the Input Through Every Tree</h3>
+                        <p>
+                            The new sample traverses each tree from root to leaf, following the
+                            split conditions. Each tree independently produces a prediction.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Aggregate the Votes</h3>
+                        <p>
+                            For classification, the forest counts how many trees voted for each
+                            class. The class with the most votes wins. For regression, the
+                            forest averages the predicted values from all trees.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Confidence from Vote Proportions</h3>
+                        <p>
+                            The vote proportions serve as a rough confidence estimate. If 95 out
+                            of 100 trees predict "Fail," the forest is highly confident. If the
+                            split is 55-45, the prediction is uncertain. This information is
+                            invaluable in engineering, where knowing <em>how sure</em> the model
+                            is matters as much as the prediction itself.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Ensemble Prediction
+                    </div>
+                    <pre><code>Classification:
+  Tree 1 -> Pass     Tree 4 -> Pass     Tree 7 -> Pass
+  Tree 2 -> Fail     Tree 5 -> Pass     Tree 8 -> Pass
+  Tree 3 -> Pass     Tree 6 -> Fail     Tree 9 -> Fail
+
+  Votes: Pass = 6, Fail = 3
+  Prediction: Pass (confidence: 6/9 = 66.7%)
+
+Regression:
+  Tree 1 -> 32.1 MPa   Tree 4 -> 30.8 MPa   Tree 7 -> 33.2 MPa
+  Tree 2 -> 29.5 MPa   Tree 5 -> 31.4 MPa   Tree 8 -> 30.1 MPa
+  Tree 3 -> 31.7 MPa   Tree 6 -> 32.5 MPa   Tree 9 -> 29.9 MPa
+
+  Prediction: Average = 31.2 MPa</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: CE APPLICATION - STRUCTURAL RISK
+             ========================================== -->
+        <section class="ch-section" id="ce-structural-risk">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bridge"></i>
+                    CE Application: Structural Risk Assessment
+                </h2>
+
+                <p>
+                    Random forests have become popular for structural risk assessment because
+                    they handle the complexity of real-world inspection data &mdash; mixed
+                    feature types, missing values, nonlinear interactions &mdash; while
+                    providing feature importance rankings that engineers can verify against
+                    domain knowledge.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Bridge Condition Rating</h3>
+                        <p>
+                            A random forest trained on bridge inspection records can predict the
+                            condition rating (Good / Fair / Poor / Critical) based on features
+                            such as:
+                        </p>
+                        <ul>
+                            <li>Age of the structure (years since construction)</li>
+                            <li>Average daily traffic (ADT)</li>
+                            <li>Deck area and span length</li>
+                            <li>Number of previous repairs</li>
+                            <li>Climate zone (freeze-thaw cycles per year)</li>
+                            <li>Material type (steel, reinforced concrete, prestressed concrete)</li>
+                        </ul>
+                        <p>
+                            Feature importance might reveal that age and freeze-thaw exposure
+                            dominate the predictions, aligning with the known mechanisms of
+                            concrete deterioration. This agreement between model and domain
+                            knowledge builds confidence in the predictions for bridges not yet
+                            inspected.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Another advantage for risk assessment is the forest's ability to provide
+                    <strong>probability calibration</strong>. Rather than a hard class label,
+                    the vote proportions can be used to rank structures by risk level. A bridge
+                    with 82% of trees voting "Poor" requires more urgent attention than one
+                    with 55% &mdash; even though both receive the same predicted class. This
+                    probabilistic ranking enables efficient allocation of limited inspection
+                    and repair budgets.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Tip</span>
+                    </div>
+                    <p>
+                        Random forests handle <strong>missing data</strong> gracefully. If a
+                        particular bridge record is missing the "number of previous repairs"
+                        field, the trees that do not use that feature at any split along the
+                        path for this sample still produce valid predictions. This robustness
+                        is critical for real-world infrastructure databases, which are often
+                        incomplete.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: HYPERPARAMETERS
+             ========================================== -->
+        <section class="ch-section" id="hyperparameters">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Key Hyperparameters
+                </h2>
+
+                <p>
+                    Both decision trees and random forests have hyperparameters that control
+                    model complexity. Tuning them correctly is the difference between a model
+                    that generalises and one that memorises.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>n_estimators (Forest Only)</h3>
+                        <p>
+                            The number of trees in the forest. More trees generally improve
+                            performance up to a point of diminishing returns. Typical values
+                            range from 100 to 1000. Unlike many hyperparameters, more trees
+                            never cause overfitting &mdash; they only increase computation time.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>max_depth</h3>
+                        <p>
+                            Maximum depth of each tree. Shallow trees (depth 3-5) are more
+                            interpretable and less prone to overfitting. Deep trees (depth 15+)
+                            can capture complex interactions but may memorise noise. In random
+                            forests, individual trees are often grown deep because the ensemble
+                            averaging mitigates overfitting.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>max_features</h3>
+                        <p>
+                            Number of features considered at each split. Lower values increase
+                            tree diversity (lower correlation between trees) but may reduce
+                            individual tree accuracy. The defaults &mdash; sqrt(D) for
+                            classification, D/3 for regression &mdash; work well in most cases.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>min_samples_split / min_samples_leaf</h3>
+                        <p>
+                            Controls the minimum number of samples required to split a node or
+                            to be present in a leaf. Higher values produce simpler trees with
+                            fewer, more statistically reliable leaves.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: FEATURE IMPORTANCE
+             ========================================== -->
+        <section class="ch-section" id="feature-importance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-ranking-star"></i>
+                    Feature Importance
+                </h2>
+
+                <p>
+                    One of the most valuable outputs of a random forest is the
+                    <strong>feature importance ranking</strong>. For each feature, the
+                    importance is computed as the total reduction in impurity (Gini or entropy)
+                    across all trees in the forest, weighted by the number of samples reaching
+                    each split. Features that appear in early splits of many trees have high
+                    importance.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Feature Importance Calculation
+                    </div>
+                    <pre><code>For each feature j:
+  Importance(j) = SUM over all trees, all nodes where feature j is used:
+                    (n_samples_at_node / n_total_samples)
+                    * (impurity_before - weighted_impurity_after)
+
+Normalise so all importances sum to 1.
+
+Example output for concrete strength prediction:
+  W/C Ratio:       0.38   (most important)
+  Cement Content:  0.24
+  Curing Days:     0.18
+  Aggregate Size:  0.11
+  Admixture Type:  0.06
+  Ambient Temp:    0.03</code></pre>
+                </div>
+
+                <p>
+                    For civil engineers, feature importance serves as a <strong>sanity
+                    check</strong>. If the model assigns high importance to a feature that
+                    domain knowledge says should not matter (e.g., the lab technician's ID
+                    number), it signals a data leakage or confounding variable problem. If
+                    the ranking aligns with engineering expectations, it builds trust in the
+                    model's predictions.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: DEMO 2 - RANDOM FOREST VISUALIZER
+             ========================================== -->
+        <section class="ch-section" id="demo-random-forest">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 2: Random Forest Visualizer
+                </h2>
+
+                <p>
+                    Watch how multiple decision trees vote independently, then see how the
+                    ensemble combines their predictions into a final classification. Adjust
+                    the number of trees and feature subset size to see how diversity affects
+                    ensemble accuracy. Each small tree shows its individual prediction, and
+                    the large panel shows the aggregate vote.
+                </p>
+
+                <div class="demo-container">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="rf-num-trees">Number of Trees: <span id="rf-num-trees-val">7</span></label>
+                            <input type="range" id="rf-num-trees" min="3" max="15" step="2" value="7">
+                        </div>
+                        <div class="control-group">
+                            <label for="rf-max-depth">Max Depth: <span id="rf-max-depth-val">3</span></label>
+                            <input type="range" id="rf-max-depth" min="1" max="6" step="1" value="3">
+                        </div>
+                        <div class="control-group">
+                            <button id="rf-train" class="demo-btn">
+                                <i class="fa-solid fa-play"></i> Train Forest
+                            </button>
+                            <button id="rf-predict" class="demo-btn">
+                                <i class="fa-solid fa-crosshairs"></i> Predict Sample
+                            </button>
+                            <button id="rf-reset" class="demo-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="rf-canvas" style="width:100%;height:500px;border-radius:12px;display:block;"></canvas>
+                    <div class="demo-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;">
+                        <span id="rf-vote-pass" class="demo-stat-badge">Pass votes: --</span>
+                        <span id="rf-vote-fail" class="demo-stat-badge">Fail votes: --</span>
+                        <span id="rf-prediction" class="demo-stat-badge">Ensemble: --</span>
+                        <span id="rf-confidence" class="demo-stat-badge">Confidence: --</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 18: TREES vs LOGISTIC REGRESSION
+             ========================================== -->
+        <section class="ch-section" id="trees-vs-logistic">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Trees vs. Logistic Regression: When to Use Which
+                </h2>
+
+                <p>
+                    Both decision trees (and their ensembles) and logistic regression are
+                    classification workhorses. Choosing between them depends on the problem
+                    characteristics:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number"><i class="fa-solid fa-sitemap"></i></div>
+                    <div class="process-step__content">
+                        <h3>Favour Trees / Random Forests When:</h3>
+                        <ul>
+                            <li>The relationship between features and target is non-linear</li>
+                            <li>There are complex feature interactions (e.g., W/C ratio matters differently depending on curing method)</li>
+                            <li>You have mixed feature types (numerical and categorical)</li>
+                            <li>Missing values are common in the dataset</li>
+                            <li>Interpretability of individual rules is needed (single tree) or high accuracy is the priority (random forest)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="process-step__content">
+                        <h3>Favour Logistic Regression When:</h3>
+                        <ul>
+                            <li>The relationship is roughly linear in the log-odds</li>
+                            <li>You need calibrated probabilities for risk assessment</li>
+                            <li>The dataset is small and overfitting is a concern</li>
+                            <li>You need to understand the direction and magnitude of each feature's effect</li>
+                            <li>Regulatory or contractual requirements demand a transparent model equation</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 19: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of decision trees and random forests. Each question
+                    reinforces a key concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A decision tree node contains 60 samples of class A and 40 samples of
+                        class B. What is the Gini impurity of this node?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> 0.50
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> 0.48
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> 0.36
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> 0.24
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Gini = 1 - (0.60^2 + 0.40^2)
+                        = 1 - (0.36 + 0.16) = 1 - 0.52 = 0.48. The node is fairly impure,
+                        meaning a split is warranted.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Gini = 1 - (p_A^2 + p_B^2)
+                        = 1 - (0.60^2 + 0.40^2) = 1 - 0.52 = <strong>0.48</strong>.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        Why do random forests use bootstrap sampling (bagging) instead of
+                        training every tree on the full dataset?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> To reduce training time by using smaller datasets
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> To increase the bias of each individual tree
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> To introduce diversity among trees so their errors are less correlated, reducing ensemble variance
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> To ensure every sample appears in every tree exactly once
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Bootstrap sampling
+                        creates different training sets for each tree, making the trees diverse.
+                        When trees make different errors, averaging their votes cancels out
+                        individual mistakes &mdash; reducing the overall variance of the ensemble
+                        without increasing bias.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The purpose of
+                        bagging is to <strong>create diverse trees</strong> whose errors are
+                        uncorrelated. Averaging uncorrelated predictions reduces variance.
+                        Bootstrap samples are the same size as the original dataset, and not
+                        every sample appears in every tree.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        In a random forest with 100 trees, 73 trees predict "Fair" and 27 trees
+                        predict "Poor" for a bridge's condition rating. What is the ensemble
+                        prediction and approximate confidence?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> "Poor" with 27% confidence
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> "Fair" with 50% confidence
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> "Fair" with 73% confidence
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The model needs retraining because the vote is not unanimous
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The ensemble predicts
+                        "Fair" because it received the majority of votes (73 out of 100). The
+                        confidence is approximately 73%, reflecting the vote proportion. This
+                        non-unanimous vote suggests some uncertainty that the engineer should
+                        factor into their assessment.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The ensemble uses
+                        <strong>majority vote</strong>, so "Fair" wins with 73 votes. The
+                        confidence is the vote proportion: <strong>73%</strong>. Non-unanimous
+                        votes are normal and provide useful uncertainty information.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        An unpruned decision tree achieves 99% training accuracy but only 68%
+                        test accuracy on a soil classification task. Which technique would most
+                        directly address this problem?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Increasing the tree depth to capture more patterns
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Removing features from the dataset
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Pruning the tree or replacing it with a random forest ensemble
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Switching to an even more complex model like a neural network
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The large gap between
+                        training accuracy (99%) and test accuracy (68%) is a classic sign of
+                        overfitting. Pruning reduces tree complexity to eliminate noise-fitting
+                        branches. Alternatively, a random forest ensemble averages over many
+                        trees, dramatically reducing variance and improving generalisation.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The 99% training /
+                        68% test gap is classic <strong>overfitting</strong>. The solution is to
+                        <strong>reduce complexity</strong> via pruning or use an ensemble (random
+                        forest) that averages out the overfitting of individual trees. Increasing
+                        depth or switching to a more complex model would make overfitting worse.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 20: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <ul class="takeaway-list">
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Decision trees</strong> partition feature space using
+                                axis-aligned splits. They are inherently interpretable and can
+                                capture non-linear patterns without feature engineering.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Gini impurity</strong> and <strong>information gain
+                                (entropy)</strong> are the two standard criteria for choosing
+                                splits. Both measure the purity of child nodes after a split.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Overfitting</strong> is the primary weakness of single
+                                trees. Pre-pruning (depth limits, minimum samples) and
+                                post-pruning (cost-complexity) are the main defences.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Random forests</strong> combine bagging (bootstrap
+                                sampling) and feature randomness to build an ensemble of diverse,
+                                decorrelated trees. The ensemble reduces variance while
+                                maintaining low bias.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Ensemble voting</strong> (majority vote for
+                                classification, averaging for regression) produces robust
+                                predictions with built-in confidence estimates from vote
+                                proportions.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                In civil engineering, trees and forests excel at
+                                <strong>material selection</strong> (multi-class, interpretable
+                                rules) and <strong>structural risk assessment</strong> (handles
+                                missing data, provides feature importance rankings).
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we will explore <strong>Support Vector
+                        Machines (SVMs)</strong> &mdash; algorithms that find the optimal
+                        separating hyperplane with the maximum margin between classes.
+                        SVMs approach the classification problem from a completely different
+                        angle than trees, and understanding both perspectives will deepen your
+                        toolkit for engineering applications.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub5.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.5 Logistic Regression
+        </a>
+        <a href="sub7.html" class="chapter-nav__link next">
+            2.7 SVMs <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', BLUE:'#3b82f6', PURPLE:'#a855f7',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+
+        /* ======================================================
+           QUIZ HANDLER
+           ====================================================== */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var buttons = block.querySelectorAll('.quiz-option');
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                buttons[i].classList.add('disabled');
+            }
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+            btn.classList.add(isCorrect ? 'correct' : 'wrong');
+            var correctEl = document.getElementById(quizId + '-correct');
+            var wrongEl = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctEl) correctEl.style.display = 'block';
+            if (!isCorrect && wrongEl) wrongEl.style.display = 'block';
+        };
+
+        /* ======================================================
+           HERO CANVAS - ANIMATED TREE NETWORK
+           ====================================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var nodes = [];
+            var edges = [];
+            var animId;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                buildTree();
+            }
+
+            function buildTree() {
+                nodes = [];
+                edges = [];
+                var levels = 5;
+                var id = 0;
+
+                function addNode(x, y, level, parentId) {
+                    var nid = id++;
+                    nodes.push({
+                        id: nid, x: x, y: y, level: level,
+                        baseX: x, baseY: y,
+                        vx: (Math.random() - 0.5) * 0.2,
+                        vy: (Math.random() - 0.5) * 0.2,
+                        r: Math.max(3, 7 - level)
+                    });
+                    if (parentId >= 0) {
+                        edges.push({ from: parentId, to: nid });
+                    }
+                    if (level < levels && Math.random() > 0.15) {
+                        var spread = w / Math.pow(2, level + 1) * 0.6;
+                        addNode(x - spread, y + h / (levels + 1), level + 1, nid);
+                        if (Math.random() > 0.1) {
+                            addNode(x + spread, y + h / (levels + 1), level + 1, nid);
+                        }
+                    }
+                    return nid;
+                }
+
+                addNode(w / 2, 40, 0, -1);
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    n.x = n.baseX + Math.sin(Date.now() * 0.001 + i * 0.7) * 3;
+                    n.y = n.baseY + Math.cos(Date.now() * 0.0012 + i * 0.5) * 2;
+                }
+
+                ctx.strokeStyle = c.TEAL;
+                ctx.globalAlpha = 0.18;
+                ctx.lineWidth = 1.5;
+                for (var e = 0; e < edges.length; e++) {
+                    var fromN = nodes[edges[e].from];
+                    var toN = nodes[edges[e].to];
+                    if (fromN && toN) {
+                        ctx.beginPath();
+                        ctx.moveTo(fromN.x, fromN.y);
+                        ctx.lineTo(toN.x, toN.y);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.globalAlpha = 1;
+                for (var j = 0; j < nodes.length; j++) {
+                    var nd = nodes[j];
+                    var isLeaf = true;
+                    for (var k = 0; k < edges.length; k++) {
+                        if (edges[k].from === nd.id) { isLeaf = false; break; }
+                    }
+                    ctx.beginPath();
+                    ctx.arc(nd.x, nd.y, nd.r, 0, Math.PI * 2);
+                    ctx.fillStyle = isLeaf ? c.AMBER : c.TEAL;
+                    ctx.globalAlpha = 0.4 + (nd.level === 0 ? 0.4 : 0);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function() {
+                cancelAnimationFrame(animId);
+                resize();
+                draw();
+            });
+        })();
+
+        /* ======================================================
+           DEMO 1: INTERACTIVE DECISION TREE BUILDER
+           ====================================================== */
+        (function initTreeBuilder() {
+            var scatterCanvas = document.getElementById('tree-scatter-canvas');
+            var structCanvas = document.getElementById('tree-structure-canvas');
+            if (!scatterCanvas || !structCanvas) return;
+
+            var featureSelect = document.getElementById('tree-feature');
+            var thresholdSlider = document.getElementById('tree-threshold');
+            var thresholdVal = document.getElementById('tree-threshold-val');
+            var addSplitBtn = document.getElementById('tree-add-split');
+            var autoBuildBtn = document.getElementById('tree-auto-build');
+            var resetBtn = document.getElementById('tree-reset');
+
+            var depthEl = document.getElementById('tree-depth');
+            var leavesEl = document.getElementById('tree-leaves');
+            var accuracyEl = document.getElementById('tree-accuracy');
+            var giniEl = document.getElementById('tree-gini');
+
+            /* Generate training data: 2 features (W/C ratio normalised 0-1, curing days normalised 0-1) */
+            var data = [];
+            var featureNames = ['W/C Ratio', 'Curing Days'];
+
+            function generateData() {
+                data = [];
+                for (var i = 0; i < 120; i++) {
+                    var f0 = Math.random();
+                    var f1 = Math.random();
+                    /* Rule: low W/C + high curing = pass, with noise */
+                    var score = -2.5 * f0 + 2.0 * f1 + 0.3 + (Math.random() - 0.5) * 0.8;
+                    data.push({ f: [f0, f1], label: score > 0 ? 1 : 0 });
+                }
+            }
+            generateData();
+
+            /* Tree data structure */
+            var treeRoot = null;
+
+            function createLeafNode(samples) {
+                var pass = 0, fail = 0;
+                for (var i = 0; i < samples.length; i++) {
+                    if (samples[i].label === 1) pass++; else fail++;
+                }
+                return {
+                    type: 'leaf',
+                    samples: samples,
+                    pass: pass,
+                    fail: fail,
+                    prediction: pass >= fail ? 1 : 0
+                };
+            }
+
+            function giniImpurity(samples) {
+                if (samples.length === 0) return 0;
+                var p = 0;
+                for (var i = 0; i < samples.length; i++) {
+                    if (samples[i].label === 1) p++;
+                }
+                var p1 = p / samples.length;
+                var p0 = 1 - p1;
+                return 1 - p1 * p1 - p0 * p0;
+            }
+
+            function splitSamples(samples, featureIdx, threshold) {
+                var left = [], right = [];
+                for (var i = 0; i < samples.length; i++) {
+                    if (samples[i].f[featureIdx] <= threshold) left.push(samples[i]);
+                    else right.push(samples[i]);
+                }
+                return { left: left, right: right };
+            }
+
+            function findBestSplit(samples) {
+                var bestGain = -1, bestFeature = 0, bestThreshold = 0.5;
+                var parentGini = giniImpurity(samples);
+                for (var fi = 0; fi < 2; fi++) {
+                    for (var t = 0.05; t <= 0.95; t += 0.05) {
+                        var sp = splitSamples(samples, fi, t);
+                        if (sp.left.length < 2 || sp.right.length < 2) continue;
+                        var wGini = (sp.left.length * giniImpurity(sp.left) + sp.right.length * giniImpurity(sp.right)) / samples.length;
+                        var gain = parentGini - wGini;
+                        if (gain > bestGain) {
+                            bestGain = gain;
+                            bestFeature = fi;
+                            bestThreshold = t;
+                        }
+                    }
+                }
+                return { feature: bestFeature, threshold: bestThreshold, gain: bestGain };
+            }
+
+            function addSplitToLeaf(node, featureIdx, threshold) {
+                if (node.type !== 'leaf') return false;
+                if (node.samples.length < 4) return false;
+                var sp = splitSamples(node.samples, featureIdx, threshold);
+                if (sp.left.length < 1 || sp.right.length < 1) return false;
+                node.type = 'split';
+                node.feature = featureIdx;
+                node.threshold = threshold;
+                node.left = createLeafNode(sp.left);
+                node.right = createLeafNode(sp.right);
+                return true;
+            }
+
+            function findDeepestImpureLeaf(node) {
+                if (!node) return null;
+                if (node.type === 'leaf') {
+                    if (giniImpurity(node.samples) > 0.01 && node.samples.length >= 4) return node;
+                    return null;
+                }
+                var r = findDeepestImpureLeaf(node.right);
+                if (r) return r;
+                return findDeepestImpureLeaf(node.left);
+            }
+
+            function autoBuild(node, depth, maxDepth) {
+                if (!node || depth >= maxDepth) return;
+                if (node.type === 'leaf') {
+                    if (giniImpurity(node.samples) < 0.01 || node.samples.length < 4) return;
+                    var best = findBestSplit(node.samples);
+                    if (best.gain <= 0) return;
+                    addSplitToLeaf(node, best.feature, best.threshold);
+                }
+                if (node.type === 'split') {
+                    autoBuild(node.left, depth + 1, maxDepth);
+                    autoBuild(node.right, depth + 1, maxDepth);
+                }
+            }
+
+            function treeDepth(node) {
+                if (!node || node.type === 'leaf') return 0;
+                return 1 + Math.max(treeDepth(node.left), treeDepth(node.right));
+            }
+
+            function countLeaves(node) {
+                if (!node) return 0;
+                if (node.type === 'leaf') return 1;
+                return countLeaves(node.left) + countLeaves(node.right);
+            }
+
+            function predict(node, sample) {
+                if (!node || node.type === 'leaf') return node ? node.prediction : 0;
+                if (sample.f[node.feature] <= node.threshold) return predict(node.left, sample);
+                return predict(node.right, sample);
+            }
+
+            function computeAccuracy() {
+                if (!treeRoot) return 0;
+                var correct = 0;
+                for (var i = 0; i < data.length; i++) {
+                    if (predict(treeRoot, data[i]) === data[i].label) correct++;
+                }
+                return correct / data.length;
+            }
+
+            function weightedGini() {
+                if (!treeRoot) return 1;
+                var total = data.length;
+                var wg = 0;
+                function walk(node) {
+                    if (!node) return;
+                    if (node.type === 'leaf') {
+                        wg += (node.samples.length / total) * giniImpurity(node.samples);
+                        return;
+                    }
+                    walk(node.left);
+                    walk(node.right);
+                }
+                walk(treeRoot);
+                return wg;
+            }
+
+            /* Gather all split lines for drawing regions */
+            function gatherSplits(node, bounds) {
+                if (!node || node.type === 'leaf') return [];
+                var splits = [];
+                splits.push({ feature: node.feature, threshold: node.threshold, bounds: bounds });
+                var leftBounds = { x0: bounds.x0, x1: bounds.x1, y0: bounds.y0, y1: bounds.y1 };
+                var rightBounds = { x0: bounds.x0, x1: bounds.x1, y0: bounds.y0, y1: bounds.y1 };
+                if (node.feature === 0) {
+                    leftBounds.x1 = node.threshold;
+                    rightBounds.x0 = node.threshold;
+                } else {
+                    leftBounds.y1 = node.threshold;
+                    rightBounds.y0 = node.threshold;
+                }
+                splits = splits.concat(gatherSplits(node.left, leftBounds));
+                splits = splits.concat(gatherSplits(node.right, rightBounds));
+                return splits;
+            }
+
+            function gatherLeafRegions(node, bounds) {
+                if (!node) return [];
+                if (node.type === 'leaf') {
+                    return [{ bounds: bounds, prediction: node.prediction }];
+                }
+                var leftBounds = { x0: bounds.x0, x1: bounds.x1, y0: bounds.y0, y1: bounds.y1 };
+                var rightBounds = { x0: bounds.x0, x1: bounds.x1, y0: bounds.y0, y1: bounds.y1 };
+                if (node.feature === 0) {
+                    leftBounds.x1 = node.threshold;
+                    rightBounds.x0 = node.threshold;
+                } else {
+                    leftBounds.y1 = node.threshold;
+                    rightBounds.y0 = node.threshold;
+                }
+                return gatherLeafRegions(node.left, leftBounds).concat(gatherLeafRegions(node.right, rightBounds));
+            }
+
+            /* ---- Draw scatter plot ---- */
+            function drawScatter() {
+                var info = initCanvas(scatterCanvas);
+                var ctx = info.ctx, W = info.w, H = info.h;
+                var c = getColors();
+                var padL = 50, padR = 20, padT = 30, padB = 42;
+                var plotW = W - padL - padR, plotH = H - padT - padB;
+
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                function toX(v) { return padL + v * plotW; }
+                function toY(v) { return padT + (1 - v) * plotH; }
+
+                /* Leaf regions */
+                var regions = gatherLeafRegions(treeRoot, { x0: 0, x1: 1, y0: 0, y1: 1 });
+                for (var ri = 0; ri < regions.length; ri++) {
+                    var rg = regions[ri];
+                    var rx = toX(rg.bounds.x0);
+                    var ry = toY(rg.bounds.y1);
+                    var rw = toX(rg.bounds.x1) - rx;
+                    var rh = toY(rg.bounds.y0) - ry;
+                    ctx.fillStyle = rg.prediction === 1 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+                    ctx.fillRect(rx, ry, rw, rh);
+                }
+
+                /* Split lines */
+                var splits = gatherSplits(treeRoot, { x0: 0, x1: 1, y0: 0, y1: 1 });
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                for (var si = 0; si < splits.length; si++) {
+                    var sp = splits[si];
+                    ctx.beginPath();
+                    if (sp.feature === 0) {
+                        ctx.moveTo(toX(sp.threshold), toY(sp.bounds.y0));
+                        ctx.lineTo(toX(sp.threshold), toY(sp.bounds.y1));
+                    } else {
+                        ctx.moveTo(toX(sp.bounds.x0), toY(sp.threshold));
+                        ctx.lineTo(toX(sp.bounds.x1), toY(sp.threshold));
+                    }
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                /* Grid */
+                ctx.strokeStyle = c.DIM;
+                ctx.lineWidth = 0.5;
+                for (var g = 0; g <= 1; g += 0.2) {
+                    ctx.beginPath(); ctx.moveTo(toX(g), padT); ctx.lineTo(toX(g), padT + plotH); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(padL, toY(g)); ctx.lineTo(padL + plotW, toY(g)); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(g.toFixed(1), toX(g), H - padB + 16);
+                    ctx.textAlign = 'right';
+                    ctx.fillText(g.toFixed(1), padL - 6, toY(g) + 4);
+                }
+
+                /* Axes */
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH);
+                ctx.stroke();
+
+                /* Axis labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '12px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('W/C Ratio (normalised)', W / 2, H - 4);
+                ctx.save();
+                ctx.translate(13, H / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Curing Days (normalised)', 0, 0);
+                ctx.restore();
+
+                /* Data points */
+                for (var i = 0; i < data.length; i++) {
+                    var pt = data[i];
+                    ctx.beginPath();
+                    ctx.arc(toX(pt.f[0]), toY(pt.f[1]), 4, 0, Math.PI * 2);
+                    ctx.fillStyle = pt.label === 1 ? c.GREEN : c.RED;
+                    ctx.fill();
+                    ctx.strokeStyle = c.BG;
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+
+                /* Legend */
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.beginPath(); ctx.arc(padL + 12, padT + 14, 4, 0, Math.PI * 2); ctx.fillStyle = c.GREEN; ctx.fill();
+                ctx.fillStyle = c.TEXT; ctx.fillText('Pass', padL + 22, padT + 17);
+                ctx.beginPath(); ctx.arc(padL + 72, padT + 14, 4, 0, Math.PI * 2); ctx.fillStyle = c.RED; ctx.fill();
+                ctx.fillStyle = c.TEXT; ctx.fillText('Fail', padL + 82, padT + 17);
+            }
+
+            /* ---- Draw tree structure ---- */
+            function drawStructure() {
+                var info = initCanvas(structCanvas);
+                var ctx = info.ctx, W = info.w, H = info.h;
+                var c = getColors();
+
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                if (!treeRoot) return;
+
+                var depth = treeDepth(treeRoot);
+                var levelH = depth > 0 ? (H - 80) / (depth + 1) : H / 2;
+
+                function drawNode(node, x, y, spread, lvl) {
+                    if (!node) return;
+
+                    var nodeW = 90, nodeH = 36, radius = 8;
+
+                    if (node.type === 'split') {
+                        var childY = y + levelH;
+                        var childSpread = spread * 0.48;
+
+                        /* Edges */
+                        ctx.strokeStyle = c.STROKE;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + nodeH / 2);
+                        ctx.lineTo(x - spread, childY - nodeH / 2);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + nodeH / 2);
+                        ctx.lineTo(x + spread, childY - nodeH / 2);
+                        ctx.stroke();
+
+                        /* Edge labels */
+                        ctx.fillStyle = c.MUTED;
+                        ctx.font = '10px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('<= ' + node.threshold.toFixed(2), (x + x - spread) / 2 - 10, (y + childY) / 2 - 4);
+                        ctx.fillText('> ' + node.threshold.toFixed(2), (x + x + spread) / 2 + 10, (y + childY) / 2 - 4);
+
+                        drawNode(node.left, x - spread, childY, childSpread, lvl + 1);
+                        drawNode(node.right, x + spread, childSpread > 15 ? childY : childY, childSpread, lvl + 1);
+
+                        /* Node box */
+                        ctx.fillStyle = 'rgba(45,212,191,0.12)';
+                        ctx.strokeStyle = c.TEAL;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.roundRect(x - nodeW / 2, y - nodeH / 2, nodeW, nodeH, radius);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = c.WHITE;
+                        ctx.font = '600 11px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(featureNames[node.feature], x, y - 2);
+                        ctx.fillStyle = c.MUTED;
+                        ctx.font = '10px JetBrains Mono, monospace';
+                        ctx.fillText('<= ' + node.threshold.toFixed(2), x, y + 12);
+                    } else {
+                        /* Leaf node */
+                        var total = node.pass + node.fail;
+                        var pctPass = total > 0 ? (node.pass / total * 100).toFixed(0) : 0;
+                        var leafColor = node.prediction === 1 ? c.GREEN : c.RED;
+
+                        ctx.fillStyle = node.prediction === 1 ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+                        ctx.strokeStyle = leafColor;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.roundRect(x - nodeW / 2, y - nodeH / 2, nodeW, nodeH, radius);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = c.WHITE;
+                        ctx.font = '600 11px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(node.prediction === 1 ? 'Pass' : 'Fail', x, y - 2);
+                        ctx.fillStyle = c.MUTED;
+                        ctx.font = '10px JetBrains Mono, monospace';
+                        ctx.fillText('n=' + total + ' (' + pctPass + '% pass)', x, y + 12);
+                    }
+                }
+
+                drawNode(treeRoot, W / 2, 50, W * 0.22, 0);
+            }
+
+            function updateStats() {
+                depthEl.textContent = 'Depth: ' + treeDepth(treeRoot);
+                leavesEl.textContent = 'Leaves: ' + countLeaves(treeRoot);
+                var acc = computeAccuracy();
+                accuracyEl.textContent = 'Accuracy: ' + (acc * 100).toFixed(1) + '%';
+                giniEl.textContent = 'Weighted Gini: ' + weightedGini().toFixed(3);
+            }
+
+            function updateAll() {
+                drawScatter();
+                drawStructure();
+                updateStats();
+            }
+
+            /* Initialise with a single leaf */
+            treeRoot = createLeafNode(data.slice());
+
+            thresholdSlider.addEventListener('input', function() {
+                var v = parseFloat(thresholdSlider.value);
+                thresholdVal.textContent = v.toFixed(2);
+            });
+
+            addSplitBtn.addEventListener('click', function() {
+                var featureIdx = parseInt(featureSelect.value);
+                var threshold = parseFloat(thresholdSlider.value);
+                /* Find the first impure leaf and split it */
+                var leaf = findDeepestImpureLeaf(treeRoot);
+                if (!leaf) {
+                    /* Try any leaf with enough samples */
+                    function findAnyLeaf(node) {
+                        if (!node) return null;
+                        if (node.type === 'leaf' && node.samples.length >= 4) return node;
+                        if (node.type === 'split') {
+                            var l = findAnyLeaf(node.left);
+                            if (l) return l;
+                            return findAnyLeaf(node.right);
+                        }
+                        return null;
+                    }
+                    leaf = findAnyLeaf(treeRoot);
+                }
+                if (leaf) {
+                    addSplitToLeaf(leaf, featureIdx, threshold);
+                }
+                updateAll();
+            });
+
+            autoBuildBtn.addEventListener('click', function() {
+                treeRoot = createLeafNode(data.slice());
+                autoBuild(treeRoot, 0, 4);
+                updateAll();
+            });
+
+            resetBtn.addEventListener('click', function() {
+                generateData();
+                treeRoot = createLeafNode(data.slice());
+                updateAll();
+            });
+
+            updateAll();
+
+            var ro1 = new ResizeObserver(function() { updateAll(); });
+            ro1.observe(scatterCanvas);
+            ro1.observe(structCanvas);
+        })();
+
+        /* ======================================================
+           DEMO 2: RANDOM FOREST VISUALIZER
+           ====================================================== */
+        (function initRandomForest() {
+            var canvas = document.getElementById('rf-canvas');
+            if (!canvas) return;
+
+            var numTreesSlider = document.getElementById('rf-num-trees');
+            var numTreesVal = document.getElementById('rf-num-trees-val');
+            var maxDepthSlider = document.getElementById('rf-max-depth');
+            var maxDepthVal = document.getElementById('rf-max-depth-val');
+            var trainBtn = document.getElementById('rf-train');
+            var predictBtn = document.getElementById('rf-predict');
+            var resetBtn = document.getElementById('rf-reset');
+
+            var votePassEl = document.getElementById('rf-vote-pass');
+            var voteFailEl = document.getElementById('rf-vote-fail');
+            var predictionEl = document.getElementById('rf-prediction');
+            var confidenceEl = document.getElementById('rf-confidence');
+
+            /* Training data */
+            var rfData = [];
+            var forest = [];
+            var currentSample = null;
+            var treePredictions = [];
+
+            function generateRFData() {
+                rfData = [];
+                for (var i = 0; i < 100; i++) {
+                    var f0 = Math.random();
+                    var f1 = Math.random();
+                    var score = -2.8 * f0 + 2.2 * f1 + 0.4 + (Math.random() - 0.5) * 0.7;
+                    rfData.push({ f: [f0, f1], label: score > 0 ? 1 : 0 });
+                }
+            }
+            generateRFData();
+
+            function gini(samples) {
+                if (samples.length === 0) return 0;
+                var p = 0;
+                for (var i = 0; i < samples.length; i++) { if (samples[i].label === 1) p++; }
+                var p1 = p / samples.length;
+                return 1 - p1 * p1 - (1 - p1) * (1 - p1);
+            }
+
+            function bootstrapSample(data) {
+                var bs = [];
+                for (var i = 0; i < data.length; i++) {
+                    bs.push(data[Math.floor(Math.random() * data.length)]);
+                }
+                return bs;
+            }
+
+            function buildRFTree(samples, depth, maxD, featuresPerSplit) {
+                if (samples.length < 4 || depth >= maxD || gini(samples) < 0.01) {
+                    var pass = 0;
+                    for (var k = 0; k < samples.length; k++) { if (samples[k].label === 1) pass++; }
+                    return { type: 'leaf', prediction: pass >= samples.length - pass ? 1 : 0, n: samples.length, pass: pass, fail: samples.length - pass };
+                }
+
+                /* Random feature subset */
+                var featureIndices = [0, 1];
+                if (featuresPerSplit < 2) {
+                    featureIndices = [Math.floor(Math.random() * 2)];
+                }
+
+                var bestGain = -1, bestF = 0, bestT = 0.5;
+                var parentG = gini(samples);
+                for (var fi = 0; fi < featureIndices.length; fi++) {
+                    var fIdx = featureIndices[fi];
+                    for (var t = 0.1; t <= 0.9; t += 0.1) {
+                        var left = [], right = [];
+                        for (var s = 0; s < samples.length; s++) {
+                            if (samples[s].f[fIdx] <= t) left.push(samples[s]);
+                            else right.push(samples[s]);
+                        }
+                        if (left.length < 2 || right.length < 2) continue;
+                        var wG = (left.length * gini(left) + right.length * gini(right)) / samples.length;
+                        var gain = parentG - wG;
+                        if (gain > bestGain) { bestGain = gain; bestF = fIdx; bestT = t; }
+                    }
+                }
+
+                if (bestGain <= 0) {
+                    var pp = 0;
+                    for (var m = 0; m < samples.length; m++) { if (samples[m].label === 1) pp++; }
+                    return { type: 'leaf', prediction: pp >= samples.length - pp ? 1 : 0, n: samples.length, pass: pp, fail: samples.length - pp };
+                }
+
+                var l = [], r = [];
+                for (var j = 0; j < samples.length; j++) {
+                    if (samples[j].f[bestF] <= bestT) l.push(samples[j]);
+                    else r.push(samples[j]);
+                }
+
+                return {
+                    type: 'split', feature: bestF, threshold: bestT,
+                    left: buildRFTree(l, depth + 1, maxD, featuresPerSplit),
+                    right: buildRFTree(r, depth + 1, maxD, featuresPerSplit)
+                };
+            }
+
+            function rfPredict(tree, sample) {
+                if (tree.type === 'leaf') return tree.prediction;
+                if (sample.f[tree.feature] <= tree.threshold) return rfPredict(tree.left, sample);
+                return rfPredict(tree.right, sample);
+            }
+
+            function treeDepthRF(node) {
+                if (!node || node.type === 'leaf') return 0;
+                return 1 + Math.max(treeDepthRF(node.left), treeDepthRF(node.right));
+            }
+
+            function trainForest() {
+                var numTrees = parseInt(numTreesSlider.value);
+                var maxD = parseInt(maxDepthSlider.value);
+                forest = [];
+                for (var i = 0; i < numTrees; i++) {
+                    var bs = bootstrapSample(rfData);
+                    var tree = buildRFTree(bs, 0, maxD, 1);
+                    forest.push(tree);
+                }
+                currentSample = null;
+                treePredictions = [];
+            }
+
+            function predictSample() {
+                if (forest.length === 0) { trainForest(); }
+                currentSample = { f: [Math.random(), Math.random()] };
+                treePredictions = [];
+                for (var i = 0; i < forest.length; i++) {
+                    treePredictions.push(rfPredict(forest[i], currentSample));
+                }
+            }
+
+            /* ---- Drawing ---- */
+            function drawForest() {
+                var info = initCanvas(canvas);
+                var ctx = info.ctx, W = info.w, H = info.h;
+                var c = getColors();
+
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                var numTrees = forest.length;
+                if (numTrees === 0) {
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '16px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Click "Train Forest" to build the ensemble', W / 2, H / 2);
+                    return;
+                }
+
+                /* Layout: mini trees in a grid at top, ensemble result at bottom */
+                var cols = Math.min(numTrees, 5);
+                var rows = Math.ceil(numTrees / cols);
+                var cellW = (W - 30) / cols;
+                var cellH = Math.min(180, (H - 120) / (rows + 0.5));
+                var startY = 20;
+
+                var featureNames = ['W/C', 'Days'];
+
+                for (var ti = 0; ti < numTrees; ti++) {
+                    var col = ti % cols;
+                    var row = Math.floor(ti / cols);
+                    var cx = 15 + col * cellW + cellW / 2;
+                    var cy = startY + row * cellH;
+
+                    /* Tree card background */
+                    var cardX = cx - cellW / 2 + 4;
+                    var cardY = cy;
+                    var cardW = cellW - 8;
+                    var cardH = cellH - 8;
+
+                    var hasPrediction = treePredictions.length > ti;
+                    var pred = hasPrediction ? treePredictions[ti] : -1;
+
+                    var cardBorderColor = !hasPrediction ? c.STROKE : (pred === 1 ? c.GREEN : c.RED);
+                    ctx.fillStyle = !hasPrediction ? 'rgba(255,255,255,0.02)' : (pred === 1 ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)');
+                    ctx.strokeStyle = cardBorderColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.roundRect(cardX, cardY, cardW, cardH, 8);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    /* Tree label */
+                    ctx.fillStyle = c.WHITE;
+                    ctx.font = '600 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Tree ' + (ti + 1), cx, cy + 16);
+
+                    /* Draw mini tree structure */
+                    var treeH = cardH - 40;
+                    var treeY = cy + 26;
+
+                    function drawMiniNode(node, x, y, spread, maxW) {
+                        if (!node) return;
+                        var nr = 5;
+                        if (node.type === 'split') {
+                            var childY = y + treeH / 4;
+                            var cs = Math.max(12, spread * 0.5);
+                            ctx.strokeStyle = c.DIM;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - cs, childY); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + cs, childY); ctx.stroke();
+                            drawMiniNode(node.left, x - cs, childY, cs, maxW);
+                            drawMiniNode(node.right, x + cs, childY, cs, maxW);
+                            ctx.beginPath(); ctx.arc(x, y, nr, 0, Math.PI * 2);
+                            ctx.fillStyle = c.TEAL; ctx.globalAlpha = 0.7; ctx.fill(); ctx.globalAlpha = 1;
+                        } else {
+                            ctx.beginPath(); ctx.arc(x, y, nr, 0, Math.PI * 2);
+                            ctx.fillStyle = node.prediction === 1 ? c.GREEN : c.RED;
+                            ctx.globalAlpha = 0.7; ctx.fill(); ctx.globalAlpha = 1;
+                        }
+                    }
+
+                    drawMiniNode(forest[ti], cx, treeY, cellW * 0.18, cardW);
+
+                    /* Prediction label */
+                    if (hasPrediction) {
+                        ctx.fillStyle = pred === 1 ? c.GREEN : c.RED;
+                        ctx.font = '600 12px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(pred === 1 ? 'PASS' : 'FAIL', cx, cy + cardH - 8);
+                    }
+                }
+
+                /* Ensemble result bar at bottom */
+                var barY = startY + rows * cellH + 10;
+                var barH = H - barY - 15;
+                if (barH < 30) barH = 30;
+
+                ctx.fillStyle = 'rgba(255,255,255,0.02)';
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(15, barY, W - 30, barH, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                if (treePredictions.length > 0) {
+                    var passV = 0, failV = 0;
+                    for (var p = 0; p < treePredictions.length; p++) {
+                        if (treePredictions[p] === 1) passV++; else failV++;
+                    }
+                    var total = passV + failV;
+                    var passRatio = passV / total;
+                    var barInnerW = W - 80;
+
+                    /* Pass bar */
+                    ctx.fillStyle = 'rgba(34,197,94,0.25)';
+                    ctx.beginPath();
+                    ctx.roundRect(40, barY + 10, barInnerW * passRatio, barH - 20, 6);
+                    ctx.fill();
+
+                    /* Fail bar */
+                    ctx.fillStyle = 'rgba(239,68,68,0.25)';
+                    ctx.beginPath();
+                    ctx.roundRect(40 + barInnerW * passRatio, barY + 10, barInnerW * (1 - passRatio), barH - 20, 6);
+                    ctx.fill();
+
+                    /* Labels */
+                    ctx.font = '600 13px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    var ensemble = passV >= failV ? 'PASS' : 'FAIL';
+                    var conf = (Math.max(passV, failV) / total * 100).toFixed(1);
+
+                    ctx.fillStyle = c.WHITE;
+                    ctx.fillText('Ensemble: ' + ensemble + '  |  Confidence: ' + conf + '%  |  Pass: ' + passV + '  Fail: ' + failV, W / 2, barY + barH / 2 + 5);
+
+                    /* Update stats */
+                    votePassEl.textContent = 'Pass votes: ' + passV;
+                    voteFailEl.textContent = 'Fail votes: ' + failV;
+                    predictionEl.textContent = 'Ensemble: ' + ensemble;
+                    confidenceEl.textContent = 'Confidence: ' + conf + '%';
+
+                    /* Draw sample point info */
+                    if (currentSample) {
+                        ctx.fillStyle = c.MUTED;
+                        ctx.font = '12px Inter, sans-serif';
+                        ctx.textAlign = 'right';
+                        ctx.fillText('Sample: W/C=' + currentSample.f[0].toFixed(2) + ', Days=' + currentSample.f[1].toFixed(2), W - 20, barY - 4);
+                    }
+                } else {
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '14px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Click "Predict Sample" to see ensemble voting', W / 2, barY + barH / 2 + 5);
+                }
+            }
+
+            numTreesSlider.addEventListener('input', function() {
+                numTreesVal.textContent = numTreesSlider.value;
+            });
+
+            maxDepthSlider.addEventListener('input', function() {
+                maxDepthVal.textContent = maxDepthSlider.value;
+            });
+
+            trainBtn.addEventListener('click', function() {
+                trainForest();
+                drawForest();
+            });
+
+            predictBtn.addEventListener('click', function() {
+                predictSample();
+                drawForest();
+            });
+
+            resetBtn.addEventListener('click', function() {
+                generateRFData();
+                forest = [];
+                currentSample = null;
+                treePredictions = [];
+                votePassEl.textContent = 'Pass votes: --';
+                voteFailEl.textContent = 'Fail votes: --';
+                predictionEl.textContent = 'Ensemble: --';
+                confidenceEl.textContent = 'Confidence: --';
+                drawForest();
+            });
+
+            drawForest();
+
+            var ro2 = new ResizeObserver(function() { drawForest(); });
+            ro2.observe(canvas);
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

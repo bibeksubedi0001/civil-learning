@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.8 Semantic Segmentation | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Pixel-level classification with encoder-decoder architectures, FCN, U-Net skip connections, transposed convolution, dice loss, and IoU per class. Civil engineering applications for crack segmentation, damage mapping, and road surface analysis. Interactive segmentation painter and U-Net architecture diagram.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ---- page-specific styles ---- */
+
+        /* Segmentation painter demo */
+        .seg-canvas-wrapper{position:relative;width:100%;margin:24px 0}
+        .seg-canvas{display:block;width:100%;min-height:460px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg);cursor:crosshair;touch-action:none}
+        .seg-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .seg-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .seg-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+        .seg-controls button.active{background:var(--accent-primary);color:var(--text-inverse);border-color:var(--accent-primary)}
+        .seg-controls label{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+        .seg-controls input[type="range"]{width:120px;accent-color:var(--accent-primary)}
+        .seg-controls .range-value{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-primary);min-width:32px}
+        .seg-readout{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .seg-readout .metric-box{background:var(--bg-tertiary);border:1px solid var(--border-subtle);padding:10px 18px;border-radius:10px;text-align:center;min-width:110px}
+        .seg-readout .metric-box .metric-label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:4px;font-weight:600}
+        .seg-readout .metric-box .metric-value{display:block;font-size:1.35rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-primary)}
+
+        /* U-Net architecture diagram */
+        .unet-canvas-wrapper{position:relative;width:100%;margin:24px 0}
+        .unet-canvas{display:block;width:100%;min-height:520px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg);cursor:pointer}
+        .unet-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .unet-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .unet-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+        .unet-tooltip{position:absolute;padding:10px 16px;background:var(--bg-card);border:1px solid var(--border-active);border-radius:10px;font-size:.82rem;color:var(--text-secondary);max-width:260px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;line-height:1.5}
+        .unet-tooltip.visible{opacity:1}
+
+        /* Class color legend */
+        .class-legend{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0}
+        .class-legend .legend-item{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-secondary)}
+        .class-legend .legend-swatch{width:16px;height:16px;border-radius:4px;border:1px solid var(--border-subtle)}
+
+        /* Encoder-decoder diagram inline */
+        .encdec-canvas{display:block;width:100%;min-height:200px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg)}
+
+        /* CE application cards */
+        .ce-app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:20px 0}
+        .ce-app-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;transition:transform .25s,border-color .25s}
+        .ce-app-card:hover{transform:translateY(-3px);border-color:var(--accent-primary)}
+        .ce-app-card .ce-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:12px}
+        .ce-app-card .ce-icon--crack{background:rgba(239,68,68,.12);color:var(--accent-danger)}
+        .ce-app-card .ce-icon--road{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .ce-app-card .ce-icon--damage{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+        .ce-app-card .ce-icon--map{background:rgba(34,197,94,.12);color:var(--accent-success)}
+        .ce-app-card h4{margin:0 0 6px;font-size:.95rem;color:var(--text-primary)}
+        .ce-app-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.6;margin:0}
+
+        /* Formula block */
+        .formula-block{background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-radius:12px;padding:20px 24px;margin:18px 0;text-align:center}
+        .formula-block .formula{font-family:'JetBrains Mono',monospace;font-size:1.15rem;color:var(--accent-primary);margin:10px 0}
+        .formula-block .formula-label{font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+
+        /* Step list */
+        .step-list{list-style:none;padding:0;margin:20px 0;counter-reset:step}
+        .step-list li{counter-increment:step;position:relative;padding:14px 14px 14px 58px;margin-bottom:12px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;font-size:.9rem;color:var(--text-secondary);line-height:1.7}
+        .step-list li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--gradient-main);color:var(--text-inverse);font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+
+        /* Comparison table */
+        .seg-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.88rem}
+        .seg-table th{text-align:left;padding:10px 14px;background:var(--bg-tertiary);color:var(--accent-primary);font-weight:600;border-bottom:2px solid var(--border-active)}
+        .seg-table td{padding:10px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary)}
+        .seg-table tr:hover td{background:var(--table-row-hover)}
+        .seg-table .highlight-cell{color:var(--accent-primary);font-weight:600}
+
+        /* Architecture badges */
+        .arch-badge{display:inline-block;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600;letter-spacing:.5px}
+        .arch-badge--fcn{background:rgba(0,212,170,.12);color:var(--accent-primary)}
+        .arch-badge--unet{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+        .arch-badge--deep{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .arch-badge--metric{background:rgba(34,197,94,.12);color:var(--accent-success)}
+
+        /* Code block */
+        .code-block{background:var(--bg-code);border:1px solid var(--border-subtle);border-radius:10px;padding:18px 22px;margin:16px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;color:var(--text-secondary)}
+        .code-block .kw{color:var(--accent-secondary)}
+        .code-block .fn{color:var(--accent-primary)}
+        .code-block .cm{color:var(--text-muted);font-style:italic}
+        .code-block .st{color:var(--accent-warm)}
+        .code-block .num{color:var(--accent-danger)}
+
+        @keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.8
+            </div>
+            <h1 class="chapter-hero__title">Semantic Segmentation</h1>
+            <p class="chapter-hero__subtitle">
+                From bounding boxes to pixel-perfect masks &mdash; classifying
+                every single pixel in an image to quantify crack area, map
+                structural damage, and analyse road surfaces at unprecedented
+                granularity using encoder-decoder architectures, U-Net skip
+                connections, and specialised loss functions.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 55 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHAT IS SEMANTIC SEGMENTATION?
+             ========================================== -->
+        <section class="ch-section" id="what-is-semantic-segmentation">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>What Is Semantic Segmentation?</h2>
+                        <p>
+                            In the previous sub-chapter you saw how object detection draws
+                            bounding boxes around objects. But a rectangle is a coarse
+                            approximation &mdash; it includes background pixels and misses
+                            irregular shapes. <strong>Semantic segmentation</strong> takes
+                            visual understanding to pixel-level precision: every single pixel
+                            in the image is assigned a class label. There are no boxes, no
+                            anchors &mdash; just a dense prediction map with the same spatial
+                            resolution as the input.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Formally, given an input image of size
+                    <code>H &times; W &times; 3</code>, a semantic segmentation model
+                    produces an output tensor of size <code>H &times; W &times; C</code>,
+                    where <code>C</code> is the number of classes. Each spatial position
+                    <code>(i, j)</code> contains a probability distribution over classes,
+                    and the <code>argmax</code> yields the predicted class for that pixel.
+                    The result is a <strong>segmentation mask</strong> &mdash; a colour-coded
+                    map where each colour represents a different class.
+                </p>
+
+                <h3>Semantic vs. Instance vs. Panoptic</h3>
+
+                <p>
+                    It is important to distinguish between three related but different
+                    segmentation paradigms:
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Semantic Segmentation</strong> &mdash; every pixel gets a
+                        class label, but individual instances of the same class are
+                        <em>not</em> distinguished. Two adjacent cracks are merged into one
+                        "crack" region.
+                    </li>
+                    <li>
+                        <strong>Instance Segmentation</strong> &mdash; each individual object
+                        gets its own mask. Two adjacent cracks are separated as "crack #1"
+                        and "crack #2." Combines detection with pixel masks (e.g., Mask R-CNN).
+                    </li>
+                    <li>
+                        <strong>Panoptic Segmentation</strong> &mdash; unifies semantic and
+                        instance segmentation. "Stuff" classes (sky, road, wall) get semantic
+                        labels; "thing" classes (cars, people, cracks) get instance-level masks.
+                    </li>
+                </ol>
+
+                <p>
+                    For most civil engineering inspection tasks &mdash; crack area measurement,
+                    road surface classification, corrosion mapping &mdash; semantic segmentation
+                    is the natural starting point because we care about the <em>total area</em>
+                    of each defect type, not necessarily individual counts.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Imagine a topographic survey map. Classification tells you "this
+                        site has a river." Detection draws a rectangle around the
+                        approximate river area. Semantic segmentation is the full contour
+                        map &mdash; every square metre of land is labelled as river, forest,
+                        rock, or soil. You can compute exact areas, perimeters, and
+                        boundaries. That is the power of pixel-level classification for
+                        structural inspections: instead of "crack detected," you get "the
+                        crack occupies 2.4% of the beam surface, with a maximum width of
+                        0.8 mm and a total length of 1.3 m."
+                    </p>
+                </div>
+
+                <h3>Why Not Just Use Bounding Boxes?</h3>
+
+                <p>
+                    Bounding boxes work well for compact, roughly rectangular objects. But
+                    structural defects are rarely rectangular:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Cracks</strong> are thin, branching, and irregular. A bounding
+                        box around a diagonal crack is mostly background.
+                    </li>
+                    <li>
+                        <strong>Spalling</strong> regions have jagged boundaries that boxes
+                        cannot capture.
+                    </li>
+                    <li>
+                        <strong>Corrosion stains</strong> spread in amorphous patterns that
+                        defy rectangular approximation.
+                    </li>
+                    <li>
+                        <strong>Road distress</strong> &mdash; potholes, rutting, alligator
+                        cracking &mdash; requires area measurements, not just locations.
+                    </li>
+                </ul>
+
+                <p>
+                    Semantic segmentation gives you the exact pixel footprint of each defect
+                    type, enabling quantitative measurements (area, width, length) that feed
+                    directly into maintenance decision models and structural health
+                    monitoring dashboards.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: FULLY CONVOLUTIONAL NETWORKS (FCN)
+             ========================================== -->
+        <section class="ch-section" id="fully-convolutional-networks">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Fully Convolutional Networks (FCN)
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-network-wired"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Seminal Idea</h3>
+                        <p>
+                            The breakthrough paper by Long, Shelhamer, and Darrell (2015)
+                            introduced <strong>Fully Convolutional Networks (FCN)</strong> by
+                            making a deceptively simple observation: you can replace the
+                            fully-connected (dense) layers at the end of a classification
+                            CNN with <code>1&times;1</code> convolutional layers. The result
+                            is a network that accepts images of <em>any</em> size and outputs
+                            a spatial map of class predictions rather than a single class
+                            vector.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In a standard classification CNN like VGG-16, the feature maps are
+                    progressively down-sampled by pooling layers (e.g., from
+                    <code>224 &times; 224</code> down to <code>7 &times; 7</code>), and then
+                    flattened into a 1D vector for the final dense layers. FCN keeps
+                    everything spatial. Instead of flattening, it applies <code>1&times;1</code>
+                    convolutions that act as per-pixel classifiers, producing a coarse
+                    prediction map at <code>7 &times; 7</code> resolution.
+                </p>
+
+                <h3>The Upsampling Problem</h3>
+
+                <p>
+                    A <code>7 &times; 7</code> output is far too coarse for pixel-level
+                    predictions on a <code>224 &times; 224</code> input. The spatial
+                    resolution has been destroyed by 32&times; downsampling across five
+                    pooling stages. FCN addresses this with <strong>upsampling</strong>
+                    (also called <em>deconvolution</em> or <em>transposed convolution</em>)
+                    to recover the original resolution.
+                </p>
+
+                <p>
+                    The paper introduced three variants with progressively finer outputs:
+                </p>
+
+                <table class="seg-table">
+                    <thead>
+                        <tr>
+                            <th>Variant</th>
+                            <th>Stride</th>
+                            <th>Skip Connections</th>
+                            <th>Output Quality</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--fcn">FCN-32s</span></td>
+                            <td>32&times;</td>
+                            <td>None</td>
+                            <td>Very coarse, blobby boundaries</td>
+                        </tr>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--fcn">FCN-16s</span></td>
+                            <td>16&times;</td>
+                            <td>pool4</td>
+                            <td>Better edges, still imprecise</td>
+                        </tr>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--fcn">FCN-8s</span></td>
+                            <td>8&times;</td>
+                            <td>pool3 + pool4</td>
+                            <td class="highlight-cell">Sharp boundaries, best quality</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    The key insight behind FCN-8s was <strong>skip connections</strong>:
+                    combining the coarse, semantically rich features from deep layers with
+                    the fine-grained, spatially precise features from earlier layers. This
+                    idea would become the cornerstone of the next major architecture &mdash;
+                    U-Net.
+                </p>
+
+                <h3>Transposed Convolution (Deconvolution)</h3>
+
+                <p>
+                    How does a network <em>increase</em> spatial resolution? A regular
+                    convolution with stride 2 halves the spatial dimensions. A
+                    <strong>transposed convolution</strong> (sometimes misleadingly called
+                    "deconvolution") does the reverse: it inserts zeros between input
+                    elements, effectively mapping a smaller feature map to a larger one.
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Output Size (Transposed Conv)</div>
+                    <div class="formula">
+                        H_out = (H_in - 1) &times; stride - 2 &times; padding + kernel_size
+                    </div>
+                </div>
+
+                <p>
+                    For example, a transposed convolution with
+                    <code>kernel=4, stride=2, padding=1</code> exactly doubles the spatial
+                    dimensions &mdash; the inverse of a <code>kernel=4, stride=2, padding=1</code>
+                    regular convolution. The kernel weights are <em>learned</em> during
+                    training, so the network discovers the best way to upsample feature maps
+                    for each task.
+                </p>
+
+                <h3>Alternative Upsampling Methods</h3>
+
+                <p>
+                    Transposed convolution is not the only way to upsample. Other strategies
+                    are commonly used:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Bilinear interpolation</strong> &mdash; a fixed (non-learned)
+                        method that resizes the feature map using weighted averages of
+                        neighbouring values. Fast but limited.
+                    </li>
+                    <li>
+                        <strong>Nearest-neighbour interpolation</strong> &mdash; duplicates
+                        each value to fill the larger grid. Simple, produces blocky results.
+                    </li>
+                    <li>
+                        <strong>Sub-pixel convolution (PixelShuffle)</strong> &mdash;
+                        rearranges channels into spatial dimensions. Popular in
+                        super-resolution networks.
+                    </li>
+                    <li>
+                        <strong>Bilinear + Conv</strong> &mdash; upsample with bilinear
+                        interpolation, then refine with a regular convolution. Avoids the
+                        checkerboard artifacts that transposed convolutions can produce.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: ENCODER-DECODER ARCHITECTURE
+             ========================================== -->
+        <section class="ch-section" id="encoder-decoder">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-left-right"></i>
+                    The Encoder-Decoder Architecture
+                </h2>
+
+                <p>
+                    FCN demonstrated that segmentation is possible, but its architecture
+                    was a retrofit of a classification network. Modern segmentation models
+                    are designed from the ground up with a symmetric
+                    <strong>encoder-decoder</strong> structure:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress-alt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Encoder (Contracting Path)</h3>
+                        <p>
+                            The encoder is a standard CNN backbone (e.g., ResNet, VGG, EfficientNet)
+                            that progressively <strong>downsamples</strong> the input through
+                            convolutions and pooling. At each stage, the spatial resolution
+                            halves while the number of feature channels doubles. The encoder
+                            captures <em>what</em> is in the image &mdash; high-level semantic
+                            information &mdash; but loses <em>where</em> it is.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-expand-alt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Decoder (Expanding Path)</h3>
+                        <p>
+                            The decoder mirrors the encoder, progressively
+                            <strong>upsampling</strong> through transposed convolutions or
+                            bilinear interpolation. At each stage, the spatial resolution
+                            doubles and the number of channels halves. The decoder recovers
+                            <em>where</em> things are, reconstructing a full-resolution
+                            segmentation mask.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The critical question is: how does the decoder recover the fine spatial
+                    details that the encoder discarded during downsampling? The answer is
+                    <strong>skip connections</strong>.
+                </p>
+
+                <canvas id="encdec-canvas" class="encdec-canvas" aria-label="Encoder-decoder architecture diagram showing contracting and expanding paths"></canvas>
+
+                <h3>The Information Bottleneck</h3>
+
+                <p>
+                    At the bottom of the U-shape (the "bridge" or "bottleneck"), the feature
+                    map is at its smallest spatial resolution but highest channel depth. This
+                    is where the network holds its most abstract, compressed representation
+                    of the entire image. For a <code>256 &times; 256</code> input with four
+                    downsampling stages, the bottleneck might be
+                    <code>16 &times; 16 &times; 1024</code>.
+                </p>
+
+                <p>
+                    Without skip connections, the decoder would have to reconstruct all
+                    spatial detail from this compressed bottleneck &mdash; an impossible
+                    task for fine structures like hairline cracks. Skip connections solve
+                    this by providing a "shortcut" for spatial information to flow directly
+                    from the encoder to the corresponding decoder level.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Think of the encoder-decoder like writing a structural inspection
+                        report. The <strong>encoder</strong> is you walking through the
+                        structure, progressively summarising: "beam" becomes "reinforced
+                        concrete beam with flexural cracks." By the end you have a high-level
+                        summary (the bottleneck) but have lost the exact GPS coordinates of
+                        each crack. The <strong>decoder</strong> writes the detailed report,
+                        and the <strong>skip connections</strong> are your field notes and
+                        photographs from each floor &mdash; they let you recover the precise
+                        locations that the summary alone could not reconstruct.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: U-NET ARCHITECTURE
+             ========================================== -->
+        <section class="ch-section" id="unet-architecture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    U-Net: The Workhorse of Segmentation
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-u"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Architecture Overview</h3>
+                        <p>
+                            U-Net (Ronneberger et al., 2015) was originally designed for
+                            biomedical image segmentation, where labelled data is scarce. Its
+                            elegant symmetric architecture, combined with dense skip
+                            connections, made it the de facto standard for any domain where
+                            precise pixel-level segmentation is required &mdash; including
+                            civil engineering inspection.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The name "U-Net" comes from the U-shape of the architecture when drawn
+                    as a diagram: the encoder forms the left descending arm, the bottleneck
+                    is the bottom, and the decoder forms the right ascending arm. Horizontal
+                    arrows connecting corresponding encoder and decoder levels represent
+                    skip connections.
+                </p>
+
+                <h3>U-Net Building Blocks</h3>
+
+                <p>
+                    Each level of the U-Net consists of a <strong>convolutional block</strong>:
+                    two consecutive <code>3 &times; 3</code> convolutions, each followed by
+                    batch normalisation and a ReLU activation. The original paper used "valid"
+                    convolutions (no padding), which shrink the feature map slightly at each
+                    step. Modern implementations typically use "same" padding to preserve
+                    spatial dimensions within each block.
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Encoder Block</strong> &mdash; Conv 3&times;3, BN, ReLU
+                        &rarr; Conv 3&times;3, BN, ReLU &rarr; Max Pool 2&times;2
+                        (halves spatial resolution, doubles channels).
+                    </li>
+                    <li>
+                        <strong>Bottleneck Block</strong> &mdash; Conv 3&times;3, BN, ReLU
+                        &rarr; Conv 3&times;3, BN, ReLU (no pooling, maximum channel depth).
+                    </li>
+                    <li>
+                        <strong>Decoder Block</strong> &mdash; Transposed Conv 2&times;2
+                        (doubles spatial resolution, halves channels) &rarr; Concatenate with
+                        encoder skip &rarr; Conv 3&times;3, BN, ReLU &rarr; Conv 3&times;3,
+                        BN, ReLU.
+                    </li>
+                    <li>
+                        <strong>Final Layer</strong> &mdash; Conv 1&times;1 mapping the final
+                        feature channels to <code>C</code> output classes. Softmax (or
+                        sigmoid for binary) activation produces per-pixel probabilities.
+                    </li>
+                </ol>
+
+                <h3>Skip Connections in Detail</h3>
+
+                <p>
+                    The defining feature of U-Net is the <strong>concatenation-based skip
+                    connection</strong>. At each decoder level, the upsampled feature map
+                    from the level below is concatenated (along the channel dimension) with
+                    the feature map from the corresponding encoder level. This doubles the
+                    number of channels entering the decoder's convolutional block, but the
+                    subsequent convolutions reduce it back.
+                </p>
+
+                <p>
+                    Why concatenation rather than addition (as in ResNet)? Concatenation
+                    preserves <em>both</em> the high-resolution spatial features from the
+                    encoder and the semantically rich features from the decoder, letting the
+                    convolutional layers learn how to combine them optimally. Addition forces
+                    the features to share the same channel space, which can lose information.
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Skip Connection (Concatenation)</div>
+                    <div class="formula">
+                        decoder_input = concat(upsample(deeper_level), encoder_level)
+                    </div>
+                </div>
+
+                <p>
+                    For a 4-level U-Net with an input of <code>256 &times; 256 &times; 3</code>:
+                </p>
+
+                <table class="seg-table">
+                    <thead>
+                        <tr>
+                            <th>Level</th>
+                            <th>Encoder Output</th>
+                            <th>Decoder Input (after concat)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Level 1</td>
+                            <td><code>256 &times; 256 &times; 64</code></td>
+                            <td><code>256 &times; 256 &times; 128</code></td>
+                        </tr>
+                        <tr>
+                            <td>Level 2</td>
+                            <td><code>128 &times; 128 &times; 128</code></td>
+                            <td><code>128 &times; 128 &times; 256</code></td>
+                        </tr>
+                        <tr>
+                            <td>Level 3</td>
+                            <td><code>64 &times; 64 &times; 256</code></td>
+                            <td><code>64 &times; 64 &times; 512</code></td>
+                        </tr>
+                        <tr>
+                            <td>Level 4</td>
+                            <td><code>32 &times; 32 &times; 512</code></td>
+                            <td><code>32 &times; 32 &times; 1024</code></td>
+                        </tr>
+                        <tr>
+                            <td>Bottleneck</td>
+                            <td colspan="2" class="highlight-cell"><code>16 &times; 16 &times; 1024</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>U-Net Variants</h3>
+
+                <p>
+                    The original U-Net spawned many variants optimised for different tasks:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Attention U-Net</strong> &mdash; adds attention gates before
+                        skip connections to suppress irrelevant features, improving
+                        performance on small or sparse objects (e.g., hairline cracks).
+                    </li>
+                    <li>
+                        <strong>U-Net++</strong> &mdash; introduces dense nested skip
+                        connections, bridging the semantic gap between encoder and decoder
+                        features at each level.
+                    </li>
+                    <li>
+                        <strong>ResUNet</strong> &mdash; replaces the convolutional blocks
+                        with residual blocks for deeper architectures without degradation.
+                    </li>
+                    <li>
+                        <strong>3D U-Net</strong> &mdash; extends to volumetric data, useful
+                        for CT scans of concrete cores or 3D point cloud segmentation.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: DEMO 1 — U-NET ARCHITECTURE DIAGRAM
+             ========================================== -->
+        <section class="ch-section" id="demo-unet-diagram">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: U-Net Architecture
+                </h2>
+
+                <p>
+                    Hover over each block in the diagram below to explore the U-Net
+                    architecture. The contracting path (left) downsamples with convolutions
+                    and max-pooling. The expanding path (right) upsamples with transposed
+                    convolutions. Gray arrows represent skip connections that concatenate
+                    encoder features with decoder features.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="unet-canvas-wrapper">
+                        <canvas id="unet-canvas" class="unet-canvas" aria-label="Interactive U-Net architecture diagram with skip connections"></canvas>
+                        <div id="unet-tooltip" class="unet-tooltip"></div>
+                    </div>
+                    <div class="unet-controls">
+                        <button id="unet-reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset View</button>
+                        <button id="unet-animate-btn"><i class="fa-solid fa-play"></i> Animate Data Flow</button>
+                        <button id="unet-labels-btn" class="active"><i class="fa-solid fa-tags"></i> Show Labels</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: LOSS FUNCTIONS FOR SEGMENTATION
+             ========================================== -->
+        <section class="ch-section" id="loss-functions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Loss Functions for Segmentation
+                </h2>
+
+                <p>
+                    Choosing the right loss function is critical for segmentation because
+                    classes are almost always imbalanced. In a bridge inspection image, the
+                    crack pixels might comprise only 0.5% of the total &mdash; the remaining
+                    99.5% is intact concrete. A naive cross-entropy loss would achieve 99.5%
+                    accuracy by predicting "no crack" everywhere.
+                </p>
+
+                <h3>Pixel-wise Cross-Entropy Loss</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <p>
+                            The most basic segmentation loss treats each pixel as an
+                            independent classification problem. For <code>C</code> classes:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="formula-block">
+                    <div class="formula-label">Pixel-wise Cross-Entropy</div>
+                    <div class="formula">
+                        L_CE = - (1 / N) &sum; &sum; y(i,j,c) &middot; log(p(i,j,c))
+                    </div>
+                </div>
+
+                <p>
+                    Where <code>N</code> is the total number of pixels, <code>y</code> is
+                    the one-hot ground truth, and <code>p</code> is the predicted probability.
+                    This can be improved with <strong>class weights</strong> that penalise
+                    misclassification of rare classes more heavily:
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Weighted Cross-Entropy</div>
+                    <div class="formula">
+                        L_WCE = - (1 / N) &sum; w_c &middot; y(i,j,c) &middot; log(p(i,j,c))
+                    </div>
+                </div>
+
+                <h3>Dice Loss</h3>
+
+                <p>
+                    <strong>Dice loss</strong> directly optimises the Dice coefficient
+                    (also known as the F1 score), which measures the overlap between the
+                    predicted segmentation and the ground truth. It is inherently robust
+                    to class imbalance because it measures relative overlap rather than
+                    absolute pixel counts.
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Dice Coefficient</div>
+                    <div class="formula">
+                        Dice = 2 &middot; |P &cap; G| / (|P| + |G|)
+                    </div>
+                </div>
+
+                <div class="formula-block">
+                    <div class="formula-label">Dice Loss</div>
+                    <div class="formula">
+                        L_Dice = 1 - (2 &middot; &sum; p_i &middot; g_i + &epsilon;) / (&sum; p_i + &sum; g_i + &epsilon;)
+                    </div>
+                </div>
+
+                <p>
+                    The smooth factor <code>&epsilon;</code> (typically <code>1e-6</code>)
+                    prevents division by zero when both prediction and ground truth are
+                    empty (no positive pixels). In practice, many practitioners use a
+                    <strong>combined loss</strong>:
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Combined Loss</div>
+                    <div class="formula">
+                        L = &alpha; &middot; L_CE + (1 - &alpha;) &middot; L_Dice
+                    </div>
+                </div>
+
+                <p>
+                    This combines the stable gradients of cross-entropy with the overlap
+                    sensitivity of Dice loss. A typical value is <code>&alpha; = 0.5</code>.
+                </p>
+
+                <h3>Focal Loss</h3>
+
+                <p>
+                    Originally proposed for object detection (Lin et al., 2017), focal loss
+                    down-weights easy examples (background pixels correctly classified with
+                    high confidence) so the model focuses on hard examples (boundary pixels,
+                    thin cracks):
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Focal Loss</div>
+                    <div class="formula">
+                        L_focal = - &alpha; &middot; (1 - p_t)^&gamma; &middot; log(p_t)
+                    </div>
+                </div>
+
+                <p>
+                    The focusing parameter <code>&gamma;</code> (typically 2) controls how
+                    much easy examples are down-weighted. When <code>&gamma; = 0</code>,
+                    focal loss reduces to standard cross-entropy.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Loss functions are like grading criteria for an intern's inspection
+                        report. <strong>Cross-entropy</strong> penalises every mistake
+                        equally &mdash; missing a crack is the same as mislabelling a clean
+                        area. <strong>Dice loss</strong> asks: "what fraction of the actual
+                        cracks did you correctly identify?" &mdash; it cares about coverage,
+                        not about how much clean concrete you correctly labelled.
+                        <strong>Focal loss</strong> is like a mentor who says: "stop
+                        spending time on obvious intact areas and focus on the ambiguous
+                        boundary regions."
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: EVALUATION METRICS
+             ========================================== -->
+        <section class="ch-section" id="evaluation-metrics">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    Evaluation Metrics: IoU Per Class
+                </h2>
+
+                <p>
+                    Accuracy is a poor metric for segmentation due to class imbalance.
+                    Instead, the community uses <strong>Intersection over Union (IoU)</strong>,
+                    also called the Jaccard Index, computed <em>per class</em>:
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Intersection over Union (IoU)</div>
+                    <div class="formula">
+                        IoU_c = TP_c / (TP_c + FP_c + FN_c)
+                    </div>
+                </div>
+
+                <p>
+                    Where <code>TP</code> is true positives (pixels correctly predicted as
+                    class <code>c</code>), <code>FP</code> is false positives, and
+                    <code>FN</code> is false negatives, all for class <code>c</code>.
+                </p>
+
+                <h3>Mean IoU (mIoU)</h3>
+
+                <p>
+                    The <strong>mean IoU</strong> averages IoU across all classes:
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Mean IoU</div>
+                    <div class="formula">
+                        mIoU = (1 / C) &sum; IoU_c
+                    </div>
+                </div>
+
+                <p>
+                    mIoU is the standard benchmark metric for semantic segmentation
+                    (used in Pascal VOC, Cityscapes, ADE20K). For a civil engineering
+                    crack segmentation model, you might report:
+                </p>
+
+                <table class="seg-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>IoU</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Background</td>
+                            <td class="highlight-cell">0.987</td>
+                            <td>Nearly perfect &mdash; background dominates</td>
+                        </tr>
+                        <tr>
+                            <td>Crack</td>
+                            <td class="highlight-cell">0.724</td>
+                            <td>Good overlap with thin crack regions</td>
+                        </tr>
+                        <tr>
+                            <td>Spalling</td>
+                            <td class="highlight-cell">0.681</td>
+                            <td>Reasonable; irregular boundaries are challenging</td>
+                        </tr>
+                        <tr>
+                            <td>Corrosion</td>
+                            <td class="highlight-cell">0.643</td>
+                            <td>Harder due to colour overlap with stains</td>
+                        </tr>
+                        <tr>
+                            <td colspan="1"><strong>mIoU</strong></td>
+                            <td class="highlight-cell"><strong>0.759</strong></td>
+                            <td>Average across all four classes</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Other Metrics</h3>
+
+                <ul>
+                    <li>
+                        <strong>Pixel Accuracy</strong> &mdash; fraction of correctly
+                        classified pixels. Simple but misleading with imbalanced classes.
+                    </li>
+                    <li>
+                        <strong>Dice Coefficient / F1 Score</strong> &mdash; closely related
+                        to IoU: <code>Dice = 2 &middot; IoU / (1 + IoU)</code>. Reports
+                        the same information in a different scale.
+                    </li>
+                    <li>
+                        <strong>Boundary F1 (BF1)</strong> &mdash; evaluates segmentation
+                        quality specifically along object boundaries, critical for crack
+                        width measurements.
+                    </li>
+                    <li>
+                        <strong>Frequency-Weighted IoU</strong> &mdash; weights each class
+                        IoU by its pixel frequency. Gives less weight to rare classes.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bridge"></i>
+                    Civil Engineering Applications
+                </h2>
+
+                <p>
+                    Semantic segmentation is transforming how civil engineers measure,
+                    monitor, and maintain infrastructure. Here are the most impactful
+                    applications:
+                </p>
+
+                <div class="ce-app-grid">
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--crack">
+                            <i class="fa-solid fa-burst"></i>
+                        </div>
+                        <h4>Crack Segmentation</h4>
+                        <p>
+                            Pixel-level crack masks enable quantitative measurement of crack
+                            area, width, length, and branching patterns. A U-Net trained on
+                            concrete surface images can detect cracks as thin as 0.1 mm from
+                            high-resolution photographs, computing crack density
+                            (mm&sup2;/m&sup2;) automatically.
+                        </p>
+                    </div>
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--damage">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <h4>Damage Mapping</h4>
+                        <p>
+                            After earthquakes or extreme events, UAV imagery is processed
+                            through segmentation models to create damage maps that classify
+                            each pixel as intact, cracked, spalled, collapsed, or debris.
+                            These maps guide emergency response and prioritise repair
+                            resources across large portfolios.
+                        </p>
+                    </div>
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--road">
+                            <i class="fa-solid fa-road"></i>
+                        </div>
+                        <h4>Road Surface Analysis</h4>
+                        <p>
+                            Pavement management systems use segmentation to classify road
+                            distress types: alligator cracking, longitudinal cracks, potholes,
+                            rutting, and patching. The segmented area directly feeds into
+                            Pavement Condition Index (PCI) calculations and maintenance
+                            scheduling algorithms.
+                        </p>
+                    </div>
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--map">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <h4>Material Classification</h4>
+                        <p>
+                            Segmentation can identify and map different construction materials
+                            (concrete, steel, wood, masonry) in building facades from street-
+                            level imagery. This supports rapid inventory of building typologies
+                            for seismic vulnerability assessments at city scale.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Crack Segmentation in Practice</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-microscope"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>From Pixels to Measurements</h3>
+                        <p>
+                            Once you have a binary crack mask, converting pixels to physical
+                            measurements requires a calibration step. If you know the ground
+                            sampling distance (GSD) &mdash; the real-world size of one pixel
+                            &mdash; you can compute:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Crack area</strong> = (number of crack pixels) &times; GSD&sup2;
+                            </li>
+                            <li>
+                                <strong>Crack width</strong> = measured perpendicular to the
+                                crack centreline using distance transform or skeletonisation.
+                            </li>
+                            <li>
+                                <strong>Crack length</strong> = length of the skeletonised
+                                centreline &times; GSD.
+                            </li>
+                            <li>
+                                <strong>Crack density</strong> = total crack area / inspection
+                                region area.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    The typical pipeline for automated crack measurement is:
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Image Acquisition</strong> &mdash; capture high-resolution
+                        images from a fixed distance (tripod, UAV, or robotic crawler) to
+                        ensure consistent GSD.
+                    </li>
+                    <li>
+                        <strong>Segmentation</strong> &mdash; run the U-Net model to produce
+                        a binary crack mask (crack vs. background) or multi-class mask
+                        (crack, spalling, corrosion, efflorescence, intact).
+                    </li>
+                    <li>
+                        <strong>Post-processing</strong> &mdash; apply morphological
+                        operations (opening, closing) to remove noise and fill small gaps
+                        in the predicted mask.
+                    </li>
+                    <li>
+                        <strong>Skeletonisation</strong> &mdash; thin the crack mask to a
+                        1-pixel-wide centreline using Zhang-Suen or medial axis transform.
+                    </li>
+                    <li>
+                        <strong>Measurement</strong> &mdash; compute width at regular
+                        intervals along the skeleton, total length, branching count, and
+                        area from the cleaned mask.
+                    </li>
+                    <li>
+                        <strong>Reporting</strong> &mdash; overlay the segmentation mask on
+                        the original image and generate quantitative metrics for the
+                        inspection database.
+                    </li>
+                </ol>
+
+                <h3>Damage Mapping After Extreme Events</h3>
+
+                <p>
+                    Following earthquakes, hurricanes, or floods, rapid damage assessment
+                    saves lives and directs resources. Semantic segmentation applied to
+                    UAV or satellite imagery can classify structural damage at multiple
+                    scales:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Building level</strong> &mdash; classifying each building
+                        footprint as intact, minor damage, major damage, or collapsed using
+                        overhead imagery.
+                    </li>
+                    <li>
+                        <strong>Component level</strong> &mdash; segmenting individual
+                        structural elements (columns, beams, walls, slabs) and their
+                        damage states from close-range photographs.
+                    </li>
+                    <li>
+                        <strong>Infrastructure level</strong> &mdash; mapping road blockages,
+                        bridge damage, and utility disruptions across a city.
+                    </li>
+                </ul>
+
+                <p>
+                    The segmentation masks are georeferenced and overlaid on GIS maps to
+                    create damage heat maps that decision-makers can use within hours of
+                    an event &mdash; compared to days or weeks for traditional field surveys.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: OTHER ARCHITECTURES
+             ========================================== -->
+        <section class="ch-section" id="other-architectures">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-microchip"></i>
+                    Beyond U-Net: Modern Architectures
+                </h2>
+
+                <p>
+                    While U-Net remains the most popular architecture for domain-specific
+                    segmentation, several other architectures are worth understanding:
+                </p>
+
+                <h3>DeepLab Family</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Atrous (Dilated) Convolution</h3>
+                        <p>
+                            DeepLab (Chen et al., 2017) introduced <strong>atrous spatial
+                            pyramid pooling (ASPP)</strong>, which applies dilated convolutions
+                            at multiple rates to capture multi-scale context without
+                            downsampling. A dilated convolution with rate <code>r</code>
+                            inserts <code>r - 1</code> zeros between kernel elements,
+                            effectively increasing the receptive field without adding
+                            parameters or losing resolution.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    DeepLabv3+ combines ASPP with an encoder-decoder structure, achieving
+                    state-of-the-art results on Cityscapes and Pascal VOC. It is
+                    particularly effective for large-scale scene parsing where multi-scale
+                    context is critical.
+                </p>
+
+                <h3>SegFormer and Transformer-Based Approaches</h3>
+
+                <p>
+                    Vision Transformers have entered the segmentation arena. SegFormer
+                    (Xie et al., 2021) uses a hierarchical Transformer encoder with
+                    overlapping patch embeddings and a lightweight all-MLP decoder. It
+                    achieves competitive results with fewer parameters and better
+                    generalisation to unseen domains.
+                </p>
+
+                <h3>Architecture Comparison</h3>
+
+                <table class="seg-table">
+                    <thead>
+                        <tr>
+                            <th>Architecture</th>
+                            <th>Key Innovation</th>
+                            <th>Best For</th>
+                            <th>Typical mIoU</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--fcn">FCN</span></td>
+                            <td>First end-to-end segmentation</td>
+                            <td>Baseline, education</td>
+                            <td>~62% (VOC)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--unet">U-Net</span></td>
+                            <td>Skip concatenation, symmetric</td>
+                            <td>Small datasets, medical/CE</td>
+                            <td class="highlight-cell">~82% (task-specific)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--deep">DeepLabv3+</span></td>
+                            <td>ASPP, dilated convolution</td>
+                            <td>Multi-scale scenes</td>
+                            <td>~82% (Cityscapes)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="arch-badge arch-badge--deep">SegFormer</span></td>
+                            <td>Transformer encoder, MLP decoder</td>
+                            <td>General-purpose</td>
+                            <td>~84% (Cityscapes)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <p>
+                        Choosing a segmentation architecture is like choosing a structural
+                        analysis method. <strong>FCN</strong> is hand calculation &mdash;
+                        foundational, educational, but rarely used in practice.
+                        <strong>U-Net</strong> is a reliable finite element model &mdash;
+                        works great for most problems, especially with limited data.
+                        <strong>DeepLabv3+</strong> is a sophisticated nonlinear FE analysis
+                        &mdash; handles complex multi-scale problems.
+                        <strong>SegFormer</strong> is the latest AI-powered generative
+                        design tool &mdash; cutting-edge, general-purpose, but requires
+                        understanding of newer paradigms.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DEMO 2 — SEGMENTATION PAINTER
+             ========================================== -->
+        <section class="ch-section" id="demo-segmentation-painter">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Segmentation Painter
+                </h2>
+
+                <p>
+                    This demo simulates a semantic segmentation workflow. A synthetic
+                    concrete structure image is displayed on the canvas. Select a class
+                    (crack, spalling, corrosion, or intact) and paint regions on the
+                    structure to create a ground-truth annotation mask. The overlay shows
+                    your segmentation in real-time with class-coloured transparency. Use
+                    this to understand how pixel-level annotation works and how different
+                    classes contribute to IoU metrics.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="seg-canvas-wrapper">
+                        <canvas id="seg-canvas" class="seg-canvas" aria-label="Segmentation painter: paint defect classes on a concrete structure image"></canvas>
+                    </div>
+                    <div class="class-legend" id="seg-legend">
+                        <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div> Crack</div>
+                        <div class="legend-item"><div class="legend-swatch" style="background:#f59e0b"></div> Spalling</div>
+                        <div class="legend-item"><div class="legend-swatch" style="background:#0ea5e9"></div> Corrosion</div>
+                        <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div> Intact</div>
+                        <div class="legend-item"><div class="legend-swatch" style="background:transparent;border:1px dashed var(--text-muted)"></div> Unlabelled</div>
+                    </div>
+                    <div class="seg-controls">
+                        <button id="seg-class-crack" class="active" data-class="crack"><i class="fa-solid fa-burst"></i> Crack</button>
+                        <button id="seg-class-spall" data-class="spall"><i class="fa-solid fa-circle-dot"></i> Spalling</button>
+                        <button id="seg-class-corrosion" data-class="corrosion"><i class="fa-solid fa-droplet"></i> Corrosion</button>
+                        <button id="seg-class-intact" data-class="intact"><i class="fa-solid fa-check-circle"></i> Intact</button>
+                        <label>
+                            Brush:
+                            <input type="range" id="seg-brush-size" min="4" max="60" value="18">
+                            <span class="range-value" id="seg-brush-value">18</span>
+                        </label>
+                        <button id="seg-clear-btn"><i class="fa-solid fa-trash-can"></i> Clear</button>
+                        <button id="seg-predict-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> Simulate Prediction</button>
+                    </div>
+                    <div class="seg-readout" id="seg-readout">
+                        <div class="metric-box">
+                            <span class="metric-label">Crack %</span>
+                            <span class="metric-value" id="seg-crack-pct">0.0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Spalling %</span>
+                            <span class="metric-value" id="seg-spall-pct">0.0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Corrosion %</span>
+                            <span class="metric-value" id="seg-corr-pct">0.0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Labelled %</span>
+                            <span class="metric-value" id="seg-labelled-pct">0.0</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: PRACTICAL TIPS
+             ========================================== -->
+        <section class="ch-section" id="practical-tips">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    Practical Tips for Segmentation Projects
+                </h2>
+
+                <p>
+                    Whether you are segmenting cracks on a bridge deck or road distress
+                    from a pavement survey vehicle, these practical guidelines apply:
+                </p>
+
+                <h3>Data Annotation</h3>
+
+                <ul>
+                    <li>
+                        <strong>Annotation quality dominates model quality.</strong> A
+                        smaller dataset with precise pixel annotations beats a larger dataset
+                        with sloppy labels. Invest in clear annotation guidelines and
+                        inter-annotator agreement checks.
+                    </li>
+                    <li>
+                        <strong>Use polygon tools, not brushes</strong>, for irregular shapes.
+                        Polygon annotation (e.g., in CVAT, LabelMe, or Supervisely) produces
+                        cleaner boundaries than freehand brushing.
+                    </li>
+                    <li>
+                        <strong>Define boundary protocols.</strong> Does a crack include the
+                        damage halo around it? Where does spalling end and intact concrete
+                        begin? Ambiguity here directly translates to model uncertainty.
+                    </li>
+                </ul>
+
+                <h3>Training Strategy</h3>
+
+                <ul>
+                    <li>
+                        <strong>Start with a pre-trained encoder.</strong> Use ImageNet
+                        pre-trained weights for the encoder (ResNet-34 or EfficientNet-B4)
+                        and train only the decoder initially. Fine-tune the full model with
+                        a lower learning rate.
+                    </li>
+                    <li>
+                        <strong>Use heavy augmentation.</strong> Random rotations, flips,
+                        elastic deformation, brightness/contrast jitter, and Gaussian noise
+                        are essential when training data is limited (which it almost always
+                        is in CE applications).
+                    </li>
+                    <li>
+                        <strong>Combine Dice + CE loss.</strong> The combined loss gives more
+                        stable training than either alone, especially for thin structures
+                        like cracks.
+                    </li>
+                    <li>
+                        <strong>Monitor per-class IoU, not just mIoU.</strong> A high mIoU
+                        can mask poor performance on the classes you care about most
+                        (e.g., crack IoU of 0.3 hidden by background IoU of 0.99).
+                    </li>
+                </ul>
+
+                <h3>Deployment Considerations</h3>
+
+                <ul>
+                    <li>
+                        <strong>Patch-based inference.</strong> For high-resolution images
+                        (4000 &times; 6000 from a DSLR), process overlapping patches and
+                        stitch the predictions. Use Gaussian weighting to blend overlapping
+                        regions and avoid edge artifacts.
+                    </li>
+                    <li>
+                        <strong>Test-time augmentation (TTA).</strong> Run inference on
+                        flipped and rotated versions of the same image and average the
+                        predictions. Improves IoU by 1&ndash;3% at the cost of
+                        4&ndash;8&times; inference time.
+                    </li>
+                    <li>
+                        <strong>Morphological post-processing.</strong> Apply connected
+                        component analysis to remove small spurious regions. Apply dilation
+                        followed by erosion (closing) to fill gaps in thin crack predictions.
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Pitfalls</h3>
+                        <p>
+                            <strong>Data leakage in tiled datasets:</strong> if you split a
+                            large image into patches for training and testing, patches from
+                            the <em>same</em> image must all go to the same split. Otherwise,
+                            the model memorises the texture of specific structures rather than
+                            learning generalisable crack features. Always split at the
+                            <em>image level</em>, not the <em>patch level</em>.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-block__question">
+                        In semantic segmentation, what does the model output for an input
+                        image of size <code>H &times; W &times; 3</code> with
+                        <code>C</code> classes?
+                    </p>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">A</span>
+                            A single class label for the entire image
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">B</span>
+                            A list of bounding boxes with class labels
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <span class="quiz-option__marker">C</span>
+                            A tensor of size H &times; W &times; C with per-pixel class probabilities
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">D</span>
+                            A single feature vector of length C
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-block__question">
+                        What is the primary advantage of Dice loss over standard
+                        cross-entropy loss for crack segmentation?
+                    </p>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">A</span>
+                            Dice loss is computationally faster to calculate
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <span class="quiz-option__marker">B</span>
+                            Dice loss is inherently robust to class imbalance by measuring relative overlap
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">C</span>
+                            Dice loss does not require ground truth annotations
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">D</span>
+                            Dice loss produces smoother gradients at all confidence levels
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-block__question">
+                        In U-Net, skip connections between encoder and decoder levels use
+                        <strong>concatenation</strong> rather than addition. Why?
+                    </p>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">A</span>
+                            Concatenation is faster than addition on GPUs
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">B</span>
+                            Concatenation reduces the number of parameters
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <span class="quiz-option__marker">C</span>
+                            Concatenation preserves both spatial and semantic features separately, letting convolutions learn how to combine them
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">D</span>
+                            Concatenation prevents vanishing gradients in deep networks
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-block__question">
+                        A crack segmentation model achieves pixel accuracy of 99.2% but an
+                        IoU for the crack class of only 0.31. What does this indicate?
+                    </p>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">A</span>
+                            The model is excellent and the IoU metric is unreliable
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">B</span>
+                            The training data has labelling errors
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <span class="quiz-option__marker">C</span>
+                            The model performs poorly on the minority crack class; high accuracy is misleading due to class imbalance
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <span class="quiz-option__marker">D</span>
+                            The model needs a larger input image resolution
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub7.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">4.7 Object Detection</div>
+        </a>
+        <a href="sub9.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">4.9 Visualizing CNN Internals</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── Helpers ── */
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+        const dpr = window.devicePixelRatio || 1;
+
+        function getColors() {
+            const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:   dark ? '#2dd4bf' : '#059669',
+                CYAN:   dark ? '#22d3ee' : '#0284c7',
+                AMBER:  dark ? '#fbbf24' : '#d97706',
+                RED:    dark ? '#ef4444' : '#dc2626',
+                GREEN:  dark ? '#22c55e' : '#16a34a',
+                BG:     dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT:   dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:    dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:   dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE:   dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                STROKE: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE:  dark ? '#fff' : '#1a1a2e',
+                MUTED:  dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+                CARD:   dark ? '#16161f' : '#ffffff',
+                BORDER: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
+            };
+        }
+
+        function initCanvas(canvas) {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width  = rect.width  * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx, w: rect.width, h: rect.height };
+        }
+
+        /* ================================================================
+           HERO CANVAS — Animated pixel grid
+           ================================================================ */
+        (function heroCanvas() {
+            const canvas = $('#hero-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+            let cells = [];
+            const cols = 40, rows = 20;
+
+            function buildCells() {
+                cells = [];
+                const cw = w / cols, ch = h / rows;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        cells.push({
+                            x: c * cw, y: r * ch, w: cw, h: ch,
+                            hue: Math.random() * 60 + 150,
+                            alpha: Math.random() * 0.15 + 0.02,
+                            speed: Math.random() * 0.005 + 0.002,
+                            phase: Math.random() * Math.PI * 2
+                        });
+                    }
+                }
+            }
+
+            function draw(t) {
+                const C = getColors();
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+                cells.forEach(cell => {
+                    const a = cell.alpha + Math.sin(t * cell.speed + cell.phase) * 0.05;
+                    ctx.fillStyle = `hsla(${cell.hue}, 70%, 55%, ${Math.max(0, a)})`;
+                    ctx.fillRect(cell.x + 0.5, cell.y + 0.5, cell.w - 1, cell.h - 1);
+                });
+                requestAnimationFrame(draw);
+            }
+
+            buildCells();
+            requestAnimationFrame(draw);
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                buildCells();
+            });
+        })();
+
+        /* ================================================================
+           ENCODER-DECODER DIAGRAM CANVAS
+           ================================================================ */
+        (function encDecDiagram() {
+            const canvas = $('#encdec-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            function draw() {
+                const C = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                const padX = 40, padY = 30;
+                const usableW = w - 2 * padX;
+                const usableH = h - 2 * padY;
+                const levels = 5;
+                const blockW = usableW / (levels * 2 + 1);
+
+                /* Draw encoder blocks (descending) */
+                for (let i = 0; i < levels; i++) {
+                    const bh = usableH * (1 - i * 0.15);
+                    const x = padX + i * blockW;
+                    const y = padY + (usableH - bh) / 2;
+                    ctx.fillStyle = i < levels - 1 ? C.TEAL : C.AMBER;
+                    ctx.globalAlpha = 0.2 + i * 0.1;
+                    ctx.fillRect(x, y, blockW - 4, bh);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = i < levels - 1 ? C.TEAL : C.AMBER;
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(x, y, blockW - 4, bh);
+
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '11px Inter';
+                    ctx.textAlign = 'center';
+                    if (i < levels - 1) {
+                        ctx.fillText('Enc ' + (i + 1), x + (blockW - 4) / 2, y + bh / 2 + 4);
+                    } else {
+                        ctx.fillText('Bottleneck', x + (blockW - 4) / 2, y + bh / 2 + 4);
+                    }
+
+                    /* Arrow to next */
+                    if (i < levels - 1) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + blockW - 4, padY + usableH / 2);
+                        ctx.lineTo(x + blockW + 2, padY + usableH / 2);
+                        ctx.strokeStyle = C.MUTED;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+
+                /* Draw decoder blocks (ascending) */
+                for (let i = 0; i < levels - 1; i++) {
+                    const bh = usableH * (1 - (levels - 2 - i) * 0.15);
+                    const x = padX + (levels + i) * blockW;
+                    const y = padY + (usableH - bh) / 2;
+                    ctx.fillStyle = C.CYAN;
+                    ctx.globalAlpha = 0.2 + (levels - 2 - i) * 0.1;
+                    ctx.fillRect(x, y, blockW - 4, bh);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = C.CYAN;
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(x, y, blockW - 4, bh);
+
+                    ctx.fillStyle = C.TEXT;
+                    ctx.font = '11px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Dec ' + (levels - 1 - i), x + (blockW - 4) / 2, y + bh / 2 + 4);
+
+                    /* Arrow to next decoder */
+                    if (i < levels - 2) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + blockW - 4, padY + usableH / 2);
+                        ctx.lineTo(x + blockW + 2, padY + usableH / 2);
+                        ctx.strokeStyle = C.MUTED;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+
+                /* Bottleneck arrow */
+                const bx = padX + (levels - 1) * blockW + blockW - 4;
+                const dx = padX + levels * blockW;
+                ctx.beginPath();
+                ctx.moveTo(bx, padY + usableH / 2);
+                ctx.lineTo(dx, padY + usableH / 2);
+                ctx.strokeStyle = C.AMBER;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                /* Skip connections */
+                ctx.setLineDash([6, 4]);
+                for (let i = 0; i < levels - 1; i++) {
+                    const encX = padX + i * blockW + (blockW - 4) / 2;
+                    const decX = padX + (2 * levels - 2 - i) * blockW + (blockW - 4) / 2;
+                    const encBH = usableH * (1 - i * 0.15);
+                    const encY = padY + (usableH - encBH) / 2 - 6;
+                    ctx.beginPath();
+                    ctx.moveTo(encX, encY);
+                    ctx.lineTo(decX, encY);
+                    ctx.strokeStyle = C.MUTED;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    /* Arrow head */
+                    ctx.beginPath();
+                    ctx.moveTo(decX, encY - 4);
+                    ctx.lineTo(decX + 6, encY);
+                    ctx.lineTo(decX, encY + 4);
+                    ctx.fillStyle = C.MUTED;
+                    ctx.fill();
+                }
+                ctx.setLineDash([]);
+
+                /* Labels */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = 'bold 12px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('ENCODER', padX + (levels - 1) * blockW / 2, h - 8);
+                ctx.fillText('DECODER', padX + (levels + (levels - 1) / 2) * blockW, h - 8);
+
+                ctx.font = '10px Inter';
+                ctx.fillStyle = C.MUTED;
+                ctx.fillText('Skip Connections (dashed)', w / 2, 14);
+            }
+
+            draw();
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                draw();
+            });
+
+            const obs = new MutationObserver(draw);
+            obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           DEMO 1: U-NET INTERACTIVE DIAGRAM
+           ================================================================ */
+        (function unetDemo() {
+            const canvas = $('#unet-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+            const tooltip = $('#unet-tooltip');
+            let showLabels = true;
+            let animating = false;
+            let animProgress = 0;
+            let animRAF = null;
+            let hoveredBlock = null;
+
+            /* Architecture definition */
+            const levels = 4;
+            const channelCounts = [64, 128, 256, 512, 1024]; /* enc levels + bottleneck */
+            const spatialSizes  = [256, 128, 64, 32, 16];
+
+            const blockDescriptions = {
+                'enc-0': 'Encoder Level 1: Two 3x3 Conv + BN + ReLU blocks. Input: 256x256x3, Output: 256x256x64. Captures low-level features like edges and textures.',
+                'enc-1': 'Encoder Level 2: Max Pool 2x2 then two 3x3 Conv blocks. Input: 128x128x64, Output: 128x128x128. Detects local patterns and corners.',
+                'enc-2': 'Encoder Level 3: Max Pool 2x2 then two 3x3 Conv blocks. Input: 64x64x128, Output: 64x64x256. Recognises structural elements and crack patterns.',
+                'enc-3': 'Encoder Level 4: Max Pool 2x2 then two 3x3 Conv blocks. Input: 32x32x256, Output: 32x32x512. High-level semantic features.',
+                'bottleneck': 'Bottleneck: Max Pool 2x2 then two 3x3 Conv blocks. Size: 16x16x1024. Most compressed representation of the entire image.',
+                'dec-3': 'Decoder Level 4: TransConv 2x2 upsample, concatenate skip from Enc 4. Input: 32x32x1024 (512 up + 512 skip). Output: 32x32x512.',
+                'dec-2': 'Decoder Level 3: TransConv 2x2 upsample, concatenate skip from Enc 3. Input: 64x64x512 (256 up + 256 skip). Output: 64x64x256.',
+                'dec-1': 'Decoder Level 2: TransConv 2x2 upsample, concatenate skip from Enc 2. Input: 128x128x256 (128 up + 128 skip). Output: 128x128x128.',
+                'dec-0': 'Decoder Level 1: TransConv 2x2 upsample, concatenate skip from Enc 1. Input: 256x256x128 (64 up + 64 skip). Output: 256x256x64. Final 1x1 Conv maps to C classes.',
+                'skip-0': 'Skip Connection 1: Concatenates 256x256x64 encoder features with upsampled decoder features. Provides fine edge details.',
+                'skip-1': 'Skip Connection 2: Concatenates 128x128x128 features. Restores mid-level spatial patterns.',
+                'skip-2': 'Skip Connection 3: Concatenates 64x64x256 features. Recovers structural layout information.',
+                'skip-3': 'Skip Connection 4: Concatenates 32x32x512 features. Bridges high-level semantics with spatial resolution.'
+            };
+
+            /* Block geometry cache */
+            let blocks = [];
+
+            function computeBlocks() {
+                blocks = [];
+                const padX = 50, padTop = 50, padBot = 40;
+                const usableH = h - padTop - padBot;
+                const totalCols = levels * 2 + 1;
+                const colW = (w - 2 * padX) / totalCols;
+                const maxBlockH = usableH * 0.85;
+                const minBlockH = maxBlockH * 0.25;
+
+                function blockH(level) {
+                    return maxBlockH - (maxBlockH - minBlockH) * (level / levels);
+                }
+
+                /* Encoder */
+                for (let i = 0; i <= levels; i++) {
+                    const bh = blockH(i);
+                    const x = padX + i * colW;
+                    const y = padTop + (usableH - bh) / 2;
+                    blocks.push({
+                        id: i < levels ? 'enc-' + i : 'bottleneck',
+                        x, y, w: colW - 6, h: bh,
+                        type: i < levels ? 'encoder' : 'bottleneck',
+                        level: i,
+                        channels: channelCounts[i],
+                        spatial: spatialSizes[i]
+                    });
+                }
+
+                /* Decoder */
+                for (let i = 0; i < levels; i++) {
+                    const mirrorLevel = levels - 1 - i;
+                    const bh = blockH(mirrorLevel);
+                    const x = padX + (levels + 1 + i) * colW;
+                    const y = padTop + (usableH - bh) / 2;
+                    blocks.push({
+                        id: 'dec-' + mirrorLevel,
+                        x, y, w: colW - 6, h: bh,
+                        type: 'decoder',
+                        level: mirrorLevel,
+                        channels: channelCounts[mirrorLevel],
+                        spatial: spatialSizes[mirrorLevel]
+                    });
+                }
+
+                /* Skip connection zones */
+                for (let i = 0; i < levels; i++) {
+                    const enc = blocks.find(b => b.id === 'enc-' + i);
+                    const dec = blocks.find(b => b.id === 'dec-' + i);
+                    if (enc && dec) {
+                        blocks.push({
+                            id: 'skip-' + i,
+                            x: enc.x + enc.w / 2,
+                            y: enc.y - 12,
+                            w: dec.x + dec.w / 2 - (enc.x + enc.w / 2),
+                            h: 16,
+                            type: 'skip',
+                            level: i
+                        });
+                    }
+                }
+            }
+
+            function draw() {
+                const C = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Draw grid */
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 0.5;
+                for (let gx = 0; gx < w; gx += 30) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (let gy = 0; gy < h; gy += 30) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                /* Skip connections (dashed arcs) */
+                ctx.setLineDash([6, 4]);
+                ctx.lineWidth = 2;
+                for (let i = 0; i < levels; i++) {
+                    const enc = blocks.find(b => b.id === 'enc-' + i);
+                    const dec = blocks.find(b => b.id === 'dec-' + i);
+                    if (!enc || !dec) continue;
+                    const sx = enc.x + enc.w;
+                    const ex = dec.x;
+                    const sy = enc.y + 4;
+                    const cp = sy - 20 - i * 10;
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.quadraticCurveTo((sx + ex) / 2, cp, ex, sy);
+                    ctx.strokeStyle = hoveredBlock === 'skip-' + i ? C.AMBER : C.MUTED;
+                    ctx.stroke();
+
+                    /* Arrow */
+                    ctx.beginPath();
+                    ctx.moveTo(ex - 6, sy - 5);
+                    ctx.lineTo(ex, sy);
+                    ctx.lineTo(ex - 6, sy + 5);
+                    ctx.fillStyle = hoveredBlock === 'skip-' + i ? C.AMBER : C.MUTED;
+                    ctx.fill();
+                }
+                ctx.setLineDash([]);
+
+                /* Draw blocks */
+                blocks.forEach(b => {
+                    if (b.type === 'skip') return;
+                    const isHovered = hoveredBlock === b.id;
+                    const isEncoding = b.type === 'encoder';
+                    const isBottleneck = b.type === 'bottleneck';
+                    const isDecoding = b.type === 'decoder';
+                    let fillColor, strokeColor;
+
+                    if (isEncoding)    { fillColor = C.TEAL; strokeColor = C.TEAL; }
+                    if (isBottleneck)  { fillColor = C.AMBER; strokeColor = C.AMBER; }
+                    if (isDecoding)    { fillColor = C.CYAN; strokeColor = C.CYAN; }
+
+                    /* Block fill */
+                    ctx.fillStyle = fillColor;
+                    ctx.globalAlpha = isHovered ? 0.35 : 0.15;
+                    const radius = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(b.x + radius, b.y);
+                    ctx.lineTo(b.x + b.w - radius, b.y);
+                    ctx.quadraticCurveTo(b.x + b.w, b.y, b.x + b.w, b.y + radius);
+                    ctx.lineTo(b.x + b.w, b.y + b.h - radius);
+                    ctx.quadraticCurveTo(b.x + b.w, b.y + b.h, b.x + b.w - radius, b.y + b.h);
+                    ctx.lineTo(b.x + radius, b.y + b.h);
+                    ctx.quadraticCurveTo(b.x, b.y + b.h, b.x, b.y + b.h - radius);
+                    ctx.lineTo(b.x, b.y + radius);
+                    ctx.quadraticCurveTo(b.x, b.y, b.x + radius, b.y);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    /* Block stroke */
+                    ctx.strokeStyle = isHovered ? strokeColor : C.STROKE;
+                    ctx.lineWidth = isHovered ? 2.5 : 1.5;
+                    ctx.stroke();
+
+                    /* Labels */
+                    if (showLabels) {
+                        ctx.fillStyle = C.TEXT;
+                        ctx.font = 'bold 11px Inter';
+                        ctx.textAlign = 'center';
+                        const cx = b.x + b.w / 2;
+                        const cy = b.y + b.h / 2;
+                        if (isEncoding) ctx.fillText('Enc ' + (b.level + 1), cx, cy - 8);
+                        if (isBottleneck) ctx.fillText('Bottleneck', cx, cy - 8);
+                        if (isDecoding) ctx.fillText('Dec ' + (b.level + 1), cx, cy - 8);
+
+                        ctx.font = '10px JetBrains Mono';
+                        ctx.fillStyle = C.MUTED;
+                        ctx.fillText(b.spatial + 'x' + b.spatial, cx, cy + 6);
+                        ctx.fillText(b.channels + ' ch', cx, cy + 19);
+                    }
+                });
+
+                /* Down/up arrows between encoder/decoder blocks */
+                ctx.fillStyle = C.MUTED;
+                ctx.strokeStyle = C.MUTED;
+                ctx.lineWidth = 1;
+                for (let i = 0; i < blocks.length - 1; i++) {
+                    const a = blocks[i], b = blocks[i + 1];
+                    if (a.type === 'skip' || b.type === 'skip') continue;
+                    if ((a.type === 'encoder' || a.type === 'bottleneck') &&
+                        (b.type === 'encoder' || b.type === 'bottleneck' || b.type === 'decoder')) {
+                        if (b.type === 'decoder' && a.type !== 'bottleneck') continue;
+                        const ax = a.x + a.w;
+                        const bx = b.x;
+                        const my = (h) / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(ax + 2, my);
+                        ctx.lineTo(bx - 2, my);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(bx - 7, my - 4);
+                        ctx.lineTo(bx - 2, my);
+                        ctx.lineTo(bx - 7, my + 4);
+                        ctx.fill();
+                    }
+                }
+
+                /* Animation particles */
+                if (animating) {
+                    const pCount = 6;
+                    for (let p = 0; p < pCount; p++) {
+                        const phase = (animProgress + p / pCount) % 1;
+                        /* Travel along the U-shape */
+                        const totalBlocks = blocks.filter(b => b.type !== 'skip');
+                        const idx = Math.floor(phase * totalBlocks.length);
+                        const frac = (phase * totalBlocks.length) - idx;
+                        if (idx < totalBlocks.length) {
+                            const blk = totalBlocks[idx];
+                            const px = blk.x + blk.w * frac;
+                            const py = blk.y + blk.h / 2;
+                            ctx.beginPath();
+                            ctx.arc(px, py, 5, 0, Math.PI * 2);
+                            ctx.fillStyle = C.TEAL;
+                            ctx.globalAlpha = 0.8;
+                            ctx.fill();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+
+                /* Section titles */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = 'bold 13px Inter';
+                ctx.textAlign = 'center';
+                const encMidX = blocks[0].x + (blocks[levels].x + blocks[levels].w - blocks[0].x) / 2;
+                const decMidX = blocks[levels + 1].x + (blocks[blocks.length - 1].x + blocks[blocks.length - 1].w - blocks[levels + 1].x) / 2;
+                /* Filter skip blocks for correct last block */
+                const nonSkip = blocks.filter(b => b.type !== 'skip');
+                const lastDec = nonSkip[nonSkip.length - 1];
+                const realDecMid = blocks[levels + 1].x + (lastDec.x + lastDec.w - blocks[levels + 1].x) / 2;
+                ctx.fillText('ENCODER (Contracting Path)', encMidX, h - 10);
+                ctx.fillText('DECODER (Expanding Path)', realDecMid, h - 10);
+            }
+
+            function hitTest(mx, my) {
+                /* Check skip zones first */
+                for (const b of blocks) {
+                    if (b.type === 'skip') {
+                        if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) return b.id;
+                    }
+                }
+                for (const b of blocks) {
+                    if (b.type === 'skip') continue;
+                    if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) return b.id;
+                }
+                return null;
+            }
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const hit = hitTest(mx, my);
+                hoveredBlock = hit;
+                draw();
+
+                if (hit && blockDescriptions[hit]) {
+                    tooltip.textContent = blockDescriptions[hit];
+                    tooltip.classList.add('visible');
+                    let tx = mx + 16, ty = my - 10;
+                    if (tx + 270 > w) tx = mx - 270;
+                    if (ty < 0) ty = 10;
+                    tooltip.style.left = tx + 'px';
+                    tooltip.style.top = ty + 'px';
+                } else {
+                    tooltip.classList.remove('visible');
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                hoveredBlock = null;
+                tooltip.classList.remove('visible');
+                draw();
+            });
+
+            /* Controls */
+            const resetBtn = $('#unet-reset-btn');
+            const animBtn = $('#unet-animate-btn');
+            const labelsBtn = $('#unet-labels-btn');
+
+            if (resetBtn) resetBtn.addEventListener('click', () => {
+                animating = false;
+                animProgress = 0;
+                if (animRAF) cancelAnimationFrame(animRAF);
+                animBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Data Flow';
+                draw();
+            });
+
+            if (animBtn) animBtn.addEventListener('click', () => {
+                animating = !animating;
+                if (animating) {
+                    animBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                    (function tick() {
+                        animProgress = (animProgress + 0.003) % 1;
+                        draw();
+                        if (animating) animRAF = requestAnimationFrame(tick);
+                    })();
+                } else {
+                    animBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Data Flow';
+                    if (animRAF) cancelAnimationFrame(animRAF);
+                }
+            });
+
+            if (labelsBtn) labelsBtn.addEventListener('click', () => {
+                showLabels = !showLabels;
+                labelsBtn.classList.toggle('active', showLabels);
+                draw();
+            });
+
+            computeBlocks();
+            draw();
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                computeBlocks();
+                draw();
+            });
+
+            const obs = new MutationObserver(() => { draw(); });
+            obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           DEMO 2: SEGMENTATION PAINTER
+           ================================================================ */
+        (function segPainter() {
+            const canvas = $('#seg-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            /* Class definitions */
+            const classes = {
+                crack:     { color: 'rgba(239, 68, 68, 0.45)',  solid: '#ef4444', id: 1 },
+                spall:     { color: 'rgba(245, 158, 11, 0.45)', solid: '#f59e0b', id: 2 },
+                corrosion: { color: 'rgba(14, 165, 233, 0.45)', solid: '#0ea5e9', id: 3 },
+                intact:    { color: 'rgba(34, 197, 94, 0.45)',  solid: '#22c55e', id: 4 }
+            };
+
+            let activeClass = 'crack';
+            let brushSize = 18;
+            let painting = false;
+
+            /* Mask buffer: 0=unlabelled, 1=crack, 2=spall, 3=corrosion, 4=intact */
+            let maskW, maskH;
+            let mask;
+            /* Prediction overlay buffer */
+            let predMask;
+            let showPrediction = false;
+
+            function resetMask() {
+                maskW = Math.ceil(w);
+                maskH = Math.ceil(h);
+                mask = new Uint8Array(maskW * maskH);
+                predMask = new Uint8Array(maskW * maskH);
+                showPrediction = false;
+            }
+
+            /* Draw synthetic structure background */
+            function drawBackground() {
+                const C = getColors();
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Concrete texture simulation */
+                const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+
+                /* Draw grid of concrete "blocks" */
+                ctx.strokeStyle = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+                ctx.lineWidth = 1;
+                const blockSize = 60;
+                for (let x = 0; x < w; x += blockSize) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+                }
+                for (let y = 0; y < h; y += blockSize) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+
+                /* Draw column and beam outlines */
+                ctx.strokeStyle = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
+                ctx.lineWidth = 2;
+                /* Left column */
+                ctx.strokeRect(40, 60, 80, h - 120);
+                /* Right column */
+                ctx.strokeRect(w - 120, 60, 80, h - 120);
+                /* Top beam */
+                ctx.strokeRect(40, 60, w - 80, 60);
+                /* Bottom beam */
+                ctx.strokeRect(40, h - 120, w - 80, 60);
+                /* Middle slab area */
+                ctx.fillStyle = dark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.02)';
+                ctx.fillRect(120, 120, w - 240, h - 240);
+
+                /* Labels */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '11px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Column', 80, h / 2);
+                ctx.fillText('Column', w - 80, h / 2);
+                ctx.fillText('Beam', w / 2, 95);
+                ctx.fillText('Beam', w / 2, h - 85);
+                ctx.fillText('Slab Surface', w / 2, h / 2 - 20);
+
+                /* Hint text */
+                ctx.fillStyle = dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+                ctx.font = '13px Inter';
+                ctx.fillText('Select a class below and paint on the structure to annotate', w / 2, h / 2 + 10);
+
+                /* Draw some texture noise */
+                for (let i = 0; i < 200; i++) {
+                    const nx = Math.random() * w;
+                    const ny = Math.random() * h;
+                    const ns = Math.random() * 2 + 0.5;
+                    ctx.fillStyle = dark ? `rgba(255,255,255,${Math.random() * 0.02})` :
+                                          `rgba(0,0,0,${Math.random() * 0.02})`;
+                    ctx.fillRect(nx, ny, ns, ns);
+                }
+            }
+
+            function drawMaskOverlay() {
+                /* Draw user annotations */
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                const activeMask = showPrediction ? predMask : mask;
+
+                for (let py = 0; py < maskH; py++) {
+                    for (let px = 0; px < maskW; px++) {
+                        const v = activeMask[py * maskW + px];
+                        if (v === 0) continue;
+
+                        let r, g, b, a;
+                        if (v === 1) { r = 239; g = 68;  b = 68;  a = 110; }
+                        if (v === 2) { r = 245; g = 158; b = 11;  a = 110; }
+                        if (v === 3) { r = 14;  g = 165; b = 233; a = 110; }
+                        if (v === 4) { r = 34;  g = 197; b = 94;  a = 110; }
+
+                        /* Apply to each DPR sub-pixel */
+                        for (let dy = 0; dy < dpr; dy++) {
+                            for (let dx = 0; dx < dpr; dx++) {
+                                const ix = Math.floor(px * dpr) + dx;
+                                const iy = Math.floor(py * dpr) + dy;
+                                if (ix >= canvas.width || iy >= canvas.height) continue;
+                                const idx = (iy * canvas.width + ix) * 4;
+                                const srcA = a / 255;
+                                data[idx]     = Math.min(255, data[idx]     * (1 - srcA) + r * srcA);
+                                data[idx + 1] = Math.min(255, data[idx + 1] * (1 - srcA) + g * srcA);
+                                data[idx + 2] = Math.min(255, data[idx + 2] * (1 - srcA) + b * srcA);
+                            }
+                        }
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+            }
+
+            function redraw() {
+                drawBackground();
+                drawMaskOverlay();
+            }
+
+            function paintAt(x, y) {
+                const r = brushSize;
+                const classId = classes[activeClass].id;
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (dx * dx + dy * dy > r * r) continue;
+                        const px = Math.floor(x + dx);
+                        const py = Math.floor(y + dy);
+                        if (px < 0 || px >= maskW || py < 0 || py >= maskH) continue;
+                        mask[py * maskW + px] = classId;
+                    }
+                }
+            }
+
+            function updateMetrics() {
+                let counts = [0, 0, 0, 0, 0]; /* unlabelled, crack, spall, corr, intact */
+                const total = maskW * maskH;
+                const activeMask = showPrediction ? predMask : mask;
+                for (let i = 0; i < total; i++) counts[activeMask[i]]++;
+                $('#seg-crack-pct').textContent = ((counts[1] / total) * 100).toFixed(1);
+                $('#seg-spall-pct').textContent = ((counts[2] / total) * 100).toFixed(1);
+                $('#seg-corr-pct').textContent  = ((counts[3] / total) * 100).toFixed(1);
+                const labelled = counts[1] + counts[2] + counts[3] + counts[4];
+                $('#seg-labelled-pct').textContent = ((labelled / total) * 100).toFixed(1);
+            }
+
+            /* Simulate prediction: expand user annotations with noise to mimic model output */
+            function simulatePrediction() {
+                predMask = new Uint8Array(mask);
+                /* Dilate each class region */
+                const dilateR = 6;
+                const temp = new Uint8Array(predMask);
+                for (let py = 0; py < maskH; py++) {
+                    for (let px = 0; px < maskW; px++) {
+                        const v = mask[py * maskW + px];
+                        if (v === 0) continue;
+                        for (let dy = -dilateR; dy <= dilateR; dy++) {
+                            for (let dx = -dilateR; dx <= dilateR; dx++) {
+                                if (dx * dx + dy * dy > dilateR * dilateR) continue;
+                                const nx = px + dx, ny = py + dy;
+                                if (nx < 0 || nx >= maskW || ny < 0 || ny >= maskH) continue;
+                                if (temp[ny * maskW + nx] === 0 && Math.random() < 0.6) {
+                                    predMask[ny * maskW + nx] = v;
+                                }
+                            }
+                        }
+                    }
+                }
+                /* Add some random noise */
+                for (let i = 0; i < maskW * maskH * 0.001; i++) {
+                    const rx = Math.floor(Math.random() * maskW);
+                    const ry = Math.floor(Math.random() * maskH);
+                    if (predMask[ry * maskW + rx] === 0) {
+                        predMask[ry * maskW + rx] = Math.floor(Math.random() * 4) + 1;
+                    }
+                }
+                showPrediction = true;
+                redraw();
+                updateMetrics();
+            }
+
+            /* Events */
+            canvas.addEventListener('pointerdown', (e) => {
+                painting = true;
+                showPrediction = false;
+                const rect = canvas.getBoundingClientRect();
+                paintAt(e.clientX - rect.left, e.clientY - rect.top);
+                redraw();
+                updateMetrics();
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!painting) return;
+                const rect = canvas.getBoundingClientRect();
+                paintAt(e.clientX - rect.left, e.clientY - rect.top);
+                redraw();
+                updateMetrics();
+            });
+
+            canvas.addEventListener('pointerup', () => { painting = false; });
+            canvas.addEventListener('pointerleave', () => { painting = false; });
+
+            /* Class buttons */
+            $$('.seg-controls button[data-class]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    $$('.seg-controls button[data-class]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeClass = btn.dataset.class;
+                });
+            });
+
+            /* Brush size */
+            const brushSlider = $('#seg-brush-size');
+            const brushValue = $('#seg-brush-value');
+            if (brushSlider) brushSlider.addEventListener('input', () => {
+                brushSize = parseInt(brushSlider.value, 10);
+                brushValue.textContent = brushSize;
+            });
+
+            /* Clear */
+            const clearBtn = $('#seg-clear-btn');
+            if (clearBtn) clearBtn.addEventListener('click', () => {
+                resetMask();
+                redraw();
+                updateMetrics();
+            });
+
+            /* Predict */
+            const predictBtn = $('#seg-predict-btn');
+            if (predictBtn) predictBtn.addEventListener('click', simulatePrediction);
+
+            resetMask();
+            redraw();
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                resetMask();
+                redraw();
+            });
+
+            const obs = new MutationObserver(() => { redraw(); });
+            obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           QUIZ LOGIC
+           ================================================================ */
+        (function quiz() {
+            $$('.quiz-block').forEach(block => {
+                const options = block.querySelectorAll('.quiz-option');
+                const feedback = block.querySelector('.quiz-block__feedback');
+                let answered = false;
+
+                options.forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        if (answered) return;
+                        answered = true;
+                        const correct = opt.getAttribute('data-correct') === 'true';
+                        opt.classList.add(correct ? 'correct' : 'wrong');
+
+                        if (!correct) {
+                            options.forEach(o => {
+                                if (o.getAttribute('data-correct') === 'true') o.classList.add('correct');
+                            });
+                            feedback.innerHTML = '<i class="fa-solid fa-xmark"></i> Incorrect. The correct answer is highlighted above.';
+                            feedback.className = 'quiz-block__feedback show wrong';
+                        } else {
+                            feedback.innerHTML = '<i class="fa-solid fa-check"></i> Correct!';
+                            feedback.className = 'quiz-block__feedback show correct';
+                        }
+
+                        options.forEach(o => { o.style.pointerEvents = 'none'; });
+                    });
+                });
+            });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

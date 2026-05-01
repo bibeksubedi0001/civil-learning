@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.5 Training CNNs | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="How to train Convolutional Neural Networks: forward pass, loss computation, backpropagation, weight update, data augmentation for civil engineering imagery, transfer learning for crack detection, learning rate scheduling, and batch size effects. Interactive data augmentation gallery and training progress monitor.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.5
+            </div>
+            <h1 class="chapter-hero__title">Training CNNs</h1>
+            <p class="chapter-hero__subtitle">
+                From random weights to reliable predictions &mdash; the iterative process
+                of forward passes, loss computation, backpropagation, and weight updates
+                that teaches a CNN to distinguish cracks from intact concrete.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-dumbbell"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Teaching a Machine to See Cracks</h2>
+                        <p>
+                            In the previous sub-chapter you learned how to design a CNN
+                            architecture &mdash; the structural blueprint. But an untrained
+                            network is like a newly built testing machine that has never been
+                            calibrated: the hardware is in place, yet every reading is
+                            meaningless. <strong>Training</strong> is the calibration process
+                            that adjusts the network's millions of parameters until its
+                            predictions match reality.
+                        </p>
+                        <p>
+                            This sub-chapter walks you through every stage of the training
+                            pipeline: the forward pass that generates predictions, the loss
+                            function that quantifies errors, backpropagation that computes
+                            gradients, and the optimizer that updates weights. You will also
+                            learn practical techniques that civil engineers rely on &mdash;
+                            data augmentation, transfer learning, learning rate scheduling,
+                            and batch size selection &mdash; with interactive demos that
+                            bring these concepts to life.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Training a neural network is fundamentally an optimization problem. We
+                    seek the set of weights that minimizes the difference between the
+                    network's predictions and the ground-truth labels. The process is
+                    iterative: present data, measure error, compute corrections, apply
+                    corrections, and repeat &mdash; thousands or millions of times.
+                </p>
+
+                <p>
+                    For civil engineering applications such as crack detection, corrosion
+                    assessment, and structural damage classification, training is where
+                    domain expertise meets machine learning. The choice of augmentation
+                    strategies, pretrained models, and hyperparameters directly determines
+                    whether a model achieves 70% accuracy (unusable) or 97% accuracy
+                    (deployment-ready).
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with CNN architectures
+                        (<strong>Sub-chapter 4.4</strong>), including convolutional layers,
+                        pooling, activation functions, and fully connected layers. Basic
+                        understanding of derivatives and gradients is helpful but not
+                        essential &mdash; we use visual analogies throughout.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE TRAINING LOOP OVERVIEW
+             ========================================== -->
+        <section class="ch-section" id="training-loop-overview">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-rotate"></i>
+                    The Training Loop: Four Repeating Steps
+                </h2>
+
+                <p>
+                    Every CNN training run follows the same four-step cycle, repeated for
+                    each batch of data across multiple <strong>epochs</strong> (full passes
+                    through the dataset):
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Four Steps</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Forward Pass</strong> &mdash; Feed a batch of images
+                                through the network, layer by layer, to produce predictions.
+                            </li>
+                            <li>
+                                <strong>Loss Computation</strong> &mdash; Compare the
+                                predictions to the true labels using a loss function (e.g.,
+                                cross-entropy) to get a single scalar error value.
+                            </li>
+                            <li>
+                                <strong>Backpropagation</strong> &mdash; Compute the gradient
+                                of the loss with respect to every weight in the network by
+                                applying the chain rule of calculus backwards through the
+                                layers.
+                            </li>
+                            <li>
+                                <strong>Weight Update</strong> &mdash; Use an optimizer
+                                (e.g., Adam, SGD) to adjust each weight in the direction that
+                                reduces the loss, scaled by the learning rate.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    After processing all batches in one epoch, the cycle repeats. Over many
+                    epochs the loss decreases, accuracy rises, and the network learns to
+                    extract meaningful features from the training images.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Training a CNN is like iterative structural
+                            design.</strong> You start with an initial design (random weights),
+                            run a structural analysis (forward pass), compare the results
+                            against code requirements (loss computation), identify which
+                            members are over- or under-stressed (backpropagation), and resize
+                            the members accordingly (weight update). You iterate this cycle
+                            until the design meets all criteria &mdash; that is convergence.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: FORWARD PASS
+             ========================================== -->
+        <section class="ch-section" id="forward-pass">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-right-long"></i>
+                    Step 1: The Forward Pass
+                </h2>
+
+                <p>
+                    The forward pass is the simplest step conceptually. An input image
+                    enters the network and flows through every layer in sequence:
+                    convolution, batch normalization, ReLU, pooling, and eventually the
+                    fully connected classifier. Each layer transforms its input and passes
+                    the result to the next layer.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Forward Pass Through CrackNet-Lite</h3>
+                        <p>
+                            Consider a 128&times;128 grayscale image of concrete entering
+                            the CrackNet-Lite architecture from Sub-chapter 4.4:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.9; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  Image (128x128x1)
+    |  Conv 3x3, 32 filters + BN + ReLU
+    v
+  Feature Maps (128x128x32)
+    |  MaxPool 2x2
+    v
+  Feature Maps (64x64x32)
+    |  Conv 3x3, 64 filters + BN + ReLU
+    v
+  Feature Maps (64x64x64)
+    |  MaxPool 2x2
+    v
+  Feature Maps (32x32x64)
+    |  Conv 3x3, 128 filters + BN + ReLU
+    v
+  Feature Maps (32x32x128)
+    |  MaxPool 2x2
+    v
+  Feature Maps (16x16x128)
+    |  Flatten
+    v
+  Vector (32768)
+    |  Dense 256 + ReLU + Dropout
+    v
+  Vector (256)
+    |  Dense 2 + Softmax
+    v
+  Probabilities: [P(crack), P(no_crack)]</pre>
+                    </div>
+                </div>
+
+                <p>
+                    At the end, the softmax function converts the raw output scores
+                    (logits) into probabilities that sum to 1. For a crack detection task,
+                    the output might be <code>[0.87, 0.13]</code> &mdash; meaning 87%
+                    confidence that the image contains a crack.
+                </p>
+
+                <p>
+                    Crucially, during the forward pass every intermediate result is stored
+                    in memory. These cached activations are needed for backpropagation.
+                    This is why training requires significantly more GPU memory than
+                    inference (prediction only).
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-memory"></i>
+                        <span>Memory Consideration</span>
+                    </div>
+                    <p>
+                        For CrackNet-Lite with a batch size of 32, the cached activations
+                        alone consume approximately 800 MB of GPU memory. Deeper
+                        architectures like ResNet-50 require several gigabytes. This is why
+                        batch size is constrained by available GPU memory &mdash; a concept
+                        we explore in detail later.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: LOSS COMPUTATION
+             ========================================== -->
+        <section class="ch-section" id="loss-computation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bullseye"></i>
+                    Step 2: Loss Computation
+                </h2>
+
+                <p>
+                    The loss function quantifies how wrong the network's predictions are.
+                    A perfect prediction yields a loss of zero; wildly incorrect predictions
+                    produce large loss values. The choice of loss function depends on the
+                    task:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Common Loss Functions</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Loss Function</th>
+                                    <th style="padding:10px; text-align:left;">Task</th>
+                                    <th style="padding:10px; text-align:left;">Formula Intuition</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Binary Cross-Entropy</strong></td>
+                                    <td style="padding:10px;">2-class (crack / no crack)</td>
+                                    <td style="padding:10px;">Penalizes confident wrong answers exponentially</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>Categorical Cross-Entropy</strong></td>
+                                    <td style="padding:10px;">Multi-class (crack type A/B/C)</td>
+                                    <td style="padding:10px;">Extension of binary CE to N classes</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Mean Squared Error</strong></td>
+                                    <td style="padding:10px;">Regression (predict deflection mm)</td>
+                                    <td style="padding:10px;">Average squared difference between prediction and target</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    For our crack detection CNN, we use <strong>binary cross-entropy</strong>.
+                    If the true label is "crack" (1) and the network predicts probability
+                    <code>p = 0.87</code>, the loss for that sample is:
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; margin:16px 0; line-height:1.7; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  Loss = -[y * log(p) + (1-y) * log(1-p)]
+       = -[1 * log(0.87) + 0 * log(0.13)]
+       = -log(0.87)
+       = 0.139</pre>
+
+                <p>
+                    If the network had predicted <code>p = 0.10</code> for the same crack
+                    image, the loss would be <code>-log(0.10) = 2.303</code> &mdash; a much
+                    larger penalty. The loss function's shape ensures that the gradient
+                    pushes harder when the network is confidently wrong.
+                </p>
+
+                <p>
+                    The batch loss is the average loss across all samples in the mini-batch.
+                    This averaged value is what backpropagation differentiates with respect
+                    to every weight in the network.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: BACKPROPAGATION
+             ========================================== -->
+        <section class="ch-section" id="backpropagation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-left-long"></i>
+                    Step 3: Backpropagation
+                </h2>
+
+                <p>
+                    Backpropagation answers the question: <em>"How much did each weight
+                    contribute to the total error?"</em> It works by applying the chain
+                    rule of calculus, propagating the gradient of the loss backwards through
+                    every layer, from the output all the way to the first convolutional
+                    kernel.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Backpropagation is like tracing the cause of excessive
+                            deflection in a structure.</strong> You observe the deflection at
+                            a critical point (the loss). You trace backwards through the load
+                            path: which beam contributes to this deflection? Which column
+                            supports that beam? Which foundation element carries that column?
+                            Each element receives a "share of blame" proportional to its
+                            contribution. In a CNN, the chain rule performs exactly this
+                            backward tracing, assigning each weight its share of the error.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Chain Rule in Action</h3>
+
+                <p>
+                    Consider a simple chain of three operations: a convolutional layer, a
+                    ReLU activation, and a dense layer producing the loss. The gradient of
+                    the loss with respect to the convolutional weights is:
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; margin:16px 0; line-height:1.7; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  dL/dW_conv = dL/dOutput * dOutput/dReLU * dReLU/dConv * dConv/dW_conv
+             = (chain of local gradients)</pre>
+
+                <p>
+                    Each layer only needs to know two things: the gradient flowing in from
+                    the layer above (already computed), and its own local gradient (a simple
+                    mathematical expression specific to that layer type). Multiplying these
+                    gives the gradient to pass to the layer below.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Local Gradients for Common Layers</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Layer</th>
+                                    <th style="padding:10px; text-align:left;">Local Gradient</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">ReLU</td>
+                                    <td style="padding:10px;">1 if input &gt; 0, else 0 (gradient gate)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Convolution</td>
+                                    <td style="padding:10px;">Cross-correlation of gradient with rotated kernel</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">MaxPool</td>
+                                    <td style="padding:10px;">Gradient passes only to the max element; others get 0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Dense (FC)</td>
+                                    <td style="padding:10px;">Matrix multiply with transposed weights</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Softmax + CE</td>
+                                    <td style="padding:10px;">prediction - true_label (elegant simplification)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    After backpropagation completes, every trainable parameter in the
+                    network has an associated gradient value. These gradients tell the
+                    optimizer exactly which direction and how far to adjust each weight.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: WEIGHT UPDATE & OPTIMIZERS
+             ========================================== -->
+        <section class="ch-section" id="weight-update">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    Step 4: Weight Update &amp; Optimizers
+                </h2>
+
+                <p>
+                    The optimizer uses the computed gradients to update the weights. The
+                    simplest approach is <strong>Stochastic Gradient Descent (SGD)</strong>:
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; margin:16px 0; line-height:1.7; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  W_new = W_old - learning_rate * gradient</pre>
+
+                <p>
+                    The <strong>learning rate</strong> controls the step size. Too large and
+                    the optimization overshoots and diverges; too small and training takes
+                    forever (or gets stuck in a local minimum).
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Popular Optimizers</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Optimizer</th>
+                                    <th style="padding:10px; text-align:left;">Key Idea</th>
+                                    <th style="padding:10px; text-align:left;">When to Use</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>SGD</strong></td>
+                                    <td style="padding:10px;">Simple gradient step</td>
+                                    <td style="padding:10px;">Baseline; with momentum for most vision tasks</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>SGD + Momentum</strong></td>
+                                    <td style="padding:10px;">Accumulates velocity like a rolling ball</td>
+                                    <td style="padding:10px;">Smoother convergence; standard in research</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Adam</strong></td>
+                                    <td style="padding:10px;">Adaptive per-parameter learning rates</td>
+                                    <td style="padding:10px;">Default choice; works well out of the box</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>AdamW</strong></td>
+                                    <td style="padding:10px;">Adam with decoupled weight decay</td>
+                                    <td style="padding:10px;">Fine-tuning pretrained models</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    <strong>Adam</strong> is the most popular optimizer for training CNNs in
+                    practice. It maintains two running averages for each parameter: the mean
+                    of recent gradients (momentum) and the mean of recent squared gradients
+                    (adaptive scaling). This combination allows it to navigate flat regions
+                    quickly while taking careful steps near sharp loss landscape features.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Choosing an optimizer is like choosing an earthmoving
+                            strategy.</strong> SGD is a single bulldozer that pushes material
+                            downhill &mdash; effective but can get stuck in ruts. SGD with
+                            momentum is the same bulldozer with enough inertia to roll past
+                            small bumps. Adam is a smart fleet of machines that independently
+                            adapts speed and direction based on local terrain conditions.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: EPOCHS, BATCHES & CONVERGENCE
+             ========================================== -->
+        <section class="ch-section" id="epochs-batches">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Epochs, Batches, and Convergence
+                </h2>
+
+                <p>
+                    Understanding the relationship between epochs, batches, and iterations
+                    is essential for configuring training runs:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Terminology</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Epoch</strong> &mdash; One complete pass through the
+                                entire training dataset.
+                            </li>
+                            <li>
+                                <strong>Batch (mini-batch)</strong> &mdash; A subset of the
+                                dataset processed together in one forward/backward pass.
+                            </li>
+                            <li>
+                                <strong>Iteration</strong> &mdash; One weight update step,
+                                corresponding to one batch.
+                            </li>
+                            <li>
+                                <strong>Example:</strong> 10,000 images with batch size 32
+                                = 313 iterations per epoch.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>How Many Epochs?</h3>
+
+                <p>
+                    There is no universal answer. For crack detection datasets of moderate
+                    size (5,000&ndash;20,000 images), typical training runs use 30&ndash;100
+                    epochs. The key is to monitor the <strong>validation loss</strong> (loss
+                    measured on a held-out set of images the network has never seen):
+                </p>
+
+                <ul style="margin:12px 0; padding-left:24px; line-height:2;">
+                    <li>
+                        <strong>Training loss decreasing, validation loss decreasing</strong>
+                        &mdash; the network is learning useful patterns. Continue training.
+                    </li>
+                    <li>
+                        <strong>Training loss decreasing, validation loss increasing</strong>
+                        &mdash; <em>overfitting</em>. The network is memorizing training data
+                        rather than learning generalizable features. Stop training (or apply
+                        regularization).
+                    </li>
+                    <li>
+                        <strong>Both losses plateaued</strong> &mdash; convergence reached.
+                        Further training will not help.
+                    </li>
+                </ul>
+
+                <p>
+                    <strong>Early stopping</strong> is a common strategy: save the model
+                    weights whenever validation loss improves, and stop training when
+                    validation loss has not improved for a set number of epochs (the
+                    "patience" parameter).
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: BATCH SIZE EFFECTS
+             ========================================== -->
+        <section class="ch-section" id="batch-size-effects">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-cubes-stacked"></i>
+                    Batch Size Effects
+                </h2>
+
+                <p>
+                    Batch size is one of the most impactful hyperparameters, affecting
+                    training speed, convergence behavior, and final model quality:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Small vs. Large Batch Sizes</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Aspect</th>
+                                    <th style="padding:10px; text-align:left;">Small Batch (8&ndash;32)</th>
+                                    <th style="padding:10px; text-align:left;">Large Batch (128&ndash;512)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Gradient estimate</td>
+                                    <td style="padding:10px;">Noisy (high variance)</td>
+                                    <td style="padding:10px;">Smooth (low variance)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Convergence</td>
+                                    <td style="padding:10px;">Can escape local minima</td>
+                                    <td style="padding:10px;">May get stuck in sharp minima</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">GPU utilization</td>
+                                    <td style="padding:10px;">Under-utilizes parallel hardware</td>
+                                    <td style="padding:10px;">Maximizes GPU throughput</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Memory required</td>
+                                    <td style="padding:10px;">Lower (fits smaller GPUs)</td>
+                                    <td style="padding:10px;">Higher (needs large VRAM)</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Generalization</td>
+                                    <td style="padding:10px;">Often better test accuracy</td>
+                                    <td style="padding:10px;">Can generalize poorly</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    For civil engineering image classification, batch sizes of
+                    <strong>16&ndash;64</strong> typically offer the best balance. The
+                    moderate noise in gradient estimates acts as implicit regularization,
+                    helping the model generalize to new inspection images. A common
+                    starting point is batch size 32.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Linear Scaling Rule</span>
+                    </div>
+                    <p>
+                        When increasing batch size by a factor of <em>k</em>, multiply the
+                        learning rate by <em>k</em> as well. For example, if batch size
+                        doubles from 32 to 64, double the learning rate from 0.001 to 0.002.
+                        This heuristic maintains similar training dynamics across batch
+                        sizes.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: DATA AUGMENTATION
+             ========================================== -->
+        <section class="ch-section" id="data-augmentation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clone"></i>
+                    Data Augmentation for Civil Engineering Images
+                </h2>
+
+                <p>
+                    In civil engineering, labeled datasets are expensive: each image
+                    requires expert annotation. Data augmentation artificially expands the
+                    dataset by applying random transformations to existing images during
+                    training. The network sees slightly different versions of each image
+                    every epoch, which reduces overfitting and improves generalization.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Augmentation Techniques for Structural Imagery</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Technique</th>
+                                    <th style="padding:10px; text-align:left;">Description</th>
+                                    <th style="padding:10px; text-align:left;">CE Rationale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Horizontal Flip</strong></td>
+                                    <td style="padding:10px;">Mirror image left-right</td>
+                                    <td style="padding:10px;">Cracks have no preferred horizontal direction</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>Vertical Flip</strong></td>
+                                    <td style="padding:10px;">Mirror image top-bottom</td>
+                                    <td style="padding:10px;">Drone images can be oriented arbitrarily</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Rotation (0&ndash;360)</strong></td>
+                                    <td style="padding:10px;">Rotate by random angle</td>
+                                    <td style="padding:10px;">Cracks appear at any angle on a surface</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>Random Crop</strong></td>
+                                    <td style="padding:10px;">Extract a sub-region and resize</td>
+                                    <td style="padding:10px;">Simulates varying camera distances</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Brightness Jitter</strong></td>
+                                    <td style="padding:10px;">Randomly adjust brightness</td>
+                                    <td style="padding:10px;">Inspections occur under varied lighting</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>Color Jitter</strong></td>
+                                    <td style="padding:10px;">Adjust contrast, saturation, hue</td>
+                                    <td style="padding:10px;">Different cameras/weather produce color shifts</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Gaussian Noise</strong></td>
+                                    <td style="padding:10px;">Add random pixel noise</td>
+                                    <td style="padding:10px;">Simulates sensor noise in low-light conditions</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    Not all augmentations are appropriate for every task. For example,
+                    vertical flipping is safe for crack detection (cracks look the same
+                    upside-down) but would be harmful for tasks where gravity matters, such
+                    as detecting sagging beams.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Data augmentation is like testing a structure under many
+                            load combinations.</strong> Instead of testing only one dead load
+                            + one live load scenario, you apply dozens of combinations: dead
+                            + live + wind from the north, dead + live + seismic from the
+                            east, and so on. Each combination teaches you something new about
+                            the structure's behavior. Similarly, each augmented version of an
+                            image teaches the CNN to recognise cracks under a different
+                            "condition" (angle, brightness, scale).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Augmentation Multiplier</span>
+                    </div>
+                    <p>
+                        With a dataset of 5,000 labeled crack images and 7 augmentation
+                        techniques, each applied with 50% probability, the effective dataset
+                        size becomes approximately 5,000 &times; 2<sup>7</sup> = 640,000
+                        unique image variants across all epochs. This massive expansion is
+                        why augmentation is considered the single most effective technique
+                        for small civil engineering datasets.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DATA AUGMENTATION DEMO
+             ========================================== -->
+        <section class="ch-section" id="demo-augmentation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo: Data Augmentation Gallery
+                </h2>
+
+                <p>
+                    The canvas below simulates a concrete surface image and applies
+                    augmentation transforms in real time. Click each button to see how
+                    the original image is transformed. These are the same operations
+                    applied during training to prevent overfitting.
+                </p>
+
+                <div class="demo-panel" id="aug-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-images"></i>
+                        <span>Data Augmentation Gallery</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+                        <button class="demo-btn active" id="aug-original" data-aug="original">
+                            <i class="fa-solid fa-image"></i> Original
+                        </button>
+                        <button class="demo-btn" id="aug-hflip" data-aug="hflip">
+                            <i class="fa-solid fa-arrows-left-right"></i> H-Flip
+                        </button>
+                        <button class="demo-btn" id="aug-vflip" data-aug="vflip">
+                            <i class="fa-solid fa-arrows-up-down"></i> V-Flip
+                        </button>
+                        <button class="demo-btn" id="aug-rotate" data-aug="rotate">
+                            <i class="fa-solid fa-rotate-right"></i> Rotate
+                        </button>
+                        <button class="demo-btn" id="aug-crop" data-aug="crop">
+                            <i class="fa-solid fa-crop-simple"></i> Crop
+                        </button>
+                        <button class="demo-btn" id="aug-bright" data-aug="bright">
+                            <i class="fa-solid fa-sun"></i> Brightness
+                        </button>
+                        <button class="demo-btn" id="aug-all" data-aug="all">
+                            <i class="fa-solid fa-layer-group"></i> Combined
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+                        <div style="text-align:center;">
+                            <canvas id="aug-canvas-original" width="280" height="280"
+                                    style="border:1px solid var(--border-subtle); border-radius:8px; background:var(--canvas-bg); max-width:100%;"></canvas>
+                            <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;" id="aug-label-orig">Original</p>
+                        </div>
+                        <div style="text-align:center;">
+                            <canvas id="aug-canvas-result" width="280" height="280"
+                                    style="border:1px solid var(--border-subtle); border-radius:8px; background:var(--canvas-bg); max-width:100%;"></canvas>
+                            <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:6px;" id="aug-label-result">Original (no transform)</p>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px; text-align:center;">
+                        <button class="demo-btn" id="aug-new-surface">
+                            <i class="fa-solid fa-arrows-rotate"></i> New Surface
+                        </button>
+                    </div>
+                    <p id="aug-description" style="margin-top:12px; font-size:0.88rem; color:var(--text-secondary); min-height:40px;">
+                        The original concrete surface with a simulated crack pattern. Click
+                        the buttons above to apply different augmentation transforms.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: TRANSFER LEARNING
+             ========================================== -->
+        <section class="ch-section" id="transfer-learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-right-left"></i>
+                    Transfer Learning: Standing on Giants' Shoulders
+                </h2>
+
+                <p>
+                    Training a CNN from scratch requires large datasets and days of GPU
+                    time. <strong>Transfer learning</strong> sidesteps both problems by
+                    starting from a model already trained on a massive dataset &mdash;
+                    typically <strong>ImageNet</strong>, which contains 1.2 million images
+                    across 1,000 categories.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why Transfer Learning Works</h3>
+                        <p>
+                            The early layers of a CNN learn universal features &mdash;
+                            edges, textures, shapes &mdash; that are useful for almost any
+                            image task. A model trained on ImageNet already knows how to
+                            detect edges, gradients, and patterns. These features transfer
+                            directly to civil engineering imagery:
+                        </p>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>Edge detectors learned from cat photos also detect crack boundaries</li>
+                            <li>Texture features learned from fabric images also characterize concrete grain</li>
+                            <li>Shape detectors learned from cars also identify crack patterns</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Two Transfer Learning Strategies</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-branch"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Strategy 1: Feature Extraction (Freeze + Retrain Head)</h3>
+                        <p>
+                            Load a pretrained model (e.g., ResNet-50), freeze all
+                            convolutional layers so their weights do not change, and replace
+                            the final classification head with a new one for your task
+                            (e.g., 2 outputs: crack / no crack). Only train the new head.
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.7; padding:12px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  ImageNet-pretrained ResNet-50
+    |
+    [ Conv layers: FROZEN - weights unchanged ]
+    |
+    [ New Dense 256 + ReLU ]    <-- train only these
+    [ New Dense 2 + Softmax ]   <-- train only these</pre>
+                        <p>
+                            <strong>Best when:</strong> your dataset is small (&lt;1,000
+                            images) and similar to ImageNet images.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-branch"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Strategy 2: Fine-Tuning (Unfreeze + Retrain All)</h3>
+                        <p>
+                            Start with a pretrained model, replace the head, and train the
+                            <em>entire</em> network with a very small learning rate. The
+                            pretrained weights serve as a warm start rather than a fixed
+                            feature extractor.
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.7; padding:12px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  ImageNet-pretrained ResNet-50
+    |
+    [ Conv layers: UNFROZEN - fine-tuned (lr=1e-5) ]
+    |
+    [ New Dense 256 + ReLU ]    (lr=1e-3)
+    [ New Dense 2 + Softmax ]   (lr=1e-3)</pre>
+                        <p>
+                            <strong>Best when:</strong> your dataset is moderate
+                            (1,000&ndash;10,000 images) and somewhat different from ImageNet
+                            (e.g., infrared bridge images).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Transfer learning is like adaptive reuse of a
+                            building.</strong> Instead of demolishing an old warehouse and
+                            building from scratch, you keep the solid foundation and
+                            structural frame (pretrained convolutional layers) and renovate
+                            only the interior finishes and layout (the classifier head) for
+                            the new purpose. If the new use is very different from the
+                            original, you might also reinforce some structural members
+                            (fine-tuning), but you never throw away the foundation.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Transfer Learning Results for Crack Detection</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Typical Accuracy Comparison</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Approach</th>
+                                    <th style="padding:10px; text-align:center;">2,000 images</th>
+                                    <th style="padding:10px; text-align:center;">10,000 images</th>
+                                    <th style="padding:10px; text-align:center;">Training Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">From scratch</td>
+                                    <td style="padding:10px; text-align:center;">78%</td>
+                                    <td style="padding:10px; text-align:center;">91%</td>
+                                    <td style="padding:10px; text-align:center;">8&ndash;12 hours</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Feature extraction</td>
+                                    <td style="padding:10px; text-align:center;">92%</td>
+                                    <td style="padding:10px; text-align:center;">95%</td>
+                                    <td style="padding:10px; text-align:center;">15&ndash;30 min</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Fine-tuning</td>
+                                    <td style="padding:10px; text-align:center;">94%</td>
+                                    <td style="padding:10px; text-align:center;">97%</td>
+                                    <td style="padding:10px; text-align:center;">1&ndash;2 hours</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p style="margin-top:8px; font-size:0.82rem; color:var(--text-muted);">
+                            Approximate values for binary crack detection on concrete
+                            surface imagery using ResNet-50 as the backbone.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The message is clear: <strong>always use transfer learning</strong> for
+                    civil engineering CNN projects. Training from scratch is only justified
+                    when your images are radically unlike natural photographs (e.g., thermal
+                    imaging, ground-penetrating radar scans) and even then, the pretrained
+                    low-level features often help.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: LEARNING RATE SCHEDULING
+             ========================================== -->
+        <section class="ch-section" id="lr-scheduling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Learning Rate Scheduling
+                </h2>
+
+                <p>
+                    A fixed learning rate is rarely optimal throughout training. In early
+                    epochs, a larger learning rate helps the network quickly move toward a
+                    good region of the loss landscape. In later epochs, a smaller rate
+                    enables fine-grained convergence without overshooting the minimum.
+                    <strong>Learning rate schedulers</strong> automate this reduction.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Popular Scheduling Strategies</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Schedule</th>
+                                    <th style="padding:10px; text-align:left;">Behavior</th>
+                                    <th style="padding:10px; text-align:left;">Use Case</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Step Decay</strong></td>
+                                    <td style="padding:10px;">Multiply LR by 0.1 every N epochs</td>
+                                    <td style="padding:10px;">Simple, predictable drops</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>Cosine Annealing</strong></td>
+                                    <td style="padding:10px;">LR follows a cosine curve to near-zero</td>
+                                    <td style="padding:10px;">Smooth decay; popular for fine-tuning</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;"><strong>Reduce on Plateau</strong></td>
+                                    <td style="padding:10px;">Reduce LR when val loss stops improving</td>
+                                    <td style="padding:10px;">Adaptive; no need to pre-set schedule</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;"><strong>Warm-up + Decay</strong></td>
+                                    <td style="padding:10px;">Start low, ramp up, then decay</td>
+                                    <td style="padding:10px;">Transfer learning; prevents initial shock</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    For transfer learning on crack detection models, <strong>cosine
+                    annealing</strong> with a warm-up period of 3&ndash;5 epochs is a
+                    robust default. The warm-up prevents the freshly initialized
+                    classification head from generating large gradients that corrupt the
+                    pretrained convolutional weights.
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:16px 0; line-height:1.7; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  Typical fine-tuning schedule:
+
+  Epochs 1-3:   warm-up  lr = 1e-6 -> 1e-4 (linear ramp)
+  Epochs 4-50:  cosine   lr = 1e-4 -> 1e-7 (cosine decay)
+  Total: 50 epochs, initial lr = 1e-4</pre>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: OVERFITTING & REGULARIZATION
+             ========================================== -->
+        <section class="ch-section" id="overfitting">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Overfitting and Regularization
+                </h2>
+
+                <p>
+                    Overfitting is the most common failure mode when training CNNs on small
+                    civil engineering datasets. The network memorizes specific crack
+                    patterns, staining, or background textures in the training images rather
+                    than learning generalizable features. On new inspection images, such a
+                    model performs poorly.
+                </p>
+
+                <h3>Signs of Overfitting</h3>
+
+                <ul style="margin:12px 0; padding-left:24px; line-height:2;">
+                    <li>Training accuracy &gt; 99% but validation accuracy &lt; 85%</li>
+                    <li>Training loss near zero while validation loss increases</li>
+                    <li>Model confident on training images but uncertain on new images</li>
+                </ul>
+
+                <h3>Regularization Toolkit</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-toolbox"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Techniques to Combat Overfitting</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Data Augmentation</strong> &mdash; artificially
+                                expand the dataset (covered above).
+                            </li>
+                            <li>
+                                <strong>Dropout</strong> &mdash; randomly disable neurons
+                                during training (typically 20&ndash;50% in FC layers), forcing
+                                the network to learn redundant representations.
+                            </li>
+                            <li>
+                                <strong>Weight Decay (L2 Regularization)</strong> &mdash;
+                                add a penalty proportional to the magnitude of weights,
+                                discouraging overly complex models.
+                            </li>
+                            <li>
+                                <strong>Early Stopping</strong> &mdash; halt training when
+                                validation loss starts increasing.
+                            </li>
+                            <li>
+                                <strong>Batch Normalization</strong> &mdash; normalizes
+                                activations, which has a mild regularizing effect.
+                            </li>
+                            <li>
+                                <strong>Transfer Learning</strong> &mdash; pretrained
+                                features are already generalizable, reducing the risk of
+                                overfitting on small datasets.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    In practice, the most effective anti-overfitting recipe for civil
+                    engineering CNNs is: <strong>transfer learning + data augmentation +
+                    dropout + early stopping</strong>. This combination consistently
+                    achieves strong performance even with datasets as small as 1,000
+                    labeled images.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: TRAINING PROGRESS DEMO
+             ========================================== -->
+        <section class="ch-section" id="demo-training">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo: Training Progress Monitor
+                </h2>
+
+                <p>
+                    This interactive demo simulates a full CNN training run. Watch the
+                    loss and accuracy curves evolve over epochs. Toggle between training
+                    from scratch and using transfer learning to see the dramatic difference
+                    in convergence speed and final accuracy.
+                </p>
+
+                <div class="demo-panel" id="train-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-chart-area"></i>
+                        <span>Training Progress Monitor</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+                        <button class="demo-btn active" id="train-scratch" data-mode="scratch">
+                            <i class="fa-solid fa-play"></i> Train from Scratch
+                        </button>
+                        <button class="demo-btn" id="train-transfer" data-mode="transfer">
+                            <i class="fa-solid fa-right-left"></i> Transfer Learning
+                        </button>
+                        <button class="demo-btn" id="train-reset">
+                            <i class="fa-solid fa-arrows-rotate"></i> Reset
+                        </button>
+                        <button class="demo-btn" id="train-speed" data-speed="1">
+                            <i class="fa-solid fa-gauge-high"></i> Speed: 1x
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+                        <div style="flex:1; min-width:280px; text-align:center;">
+                            <canvas id="train-loss-canvas" width="400" height="260"
+                                    style="border:1px solid var(--border-subtle); border-radius:8px; background:var(--canvas-bg); width:100%; max-width:420px;"></canvas>
+                            <p style="font-size:0.82rem; color:var(--text-secondary); margin-top:6px;">Loss Curves</p>
+                        </div>
+                        <div style="flex:1; min-width:280px; text-align:center;">
+                            <canvas id="train-acc-canvas" width="400" height="260"
+                                    style="border:1px solid var(--border-subtle); border-radius:8px; background:var(--canvas-bg); width:100%; max-width:420px;"></canvas>
+                            <p style="font-size:0.82rem; color:var(--text-secondary); margin-top:6px;">Accuracy Curves</p>
+                        </div>
+                    </div>
+                    <div id="train-stats" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); text-align:center;">
+                        Epoch: 0 / 50 &nbsp; | &nbsp; Train Loss: &mdash; &nbsp; | &nbsp; Val Loss: &mdash; &nbsp; | &nbsp; Val Acc: &mdash;
+                    </div>
+                    <p id="train-description" style="margin-top:12px; font-size:0.88rem; color:var(--text-secondary); min-height:40px;">
+                        Click a training mode and watch the loss decrease and accuracy
+                        increase over simulated epochs. Compare training from scratch
+                        versus transfer learning.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: PRACTICAL TRAINING RECIPE
+             ========================================== -->
+        <section class="ch-section" id="training-recipe">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Practical Training Recipe for Civil Engineers
+                </h2>
+
+                <p>
+                    Putting it all together, here is a step-by-step recipe for training a
+                    crack detection CNN that you can follow on any project:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The 10-Step Training Recipe</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.4;">
+                            <li>
+                                <strong>Collect and label data</strong> &mdash; Gather at
+                                least 1,000 images per class. Have a domain expert verify
+                                labels.
+                            </li>
+                            <li>
+                                <strong>Split the dataset</strong> &mdash; 70% training,
+                                15% validation, 15% test. Ensure no data leakage between
+                                splits.
+                            </li>
+                            <li>
+                                <strong>Choose a pretrained backbone</strong> &mdash;
+                                ResNet-50 or EfficientNet-B0 are excellent starting points.
+                            </li>
+                            <li>
+                                <strong>Replace the classification head</strong> &mdash;
+                                Add a new dense layer matching your number of classes.
+                            </li>
+                            <li>
+                                <strong>Define augmentation pipeline</strong> &mdash;
+                                Horizontal flip, rotation, brightness jitter, random crop.
+                            </li>
+                            <li>
+                                <strong>Set hyperparameters</strong> &mdash; Optimizer: Adam
+                                (or AdamW). Initial LR: 1e-4. Batch size: 32. Epochs: 50.
+                            </li>
+                            <li>
+                                <strong>Configure LR scheduler</strong> &mdash; Cosine
+                                annealing with 3-epoch warm-up.
+                            </li>
+                            <li>
+                                <strong>Train with early stopping</strong> &mdash; Patience
+                                of 10 epochs on validation loss.
+                            </li>
+                            <li>
+                                <strong>Evaluate on test set</strong> &mdash; Report
+                                accuracy, precision, recall, and F1-score.
+                            </li>
+                            <li>
+                                <strong>Iterate</strong> &mdash; Examine misclassified
+                                images, adjust augmentation, try different backbones.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.82rem; margin:16px 0; line-height:1.7; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  # Pseudocode: Complete Training Pipeline
+  model = load_pretrained("resnet50", weights="imagenet")
+  model.replace_head(num_classes=2)
+
+  augmentation = Compose([
+      RandomHorizontalFlip(p=0.5),
+      RandomVerticalFlip(p=0.5),
+      RandomRotation(degrees=15),
+      ColorJitter(brightness=0.2, contrast=0.2),
+      RandomResizedCrop(size=224, scale=(0.8, 1.0)),
+  ])
+
+  optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
+  scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50)
+  criterion = BinaryCrossEntropy()
+
+  for epoch in range(50):
+      for batch_images, batch_labels in train_loader:
+          batch_images = augmentation(batch_images)      # Step 0: augment
+          predictions = model(batch_images)               # Step 1: forward
+          loss = criterion(predictions, batch_labels)     # Step 2: loss
+          loss.backward()                                 # Step 3: backprop
+          optimizer.step()                                # Step 4: update
+          optimizer.zero_grad()
+
+      val_loss, val_acc = evaluate(model, val_loader)
+      scheduler.step()
+      early_stopping.check(val_loss, model)</pre>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: COMMON TRAINING PITFALLS
+             ========================================== -->
+        <section class="ch-section" id="training-pitfalls">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Common Training Pitfalls
+                </h2>
+
+                <p>
+                    Even experienced practitioners encounter these issues. Recognizing
+                    them early saves hours of wasted GPU time:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bug"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pitfalls and Solutions</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">Symptom</th>
+                                    <th style="padding:10px; text-align:left;">Likely Cause</th>
+                                    <th style="padding:10px; text-align:left;">Fix</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Loss = NaN</td>
+                                    <td style="padding:10px;">Learning rate too high</td>
+                                    <td style="padding:10px;">Reduce LR by 10x; add gradient clipping</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Loss stuck at ln(2) = 0.693</td>
+                                    <td style="padding:10px;">Model outputs random 50/50 (not learning)</td>
+                                    <td style="padding:10px;">Check data loader, labels, input normalization</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Train acc 99%, val acc 70%</td>
+                                    <td style="padding:10px;">Severe overfitting</td>
+                                    <td style="padding:10px;">More augmentation, dropout, or more data</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Val acc oscillates wildly</td>
+                                    <td style="padding:10px;">LR too high or batch too small</td>
+                                    <td style="padding:10px;">Reduce LR; increase batch size</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">GPU out of memory</td>
+                                    <td style="padding:10px;">Batch size or model too large</td>
+                                    <td style="padding:10px;">Reduce batch size; use mixed precision</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Training very slow</td>
+                                    <td style="padding:10px;">Data loading bottleneck</td>
+                                    <td style="padding:10px;">Use multiple data loader workers; prefetch</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                CNN training is a four-step loop: <strong>forward pass
+                                &rarr; loss computation &rarr; backpropagation &rarr; weight
+                                update</strong>, repeated over many epochs.
+                            </li>
+                            <li>
+                                The <strong>loss function</strong> (typically cross-entropy)
+                                quantifies prediction error; <strong>backpropagation</strong>
+                                distributes blame via the chain rule.
+                            </li>
+                            <li>
+                                <strong>Data augmentation</strong> (flip, rotate, crop,
+                                brightness) is essential for small civil engineering datasets.
+                            </li>
+                            <li>
+                                <strong>Transfer learning</strong> from ImageNet-pretrained
+                                models dramatically reduces data requirements and training
+                                time for crack detection and similar tasks.
+                            </li>
+                            <li>
+                                <strong>Learning rate scheduling</strong> (cosine annealing
+                                with warm-up) and <strong>early stopping</strong> are
+                                standard practice for reliable convergence.
+                            </li>
+                            <li>
+                                <strong>Batch size</strong> affects gradient noise,
+                                generalization, and GPU memory usage; 16&ndash;64 is a good
+                                starting range.
+                            </li>
+                            <li>
+                                Combat overfitting with the <strong>regularization
+                                quartet</strong>: augmentation, dropout, weight decay, and
+                                early stopping.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 18: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of CNN training with these four questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        During backpropagation, what does the gradient of the loss with
+                        respect to a specific weight represent?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> The absolute value of the weight
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> How much the loss would change if that weight were slightly adjusted
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> The final prediction probability
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> The number of times the weight was updated
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The gradient tells us the direction and
+                        magnitude of change in the loss for a tiny change in that weight.
+                        This is exactly the information the optimizer needs to reduce the
+                        loss.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The gradient is the partial derivative
+                        of the loss with respect to the weight &mdash; it indicates how much
+                        and in which direction the loss changes when the weight is perturbed.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        Why is data augmentation particularly important for civil
+                        engineering CNN projects?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> It makes training faster by reducing image resolution
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> It eliminates the need for labeled data
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Labeled CE datasets are small; augmentation artificially expands them to reduce overfitting
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> It converts grayscale images to color
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Labeled civil engineering datasets are
+                        expensive to create and typically small. Data augmentation creates
+                        diverse training variants from existing images, dramatically reducing
+                        overfitting and improving generalization.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Augmentation does not reduce resolution
+                        or eliminate labeling needs. Its primary value is artificially
+                        expanding small labeled datasets to prevent the network from
+                        memorizing specific images.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In transfer learning, what is the key difference between "feature
+                        extraction" and "fine-tuning"?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Feature extraction uses a larger dataset
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Fine-tuning does not use pretrained weights
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Feature extraction freezes pretrained layers; fine-tuning updates all layers with a small learning rate
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> They are identical approaches with different names
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> In feature extraction, the pretrained
+                        convolutional layers are frozen and only the new classification head
+                        is trained. In fine-tuning, all layers are unfrozen and trained with
+                        a very small learning rate to adapt the pretrained features to the
+                        new domain.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The key distinction is whether the
+                        pretrained convolutional weights are frozen (feature extraction) or
+                        updated with a small learning rate (fine-tuning). Both strategies
+                        start from pretrained weights.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        During training, the training loss is decreasing steadily but
+                        the validation loss starts increasing after epoch 20. What is
+                        happening and what should you do?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The model is underfitting; train for more epochs
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The learning rate is too low; increase it
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The model is overfitting; use early stopping to restore the epoch-20 weights
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The batch size is too large; reduce it
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> When training loss decreases but
+                        validation loss increases, the network is overfitting &mdash;
+                        memorizing training data rather than learning generalizable features.
+                        Early stopping reverts to the best checkpoint (lowest validation
+                        loss), and you should consider adding more augmentation or dropout.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> This is a classic overfitting pattern:
+                        the divergence between training and validation loss indicates the
+                        model is memorizing the training set. Early stopping at the best
+                        validation checkpoint is the immediate fix.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub4.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 4.4 CNN Architecture
+        </a>
+        <a href="sub6.html" class="chapter-nav__link next">
+            4.6 Famous Architectures <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* -- Shared helpers -- */
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var dark = window.isDarkMode ? window.isDarkMode() : true;
+            return {
+                TEAL: dark?'#2dd4bf':'#059669', CYAN: dark?'#22d3ee':'#0284c7',
+                AMBER: dark?'#fbbf24':'#d97706', RED: dark?'#ef4444':'#dc2626',
+                GREEN: dark?'#22c55e':'#16a34a', BG: dark?'#0a0a0f':'#f8f9fc',
+                TEXT: dark?'rgba(255,255,255,0.7)':'rgba(0,0,0,0.6)',
+                DIM: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
+                GRID: dark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.04)',
+                STROKE: dark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.1)',
+                WHITE: dark?'#fff':'#1a1a2e',
+                MUTED: dark?'rgba(255,255,255,0.4)':'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d; c.height = r.height * d;
+            var x = c.getContext('2d'); x.scale(d,d);
+            return { ctx:x, w:r.width, h:r.height };
+        };
+
+        /* -- Quiz handler -- */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var btns = block.querySelectorAll('.quiz-option');
+            btns.forEach(function(b){ b.disabled = true; b.style.pointerEvents = 'none'; });
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+            btn.style.border = isCorrect ? '2px solid #22c55e' : '2px solid #ef4444';
+            btn.style.background = isCorrect ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+            if (!isCorrect) {
+                btns.forEach(function(b){
+                    if (b.getAttribute('data-correct') === 'true') {
+                        b.style.border = '2px solid #22c55e';
+                        b.style.background = 'rgba(34,197,94,0.12)';
+                    }
+                });
+            }
+            var correct = document.getElementById(quizId + '-correct');
+            var wrong   = document.getElementById(quizId + '-wrong');
+            if (correct) correct.style.display = isCorrect ? 'block' : 'none';
+            if (wrong)   wrong.style.display   = isCorrect ? 'none' : 'block';
+        };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED TRAINING LOOP FLOW
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var C = initCanvas(canvas), ctx = C.ctx, W = C.w, H = C.h;
+            var cols = getColors();
+
+            var particles = [];
+            var NUM = 60;
+            for (var i = 0; i < NUM; i++) {
+                particles.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    r: 1 + Math.random() * 2.5,
+                    vx: (Math.random() - 0.5) * 0.6,
+                    vy: (Math.random() - 0.5) * 0.6,
+                    alpha: 0.15 + Math.random() * 0.35
+                });
+            }
+
+            /* Draw cycle arrows in the center */
+            function drawCycleArrow(cx, cy, radius, startAngle, endAngle, color) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, startAngle, endAngle);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                /* arrowhead */
+                var ax = cx + radius * Math.cos(endAngle);
+                var ay = cy + radius * Math.sin(endAngle);
+                var angle = endAngle + Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(ax + 6 * Math.cos(angle - 0.5), ay + 6 * Math.sin(angle - 0.5));
+                ctx.lineTo(ax, ay);
+                ctx.lineTo(ax + 6 * Math.cos(angle + 0.5), ay + 6 * Math.sin(angle + 0.5));
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            var frame = 0;
+            function animate() {
+                cols = getColors();
+                ctx.fillStyle = cols.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                /* Grid */
+                ctx.strokeStyle = cols.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx < W; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (var gy = 0; gy < H; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                /* Particles */
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+                    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = cols.TEAL;
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+
+                /* Central training cycle */
+                var cx = W / 2, cy = H / 2;
+                var radius = Math.min(W, H) * 0.18;
+                var t = frame * 0.015;
+                var segColors = [cols.TEAL, cols.CYAN, cols.AMBER, cols.GREEN];
+                for (var s = 0; s < 4; s++) {
+                    var sa = t + s * Math.PI / 2;
+                    var ea = t + (s + 0.7) * Math.PI / 2;
+                    drawCycleArrow(cx, cy, radius, sa, ea, segColors[s]);
+                }
+
+                /* Labels */
+                ctx.font = '600 11px Inter';
+                ctx.textAlign = 'center';
+                var labels = ['Forward', 'Loss', 'Backprop', 'Update'];
+                var offsets = [
+                    { x: 0, y: -radius - 16 },
+                    { x: radius + 40, y: 0 },
+                    { x: 0, y: radius + 22 },
+                    { x: -radius - 40, y: 0 }
+                ];
+                for (var l = 0; l < 4; l++) {
+                    ctx.fillStyle = segColors[l];
+                    ctx.globalAlpha = 0.8;
+                    ctx.fillText(labels[l], cx + offsets[l].x, cy + offsets[l].y);
+                }
+                ctx.globalAlpha = 1;
+                ctx.textAlign = 'left';
+
+                frame++;
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            window.addEventListener('resize', function() {
+                C = initCanvas(canvas); ctx = C.ctx; W = C.w; H = C.h;
+            });
+            new MutationObserver(function(){ cols = getColors(); })
+                .observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 1: DATA AUGMENTATION GALLERY
+           ============================================== */
+        (function augDemo() {
+            var origCanvas = document.getElementById('aug-canvas-original');
+            var resCanvas  = document.getElementById('aug-canvas-result');
+            if (!origCanvas || !resCanvas) return;
+
+            var CO = initCanvas(origCanvas), ctxO = CO.ctx, WO = CO.w, HO = CO.h;
+            var CR = initCanvas(resCanvas),  ctxR = CR.ctx, WR = CR.w, HR = CR.h;
+
+            var seed = 42;
+            var currentAug = 'original';
+
+            /* Simple seeded random */
+            function seededRand(s) {
+                s = Math.sin(s * 12.9898 + 78.233) * 43758.5453;
+                return s - Math.floor(s);
+            }
+
+            /* Generate procedural concrete surface with crack */
+            function generateSurface(ctx, w, h, sd) {
+                var cols = getColors();
+                var imgData = ctx.createImageData(w * (window.devicePixelRatio || 1), h * (window.devicePixelRatio || 1));
+                var data = imgData.data;
+                var pw = imgData.width, ph = imgData.height;
+
+                for (var py = 0; py < ph; py++) {
+                    for (var px = 0; px < pw; px++) {
+                        var nx = px / pw, ny = py / ph;
+                        /* Base concrete gray */
+                        var base = 140 + 30 * seededRand(sd + nx * 5.3 + ny * 7.1);
+                        /* Grain noise */
+                        base += 15 * (seededRand(sd + px * 0.1 + py * 0.13) - 0.5);
+                        /* Crack line: a wandering vertical-ish dark line */
+                        var crackX = 0.4 + 0.15 * Math.sin(ny * 6 + sd * 0.3) + 0.05 * Math.sin(ny * 18 + sd);
+                        var distToCrack = Math.abs(nx - crackX);
+                        var crackWidth = 0.015 + 0.008 * seededRand(sd + ny * 10);
+                        if (distToCrack < crackWidth) {
+                            var crackIntensity = 1 - distToCrack / crackWidth;
+                            base -= 100 * crackIntensity * crackIntensity;
+                        }
+                        /* Secondary branch crack */
+                        if (ny > 0.35 && ny < 0.65) {
+                            var branchY = 0.5;
+                            var branchX = crackX + (ny - branchY) * 0.8;
+                            var distBranch = Math.abs(nx - branchX);
+                            var bw = 0.01 + 0.005 * seededRand(sd + ny * 20);
+                            if (distBranch < bw) {
+                                base -= 80 * (1 - distBranch / bw);
+                            }
+                        }
+                        base = Math.max(0, Math.min(255, base));
+                        var idx = (py * pw + px) * 4;
+                        data[idx] = base;
+                        data[idx + 1] = base;
+                        data[idx + 2] = base + 5;
+                        data[idx + 3] = 255;
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+            }
+
+            /* Get original image data */
+            function getOrigImageData() {
+                return ctxO.getImageData(0, 0,
+                    origCanvas.width, origCanvas.height);
+            }
+
+            /* Apply augmentation */
+            function applyAugmentation(aug) {
+                currentAug = aug;
+                var labelEl = document.getElementById('aug-label-result');
+                var descEl  = document.getElementById('aug-description');
+                var origData = getOrigImageData();
+
+                ctxR.clearRect(0, 0, WR * (window.devicePixelRatio||1), HR * (window.devicePixelRatio||1));
+
+                var dpr = window.devicePixelRatio || 1;
+
+                if (aug === 'original') {
+                    ctxR.putImageData(origData, 0, 0);
+                    if (labelEl) labelEl.textContent = 'Original (no transform)';
+                    if (descEl) descEl.textContent = 'The original concrete surface with a simulated crack pattern. Click the buttons above to apply different augmentation transforms.';
+                }
+                else if (aug === 'hflip') {
+                    ctxR.save();
+                    ctxR.scale(-1/dpr, 1/dpr);
+                    ctxR.drawImage(origCanvas, -origCanvas.width, 0);
+                    ctxR.restore();
+                    if (labelEl) labelEl.textContent = 'Horizontal Flip';
+                    if (descEl) descEl.textContent = 'The image is mirrored left-to-right. Since cracks have no preferred horizontal orientation, this is a safe augmentation for all structural imagery.';
+                }
+                else if (aug === 'vflip') {
+                    ctxR.save();
+                    ctxR.scale(1/dpr, -1/dpr);
+                    ctxR.drawImage(origCanvas, 0, -origCanvas.height);
+                    ctxR.restore();
+                    if (labelEl) labelEl.textContent = 'Vertical Flip';
+                    if (descEl) descEl.textContent = 'The image is mirrored top-to-bottom. Appropriate for drone imagery where camera orientation varies. Use with caution for gravity-dependent defects.';
+                }
+                else if (aug === 'rotate') {
+                    var angle = 15 + seededRand(seed + 99) * 30; /* 15-45 degrees */
+                    ctxR.save();
+                    ctxR.translate(WR * dpr / 2, HR * dpr / 2);
+                    ctxR.rotate(angle * Math.PI / 180);
+                    ctxR.drawImage(origCanvas, -origCanvas.width / 2, -origCanvas.height / 2);
+                    ctxR.restore();
+                    if (labelEl) labelEl.textContent = 'Rotation (' + Math.round(angle) + ' deg)';
+                    if (descEl) descEl.textContent = 'Random rotation simulates arbitrary camera angles during field inspection. The black corners would be cropped or filled in practice. Cracks at any angle become learnable.';
+                }
+                else if (aug === 'crop') {
+                    var cropScale = 0.6 + seededRand(seed + 77) * 0.2;
+                    var sx = (origCanvas.width * (1 - cropScale)) * seededRand(seed + 33);
+                    var sy = (origCanvas.height * (1 - cropScale)) * seededRand(seed + 44);
+                    var sw = origCanvas.width * cropScale;
+                    var sh = origCanvas.height * cropScale;
+                    ctxR.drawImage(origCanvas, sx, sy, sw, sh, 0, 0, resCanvas.width, resCanvas.height);
+                    if (labelEl) labelEl.textContent = 'Random Crop (' + Math.round(cropScale * 100) + '%)';
+                    if (descEl) descEl.textContent = 'A sub-region is extracted and resized to the original dimensions. This simulates varying camera distances and forces the model to detect cracks at multiple scales.';
+                }
+                else if (aug === 'bright') {
+                    var factor = 0.6 + seededRand(seed + 55) * 0.8; /* 0.6 to 1.4 */
+                    var newData = ctxR.createImageData(origData.width, origData.height);
+                    for (var i = 0; i < origData.data.length; i += 4) {
+                        newData.data[i]     = Math.min(255, Math.max(0, origData.data[i] * factor));
+                        newData.data[i + 1] = Math.min(255, Math.max(0, origData.data[i + 1] * factor));
+                        newData.data[i + 2] = Math.min(255, Math.max(0, origData.data[i + 2] * factor));
+                        newData.data[i + 3] = 255;
+                    }
+                    ctxR.putImageData(newData, 0, 0);
+                    var pct = Math.round(factor * 100);
+                    if (labelEl) labelEl.textContent = 'Brightness (' + pct + '%)';
+                    if (descEl) descEl.textContent = 'Brightness is adjusted by a random factor (' + pct + '%). This teaches the model to recognise cracks under varying lighting conditions: shaded areas, direct sunlight, or overcast skies.';
+                }
+                else if (aug === 'all') {
+                    /* Combined: hflip + slight rotation + brightness */
+                    var bf = 0.8 + seededRand(seed + 66) * 0.4;
+                    var ra = (seededRand(seed + 88) - 0.5) * 20;
+                    /* Brightness first */
+                    var combData = ctxR.createImageData(origData.width, origData.height);
+                    for (var j = 0; j < origData.data.length; j += 4) {
+                        combData.data[j]     = Math.min(255, Math.max(0, origData.data[j] * bf));
+                        combData.data[j + 1] = Math.min(255, Math.max(0, origData.data[j + 1] * bf));
+                        combData.data[j + 2] = Math.min(255, Math.max(0, origData.data[j + 2] * bf));
+                        combData.data[j + 3] = 255;
+                    }
+                    ctxR.putImageData(combData, 0, 0);
+                    /* Then flip + rotate via drawing */
+                    var tmpCanvas = document.createElement('canvas');
+                    tmpCanvas.width = resCanvas.width; tmpCanvas.height = resCanvas.height;
+                    var tmpCtx = tmpCanvas.getContext('2d');
+                    tmpCtx.drawImage(resCanvas, 0, 0);
+                    ctxR.clearRect(0, 0, resCanvas.width, resCanvas.height);
+                    ctxR.save();
+                    ctxR.translate(resCanvas.width / 2, resCanvas.height / 2);
+                    ctxR.scale(-1, 1);
+                    ctxR.rotate(ra * Math.PI / 180);
+                    ctxR.drawImage(tmpCanvas, -resCanvas.width / 2, -resCanvas.height / 2);
+                    ctxR.restore();
+                    if (labelEl) labelEl.textContent = 'Combined (flip + rotate + brightness)';
+                    if (descEl) descEl.textContent = 'Multiple augmentations applied together: horizontal flip, rotation (' + Math.round(ra) + ' deg), and brightness (' + Math.round(bf*100) + '%). In practice, all augmentations are combined with random probabilities each epoch.';
+                }
+
+                /* Update button states */
+                var btns = document.querySelectorAll('#aug-demo-panel .demo-btn[data-aug]');
+                btns.forEach(function(b) {
+                    b.classList.toggle('active', b.getAttribute('data-aug') === aug);
+                });
+            }
+
+            /* Draw original */
+            function drawOriginal() {
+                generateSurface(ctxO, WO, HO, seed);
+                applyAugmentation(currentAug);
+            }
+
+            /* Button listeners */
+            var augBtns = document.querySelectorAll('#aug-demo-panel .demo-btn[data-aug]');
+            augBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    applyAugmentation(btn.getAttribute('data-aug'));
+                });
+            });
+
+            var newSurfBtn = document.getElementById('aug-new-surface');
+            if (newSurfBtn) {
+                newSurfBtn.addEventListener('click', function() {
+                    seed = Math.floor(Math.random() * 100000);
+                    drawOriginal();
+                });
+            }
+
+            /* Theme / resize */
+            new MutationObserver(function(){ drawOriginal(); })
+                .observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+            window.addEventListener('resize', function() {
+                CO = initCanvas(origCanvas); ctxO = CO.ctx; WO = CO.w; HO = CO.h;
+                CR = initCanvas(resCanvas);  ctxR = CR.ctx; WR = CR.w; HR = CR.h;
+                drawOriginal();
+            });
+
+            drawOriginal();
+        })();
+
+        /* ==============================================
+           DEMO 2: TRAINING PROGRESS MONITOR
+           ============================================== */
+        (function trainDemo() {
+            var lossCanvas = document.getElementById('train-loss-canvas');
+            var accCanvas  = document.getElementById('train-acc-canvas');
+            if (!lossCanvas || !accCanvas) return;
+
+            var CL = initCanvas(lossCanvas), ctxL = CL.ctx, WL = CL.w, HL = CL.h;
+            var CA = initCanvas(accCanvas),  ctxA = CA.ctx, WA = CA.w, HA = CA.h;
+
+            var totalEpochs = 50;
+            var currentEpoch = 0;
+            var mode = 'scratch'; /* 'scratch' or 'transfer' */
+            var speed = 1;
+            var animId = null;
+            var running = false;
+
+            /* Simulated training data */
+            var trainLoss = [], valLoss = [], trainAcc = [], valAcc = [];
+
+            /* Generate realistic curves */
+            function generateCurves(m) {
+                trainLoss = []; valLoss = []; trainAcc = []; valAcc = [];
+                for (var e = 0; e <= totalEpochs; e++) {
+                    var t = e / totalEpochs;
+                    var noise = function(amp) { return (Math.random() - 0.5) * amp; };
+
+                    if (m === 'scratch') {
+                        /* From scratch: slow convergence, higher initial loss */
+                        var tl = 0.69 * Math.exp(-2.5 * t) + 0.08 + noise(0.03);
+                        var vl = 0.69 * Math.exp(-2.0 * t) + 0.12 + (t > 0.6 ? 0.08 * (t - 0.6) : 0) + noise(0.04);
+                        var ta = 50 + 45 * (1 - Math.exp(-3 * t)) + noise(1.5);
+                        var va = 50 + 38 * (1 - Math.exp(-2.5 * t)) - (t > 0.7 ? 3 * (t - 0.7) * 10 : 0) + noise(2);
+                    } else {
+                        /* Transfer learning: fast convergence, lower loss */
+                        var tl = 0.35 * Math.exp(-5 * t) + 0.03 + noise(0.015);
+                        var vl = 0.35 * Math.exp(-4 * t) + 0.05 + noise(0.02);
+                        var ta = 75 + 24 * (1 - Math.exp(-6 * t)) + noise(0.8);
+                        var va = 72 + 25 * (1 - Math.exp(-5 * t)) + noise(1.2);
+                    }
+                    trainLoss.push(Math.max(0.01, tl));
+                    valLoss.push(Math.max(0.02, vl));
+                    trainAcc.push(Math.min(99.8, Math.max(50, ta)));
+                    valAcc.push(Math.min(99, Math.max(50, va)));
+                }
+            }
+
+            /* Draw chart */
+            function drawChart(ctx, w, h, data1, data2, label1, label2, col1, col2, yLabel, yMin, yMax, epochsShown) {
+                var cols = getColors();
+                ctx.clearRect(0, 0, w * (window.devicePixelRatio||1), h * (window.devicePixelRatio||1));
+                ctx.fillStyle = cols.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var pad = { left: 50, right: 20, top: 20, bottom: 36 };
+                var cw = w - pad.left - pad.right;
+                var ch = h - pad.top - pad.bottom;
+
+                /* Grid lines */
+                ctx.strokeStyle = cols.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gi = 0; gi <= 5; gi++) {
+                    var gy = pad.top + ch * gi / 5;
+                    ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(pad.left + cw, gy); ctx.stroke();
+                    ctx.fillStyle = cols.MUTED;
+                    ctx.font = '10px JetBrains Mono';
+                    ctx.textAlign = 'right';
+                    var yVal = yMax - (yMax - yMin) * gi / 5;
+                    ctx.fillText(yVal.toFixed(yLabel === 'Loss' ? 2 : 0), pad.left - 6, gy + 4);
+                }
+
+                /* Axis labels */
+                ctx.fillStyle = cols.MUTED;
+                ctx.font = '10px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Epoch', pad.left + cw / 2, h - 4);
+                /* Epoch ticks */
+                for (var ei = 0; ei <= totalEpochs; ei += 10) {
+                    var ex = pad.left + (ei / totalEpochs) * cw;
+                    ctx.fillText(ei.toString(), ex, h - pad.bottom + 16);
+                }
+
+                /* Y-axis label */
+                ctx.save();
+                ctx.translate(12, pad.top + ch / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = cols.MUTED;
+                ctx.font = '10px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(yLabel, 0, 0);
+                ctx.restore();
+
+                /* Draw lines */
+                function drawLine(data, color, n) {
+                    if (n < 1) return;
+                    ctx.beginPath();
+                    for (var i = 0; i <= n && i < data.length; i++) {
+                        var x = pad.left + (i / totalEpochs) * cw;
+                        var y = pad.top + ch * (1 - (data[i] - yMin) / (yMax - yMin));
+                        y = Math.max(pad.top, Math.min(pad.top + ch, y));
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                drawLine(data1, col1, epochsShown);
+                drawLine(data2, col2, epochsShown);
+
+                /* Legend */
+                var legX = pad.left + 8, legY = pad.top + 12;
+                ctx.fillStyle = col1;
+                ctx.fillRect(legX, legY - 4, 14, 3);
+                ctx.fillStyle = cols.TEXT;
+                ctx.font = '10px Inter';
+                ctx.textAlign = 'left';
+                ctx.fillText(label1, legX + 18, legY);
+                ctx.fillStyle = col2;
+                ctx.fillRect(legX, legY + 14, 14, 3);
+                ctx.fillStyle = cols.TEXT;
+                ctx.fillText(label2, legX + 18, legY + 18);
+            }
+
+            function render() {
+                var cols = getColors();
+                drawChart(ctxL, WL, HL, trainLoss, valLoss, 'Train Loss', 'Val Loss',
+                    cols.TEAL, cols.AMBER, 'Loss', 0, 0.8, currentEpoch);
+                drawChart(ctxA, WA, HA, trainAcc, valAcc, 'Train Acc', 'Val Acc',
+                    cols.CYAN, cols.GREEN, 'Accuracy (%)', 45, 100, currentEpoch);
+
+                /* Stats bar */
+                var statsEl = document.getElementById('train-stats');
+                if (statsEl && currentEpoch > 0) {
+                    var tl = trainLoss[currentEpoch].toFixed(3);
+                    var vl = valLoss[currentEpoch].toFixed(3);
+                    var va = valAcc[currentEpoch].toFixed(1);
+                    statsEl.innerHTML = 'Epoch: ' + currentEpoch + ' / ' + totalEpochs +
+                        ' &nbsp; | &nbsp; Train Loss: ' + tl +
+                        ' &nbsp; | &nbsp; Val Loss: ' + vl +
+                        ' &nbsp; | &nbsp; Val Acc: ' + va + '%';
+                }
+            }
+
+            function startTraining() {
+                if (running) return;
+                running = true;
+                generateCurves(mode);
+                currentEpoch = 0;
+
+                var descEl = document.getElementById('train-description');
+
+                function step() {
+                    currentEpoch++;
+                    render();
+
+                    if (descEl) {
+                        if (mode === 'scratch') {
+                            if (currentEpoch < 10) descEl.textContent = 'Training from scratch: the network starts with random weights. Loss is high and accuracy near 50% (random guessing).';
+                            else if (currentEpoch < 30) descEl.textContent = 'Gradual improvement as the network learns basic features. Notice the gap between training and validation curves growing.';
+                            else if (currentEpoch < 45) descEl.textContent = 'Overfitting begins: training loss keeps dropping but validation loss starts to rise. The model is memorizing training data.';
+                            else descEl.textContent = 'Training complete. Final validation accuracy ~88%. The divergence between train and val curves indicates overfitting. Early stopping at epoch ~30 would have been optimal.';
+                        } else {
+                            if (currentEpoch < 5) descEl.textContent = 'Transfer learning: starting from ImageNet pretrained weights. Notice the loss is already much lower than training from scratch.';
+                            else if (currentEpoch < 15) descEl.textContent = 'Rapid convergence! Pretrained features accelerate learning dramatically. Both train and validation curves improve together.';
+                            else if (currentEpoch < 35) descEl.textContent = 'Fine-tuning the pretrained features for crack detection. Train and val curves remain close, indicating good generalization.';
+                            else descEl.textContent = 'Training complete. Final validation accuracy ~97%! Transfer learning achieves much higher accuracy with less overfitting compared to training from scratch.';
+                        }
+                    }
+
+                    if (currentEpoch < totalEpochs) {
+                        animId = setTimeout(step, 200 / speed);
+                    } else {
+                        running = false;
+                    }
+                }
+                step();
+            }
+
+            function reset() {
+                running = false;
+                if (animId) { clearTimeout(animId); animId = null; }
+                currentEpoch = 0;
+                trainLoss = []; valLoss = []; trainAcc = []; valAcc = [];
+                var cols = getColors();
+                ctxL.fillStyle = cols.BG; ctxL.fillRect(0, 0, WL, HL);
+                ctxA.fillStyle = cols.BG; ctxA.fillRect(0, 0, WA, HA);
+                var statsEl = document.getElementById('train-stats');
+                if (statsEl) statsEl.innerHTML = 'Epoch: 0 / ' + totalEpochs + ' &nbsp; | &nbsp; Train Loss: &mdash; &nbsp; | &nbsp; Val Loss: &mdash; &nbsp; | &nbsp; Val Acc: &mdash;';
+                var descEl = document.getElementById('train-description');
+                if (descEl) descEl.textContent = 'Click a training mode and watch the loss decrease and accuracy increase over simulated epochs.';
+            }
+
+            /* Button listeners */
+            var scratchBtn  = document.getElementById('train-scratch');
+            var transferBtn = document.getElementById('train-transfer');
+            var resetBtn    = document.getElementById('train-reset');
+            var speedBtn    = document.getElementById('train-speed');
+
+            if (scratchBtn) scratchBtn.addEventListener('click', function() {
+                reset();
+                mode = 'scratch';
+                scratchBtn.classList.add('active');
+                if (transferBtn) transferBtn.classList.remove('active');
+                startTraining();
+            });
+
+            if (transferBtn) transferBtn.addEventListener('click', function() {
+                reset();
+                mode = 'transfer';
+                transferBtn.classList.add('active');
+                if (scratchBtn) scratchBtn.classList.remove('active');
+                startTraining();
+            });
+
+            if (resetBtn) resetBtn.addEventListener('click', reset);
+
+            if (speedBtn) speedBtn.addEventListener('click', function() {
+                speed = speed === 1 ? 2 : speed === 2 ? 4 : 1;
+                speedBtn.innerHTML = '<i class="fa-solid fa-gauge-high"></i> Speed: ' + speed + 'x';
+            });
+
+            /* Theme / resize */
+            new MutationObserver(function(){ if (currentEpoch > 0) render(); })
+                .observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+            window.addEventListener('resize', function() {
+                CL = initCanvas(lossCanvas); ctxL = CL.ctx; WL = CL.w; HL = CL.h;
+                CA = initCanvas(accCanvas);  ctxA = CA.ctx; WA = CA.w; HA = CA.h;
+                if (currentEpoch > 0) render();
+            });
+
+            /* Initial empty render */
+            render();
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

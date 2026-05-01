@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.9 Evaluating Unsupervised Models | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn how to evaluate unsupervised learning models using silhouette scores, the elbow method, Davies-Bouldin index, and Calinski-Harabasz index. Explore visual inspection strategies and civil engineering applications for validating soil clustering and damage pattern grouping.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.9
+            </div>
+            <h1 class="chapter-hero__title">Evaluating Unsupervised Models</h1>
+            <p class="chapter-hero__subtitle">
+                Supervised models can compare predictions to known labels, but
+                unsupervised learning has no answer key. How do you tell whether
+                your clusters are genuine structures in the data or mere
+                artefacts of the algorithm? This sub-chapter arms you with a
+                toolkit of internal validation metrics &mdash; silhouette scores,
+                the elbow method, Davies-Bouldin, Calinski-Harabasz &mdash; and
+                pairs each with civil engineering intuition so you can
+                confidently assess soil clustering, damage grouping, and any
+                other label-free analysis on the job site.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE EVALUATION CHALLENGE
+             ========================================== -->
+        <section class="ch-section" id="evaluation-challenge">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-question"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Challenge of Evaluating Without Labels</h2>
+                        <p>
+                            In supervised learning, evaluation is straightforward:
+                            compare predicted labels to ground truth and compute
+                            accuracy, precision, recall, or F1. In unsupervised
+                            learning, there is no ground truth. The algorithm
+                            itself decides the groupings, which creates a
+                            fundamental tension:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>No external benchmark</strong> &mdash; You
+                                cannot compute &ldquo;accuracy&rdquo; because there
+                                are no known correct assignments. A K-Means run with
+                                K=3 and another with K=5 both produce valid
+                                partitions; how do you decide which is better?
+                            </li>
+                            <li>
+                                <strong>Algorithm bias</strong> &mdash; Every
+                                clustering algorithm has built-in assumptions about
+                                cluster shape and density. K-Means favours spherical
+                                clusters; DBSCAN favours density-connected regions.
+                                An evaluation metric that matches the algorithm's
+                                assumption will always look good, even on random data.
+                            </li>
+                            <li>
+                                <strong>Dimensionality fog</strong> &mdash; Real-world
+                                civil engineering datasets &mdash; soil test results,
+                                sensor streams, damage logs &mdash; often live in
+                                high-dimensional spaces where human visual inspection
+                                is impossible without dimensionality reduction, which
+                                itself distorts distances.
+                            </li>
+                            <li>
+                                <strong>Domain context matters</strong> &mdash; A
+                                statistically optimal partition may be operationally
+                                useless. Five soil clusters might be mathematically
+                                tighter than three, but the project's geotechnical
+                                report only needs three actionable categories.
+                            </li>
+                        </ul>
+                        <p>
+                            The solution is a combination of <strong>internal
+                            validation metrics</strong> (computed from the data
+                            alone) and <strong>domain-informed visual
+                            inspection</strong>. No single number can tell you
+                            everything; the metrics illuminate different facets
+                            of cluster quality, and the final judgement always
+                            requires engineering expertise.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of unsupervised model evaluation like quality
+                            control on a concrete mix without a lab-certified
+                            reference sample. You cannot compare your cylinder
+                            break results to a &ldquo;correct&rdquo; strength
+                            because there is no external standard &mdash; only
+                            internal consistency checks. Are the cylinders from
+                            the same batch giving similar readings? Do the values
+                            form a tight group, or are they scattered all over?
+                            Internal validation metrics are those consistency
+                            checks for cluster quality.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: INTERNAL VS EXTERNAL METRICS
+             ========================================== -->
+        <section class="ch-section" id="internal-vs-external">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Internal vs. External Evaluation</h2>
+                        <p>
+                            Evaluation metrics for clustering fall into two broad
+                            categories. This sub-chapter focuses on internal
+                            metrics because in most real-world CE applications
+                            labels simply do not exist.
+                        </p>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Aspect</th>
+                                    <th style="text-align:left; padding:0.6rem;">Internal Metrics</th>
+                                    <th style="text-align:left; padding:0.6rem;">External Metrics</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Labels required?</td>
+                                    <td style="padding:0.6rem;">No</td>
+                                    <td style="padding:0.6rem;">Yes (ground truth)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">What they measure</td>
+                                    <td style="padding:0.6rem;">Cohesion &amp; separation within the data</td>
+                                    <td style="padding:0.6rem;">Agreement with known classes</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Examples</td>
+                                    <td style="padding:0.6rem;">Silhouette, DB, CH, Elbow/SSE</td>
+                                    <td style="padding:0.6rem;">ARI, NMI, V-measure</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">CE availability</td>
+                                    <td style="padding:0.6rem;">Always available</td>
+                                    <td style="padding:0.6rem;">Rarely &mdash; need lab-classified samples</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem;">Limitation</td>
+                                    <td style="padding:0.6rem;">Biased toward algorithm assumptions</td>
+                                    <td style="padding:0.6rem;">Ground truth may be subjective</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: THE ELBOW METHOD
+             ========================================== -->
+        <section class="ch-section" id="elbow-method">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Elbow Method (Within-Cluster SSE)</h2>
+                        <p>
+                            The simplest approach: run K-Means for K = 1, 2, 3,
+                            &hellip; and plot the total <strong>within-cluster sum
+                            of squared errors (SSE)</strong>, also called
+                            <em>inertia</em>. As K increases, SSE always
+                            decreases (more clusters = tighter groups). The trick
+                            is finding the &ldquo;elbow&rdquo; &mdash; the value
+                            of K where adding another cluster yields
+                            <em>diminishing returns</em> in SSE reduction.
+                        </p>
+                        <pre><code>SSE = sum over all clusters C_k of sum over x_i in C_k of ||x_i - mu_k||^2</code></pre>
+                        <p>
+                            <strong>How to read the plot:</strong> The curve drops
+                            sharply at first (each new cluster captures a genuine
+                            group). At some K, the curve bends and flattens &mdash;
+                            further splits are slicing real groups in half rather
+                            than capturing new ones. That bend is the elbow.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Example: Soil Classification</h3>
+                        <p>
+                            A geotechnical investigation collects 200 borehole
+                            samples with measurements for grain size distribution,
+                            Atterberg limits, moisture content, and SPT blow count.
+                            The engineer runs K-Means for K = 2 through 8 and plots
+                            SSE. The elbow appears at K = 4, suggesting four
+                            distinct soil strata beneath the site &mdash; consistent
+                            with the geological cross-section showing topsoil,
+                            clay, sandy gravel, and weathered rock.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Limitations of the Elbow Method</h3>
+                        <ul>
+                            <li>
+                                <strong>Ambiguous elbows</strong> &mdash; In many
+                                real datasets, the curve is a smooth decay with no
+                                sharp bend. The &ldquo;elbow&rdquo; becomes a matter
+                                of opinion.
+                            </li>
+                            <li>
+                                <strong>SSE is scale-dependent</strong> &mdash;
+                                Features with larger numeric ranges dominate the
+                                metric. Always standardise data before clustering.
+                            </li>
+                            <li>
+                                <strong>Only measures compactness</strong> &mdash;
+                                SSE does not consider how well-separated clusters
+                                are from each other. Two overlapping clusters may
+                                have lower SSE than two well-separated ones simply
+                                because they are each very tight.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: SILHOUETTE SCORE
+             ========================================== -->
+        <section class="ch-section" id="silhouette-score">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-user-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Silhouette Score</h2>
+                        <p>
+                            The silhouette score (Rousseeuw, 1987) measures how
+                            similar each data point is to its own cluster compared
+                            to other clusters. For each sample <em>i</em>:
+                        </p>
+                        <pre><code>a(i) = average distance from i to all other points in the same cluster
+b(i) = minimum average distance from i to points in any other cluster
+s(i) = (b(i) - a(i)) / max(a(i), b(i))</code></pre>
+                        <ul>
+                            <li>
+                                <strong>s(i) close to +1</strong> &mdash; The point
+                                is well-matched to its own cluster and poorly
+                                matched to neighbouring clusters. Excellent
+                                assignment.
+                            </li>
+                            <li>
+                                <strong>s(i) close to 0</strong> &mdash; The point
+                                sits on the boundary between two clusters. Its
+                                assignment is ambiguous.
+                            </li>
+                            <li>
+                                <strong>s(i) close to -1</strong> &mdash; The point
+                                is probably assigned to the wrong cluster. It is
+                                closer to a neighbouring cluster than its own.
+                            </li>
+                        </ul>
+                        <p>
+                            The <strong>overall silhouette score</strong> is the
+                            mean of s(i) across all samples. It ranges from -1 to
+                            +1; a higher value indicates better-defined clusters.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interpreting Silhouette Scores</h3>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Score Range</th>
+                                    <th style="text-align:left; padding:0.6rem;">Interpretation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">0.71 &ndash; 1.00</td>
+                                    <td style="padding:0.6rem;">Strong structure. Clusters are well-separated and cohesive.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">0.51 &ndash; 0.70</td>
+                                    <td style="padding:0.6rem;">Reasonable structure. Some overlap but clusters are meaningful.</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">0.26 &ndash; 0.50</td>
+                                    <td style="padding:0.6rem;">Weak structure. Clusters overlap significantly.</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem; font-family:'JetBrains Mono',monospace;">&le; 0.25</td>
+                                    <td style="padding:0.6rem;">No substantial structure or wrong number of clusters.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Silhouette Plot</h3>
+                        <p>
+                            Beyond the single average score, a <strong>silhouette
+                            plot</strong> shows the silhouette coefficient for
+                            every sample, grouped and sorted by cluster. Each
+                            cluster forms a &ldquo;knife shape&rdquo; (or
+                            silhouette). Key things to look for:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Width uniformity</strong> &mdash; Ideally,
+                                all knife shapes have similar width (similar cluster
+                                sizes). A very thin knife next to a very wide one
+                                suggests imbalanced clustering.
+                            </li>
+                            <li>
+                                <strong>Extent past the average line</strong>
+                                &mdash; Most samples should extend beyond the
+                                dashed average line. Samples falling short are
+                                poorly assigned.
+                            </li>
+                            <li>
+                                <strong>Negative values</strong> &mdash; Any
+                                bars extending to the left of zero indicate
+                                mis-clustered points. A good clustering has
+                                few or no negative silhouette values.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            The silhouette score is like evaluating the zoning
+                            in an urban plan. Each building (data point) should
+                            feel like it belongs in its zone (residential,
+                            commercial, industrial). A high silhouette means
+                            the building is surrounded by similar neighbours
+                            within its zone and far from buildings in other
+                            zones. A negative silhouette is a factory placed
+                            in the middle of a residential neighbourhood &mdash;
+                            clearly misassigned.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: DAVIES-BOULDIN INDEX
+             ========================================== -->
+        <section class="ch-section" id="davies-bouldin">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Davies-Bouldin Index</h2>
+                        <p>
+                            The Davies-Bouldin (DB) index (1979) measures the
+                            average &ldquo;similarity&rdquo; between each cluster
+                            and its most similar neighbour, where similarity is
+                            defined as the ratio of within-cluster scatter to
+                            between-cluster distance.
+                        </p>
+                        <pre><code>For clusters C_i and C_j:
+
+  S_i  = average distance of points in C_i to centroid of C_i
+  d_ij = distance between centroids of C_i and C_j
+
+  R_ij = (S_i + S_j) / d_ij
+
+  DB = (1/K) * sum over i of max_{j != i} R_ij</code></pre>
+                        <ul>
+                            <li>
+                                <strong>Lower is better.</strong> A DB index of 0
+                                means perfectly separated, infinitely compact
+                                clusters (theoretical ideal).
+                            </li>
+                            <li>
+                                <strong>No upper bound.</strong> Values typically
+                                range from 0.2 to 2.0+ in practice.
+                            </li>
+                            <li>
+                                <strong>Sensitive to cluster shape:</strong> The
+                                metric assumes convex, similarly-sized clusters.
+                                It may mislead with non-spherical clusters.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Application: Damage Pattern Grouping</h3>
+                        <p>
+                            A bridge management system clusters damage reports
+                            based on crack width, depth of spalling, area of
+                            delamination, and chloride penetration depth. The
+                            engineer runs K-Means for K = 2 through 8 and
+                            computes the DB index for each. The minimum DB
+                            (say 0.48 at K = 3) suggests three natural damage
+                            severity categories: <em>cosmetic</em>,
+                            <em>moderate</em>, and <em>severe</em>. This aligns
+                            with the agency's existing condition-rating tiers
+                            and confirms the clustering is capturing real
+                            structural distinctions.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: CALINSKI-HARABASZ INDEX
+             ========================================== -->
+        <section class="ch-section" id="calinski-harabasz">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-maximize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Calinski-Harabasz Index (Variance Ratio Criterion)</h2>
+                        <p>
+                            The Calinski-Harabasz (CH) index (1974) is the ratio
+                            of <strong>between-cluster dispersion</strong> to
+                            <strong>within-cluster dispersion</strong>, adjusted
+                            for the number of clusters and samples.
+                        </p>
+                        <pre><code>CH = [B / (K - 1)] / [W / (N - K)]
+
+Where:
+  B = between-cluster sum of squares (trace of between-group scatter)
+  W = within-cluster sum of squares (trace of within-group scatter)
+  K = number of clusters
+  N = total number of samples</code></pre>
+                        <ul>
+                            <li>
+                                <strong>Higher is better.</strong> A high CH
+                                means clusters are dense internally and
+                                well-separated from each other.
+                            </li>
+                            <li>
+                                <strong>Fast to compute.</strong> It uses
+                                only cluster centroids and distances, making
+                                it efficient for large datasets.
+                            </li>
+                            <li>
+                                <strong>Biased toward convex clusters.</strong>
+                                Like DB, it favours spherical, similarly-sized
+                                groups &mdash; a natural fit for K-Means but
+                                potentially misleading for DBSCAN results.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mountain"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Application: Soil Strata Identification</h3>
+                        <p>
+                            When clustering borehole logs into soil strata, the
+                            engineer plots CH for K = 2 through 8. A peak at K = 4
+                            with CH = 312 (compared to 185 at K = 3 and 287 at
+                            K = 5) strongly suggests four distinct layers. The
+                            engineer cross-references this with the actual boring
+                            log profiles and confirms the four groups map to
+                            topsoil, stiff clay, sandy gravel, and bedrock.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: COMPARING ALL FOUR METRICS
+             ========================================== -->
+        <section class="ch-section" id="metric-comparison">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Comparing the Four Metrics</h2>
+                        <table style="width:100%; border-collapse:collapse; margin:1rem 0;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="text-align:left; padding:0.6rem;">Metric</th>
+                                    <th style="text-align:left; padding:0.6rem;">Direction</th>
+                                    <th style="text-align:left; padding:0.6rem;">Measures</th>
+                                    <th style="text-align:left; padding:0.6rem;">Weakness</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Elbow (SSE)</td>
+                                    <td style="padding:0.6rem;">Lower SSE + diminishing returns</td>
+                                    <td style="padding:0.6rem;">Compactness only</td>
+                                    <td style="padding:0.6rem;">Ambiguous bend; no separation info</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Silhouette</td>
+                                    <td style="padding:0.6rem;">Higher is better [-1, 1]</td>
+                                    <td style="padding:0.6rem;">Cohesion &amp; separation per point</td>
+                                    <td style="padding:0.6rem;">Expensive on large datasets (O(n&sup2;))</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:0.6rem;">Davies-Bouldin</td>
+                                    <td style="padding:0.6rem;">Lower is better [0, &infin;)</td>
+                                    <td style="padding:0.6rem;">Worst-case cluster similarity</td>
+                                    <td style="padding:0.6rem;">Assumes convex, similarly-sized clusters</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.6rem;">Calinski-Harabasz</td>
+                                    <td style="padding:0.6rem;">Higher is better [0, &infin;)</td>
+                                    <td style="padding:0.6rem;">Variance ratio (between/within)</td>
+                                    <td style="padding:0.6rem;">Favours spherical clusters; scale-sensitive</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p>
+                            <strong>Best practice:</strong> Use at least two
+                            metrics from different families. If the silhouette
+                            score peaks at K = 4 and the DB index reaches its
+                            minimum at K = 4, you have convergent evidence. If
+                            they disagree, investigate the discrepancy &mdash;
+                            it often reveals interesting data structure (e.g.,
+                            overlapping clusters that one metric penalises more
+                            than another).
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: VISUAL INSPECTION STRATEGIES
+             ========================================== -->
+        <section class="ch-section" id="visual-inspection">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-binoculars"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Visual Inspection Strategies</h2>
+                        <p>
+                            Numbers alone are not enough. Visual inspection
+                            complements quantitative metrics by revealing
+                            patterns that a single scalar cannot capture:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Scatter plots with cluster colouring</strong>
+                                &mdash; For 2D or 3D data, colour-code points by
+                                cluster assignment and look for overlapping regions,
+                                outliers, or clusters that should have been merged.
+                            </li>
+                            <li>
+                                <strong>PCA / t-SNE / UMAP projections</strong>
+                                &mdash; For high-dimensional data, project to 2D
+                                and colour by cluster. If clusters look well-separated
+                                in the projection, they are likely well-separated
+                                in the original space (though the converse is not
+                                guaranteed).
+                            </li>
+                            <li>
+                                <strong>Silhouette plots</strong> &mdash; As
+                                described above, the per-sample silhouette plot
+                                reveals which clusters are strong and which are
+                                fragmented or mis-assigned.
+                            </li>
+                            <li>
+                                <strong>Centroid feature profiles</strong> &mdash;
+                                Plot a bar chart of each centroid's feature values.
+                                If two centroids have nearly identical profiles,
+                                they represent the same underlying group and should
+                                be merged.
+                            </li>
+                            <li>
+                                <strong>Pair plots / parallel coordinates</strong>
+                                &mdash; For moderate dimensionality (5&ndash;15
+                                features), pair plots or parallel coordinate
+                                plots coloured by cluster quickly expose which
+                                features drive the separation.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Visual inspection of clustering results is analogous
+                            to a site walk-through after reading the structural
+                            analysis report. The report (metrics) says the building
+                            is safe, but the walk-through (visual inspection)
+                            reveals context that the numbers miss: a crack running
+                            along a construction joint, an unexpected load path
+                            through a non-structural wall, or drainage problems
+                            that the model did not consider. Both the numbers
+                            and the eyes are essential.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>CE Application: Validating Soil Clustering Results</h2>
+                        <p>
+                            Geotechnical engineers routinely classify soils using
+                            the Unified Soil Classification System (USCS), but this
+                            relies on predefined rules and laboratory tests. When
+                            large volumes of in-situ data (CPT logs, SPT records,
+                            moisture content, resistivity) are available, clustering
+                            can reveal sub-groups that USCS misses. Evaluating these
+                            clusters is critical:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Run K-Means for K = 2..8</strong> on
+                                standardised features (grain size, plasticity,
+                                moisture, blow count).
+                            </li>
+                            <li>
+                                <strong>Plot the elbow curve</strong> to find the
+                                range of plausible K values.
+                            </li>
+                            <li>
+                                <strong>Compute silhouette and DB</strong> for
+                                each K in the plausible range to identify the
+                                optimal partition.
+                            </li>
+                            <li>
+                                <strong>Inspect the silhouette plot</strong> at
+                                the chosen K. If one cluster has many negative
+                                silhouettes, its samples may span two soil types
+                                that need separate treatment.
+                            </li>
+                            <li>
+                                <strong>Cross-validate with boring logs</strong>
+                                and geologic maps. The clusters should correspond
+                                to physically meaningful strata.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>CE Application: Assessing Damage Pattern Grouping</h2>
+                        <p>
+                            Infrastructure asset managers use clustering to group
+                            bridge damage reports into severity tiers, maintenance
+                            categories, or deterioration patterns. Evaluation
+                            ensures the groups are actionable:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Cluster features:</strong> crack width (mm),
+                                crack length (m), spall area (cm&sup2;), chloride
+                                concentration (%wt), half-cell potential (mV),
+                                cover depth (mm).
+                            </li>
+                            <li>
+                                <strong>Silhouette check:</strong> If the average
+                                silhouette is below 0.30, the damage types overlap
+                                too much for the chosen K. Consider reducing K or
+                                using a density-based algorithm.
+                            </li>
+                            <li>
+                                <strong>DB check:</strong> Compare DB indices across
+                                algorithms (K-Means vs. hierarchical). The algorithm
+                                with the lower DB for the same K produces more
+                                distinct groups.
+                            </li>
+                            <li>
+                                <strong>Operational validation:</strong> Map cluster
+                                labels back to actual repair actions. If two clusters
+                                always receive the same repair treatment, they should
+                                be merged. If one cluster triggers both &ldquo;seal
+                                only&rdquo; and &ldquo;structural repair,&rdquo; it
+                                should be split.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DEMO 1 — SILHOUETTE VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-silhouette">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Interactive Demo 1: Silhouette Visualiser</h2>
+                        <p>
+                            This demo generates a synthetic 2D dataset with
+                            well-separated clusters, then runs K-Means for
+                            different K values. The canvas shows a coloured
+                            silhouette plot for each cluster with the overall
+                            silhouette score. Adjust K to see how over- or
+                            under-clustering degrades the silhouette profile.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel" id="demo1-panel">
+                    <h3><i class="fa-solid fa-chart-bar"></i> Silhouette Plot Visualiser</h3>
+
+                    <div style="display:flex; gap:1.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                True Clusters (data generation):
+                            </label>
+                            <select id="sil-true-k" style="padding:0.3rem 0.6rem; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; font-size:0.85rem; margin-left:0.5rem;">
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                K-Means K: <span id="sil-k-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">3</span>
+                            </label>
+                            <input type="range" id="sil-k-slider" min="2" max="8" step="1" value="3"
+                                style="width:160px; accent-color:var(--accent-primary); display:block; margin-top:0.3rem;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                Samples: <span id="sil-n-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">150</span>
+                            </label>
+                            <input type="range" id="sil-n-slider" min="60" max="300" step="30" value="150"
+                                style="width:160px; accent-color:var(--accent-primary); display:block; margin-top:0.3rem;">
+                        </div>
+                        <button id="btn-sil-regen" style="padding:0.5rem 1rem; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Regenerate
+                        </button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-chart-bar"></i> Silhouette Plot
+                            </h4>
+                            <canvas id="sil-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-braille"></i> Cluster Scatter
+                            </h4>
+                            <canvas id="scatter-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="sil-stats" style="margin-top:1rem; padding:0.75rem; background:var(--bg-tertiary); border-radius:8px; font-size:0.85rem; color:var(--text-secondary); text-align:center; font-family:'JetBrains Mono',monospace;"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ BLOCK 1 & 2
+             ========================================== -->
+        <section class="ch-section" id="quiz-section-1">
+            <div class="section-container">
+
+                <div class="quiz-block" id="quiz1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 1: Silhouette Interpretation</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            A K-Means clustering of soil samples yields an average
+                            silhouette score of 0.68 for K = 4 and 0.41 for K = 6.
+                            What does this suggest?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                A) K = 6 is better because more clusters always improve granularity.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="true">
+                                B) K = 4 produces better-separated, more cohesive clusters and is likely the better choice.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                C) Both scores are too low to draw any conclusion.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz1')" data-correct="false">
+                                D) Silhouette scores cannot be compared across different K values.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz1-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> A silhouette score of 0.68
+                            indicates reasonable-to-strong structure, while 0.41
+                            suggests weak structure with significant overlap.
+                            Comparing silhouette scores across K values is
+                            precisely how the metric is meant to be used.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz1-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> The silhouette score is
+                            specifically designed to compare different K values.
+                            A higher score (0.68 at K = 4) indicates better-defined
+                            clusters than a lower score (0.41 at K = 6).
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-block" id="quiz2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 2: Davies-Bouldin Direction</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            An engineer computes the Davies-Bouldin index for
+                            K = 3 (DB = 1.42) and K = 4 (DB = 0.67). Which K
+                            does the DB index favour?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                A) K = 3, because a higher DB index means better separation.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="true">
+                                B) K = 4, because a lower DB index indicates more distinct clusters.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                C) Neither; the DB index cannot compare different K values.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz2')" data-correct="false">
+                                D) K = 3, because fewer clusters are always preferred.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz2-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> The Davies-Bouldin index is a
+                            &ldquo;lower is better&rdquo; metric. A DB of 0.67
+                            indicates clusters that are more compact and better
+                            separated than a DB of 1.42.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz2-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> For the Davies-Bouldin index,
+                            lower values indicate better clustering. DB = 0.67 at
+                            K = 4 suggests tighter, more separated clusters than
+                            DB = 1.42 at K = 3.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: DEMO 2 — MULTI-METRIC DASHBOARD
+             ========================================== -->
+        <section class="ch-section" id="demo-dashboard">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Interactive Demo 2: Multi-Metric Dashboard</h2>
+                        <p>
+                            This dashboard runs K-Means for K = 2 through 8 on a
+                            synthetic dataset and plots all four evaluation metrics
+                            side by side: Elbow (SSE), Silhouette, Davies-Bouldin,
+                            and Calinski-Harabasz. Look for convergent evidence
+                            &mdash; when multiple metrics agree on the best K,
+                            you can be confident in your cluster count.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel" id="demo2-panel">
+                    <h3><i class="fa-solid fa-gauge-high"></i> Multi-Metric Comparison Dashboard</h3>
+
+                    <div style="display:flex; gap:1.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                True Clusters:
+                            </label>
+                            <select id="dash-true-k" style="padding:0.3rem 0.6rem; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; font-size:0.85rem; margin-left:0.5rem;">
+                                <option value="3">3</option>
+                                <option value="4" selected>4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                Samples: <span id="dash-n-val" style="color:var(--accent-primary); font-family:'JetBrains Mono',monospace;">200</span>
+                            </label>
+                            <input type="range" id="dash-n-slider" min="80" max="400" step="40" value="200"
+                                style="width:160px; accent-color:var(--accent-primary); display:block; margin-top:0.3rem;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; color:var(--text-secondary);">
+                                Cluster Spread:
+                            </label>
+                            <select id="dash-spread" style="padding:0.3rem 0.6rem; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; font-size:0.85rem; margin-left:0.5rem;">
+                                <option value="tight">Tight</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="loose">Loose (overlapping)</option>
+                            </select>
+                        </div>
+                        <button id="btn-dash-run" style="padding:0.5rem 1rem; background:var(--gradient-main); border:none; border-radius:6px; color:var(--text-inverse); font-weight:600; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-play"></i> Run Analysis
+                        </button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-chart-line"></i> Elbow (SSE)
+                            </h4>
+                            <canvas id="elbow-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-chart-area"></i> Silhouette Score
+                            </h4>
+                            <canvas id="sil-line-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-chart-column"></i> Davies-Bouldin Index
+                            </h4>
+                            <canvas id="db-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--text-primary); margin-bottom:0.5rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-arrow-trend-up"></i> Calinski-Harabasz
+                            </h4>
+                            <canvas id="ch-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="dash-summary" style="margin-top:1rem; padding:0.75rem; background:var(--bg-tertiary); border-radius:8px; font-size:0.85rem; color:var(--text-secondary); font-family:'JetBrains Mono',monospace;">
+                        Click &ldquo;Run Analysis&rdquo; to compute all metrics for K = 2..8.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: PRACTICAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="practical-workflow">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Practical Evaluation Workflow</h2>
+                        <p>
+                            A step-by-step guide for evaluating unsupervised
+                            models in a civil engineering context:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Standardise features:</strong> Before any
+                                clustering, z-score-standardise all features so
+                                that no single variable dominates the distance
+                                calculations. For soil data, this means putting
+                                grain size, moisture, and blow count on the same
+                                scale.
+                            </li>
+                            <li>
+                                <strong>Run the elbow method first:</strong> It is
+                                cheap and provides a coarse range for K. Do not
+                                trust it as the final answer &mdash; use it as a
+                                starting bracket.
+                            </li>
+                            <li>
+                                <strong>Compute silhouette, DB, and CH</strong>
+                                for every K in the bracket. Look for convergent
+                                evidence across metrics.
+                            </li>
+                            <li>
+                                <strong>Inspect silhouette plots</strong> for the
+                                top two or three candidate K values. Look for
+                                uniform knife shapes and few negative values.
+                            </li>
+                            <li>
+                                <strong>Project to 2D</strong> using PCA or UMAP
+                                and colour by cluster. Sanity-check that the
+                                groups look visually distinct.
+                            </li>
+                            <li>
+                                <strong>Cross-reference with domain knowledge:</strong>
+                                Map clusters back to physical meaning. Do they
+                                correspond to known soil types, damage severities,
+                                or operational categories?
+                            </li>
+                            <li>
+                                <strong>Document and iterate:</strong> Record the
+                                chosen K, all metric values, and the rationale for
+                                the decision. Re-evaluate when new data arrives.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Python Example: Full Evaluation Pipeline</h3>
+                        <pre><code>import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import (silhouette_score,
+                             davies_bouldin_score,
+                             calinski_harabasz_score)
+from sklearn.preprocessing import StandardScaler
+
+# Standardise soil sample features
+scaler = StandardScaler()
+X = scaler.fit_transform(soil_data)
+
+results = []
+for k in range(2, 9):
+    km = KMeans(n_clusters=k, n_init=10, random_state=42)
+    labels = km.fit_predict(X)
+    results.append({
+        'K': k,
+        'SSE': km.inertia_,
+        'Silhouette': silhouette_score(X, labels),
+        'Davies-Bouldin': davies_bouldin_score(X, labels),
+        'Calinski-Harabasz': calinski_harabasz_score(X, labels)
+    })
+
+# Best K by each metric
+best_sil = max(results, key=lambda r: r['Silhouette'])
+best_db  = min(results, key=lambda r: r['Davies-Bouldin'])
+best_ch  = max(results, key=lambda r: r['Calinski-Harabasz'])
+
+print(f"Silhouette  => K={best_sil['K']}")
+print(f"Davies-Bouldin => K={best_db['K']}")
+print(f"Calinski-Harabasz => K={best_ch['K']}")</code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ BLOCK 3 & 4
+             ========================================== -->
+        <section class="ch-section" id="quiz-section-2">
+            <div class="section-container">
+
+                <div class="quiz-block" id="quiz3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 3: Elbow Method Limitation</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            Which is a key limitation of the elbow method for
+                            determining the optimal number of clusters?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                A) It requires labelled data to compute SSE.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                B) It only works with DBSCAN, not K-Means.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="true">
+                                C) The &ldquo;elbow&rdquo; is often ambiguous, with no sharp bend in the SSE curve.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz3')" data-correct="false">
+                                D) SSE increases as K increases, making comparison impossible.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz3-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> In many real-world datasets,
+                            the SSE curve decreases smoothly without a clear bend,
+                            making the &ldquo;elbow&rdquo; subjective. That is why
+                            the elbow method should be supplemented with other
+                            metrics like silhouette or DB.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz3-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> The elbow method does not
+                            need labels (SSE is internal), works with K-Means, and
+                            SSE always <em>decreases</em> as K increases. Its
+                            weakness is that the bend is often ambiguous.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-block" id="quiz4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Quiz 4: Metric Agreement</span>
+                    </div>
+                    <div class="quiz-block__content">
+                        <p>
+                            An engineer evaluates K = 2..7 and finds: Silhouette
+                            peaks at K = 4, DB minimises at K = 4, CH peaks at
+                            K = 4, but the elbow suggests K = 3. What should the
+                            engineer do?
+                        </p>
+                        <div class="quiz-options">
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                A) Trust the elbow method since it was invented first.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                B) Average all metric suggestions and choose K = 3.75, rounded to 4.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="true">
+                                C) Choose K = 4 since three independent metrics converge on it, and supplement with visual inspection and domain knowledge.
+                            </button>
+                            <button class="quiz-option" onclick="checkQuiz(this,'quiz4')" data-correct="false">
+                                D) Discard the results and use DBSCAN instead.
+                            </button>
+                        </div>
+                        <div class="quiz-feedback correct" id="quiz4-correct" style="display:none;">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Correct!</strong> When three out of four metrics
+                            agree on K = 4, you have strong convergent evidence.
+                            The elbow method is the least precise of the four, so
+                            its mild disagreement (K = 3 vs. 4) should not override
+                            the consensus. Always follow up with visual inspection
+                            and domain validation.
+                        </div>
+                        <div class="quiz-feedback wrong" id="quiz4-wrong" style="display:none;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <strong>Not quite.</strong> When multiple independent
+                            metrics agree, trust the consensus. K = 4 is supported
+                            by Silhouette, DB, and CH. The elbow method is a rough
+                            guide and should not override three more informative
+                            metrics. Always combine with visual and domain checks.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: PITFALLS & BEST PRACTICES
+             ========================================== -->
+        <section class="ch-section" id="pitfalls">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Pitfalls and Best Practices</h2>
+                        <ul>
+                            <li>
+                                <strong>Do not rely on a single metric:</strong>
+                                Each metric has blind spots. The silhouette score
+                                may favour K = 4 while CH favours K = 5. Use
+                                convergent evidence from multiple metrics plus
+                                visual and domain checks.
+                            </li>
+                            <li>
+                                <strong>Beware of metric-algorithm alignment:</strong>
+                                Silhouette, DB, and CH all assume convex clusters.
+                                If you cluster with DBSCAN (which finds arbitrary
+                                shapes), these metrics may penalise correct results.
+                                Use density-based validity indices (DBCV) instead.
+                            </li>
+                            <li>
+                                <strong>Standardise before computing metrics:</strong>
+                                If features are on different scales, distance-based
+                                metrics will be dominated by high-range features.
+                            </li>
+                            <li>
+                                <strong>Metrics are necessary but not sufficient:</strong>
+                                A high silhouette score on meaningless features
+                                produces meaningless clusters. The features you
+                                choose to cluster on must be physically relevant.
+                            </li>
+                            <li>
+                                <strong>Repeat with different random seeds:</strong>
+                                K-Means is sensitive to initialisation. Compute
+                                metrics over 10+ runs with different seeds and
+                                report the mean and standard deviation.
+                            </li>
+                            <li>
+                                <strong>Consider stability:</strong> Beyond
+                                internal metrics, check whether clusters are
+                                stable under perturbation. Remove 10% of data,
+                                re-cluster, and see if the assignments remain
+                                consistent. Stable clusters are trustworthy.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-hard-hat"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Evaluating clusters with multiple metrics is like
+                            assessing structural safety with multiple checks:
+                            deflection limits, stress ratios, fatigue life,
+                            and vibration criteria. A structure that passes
+                            deflection checks but fails fatigue analysis is
+                            not safe. Similarly, a clustering that scores well
+                            on silhouette but poorly on DB may have hidden
+                            weaknesses. Only when multiple independent checks
+                            agree can you have confidence in the result.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Key Takeaways</h2>
+                        <ul>
+                            <li>
+                                Unsupervised model evaluation is inherently harder
+                                than supervised evaluation because there is no
+                                ground truth. <strong>Internal metrics</strong>
+                                fill the gap by measuring cluster cohesion and
+                                separation from the data alone.
+                            </li>
+                            <li>
+                                The <strong>elbow method</strong> provides a quick
+                                visual estimate of K but is often ambiguous. Use
+                                it as a coarse starting bracket, not a final answer.
+                            </li>
+                            <li>
+                                The <strong>silhouette score</strong> [-1, +1]
+                                measures per-sample fit. Higher is better. The
+                                silhouette <em>plot</em> reveals cluster-level
+                                detail that the average score hides.
+                            </li>
+                            <li>
+                                The <strong>Davies-Bouldin index</strong> measures
+                                worst-case cluster similarity. Lower is better. It
+                                is fast but assumes convex clusters.
+                            </li>
+                            <li>
+                                The <strong>Calinski-Harabasz index</strong>
+                                measures variance ratio. Higher is better. It is
+                                efficient and favours well-separated, spherical
+                                clusters.
+                            </li>
+                            <li>
+                                In civil engineering, always <strong>cross-validate
+                                metrics with domain knowledge</strong>: do the
+                                clusters map to known soil types, damage severities,
+                                or operational categories? Numbers guide; expertise
+                                decides.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub8.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.8 Association Rules
+        </a>
+        <a href="sub10.html" class="chapter-nav__link next">
+            3.10 CE Case Study <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var CU = window.ChapterUtils;
+        var getColors = CU.getColors;
+        var initCanvas = CU.initCanvas;
+
+        /* ================================================
+           CLUSTER COLOURS — shared palette for both demos
+           ================================================ */
+        var PALETTE = [
+            '#00d4aa', '#0ea5e9', '#f59e0b', '#ef4444',
+            '#a855f7', '#22c55e', '#ec4899', '#06b6d4'
+        ];
+
+        /* ================================================
+           UTILITY: Generate synthetic 2D blob data
+           ================================================ */
+        function generateBlobs(nSamples, nClusters, spread) {
+            var sigma = spread === 'tight' ? 0.6 : (spread === 'loose' ? 1.8 : 1.1);
+            var points = [];
+            var trueLabels = [];
+            var perCluster = Math.floor(nSamples / nClusters);
+            var centers = [];
+            for (var c = 0; c < nClusters; c++) {
+                var angle = (2 * Math.PI * c) / nClusters;
+                centers.push([Math.cos(angle) * 4, Math.sin(angle) * 4]);
+            }
+            for (var c = 0; c < nClusters; c++) {
+                var n = (c < nClusters - 1) ? perCluster : (nSamples - points.length);
+                for (var i = 0; i < n; i++) {
+                    var x = centers[c][0] + randNormal() * sigma;
+                    var y = centers[c][1] + randNormal() * sigma;
+                    points.push([x, y]);
+                    trueLabels.push(c);
+                }
+            }
+            return { points: points, trueLabels: trueLabels, centers: centers };
+        }
+
+        function randNormal() {
+            var u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        /* ================================================
+           UTILITY: K-Means implementation
+           ================================================ */
+        function kMeans(points, K, maxIter) {
+            maxIter = maxIter || 50;
+            var N = points.length;
+            var dim = points[0].length;
+
+            /* Initialise centroids via K-Means++ */
+            var centroids = [points[Math.floor(Math.random() * N)].slice()];
+            for (var c = 1; c < K; c++) {
+                var dists = points.map(function (p) {
+                    return Math.min.apply(null, centroids.map(function (ctr) {
+                        return eucDist(p, ctr);
+                    }));
+                });
+                var total = dists.reduce(function (a, b) { return a + b; }, 0);
+                var r = Math.random() * total;
+                var cum = 0;
+                for (var i = 0; i < N; i++) {
+                    cum += dists[i];
+                    if (cum >= r) { centroids.push(points[i].slice()); break; }
+                }
+            }
+
+            var labels = new Array(N);
+            for (var iter = 0; iter < maxIter; iter++) {
+                /* Assign */
+                var changed = false;
+                for (var i = 0; i < N; i++) {
+                    var best = 0, bestD = Infinity;
+                    for (var c = 0; c < K; c++) {
+                        var d = eucDist(points[i], centroids[c]);
+                        if (d < bestD) { bestD = d; best = c; }
+                    }
+                    if (labels[i] !== best) changed = true;
+                    labels[i] = best;
+                }
+                if (!changed) break;
+                /* Update */
+                for (var c = 0; c < K; c++) {
+                    var sum = new Array(dim).fill(0);
+                    var cnt = 0;
+                    for (var i = 0; i < N; i++) {
+                        if (labels[i] === c) {
+                            for (var d2 = 0; d2 < dim; d2++) sum[d2] += points[i][d2];
+                            cnt++;
+                        }
+                    }
+                    if (cnt > 0) {
+                        for (var d2 = 0; d2 < dim; d2++) centroids[c][d2] = sum[d2] / cnt;
+                    }
+                }
+            }
+
+            /* SSE */
+            var sse = 0;
+            for (var i = 0; i < N; i++) {
+                sse += eucDistSq(points[i], centroids[labels[i]]);
+            }
+
+            return { labels: labels, centroids: centroids, sse: sse };
+        }
+
+        function eucDist(a, b) {
+            return Math.sqrt(eucDistSq(a, b));
+        }
+        function eucDistSq(a, b) {
+            var s = 0;
+            for (var i = 0; i < a.length; i++) s += (a[i] - b[i]) * (a[i] - b[i]);
+            return s;
+        }
+
+        /* ================================================
+           UTILITY: Compute evaluation metrics
+           ================================================ */
+        function silhouetteCoefficients(points, labels, K) {
+            var N = points.length;
+            var sil = new Array(N);
+            for (var i = 0; i < N; i++) {
+                var myCluster = labels[i];
+                /* a(i): mean dist to same cluster */
+                var aSum = 0, aCnt = 0;
+                for (var j = 0; j < N; j++) {
+                    if (j !== i && labels[j] === myCluster) {
+                        aSum += eucDist(points[i], points[j]);
+                        aCnt++;
+                    }
+                }
+                var a = aCnt > 0 ? aSum / aCnt : 0;
+
+                /* b(i): min mean dist to any other cluster */
+                var b = Infinity;
+                for (var c = 0; c < K; c++) {
+                    if (c === myCluster) continue;
+                    var bSum = 0, bCnt = 0;
+                    for (var j = 0; j < N; j++) {
+                        if (labels[j] === c) {
+                            bSum += eucDist(points[i], points[j]);
+                            bCnt++;
+                        }
+                    }
+                    if (bCnt > 0) {
+                        var avg = bSum / bCnt;
+                        if (avg < b) b = avg;
+                    }
+                }
+                if (b === Infinity) b = 0;
+
+                var denom = Math.max(a, b);
+                sil[i] = denom > 0 ? (b - a) / denom : 0;
+            }
+            return sil;
+        }
+
+        function avgSilhouette(points, labels, K) {
+            var s = silhouetteCoefficients(points, labels, K);
+            return s.reduce(function (a, b) { return a + b; }, 0) / s.length;
+        }
+
+        function daviesBouldin(points, labels, centroids, K) {
+            /* Scatter per cluster */
+            var S = new Array(K).fill(0);
+            var cnt = new Array(K).fill(0);
+            for (var i = 0; i < points.length; i++) {
+                S[labels[i]] += eucDist(points[i], centroids[labels[i]]);
+                cnt[labels[i]]++;
+            }
+            for (var c = 0; c < K; c++) {
+                S[c] = cnt[c] > 0 ? S[c] / cnt[c] : 0;
+            }
+            var db = 0;
+            for (var i = 0; i < K; i++) {
+                var maxR = 0;
+                for (var j = 0; j < K; j++) {
+                    if (i === j) continue;
+                    var dij = eucDist(centroids[i], centroids[j]);
+                    var rij = dij > 0 ? (S[i] + S[j]) / dij : 0;
+                    if (rij > maxR) maxR = rij;
+                }
+                db += maxR;
+            }
+            return db / K;
+        }
+
+        function calinskiHarabasz(points, labels, centroids, K) {
+            var N = points.length;
+            var dim = points[0].length;
+            /* Overall mean */
+            var mean = new Array(dim).fill(0);
+            for (var i = 0; i < N; i++) {
+                for (var d = 0; d < dim; d++) mean[d] += points[i][d];
+            }
+            for (var d = 0; d < dim; d++) mean[d] /= N;
+
+            /* Between-cluster */
+            var B = 0;
+            var clusterCounts = new Array(K).fill(0);
+            for (var i = 0; i < N; i++) clusterCounts[labels[i]]++;
+            for (var c = 0; c < K; c++) {
+                B += clusterCounts[c] * eucDistSq(centroids[c], mean);
+            }
+
+            /* Within-cluster */
+            var W = 0;
+            for (var i = 0; i < N; i++) {
+                W += eucDistSq(points[i], centroids[labels[i]]);
+            }
+
+            if (W === 0 || K <= 1) return 0;
+            return (B / (K - 1)) / (W / (N - K));
+        }
+
+        /* ============================================
+           HERO CANVAS — Pulsing metric gauges
+           ============================================ */
+        (function heroAnim() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var raf, particles = [];
+            var NUM = 35;
+
+            function setup() {
+                var info = initCanvas(canvas);
+                var ctx = info.ctx, w = info.w, h = info.h;
+                particles = [];
+                for (var i = 0; i < NUM; i++) {
+                    particles.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        r: 2 + Math.random() * 4,
+                        phase: Math.random() * Math.PI * 2
+                    });
+                }
+                return { ctx: ctx, w: w, h: h };
+            }
+
+            var state = setup();
+            var tick = 0;
+
+            function draw() {
+                var c = getColors();
+                var ctx = state.ctx, w = state.w, h = state.h;
+                ctx.clearRect(0, 0, w, h);
+                tick += 0.01;
+
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0 || p.x > w) p.vx *= -1;
+                    if (p.y < 0 || p.y > h) p.vy *= -1;
+
+                    /* Pulsing radius */
+                    var pr = p.r * (1 + 0.3 * Math.sin(tick * 2 + p.phase));
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, pr, 0, Math.PI * 2);
+                    var col = i % 4 === 0 ? c.TEAL :
+                              i % 4 === 1 ? c.CYAN :
+                              i % 4 === 2 ? c.AMBER : c.RED;
+                    ctx.fillStyle = col;
+                    ctx.globalAlpha = 0.35 + 0.15 * Math.sin(tick * 3 + p.phase);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Connect nearby particles */
+                for (var i = 0; i < particles.length; i++) {
+                    for (var j = i + 1; j < particles.length; j++) {
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = c.TEAL;
+                            ctx.globalAlpha = 0.08 * (1 - dist / 100);
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+
+                raf = requestAnimationFrame(draw);
+            }
+
+            draw();
+
+            window.addEventListener('resize', function () {
+                cancelAnimationFrame(raf);
+                state = setup();
+                draw();
+            });
+        })();
+
+        /* ============================================
+           DEMO 1: SILHOUETTE VISUALISER
+           ============================================ */
+        (function silhouetteDemo() {
+            var silCanvas = document.getElementById('sil-canvas');
+            var scatterCanvas = document.getElementById('scatter-canvas');
+            var statsEl = document.getElementById('sil-stats');
+            var kSlider = document.getElementById('sil-k-slider');
+            var kValEl = document.getElementById('sil-k-val');
+            var nSlider = document.getElementById('sil-n-slider');
+            var nValEl = document.getElementById('sil-n-val');
+            var trueKSelect = document.getElementById('sil-true-k');
+            var regenBtn = document.getElementById('btn-sil-regen');
+
+            if (!silCanvas || !scatterCanvas) return;
+
+            var data = null;
+
+            function generate() {
+                var trueK = parseInt(trueKSelect.value, 10);
+                var nSamples = parseInt(nSlider.value, 10);
+                data = generateBlobs(nSamples, trueK, 'medium');
+                runSilhouette();
+            }
+
+            function runSilhouette() {
+                if (!data) return;
+                var K = parseInt(kSlider.value, 10);
+                var result = kMeans(data.points, K);
+                var silCoeffs = silhouetteCoefficients(data.points, result.labels, K);
+                var avgSil = silCoeffs.reduce(function (a, b) { return a + b; }, 0) / silCoeffs.length;
+
+                drawSilhouettePlot(silCanvas, silCoeffs, result.labels, K, avgSil);
+                drawScatterPlot(scatterCanvas, data.points, result.labels, result.centroids, K);
+
+                statsEl.innerHTML = 'K = ' + K +
+                    ' | Average Silhouette = <span style="color:' +
+                    (avgSil > 0.5 ? 'var(--accent-success)' : avgSil > 0.25 ? 'var(--accent-warm)' : 'var(--accent-danger)') +
+                    '">' + avgSil.toFixed(3) + '</span>' +
+                    ' | Samples = ' + data.points.length;
+            }
+
+            function drawSilhouettePlot(canvas, silCoeffs, labels, K, avgSil) {
+                var info = initCanvas(canvas);
+                var ctx = info.ctx, w = info.w, h = info.h;
+                ctx.clearRect(0, 0, w, h);
+
+                var c = getColors();
+                var pad = { top: 20, right: 20, bottom: 30, left: 50 };
+                var plotW = w - pad.left - pad.right;
+                var plotH = h - pad.top - pad.bottom;
+
+                /* Sort silhouettes by cluster then by value */
+                var indices = [];
+                for (var i = 0; i < silCoeffs.length; i++) indices.push(i);
+                indices.sort(function (a, b) {
+                    if (labels[a] !== labels[b]) return labels[a] - labels[b];
+                    return silCoeffs[b] - silCoeffs[a];
+                });
+
+                /* Background */
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Draw bars */
+                var barH = plotH / indices.length;
+                var maxVal = 1;
+                var minVal = Math.min(0, Math.min.apply(null, silCoeffs));
+
+                for (var idx = 0; idx < indices.length; idx++) {
+                    var i = indices[idx];
+                    var val = silCoeffs[i];
+                    var cluster = labels[i];
+                    var barW = (val - minVal) / (maxVal - minVal) * plotW;
+                    var zeroX = pad.left + (-minVal) / (maxVal - minVal) * plotW;
+                    var y = pad.top + idx * barH;
+
+                    ctx.fillStyle = PALETTE[cluster % PALETTE.length];
+                    ctx.globalAlpha = 0.8;
+                    if (val >= 0) {
+                        ctx.fillRect(zeroX, y, (val / (maxVal - minVal)) * plotW, Math.max(barH - 0.5, 1));
+                    } else {
+                        var negW = (-val / (maxVal - minVal)) * plotW;
+                        ctx.fillRect(zeroX - negW, y, negW, Math.max(barH - 0.5, 1));
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Average line */
+                var avgX = pad.left + (avgSil - minVal) / (maxVal - minVal) * plotW;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = c.RED;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(avgX, pad.top);
+                ctx.lineTo(avgX, pad.top + plotH);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                /* Zero line */
+                var zeroLineX = pad.left + (-minVal) / (maxVal - minVal) * plotW;
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(zeroLineX, pad.top);
+                ctx.lineTo(zeroLineX, pad.top + plotH);
+                ctx.stroke();
+
+                /* Axis labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Silhouette Coefficient', w / 2, h - 5);
+
+                /* Tick marks */
+                ctx.textAlign = 'center';
+                ctx.font = '10px "JetBrains Mono", monospace';
+                for (var t = -0.2; t <= 1.01; t += 0.2) {
+                    var tx = pad.left + (t - minVal) / (maxVal - minVal) * plotW;
+                    if (tx >= pad.left && tx <= pad.left + plotW) {
+                        ctx.fillText(t.toFixed(1), tx, pad.top + plotH + 15);
+                    }
+                }
+
+                /* Avg label */
+                ctx.fillStyle = c.RED;
+                ctx.textAlign = 'left';
+                ctx.font = '10px "JetBrains Mono", monospace';
+                ctx.fillText('avg=' + avgSil.toFixed(2), avgX + 4, pad.top + 12);
+            }
+
+            function drawScatterPlot(canvas, points, labels, centroids, K) {
+                var info = initCanvas(canvas);
+                var ctx = info.ctx, w = info.w, h = info.h;
+                ctx.clearRect(0, 0, w, h);
+
+                var c = getColors();
+                var pad = { top: 20, right: 20, bottom: 30, left: 40 };
+                var plotW = w - pad.left - pad.right;
+                var plotH = h - pad.top - pad.bottom;
+
+                /* Background */
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Find data bounds */
+                var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+                for (var i = 0; i < points.length; i++) {
+                    if (points[i][0] < xMin) xMin = points[i][0];
+                    if (points[i][0] > xMax) xMax = points[i][0];
+                    if (points[i][1] < yMin) yMin = points[i][1];
+                    if (points[i][1] > yMax) yMax = points[i][1];
+                }
+                var xPad2 = (xMax - xMin) * 0.1;
+                var yPad2 = (yMax - yMin) * 0.1;
+                xMin -= xPad2; xMax += xPad2;
+                yMin -= yPad2; yMax += yPad2;
+
+                function mapX(v) { return pad.left + ((v - xMin) / (xMax - xMin)) * plotW; }
+                function mapY(v) { return pad.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH; }
+
+                /* Grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = Math.ceil(xMin); gx <= Math.floor(xMax); gx++) {
+                    ctx.beginPath(); ctx.moveTo(mapX(gx), pad.top); ctx.lineTo(mapX(gx), pad.top + plotH); ctx.stroke();
+                }
+                for (var gy = Math.ceil(yMin); gy <= Math.floor(yMax); gy++) {
+                    ctx.beginPath(); ctx.moveTo(pad.left, mapY(gy)); ctx.lineTo(pad.left + plotW, mapY(gy)); ctx.stroke();
+                }
+
+                /* Points */
+                for (var i = 0; i < points.length; i++) {
+                    ctx.beginPath();
+                    ctx.arc(mapX(points[i][0]), mapY(points[i][1]), 3, 0, Math.PI * 2);
+                    ctx.fillStyle = PALETTE[labels[i] % PALETTE.length];
+                    ctx.globalAlpha = 0.7;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Centroids */
+                for (var k = 0; k < K; k++) {
+                    ctx.beginPath();
+                    var cx = mapX(centroids[k][0]);
+                    var cy = mapY(centroids[k][1]);
+                    /* Draw cross */
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(cx - 6, cy); ctx.lineTo(cx + 6, cy);
+                    ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = PALETTE[k % PALETTE.length];
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                /* Labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Feature 1', w / 2, h - 5);
+                ctx.save();
+                ctx.translate(12, h / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Feature 2', 0, 0);
+                ctx.restore();
+            }
+
+            kSlider.addEventListener('input', function () {
+                kValEl.textContent = this.value;
+                runSilhouette();
+            });
+            nSlider.addEventListener('input', function () {
+                nValEl.textContent = this.value;
+                generate();
+            });
+            trueKSelect.addEventListener('change', generate);
+            regenBtn.addEventListener('click', generate);
+
+            generate();
+        })();
+
+        /* ============================================
+           DEMO 2: MULTI-METRIC DASHBOARD
+           ============================================ */
+        (function dashboardDemo() {
+            var elbowCanvas = document.getElementById('elbow-canvas');
+            var silLineCanvas = document.getElementById('sil-line-canvas');
+            var dbCanvas = document.getElementById('db-canvas');
+            var chCanvas = document.getElementById('ch-canvas');
+            var summaryEl = document.getElementById('dash-summary');
+            var trueKSelect = document.getElementById('dash-true-k');
+            var nSlider = document.getElementById('dash-n-slider');
+            var nValEl = document.getElementById('dash-n-val');
+            var spreadSelect = document.getElementById('dash-spread');
+            var runBtn = document.getElementById('btn-dash-run');
+
+            if (!elbowCanvas || !silLineCanvas || !dbCanvas || !chCanvas) return;
+
+            nSlider.addEventListener('input', function () {
+                nValEl.textContent = this.value;
+            });
+
+            runBtn.addEventListener('click', runDashboard);
+
+            function runDashboard() {
+                var trueK = parseInt(trueKSelect.value, 10);
+                var nSamples = parseInt(nSlider.value, 10);
+                var spread = spreadSelect.value;
+
+                var data = generateBlobs(nSamples, trueK, spread);
+                var kRange = [];
+                var sseVals = [], silVals = [], dbVals = [], chVals = [];
+
+                for (var k = 2; k <= 8; k++) {
+                    kRange.push(k);
+                    var result = kMeans(data.points, k);
+                    sseVals.push(result.sse);
+                    silVals.push(avgSilhouette(data.points, result.labels, k));
+                    dbVals.push(daviesBouldin(data.points, result.labels, result.centroids, k));
+                    chVals.push(calinskiHarabasz(data.points, result.labels, result.centroids, k));
+                }
+
+                drawLineChart(elbowCanvas, kRange, sseVals, 'SSE (Inertia)', 'lower', '#ef4444');
+                drawLineChart(silLineCanvas, kRange, silVals, 'Silhouette', 'higher', '#00d4aa');
+                drawLineChart(dbCanvas, kRange, dbVals, 'Davies-Bouldin', 'lower', '#f59e0b');
+                drawLineChart(chCanvas, kRange, chVals, 'Calinski-Harabasz', 'higher', '#0ea5e9');
+
+                /* Find best K per metric */
+                var bestSilK = kRange[silVals.indexOf(Math.max.apply(null, silVals))];
+                var bestDBK = kRange[dbVals.indexOf(Math.min.apply(null, dbVals))];
+                var bestCHK = kRange[chVals.indexOf(Math.max.apply(null, chVals))];
+
+                /* Elbow heuristic: largest drop-off */
+                var bestElbowK = kRange[0];
+                var maxDrop = 0;
+                for (var i = 0; i < sseVals.length - 1; i++) {
+                    var drop = sseVals[i] - sseVals[i + 1];
+                    var nextDrop = (i + 2 < sseVals.length) ? (sseVals[i + 1] - sseVals[i + 2]) : 0;
+                    var ratio = nextDrop > 0 ? drop / nextDrop : drop;
+                    if (ratio > maxDrop) { maxDrop = ratio; bestElbowK = kRange[i + 1]; }
+                }
+
+                summaryEl.innerHTML =
+                    '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; text-align:center;">' +
+                    '<div>Elbow <span style="color:var(--accent-danger);">K=' + bestElbowK + '</span></div>' +
+                    '<div>Silhouette <span style="color:var(--accent-primary);">K=' + bestSilK + '</span></div>' +
+                    '<div>DB <span style="color:var(--accent-warm);">K=' + bestDBK + '</span></div>' +
+                    '<div>CH <span style="color:var(--accent-secondary);">K=' + bestCHK + '</span></div>' +
+                    '</div>' +
+                    '<div style="margin-top:0.5rem; color:var(--text-muted);">True clusters = ' + trueK +
+                    ' | Samples = ' + nSamples + ' | Spread = ' + spread + '</div>';
+            }
+
+            function drawLineChart(canvas, xVals, yVals, label, direction, color) {
+                var info = initCanvas(canvas);
+                var ctx = info.ctx, w = info.w, h = info.h;
+                ctx.clearRect(0, 0, w, h);
+
+                var c = getColors();
+                var pad = { top: 20, right: 20, bottom: 35, left: 55 };
+                var plotW = w - pad.left - pad.right;
+                var plotH = h - pad.top - pad.bottom;
+
+                /* Background */
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var yMin = Math.min.apply(null, yVals);
+                var yMax = Math.max.apply(null, yVals);
+                var yRange = yMax - yMin || 1;
+                yMin -= yRange * 0.1;
+                yMax += yRange * 0.1;
+                yRange = yMax - yMin;
+
+                function mapX(i) { return pad.left + (i / (xVals.length - 1)) * plotW; }
+                function mapY(v) { return pad.top + plotH - ((v - yMin) / yRange) * plotH; }
+
+                /* Grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                var nGridY = 5;
+                for (var g = 0; g <= nGridY; g++) {
+                    var gy = pad.top + (g / nGridY) * plotH;
+                    ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(pad.left + plotW, gy); ctx.stroke();
+                }
+
+                /* Best value highlight */
+                var bestIdx = direction === 'higher'
+                    ? yVals.indexOf(Math.max.apply(null, yVals))
+                    : yVals.indexOf(Math.min.apply(null, yVals));
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.08;
+                var bx = mapX(bestIdx);
+                ctx.fillRect(bx - 12, pad.top, 24, plotH);
+                ctx.globalAlpha = 1;
+
+                /* Line */
+                ctx.beginPath();
+                ctx.moveTo(mapX(0), mapY(yVals[0]));
+                for (var i = 1; i < yVals.length; i++) {
+                    ctx.lineTo(mapX(i), mapY(yVals[i]));
+                }
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                /* Dots */
+                for (var i = 0; i < yVals.length; i++) {
+                    ctx.beginPath();
+                    ctx.arc(mapX(i), mapY(yVals[i]), i === bestIdx ? 6 : 4, 0, Math.PI * 2);
+                    ctx.fillStyle = i === bestIdx ? color : c.BG;
+                    ctx.fill();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                /* X axis labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                for (var i = 0; i < xVals.length; i++) {
+                    ctx.fillText('K=' + xVals[i], mapX(i), pad.top + plotH + 18);
+                }
+
+                /* Y axis labels */
+                ctx.textAlign = 'right';
+                ctx.font = '10px "JetBrains Mono", monospace';
+                for (var g = 0; g <= nGridY; g++) {
+                    var val = yMax - (g / nGridY) * yRange;
+                    ctx.fillText(val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val.toFixed(2), pad.left - 5, pad.top + (g / nGridY) * plotH + 4);
+                }
+
+                /* Title */
+                ctx.fillStyle = color;
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 11px "Inter", sans-serif';
+                ctx.fillText(label + ' (' + direction + ' is better)', pad.left, pad.top - 6);
+
+                /* Best K annotation */
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 10px "JetBrains Mono", monospace';
+                ctx.fillText('Best: K=' + xVals[bestIdx], mapX(bestIdx), mapY(yVals[bestIdx]) - 10);
+            }
+
+            /* Auto-run on load */
+            runDashboard();
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

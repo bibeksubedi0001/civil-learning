@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.4 Loss Functions | Civil Engineer's Guide to AI</title>
+<meta name="description" content="Understand loss functions: MSE, MAE, Huber, cross-entropy and how they shape neural network learning, with civil engineering analogies." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &times; AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html" class="nav-link">Home</a></li>
+      <li><a href="../chapter6.html" class="nav-link">Chapter 6</a></li>
+      <li><a href="index.html" class="nav-link">Overview</a></li>
+      <li>
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-bullseye"></i>
+      <span>Sub-chapter 6.4</span>
+    </div>
+    <h1 class="chapter-hero__title">Loss Functions</h1>
+    <p class="chapter-hero__subtitle">
+      The scalar score that tells a neural network how wrong it is &mdash; and how to get less wrong tomorrow.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-solid fa-clock"></i> 22 min read</span>
+      <span><i class="fa-solid fa-signal"></i> Intermediate</span>
+      <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+  <!-- ============== SECTION 1: WHAT IS A LOSS FUNCTION ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-compass-drafting"></i>
+        What a Loss Function Does
+      </h2>
+      <p class="ch-section__lede">
+        A neural network is just a parameterized function. Until we tell it what
+        &ldquo;good&rdquo; means, it has no direction. The <strong>loss function</strong> &mdash;
+        sometimes called the cost or objective &mdash; collapses the model's predictions
+        and the ground-truth labels into a single scalar number that says
+        <em>how wrong</em> the model is right now.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-circle-info"></i> The job description</h3>
+        <ul>
+          <li><strong>Differentiable:</strong> we need to take its gradient with respect to weights so backprop can flow.</li>
+          <li><strong>Aligned with the goal:</strong> minimizing the loss must actually correspond to better real-world performance.</li>
+          <li><strong>Well-behaved:</strong> smooth enough to optimize, bounded enough to avoid numerical blow-ups.</li>
+          <li><strong>Scalar:</strong> optimization needs a single number to descend on, not a vector.</li>
+        </ul>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__icon"><i class="fa-solid fa-clipboard-check"></i></div>
+        <div class="analogy-block__body">
+          <h4>Civil-engineering analogy: the acceptance criterion</h4>
+          <p>
+            Every construction project ships with a quality-control specification.
+            A concrete cylinder breaks at 28&nbsp;MPa instead of the specified 30&nbsp;MPa &mdash;
+            is that a 2&nbsp;MPa demerit, a 4&nbsp;MPa demerit (squared), or a hard rejection?
+            The acceptance rule you choose <em>completely determines</em> what the contractor optimizes for.
+            A loss function is exactly that: the formal scoring rule the optimizer uses to decide
+            which predictions are &ldquo;in spec&rdquo; and which are not.
+          </p>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-lightbulb"></i>
+        <div>
+          <strong>Key idea.</strong> Picking a loss function is a modelling decision, not a
+          mechanical one. MSE assumes Gaussian noise. Cross-entropy assumes a categorical
+          distribution. Huber assumes occasional outliers. Choose the loss that matches your data.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 2: REGRESSION LOSSES ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-chart-line"></i>
+        Regression Losses
+      </h2>
+      <p class="ch-section__lede">
+        When the target is a continuous number &mdash; concrete compressive strength,
+        beam deflection, settlement in millimetres &mdash; we need a loss that compares
+        two real numbers. Four classics dominate practice.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-square-root-variable"></i> Mean Squared Error (MSE / L2)</h3>
+        <p>
+          $$ \mathcal{L}_{\text{MSE}} = \frac{1}{N}\sum_{i=1}^{N}\left(y_i - \hat{y}_i\right)^2 $$
+        </p>
+        <ul>
+          <li><strong>Pros:</strong> smooth everywhere, easy gradient ($2(\hat{y}-y)$), convex for linear models.</li>
+          <li><strong>Cons:</strong> quadratic penalty makes it <em>extremely</em> sensitive to outliers &mdash; one bad sample dominates the gradient.</li>
+          <li><strong>Use when:</strong> errors are roughly Gaussian and large mistakes really are much worse than small ones.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-ruler"></i> Mean Absolute Error (MAE / L1)</h3>
+        <p>
+          $$ \mathcal{L}_{\text{MAE}} = \frac{1}{N}\sum_{i=1}^{N}\left|y_i - \hat{y}_i\right| $$
+        </p>
+        <ul>
+          <li><strong>Pros:</strong> robust to outliers, errors in the original units, intuitive.</li>
+          <li><strong>Cons:</strong> non-differentiable at zero (kink), constant gradient magnitude makes fine-tuning slow.</li>
+          <li><strong>Use when:</strong> data has heavy tails or a few mislabelled samples you don't want to dominate training.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-handshake-angle"></i> Huber Loss &mdash; the hybrid</h3>
+        <p>Quadratic near zero, linear far away. Combines MSE's smoothness with MAE's robustness.</p>
+        <p>
+          $$ \mathcal{L}_{\delta}(r) = \begin{cases} \tfrac{1}{2}r^2 & |r| \leq \delta \\ \delta\left(|r| - \tfrac{1}{2}\delta\right) & |r| > \delta \end{cases} $$
+        </p>
+        <p>
+          The threshold $\delta$ controls the &ldquo;quadratic zone&rdquo;. Tune it to roughly the
+          standard deviation of clean residuals. Huber is the <em>default</em> choice when you
+          suspect a small fraction of outliers but want smooth gradients in the bulk.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-arrow-trend-up"></i> RMSE &mdash; MSE in original units</h3>
+        <p>
+          $$ \text{RMSE} = \sqrt{\mathcal{L}_{\text{MSE}}} $$
+        </p>
+        <p>
+          Mathematically a monotone transform of MSE, so optimizing one optimizes the other.
+          We <em>report</em> RMSE because its units match the target (MPa, mm, kN), making it
+          legible to engineers. We typically <em>train</em> on MSE because the square root
+          adds nothing to the optimization but can complicate gradients.
+        </p>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__icon"><i class="fa-solid fa-gavel"></i></div>
+        <div class="analogy-block__body">
+          <h4>Penalty schedule on a construction job</h4>
+          <p>
+            Imagine three contracts for delivering concrete with target strength 30&nbsp;MPa:
+          </p>
+          <ul>
+            <li><strong>MSE contract:</strong> penalty $= \$10 \times (\Delta\text{MPa})^2$. A 1-MPa miss costs $10; a 5-MPa miss costs $250.</li>
+            <li><strong>MAE contract:</strong> penalty $= \$50 \times |\Delta\text{MPa}|$. A 1-MPa miss costs $50; a 5-MPa miss costs $250.</li>
+            <li><strong>Huber contract:</strong> quadratic up to 2&nbsp;MPa, linear beyond. Distinguishes &ldquo;within tolerance noise&rdquo; from &ldquo;serious non-conformance&rdquo; without unbounded liability for one rogue truck.</li>
+          </ul>
+          <p>The contractor's optimization strategy depends entirely on which contract they signed. So does your network's.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== DEMO 1: LOSS SURFACE EXPLORER ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-mountain-sun"></i>
+        Demo 1 &mdash; Loss Surface Explorer
+      </h2>
+      <p class="ch-section__lede">
+        Pick a loss function. Slide the prediction. Watch how each loss shapes the
+        penalty landscape and how its gradient slope changes near and far from the target.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__header">
+          <h3><i class="fa-solid fa-sliders"></i> Compare loss curves</h3>
+          <div class="demo-panel__controls">
+            <div class="demo-panel__buttons" id="loss-buttons">
+              <button class="demo-btn is-active" data-loss="mse">MSE</button>
+              <button class="demo-btn" data-loss="mae">MAE</button>
+              <button class="demo-btn" data-loss="huber">Huber</button>
+              <button class="demo-btn" data-loss="rmse">RMSE</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-panel__canvas-wrap">
+          <canvas id="loss-canvas"></canvas>
+        </div>
+
+        <div class="demo-panel__sliders">
+          <label>
+            <span>True value $y$: <strong id="ytrue-val">0.0</strong></span>
+            <input type="range" id="ytrue-slider" min="-3" max="3" step="0.05" value="0" />
+          </label>
+          <label>
+            <span>Hover prediction $\hat{y}$: <strong id="yhat-val">1.0</strong></span>
+            <input type="range" id="yhat-slider" min="-5" max="5" step="0.05" value="1.0" />
+          </label>
+          <label id="huber-delta-row">
+            <span>Huber $\delta$: <strong id="delta-val">1.0</strong></span>
+            <input type="range" id="delta-slider" min="0.2" max="3" step="0.05" value="1.0" />
+          </label>
+        </div>
+
+        <div class="demo-panel__readout" id="loss-readout">
+          <div><span>Loss</span><strong id="loss-out">0.000</strong></div>
+          <div><span>Gradient $\partial \mathcal{L} / \partial \hat{y}$</span><strong id="grad-out">0.000</strong></div>
+          <div><span>Residual $r = \hat{y} - y$</span><strong id="resid-out">0.000</strong></div>
+        </div>
+
+        <p class="demo-panel__caption">
+          Notice how MSE's gradient grows linearly with the residual (it goes to infinity for
+          extreme outliers), while MAE's gradient is a constant $\pm 1$. Huber transitions
+          between the two at $|r|=\delta$.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 3: CLASSIFICATION LOSSES ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-tags"></i>
+        Classification Losses
+      </h2>
+      <p class="ch-section__lede">
+        When the target is a category &mdash; crack type, soil class, defect / no-defect &mdash;
+        we don't compare numbers, we compare <em>probability distributions</em>.
+        The dominant tool is cross-entropy.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-coins"></i> Binary Cross-Entropy (BCE / log loss)</h3>
+        <p>For a single sample with true label $y \in \{0, 1\}$ and predicted probability $\hat{y} \in (0, 1)$:</p>
+        <p>
+          $$ \mathcal{L}_{\text{BCE}} = -\bigl[\, y\,\log(\hat{y}) + (1-y)\log(1-\hat{y})\,\bigr] $$
+        </p>
+        <p>
+          When the truth is 1 and we predict 0.99 the loss is tiny ($-\log 0.99 \approx 0.01$).
+          Predict 0.01 instead and the loss explodes to $-\log 0.01 \approx 4.6$. Predict 0.0
+          exactly and the loss is $+\infty$ &mdash; the model gets infinite punishment for
+          confident wrong answers. That's a feature, not a bug.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-list-ol"></i> Categorical Cross-Entropy</h3>
+        <p>For $K$ mutually exclusive classes, with one-hot truth $\mathbf{y}$ and softmax output $\hat{\mathbf{y}}$:</p>
+        <p>
+          $$ \mathcal{L}_{\text{CCE}} = -\sum_{k=1}^{K} y_k \log(\hat{y}_k) $$
+        </p>
+        <p>
+          Because $\mathbf{y}$ is one-hot, only the term for the correct class survives:
+          we are simply maximizing the log-probability assigned to the right answer.
+          This is exactly the <strong>negative log-likelihood</strong> of the data.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-link"></i> Why CE pairs with sigmoid / softmax</h3>
+        <p>
+          The combination is no accident. Take BCE with a sigmoid output $\hat{y} = \sigma(z)$:
+        </p>
+        <p>
+          $$ \frac{\partial \mathcal{L}_{\text{BCE}}}{\partial z} = \hat{y} - y $$
+        </p>
+        <p>
+          The gradient is just the prediction error. No saturating $\sigma'(z)$ term to vanish,
+          no chain-rule explosion. The same magic happens for softmax + categorical cross-entropy.
+          This pairing is the reason classification networks train at all.
+        </p>
+        <p>
+          By contrast, if you tried to train a sigmoid classifier with MSE, the gradient
+          picks up a $\sigma'(z) = \sigma(z)(1-\sigma(z))$ factor that <em>vanishes</em> when the
+          model is very confident and very wrong &mdash; exactly when you most need a strong
+          gradient signal. Demo 2 below makes this concrete.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-vector-square"></i> Hinge loss (SVM-style)</h3>
+        <p>For binary labels $y \in \{-1, +1\}$ and raw score $s$:</p>
+        <p>
+          $$ \mathcal{L}_{\text{hinge}} = \max(0,\, 1 - y\cdot s) $$
+        </p>
+        <p>
+          Hinge says: &ldquo;once the score is on the right side <em>by a margin of 1</em>, stop caring.&rdquo;
+          It produces sparse gradients (zero on already-correct points) and the maximum-margin
+          decision boundaries that made classical SVMs famous. Some modern detectors still use
+          hinge variants for their margin behavior.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== DEMO 2: CROSS-ENTROPY VISUALIZER ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-chart-area"></i>
+        Demo 2 &mdash; Cross-Entropy vs. Squared Error
+      </h2>
+      <p class="ch-section__lede">
+        Two-class problem, true label $y=1$. Slide the predicted probability from 0 to 1 and
+        compare BCE against MSE on the same axis. See why CE explodes near the wrong end &mdash;
+        and why that's exactly the gradient signal you want.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__header">
+          <h3><i class="fa-solid fa-arrows-left-right-to-line"></i> BCE vs MSE for binary classification</h3>
+        </div>
+
+        <div class="demo-panel__canvas-wrap">
+          <canvas id="ce-canvas"></canvas>
+        </div>
+
+        <div class="demo-panel__sliders">
+          <label>
+            <span>Predicted probability $\hat{p}$ (true class = 1): <strong id="phat-val">0.50</strong></span>
+            <input type="range" id="phat-slider" min="0.001" max="0.999" step="0.001" value="0.5" />
+          </label>
+        </div>
+
+        <div class="demo-panel__readout">
+          <div><span>BCE loss</span><strong id="bce-out">0.693</strong></div>
+          <div><span>MSE loss</span><strong id="mse-out">0.250</strong></div>
+          <div><span>BCE gradient $\partial/\partial \hat{p}$</span><strong id="bce-grad-out">-2.000</strong></div>
+          <div><span>MSE gradient $\partial/\partial \hat{p}$</span><strong id="mse-grad-out">-1.000</strong></div>
+        </div>
+
+        <p class="demo-panel__caption">
+          As $\hat{p} \to 0$ (wrong class with high confidence), BCE diverges and its gradient
+          grows without bound &mdash; the optimizer feels a massive corrective force. MSE meanwhile
+          flattens out near 0 and 1, providing almost no gradient when you most need one.
+          That asymmetry is why <em>classification networks use cross-entropy, not MSE</em>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 4: SPECIALTY LOSSES ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-flask-vial"></i>
+        Specialty Losses
+      </h2>
+      <p class="ch-section__lede">
+        Beyond the workhorses, several losses solve specific problems you'll encounter in
+        infrastructure-AI projects.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-scale-unbalanced"></i> Focal loss &mdash; for imbalanced data</h3>
+        <p>
+          $$ \mathcal{L}_{\text{focal}} = -(1-\hat{y})^{\gamma} \log(\hat{y}) $$
+        </p>
+        <p>
+          A modulation of cross-entropy that <em>down-weights</em> easy, well-classified examples
+          (where $\hat{y} \to 1$) so the optimizer focuses on hard cases. With $\gamma=2$ a
+          confidently correct prediction contributes about 100&times; less loss than under plain CE.
+          Essential when 99% of your bridge images contain no defect and you don't want the
+          network to win by saying &ldquo;no defect&rdquo; every time.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-draw-polygon"></i> IoU and Dice &mdash; for segmentation</h3>
+        <p>For predicted mask $P$ and ground truth mask $G$:</p>
+        <p>
+          $$ \text{IoU} = \frac{|P \cap G|}{|P \cup G|}, \quad \text{Dice} = \frac{2\,|P \cap G|}{|P| + |G|} $$
+        </p>
+        <p>
+          Used as $1 - \text{Dice}$ or $1 - \text{IoU}$ to make a loss to minimize. They directly
+          optimize the overlap metric reported in segmentation papers, and unlike per-pixel cross-entropy
+          they handle class imbalance gracefully &mdash; a 5-pixel hairline crack still matters even when the
+          background is 200&nbsp;000 pixels of clean concrete.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-arrows-to-circle"></i> Contrastive &amp; triplet losses</h3>
+        <p>
+          For similarity learning: pull embeddings of the same object close together and push
+          embeddings of different objects apart. Triplet loss uses an anchor, a positive and a
+          negative example:
+        </p>
+        <p>
+          $$ \mathcal{L}_{\text{triplet}} = \max\!\bigl(0,\; \|a-p\|^2 - \|a-n\|^2 + m\bigr) $$
+        </p>
+        <p>
+          Used for face recognition, structural-similarity search (&ldquo;find bridges that look
+          like this one&rdquo;), and any retrieval task.
+        </p>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Composite losses.</strong> Real systems often sum several losses with weights:
+          <code>total = &alpha;&middot;BCE + &beta;&middot;Dice + &gamma;&middot;L2-on-weights</code>.
+          The weighting coefficients become hyperparameters &mdash; be ready to tune them.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 5: CIVIL APPLICATIONS ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-helmet-safety"></i>
+        Choosing a Loss in Civil-Engineering AI
+      </h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-cube"></i> Predicting concrete compressive strength</h3>
+        <p>
+          Continuous target in MPa. Errors are roughly Gaussian once we control batch and
+          curing time. <strong>Use MSE</strong> for training, <strong>report RMSE</strong> for
+          stakeholders. If the dataset includes a few mis-recorded specimens that test at
+          implausible values, switch to <strong>Huber</strong> with $\delta \approx 1\sigma$
+          of the clean residuals.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-bug"></i> Classifying crack type from photos</h3>
+        <p>
+          Multi-class problem (longitudinal, transverse, alligator, map, none).
+          <strong>Use categorical cross-entropy</strong> with a softmax head.
+          If your &ldquo;none&rdquo; class dominates, switch to <strong>focal loss</strong>
+          to refocus training on the rarer crack types.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-bridge"></i> Bridge defect segmentation</h3>
+        <p>
+          Pixel-level mask of corrosion or spalling on bridge deck imagery. The defect
+          occupies maybe 1&ndash;3% of pixels. Pure pixel-wise BCE will collapse.
+          <strong>Use Dice loss</strong>, optionally combined with BCE
+          ($\mathcal{L} = 0.5\,\text{BCE} + 0.5\,(1-\text{Dice})$) for the best of both worlds.
+        </p>
+      </div>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <i class="fa-brands fa-python"></i>
+          <span>PyTorch loss snippets</span>
+        </div>
+        <pre><code>import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# Regression: concrete strength (MPa)
+mse  = nn.MSELoss()
+mae  = nn.L1Loss()
+huber = nn.HuberLoss(delta=1.0)
+
+# Multi-class: crack type (5 classes)
+ce = nn.CrossEntropyLoss()      # expects raw logits + integer labels
+# logits: (B, 5)    labels: (B,)
+loss = ce(logits, labels)
+
+# Binary segmentation: corrosion mask
+bce_logits = nn.BCEWithLogitsLoss()  # numerically stable
+
+def dice_loss(pred_logits, target, eps=1e-6):
+    pred = torch.sigmoid(pred_logits)
+    inter = (pred * target).sum(dim=(1,2,3))
+    union = pred.sum(dim=(1,2,3)) + target.sum(dim=(1,2,3))
+    return 1.0 - (2*inter + eps) / (union + eps)
+
+# Combined for severe imbalance
+def combo(pred, target):
+    return 0.5 * bce_logits(pred, target) + 0.5 * dice_loss(pred, target).mean()
+</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 6: QUIZ ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-circle-question"></i>
+        Quick Check
+      </h2>
+
+      <div class="quiz-block" data-answer="b">
+        <p class="quiz-block__q"><strong>1.</strong> Your dataset contains a small fraction of mis-recorded outliers in concrete strength. Which regression loss is most appropriate?</p>
+        <ul class="quiz-block__opts">
+          <li data-opt="a">a) MSE &mdash; outliers will average out</li>
+          <li data-opt="b">b) Huber loss with $\delta$ near one residual standard deviation</li>
+          <li data-opt="c">c) Cross-entropy</li>
+          <li data-opt="d">d) Hinge loss</li>
+        </ul>
+        <p class="quiz-block__exp">Huber is quadratic in the bulk (smooth gradient on clean data) and linear far away (bounded influence per outlier). MSE would let one rogue datapoint dominate training.</p>
+      </div>
+
+      <div class="quiz-block" data-answer="c">
+        <p class="quiz-block__q"><strong>2.</strong> Why does cross-entropy pair so well with sigmoid / softmax outputs?</p>
+        <ul class="quiz-block__opts">
+          <li data-opt="a">a) The two functions cancel out, removing the need for backprop</li>
+          <li data-opt="b">b) It's a historical convention with no mathematical reason</li>
+          <li data-opt="c">c) The chain-rule derivative simplifies to (prediction &minus; truth), avoiding vanishing gradients from $\sigma'(z)$</li>
+          <li data-opt="d">d) It guarantees convex loss surfaces for deep networks</li>
+        </ul>
+        <p class="quiz-block__exp">The $\sigma'(z) = \sigma(z)(1-\sigma(z))$ term in the gradient cancels exactly with the $1/\hat{y}$ from log loss, leaving the clean gradient $\hat{y} - y$.</p>
+      </div>
+
+      <div class="quiz-block" data-answer="d">
+        <p class="quiz-block__q"><strong>3.</strong> You're segmenting hairline cracks that occupy ~1% of pixels in bridge-deck imagery. Pixel-wise BCE trains a model that predicts &ldquo;no crack&rdquo; everywhere. Best fix?</p>
+        <ul class="quiz-block__opts">
+          <li data-opt="a">a) Increase learning rate</li>
+          <li data-opt="b">b) Switch to MSE</li>
+          <li data-opt="c">c) Add more layers</li>
+          <li data-opt="d">d) Use Dice loss (or BCE + Dice combination)</li>
+        </ul>
+        <p class="quiz-block__exp">Dice optimizes overlap directly and is scale-invariant to class size, so a 5-pixel crack contributes meaningfully to the loss.</p>
+      </div>
+
+      <div class="quiz-block" data-answer="a">
+        <p class="quiz-block__q"><strong>4.</strong> Compared to MSE, what does MAE's gradient look like as a function of the residual $r = \hat{y} - y$?</p>
+        <ul class="quiz-block__opts">
+          <li data-opt="a">a) Constant magnitude $\pm 1$ with a discontinuity at $r=0$</li>
+          <li data-opt="b">b) Linearly proportional to $r$</li>
+          <li data-opt="c">c) Quadratic in $r$</li>
+          <li data-opt="d">d) Always exactly zero</li>
+        </ul>
+        <p class="quiz-block__exp">$\frac{d}{dr}|r| = \text{sign}(r)$, which is $\pm 1$ depending on direction and undefined at zero. This makes MAE robust to outliers but slow to converge near the minimum.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 7: SUMMARY ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="ch-section__title">
+        <i class="fa-solid fa-flag-checkered"></i>
+        Wrap-up
+      </h2>
+      <div class="info-card">
+        <ul>
+          <li>A loss function is the scalar acceptance criterion that defines what &ldquo;wrong&rdquo; means.</li>
+          <li>Regression: <strong>MSE</strong> (default), <strong>MAE</strong> (robust), <strong>Huber</strong> (best of both), <strong>RMSE</strong> for reporting.</li>
+          <li>Classification: <strong>cross-entropy</strong> &mdash; pairs with sigmoid/softmax for clean gradients.</li>
+          <li>Specialty: <strong>focal</strong> for imbalance, <strong>Dice/IoU</strong> for segmentation, <strong>triplet</strong> for similarity.</li>
+          <li>The loss you choose is a modelling assumption. Match it to your data and your goal.</li>
+        </ul>
+      </div>
+      <p>
+        Next we'll see how the optimizer actually <em>uses</em> the loss to move weights downhill:
+        gradient descent and its modern variants.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============== FOOTER NAV ============== -->
+  <nav class="chapter-nav-footer">
+    <a href="sub3.html" class="chapter-nav__link prev">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>
+        <small>Previous</small>
+        <strong>6.3 Activation Functions</strong>
+      </span>
+    </a>
+    <a href="sub5.html" class="chapter-nav__link next">
+      <span>
+        <small>Next</small>
+        <strong>6.5 Gradient Descent &amp; Optimization</strong>
+      </span>
+      <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <p>&copy; 2026 Civil Engineer's Guide to AI &middot; Chapter 6 / 6.4 Loss Functions</p>
+    <p><a href="../index.html">Home</a> &middot; <a href="../chapter6.html">Chapter 6</a> &middot; <a href="index.html">Chapter 6 Overview</a></p>
+  </div>
+</footer>
+
+<!-- ============== SCRIPTS ============== -->
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+
+<!-- MathJax for LaTeX rendering -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+<script>
+// ============================================================
+//  DPI-aware canvas helper
+// ============================================================
+function initCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width  = r.width  * dpr;
+  c.height = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height, dpr };
+}
+
+const css = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim() || null;
+const C = {
+  bg:    () => css('--bg-primary')   || '#0b0d10',
+  panel: () => css('--bg-secondary') || '#14181d',
+  text:  () => css('--text-primary') || '#e6edf3',
+  muted: () => css('--text-muted')   || '#8b949e',
+  acc1:  () => css('--accent')       || '#4cc9f0',
+  acc2:  () => css('--accent-2')     || '#f72585',
+  acc3:  () => css('--accent-3')     || '#7cf6a3',
+  acc4:  () => css('--accent-4')     || '#ffb454',
+  grid:  () => css('--border')       || 'rgba(255,255,255,0.08)'
+};
+
+// ============================================================
+//  HERO CANVAS — animated 3D-perspective loss landscape with rolling ball
+// ============================================================
+(function heroLoss(){
+  const c = document.getElementById('hero-canvas');
+  if(!c) return;
+  let env = initCanvas(c);
+  let t = 0;
+  // ball state on the bowl: parameters (a,b) descending toward (0,0)
+  let ball = { a: 2.4, b: 1.8, va: 0, vb: 0 };
+
+  function lossAt(a, b){
+    // double-well-ish bowl with a flatter minimum
+    return 0.6*(a*a + b*b) + 0.15*Math.sin(2*a)*Math.cos(2*b);
+  }
+  function gradAt(a, b){
+    return [1.2*a + 0.30*Math.cos(2*a)*Math.cos(2*b),
+            1.2*b - 0.30*Math.sin(2*a)*Math.sin(2*b)];
+  }
+
+  function project(x, y, z){
+    // simple oblique projection onto 2D
+    const ang = 0.55;
+    const sx = (x - y) * Math.cos(ang);
+    const sy = (x + y) * Math.sin(ang) - z;
+    return [sx, sy];
+  }
+
+  function draw(){
+    const {ctx, w, h} = env;
+    ctx.clearRect(0, 0, w, h);
+    // background gradient
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, 'rgba(76,201,240,0.07)');
+    g.addColorStop(1, 'rgba(247,37,133,0.04)');
+    ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+
+    const cx = w*0.5, cy = h*0.62;
+    const scale = Math.min(w, h) * 0.10;
+    const range = 3.0;
+    const step = 0.30;
+
+    // draw mesh: lines along constant a and constant b
+    ctx.lineWidth = 1;
+    for(let a = -range; a <= range + 0.001; a += step){
+      ctx.beginPath();
+      let first = true;
+      for(let b = -range; b <= range + 0.001; b += step*0.5){
+        const z = lossAt(a, b);
+        const [px, py] = project(a, b, z);
+        const X = cx + px*scale;
+        const Y = cy - py*scale;
+        if(first){ ctx.moveTo(X, Y); first = false; }
+        else      ctx.lineTo(X, Y);
+      }
+      const alpha = 0.18 + 0.10*Math.sin(t*0.5 + a);
+      ctx.strokeStyle = `rgba(76,201,240,${alpha})`;
+      ctx.stroke();
+    }
+    for(let b = -range; b <= range + 0.001; b += step){
+      ctx.beginPath();
+      let first = true;
+      for(let a = -range; a <= range + 0.001; a += step*0.5){
+        const z = lossAt(a, b);
+        const [px, py] = project(a, b, z);
+        const X = cx + px*scale;
+        const Y = cy - py*scale;
+        if(first){ ctx.moveTo(X, Y); first = false; }
+        else      ctx.lineTo(X, Y);
+      }
+      const alpha = 0.14 + 0.08*Math.cos(t*0.6 + b);
+      ctx.strokeStyle = `rgba(247,37,133,${alpha})`;
+      ctx.stroke();
+    }
+
+    // update ball physics (gradient descent with momentum & damping)
+    const [ga, gb] = gradAt(ball.a, ball.b);
+    const lr = 0.018, mom = 0.88;
+    ball.va = mom*ball.va - lr*ga;
+    ball.vb = mom*ball.vb - lr*gb;
+    ball.a += ball.va;
+    ball.b += ball.vb;
+    // gentle re-launch when ball settles
+    const speed = Math.hypot(ball.va, ball.vb);
+    if(speed < 0.002 && Math.hypot(ball.a, ball.b) < 0.2){
+      ball.a = (Math.random()*4 - 2);
+      ball.b = (Math.random()*4 - 2);
+      ball.va = 0; ball.vb = 0;
+    }
+
+    // ball
+    const bz = lossAt(ball.a, ball.b);
+    const [bpx, bpy] = project(ball.a, ball.b, bz + 0.15);
+    const BX = cx + bpx*scale, BY = cy - bpy*scale;
+    // shadow
+    const [spx, spy] = project(ball.a, ball.b, 0);
+    ctx.beginPath();
+    ctx.ellipse(cx + spx*scale, cy - spy*scale, 9, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
+    // ball body
+    const grd = ctx.createRadialGradient(BX-3, BY-3, 1, BX, BY, 9);
+    grd.addColorStop(0, '#fff');
+    grd.addColorStop(1, C.acc2());
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(BX, BY, 8, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1; ctx.stroke();
+
+    t += 0.016;
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', () => { env = initCanvas(c); });
+  draw();
+})();
+
+// ============================================================
+//  DEMO 1 — Loss Surface Explorer
+// ============================================================
+(function lossExplorer(){
+  const c = document.getElementById('loss-canvas');
+  if(!c) return;
+  let env = initCanvas(c);
+
+  const state = {
+    loss: 'mse',
+    yTrue: 0,
+    yHat:  1,
+    delta: 1.0
+  };
+
+  function lossFn(r, kind, delta){
+    switch(kind){
+      case 'mse':   return r*r;
+      case 'mae':   return Math.abs(r);
+      case 'rmse':  return Math.sqrt(r*r + 1e-9);
+      case 'huber':{
+        const a = Math.abs(r);
+        return a <= delta ? 0.5*r*r : delta*(a - 0.5*delta);
+      }
+    }
+  }
+  function gradFn(r, kind, delta){
+    switch(kind){
+      case 'mse':  return 2*r;
+      case 'mae':  return r === 0 ? 0 : Math.sign(r);
+      case 'rmse': return r / Math.sqrt(r*r + 1e-9);
+      case 'huber':{
+        const a = Math.abs(r);
+        return a <= delta ? r : delta*Math.sign(r);
+      }
+    }
+  }
+  function lossLabel(k){
+    return ({mse:'MSE',mae:'MAE',huber:'Huber',rmse:'RMSE'})[k];
+  }
+  function lossColor(k){
+    return ({mse:C.acc1(), mae:C.acc3(), huber:C.acc4(), rmse:C.acc2()})[k];
+  }
+
+  function draw(){
+    const {ctx, w, h} = env;
+    ctx.clearRect(0,0,w,h);
+
+    // axes
+    const padL = 56, padR = 24, padT = 24, padB = 44;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const xMin = -5, xMax = 5;
+    const yMin = 0,  yMax = 8;
+
+    const X = (x) => padL + (x - xMin) / (xMax - xMin) * plotW;
+    const Y = (y) => padT + plotH - (y - yMin) / (yMax - yMin) * plotH;
+
+    // grid
+    ctx.strokeStyle = C.grid();
+    ctx.lineWidth = 1;
+    for(let gx = xMin; gx <= xMax; gx++){
+      ctx.beginPath(); ctx.moveTo(X(gx), padT); ctx.lineTo(X(gx), padT+plotH); ctx.stroke();
+    }
+    for(let gy = yMin; gy <= yMax; gy += 1){
+      ctx.beginPath(); ctx.moveTo(padL, Y(gy)); ctx.lineTo(padL+plotW, Y(gy)); ctx.stroke();
+    }
+
+    // axes labels
+    ctx.fillStyle = C.muted();
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('prediction error  r = ŷ − y', padL + plotW/2, h - 12);
+    ctx.save();
+    ctx.translate(14, padT + plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('loss', 0, 0);
+    ctx.restore();
+
+    // tick numbers
+    ctx.textAlign = 'center';
+    for(let gx = xMin; gx <= xMax; gx++){
+      ctx.fillText(gx.toString(), X(gx), padT+plotH+18);
+    }
+    ctx.textAlign = 'right';
+    for(let gy = yMin; gy <= yMax; gy += 2){
+      ctx.fillText(gy.toString(), padL - 6, Y(gy)+4);
+    }
+
+    // ghost reference: also plot the other 3 losses faintly
+    const allKinds = ['mse','mae','huber','rmse'];
+    allKinds.forEach(k => {
+      if(k === state.loss) return;
+      ctx.strokeStyle = lossColor(k) + '40';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      let first = true;
+      for(let px = 0; px <= plotW; px += 1){
+        const r = xMin + (px/plotW)*(xMax-xMin);
+        const L = lossFn(r, k, state.delta);
+        if(L > yMax*1.2) { first = true; continue; }
+        const Xp = padL + px;
+        const Yp = Y(L);
+        if(first){ ctx.moveTo(Xp, Yp); first = false; }
+        else      ctx.lineTo(Xp, Yp);
+      }
+      ctx.stroke();
+    });
+
+    // active loss curve
+    ctx.strokeStyle = lossColor(state.loss);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let first = true;
+    for(let px = 0; px <= plotW; px += 1){
+      const r = xMin + (px/plotW)*(xMax-xMin);
+      const L = lossFn(r, state.loss, state.delta);
+      if(L > yMax*1.2){ first = true; continue; }
+      const Xp = padL + px;
+      const Yp = Y(L);
+      if(first){ ctx.moveTo(Xp, Yp); first = false; }
+      else      ctx.lineTo(Xp, Yp);
+    }
+    ctx.stroke();
+
+    // current point marker (ŷ - y residual)
+    const r = state.yHat - state.yTrue;
+    const L = lossFn(r, state.loss, state.delta);
+    const G = gradFn(r, state.loss, state.delta);
+
+    // tangent line at current r
+    if(L <= yMax*1.2){
+      const dx = 0.8;
+      const x1 = r - dx, y1 = L - G*dx;
+      const x2 = r + dx, y2 = L + G*dx;
+      ctx.strokeStyle = C.acc4();
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      ctx.moveTo(X(x1), Y(Math.max(yMin, Math.min(yMax, y1))));
+      ctx.lineTo(X(x2), Y(Math.max(yMin, Math.min(yMax, y2))));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // marker dot
+    if(L <= yMax*1.2){
+      ctx.fillStyle = C.acc2();
+      ctx.beginPath();
+      ctx.arc(X(r), Y(L), 6, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    // vertical guides at r=0 and at ±delta for huber
+    ctx.strokeStyle = C.muted() + '80';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(X(0), padT); ctx.lineTo(X(0), padT+plotH); ctx.stroke();
+    if(state.loss === 'huber'){
+      ctx.strokeStyle = C.acc4() + '80';
+      ctx.beginPath(); ctx.moveTo(X(state.delta), padT); ctx.lineTo(X(state.delta), padT+plotH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X(-state.delta), padT); ctx.lineTo(X(-state.delta), padT+plotH); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // legend
+    ctx.font = '600 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = lossColor(state.loss);
+    ctx.fillText(lossLabel(state.loss), padL + 10, padT + 18);
+    ctx.fillStyle = C.muted();
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText(`y = ${state.yTrue.toFixed(2)}   ŷ = ${state.yHat.toFixed(2)}   r = ${r.toFixed(2)}`,
+                 padL + 10, padT + 36);
+
+    // readout
+    document.getElementById('loss-out').textContent = L.toFixed(3);
+    document.getElementById('grad-out').textContent = G.toFixed(3);
+    document.getElementById('resid-out').textContent = r.toFixed(3);
+  }
+
+  // wire up controls
+  document.querySelectorAll('#loss-buttons .demo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#loss-buttons .demo-btn').forEach(b=>b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      state.loss = btn.dataset.loss;
+      document.getElementById('huber-delta-row').style.display =
+        (state.loss === 'huber') ? '' : 'none';
+      draw();
+    });
+  });
+  const yt = document.getElementById('ytrue-slider');
+  const yh = document.getElementById('yhat-slider');
+  const ds = document.getElementById('delta-slider');
+  yt.addEventListener('input', e => {
+    state.yTrue = parseFloat(e.target.value);
+    document.getElementById('ytrue-val').textContent = state.yTrue.toFixed(2);
+    draw();
+  });
+  yh.addEventListener('input', e => {
+    state.yHat = parseFloat(e.target.value);
+    document.getElementById('yhat-val').textContent = state.yHat.toFixed(2);
+    draw();
+  });
+  ds.addEventListener('input', e => {
+    state.delta = parseFloat(e.target.value);
+    document.getElementById('delta-val').textContent = state.delta.toFixed(2);
+    draw();
+  });
+  document.getElementById('huber-delta-row').style.display = 'none';
+
+  window.addEventListener('resize', () => { env = initCanvas(c); draw(); });
+  draw();
+})();
+
+// ============================================================
+//  DEMO 2 — Cross-Entropy vs MSE for binary classification
+// ============================================================
+(function ceDemo(){
+  const c = document.getElementById('ce-canvas');
+  if(!c) return;
+  let env = initCanvas(c);
+
+  const state = { p: 0.5 };
+
+  // true label = 1
+  function bce(p){ return -Math.log(Math.max(p, 1e-9)); }
+  function mse(p){ const e = 1 - p; return e*e; }
+  function bceGrad(p){ return -1.0 / Math.max(p, 1e-9); }
+  function mseGrad(p){ return -2.0 * (1 - p); }
+
+  function draw(){
+    const {ctx, w, h} = env;
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 56, padR = 24, padT = 24, padB = 44;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const xMin = 0, xMax = 1;
+    const yMin = 0, yMax = 6;
+
+    const X = (x) => padL + (x - xMin)/(xMax - xMin) * plotW;
+    const Y = (y) => padT + plotH - (y - yMin)/(yMax - yMin) * plotH;
+
+    // grid
+    ctx.strokeStyle = C.grid();
+    ctx.lineWidth = 1;
+    for(let i = 0; i <= 10; i++){
+      const x = i/10;
+      ctx.beginPath(); ctx.moveTo(X(x), padT); ctx.lineTo(X(x), padT+plotH); ctx.stroke();
+    }
+    for(let gy = yMin; gy <= yMax; gy++){
+      ctx.beginPath(); ctx.moveTo(padL, Y(gy)); ctx.lineTo(padL+plotW, Y(gy)); ctx.stroke();
+    }
+
+    // labels
+    ctx.fillStyle = C.muted();
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('predicted probability  p̂  (true class = 1)', padL+plotW/2, h-12);
+    ctx.save();
+    ctx.translate(14, padT+plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('loss', 0, 0);
+    ctx.restore();
+    for(let i=0;i<=10;i++){
+      ctx.textAlign='center';
+      ctx.fillText((i/10).toFixed(1), X(i/10), padT+plotH+18);
+    }
+    ctx.textAlign='right';
+    for(let gy=yMin;gy<=yMax;gy++){
+      ctx.fillText(gy.toString(), padL-6, Y(gy)+4);
+    }
+
+    // BCE curve
+    ctx.strokeStyle = C.acc1();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let first = true;
+    for(let px = 1; px <= plotW; px++){
+      const p = px/plotW;
+      const L = bce(p);
+      if(L > yMax*1.05){ first = true; continue; }
+      const Xp = padL + px, Yp = Y(L);
+      if(first){ ctx.moveTo(Xp, Yp); first = false; }
+      else ctx.lineTo(Xp, Yp);
+    }
+    ctx.stroke();
+
+    // MSE curve
+    ctx.strokeStyle = C.acc2();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    first = true;
+    for(let px = 0; px <= plotW; px++){
+      const p = px/plotW;
+      const L = mse(p);
+      if(L > yMax*1.05){ first = true; continue; }
+      const Xp = padL + px, Yp = Y(L);
+      if(first){ ctx.moveTo(Xp, Yp); first = false; }
+      else ctx.lineTo(Xp, Yp);
+    }
+    ctx.stroke();
+
+    // current p marker
+    const p = state.p;
+    const Lb = bce(p), Lm = mse(p);
+    const Gb = bceGrad(p), Gm = mseGrad(p);
+
+    ctx.strokeStyle = C.muted() + '80';
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(X(p), padT); ctx.lineTo(X(p), padT+plotH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    if(Lb <= yMax){
+      ctx.fillStyle = C.acc1();
+      ctx.beginPath(); ctx.arc(X(p), Y(Lb), 6, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    if(Lm <= yMax){
+      ctx.fillStyle = C.acc2();
+      ctx.beginPath(); ctx.arc(X(p), Y(Lm), 6, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    // legend
+    ctx.font = '600 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = C.acc1();
+    ctx.fillText('— Binary Cross-Entropy', padL + 10, padT + 18);
+    ctx.fillStyle = C.acc2();
+    ctx.fillText('— Mean Squared Error',  padL + 10, padT + 36);
+
+    // readout
+    document.getElementById('phat-val').textContent = p.toFixed(3);
+    document.getElementById('bce-out').textContent = Lb.toFixed(3);
+    document.getElementById('mse-out').textContent = Lm.toFixed(3);
+    document.getElementById('bce-grad-out').textContent = Gb.toFixed(3);
+    document.getElementById('mse-grad-out').textContent = Gm.toFixed(3);
+  }
+
+  document.getElementById('phat-slider').addEventListener('input', e => {
+    state.p = parseFloat(e.target.value);
+    draw();
+  });
+
+  window.addEventListener('resize', () => { env = initCanvas(c); draw(); });
+  draw();
+})();
+
+// ============================================================
+//  Quiz interactivity
+// ============================================================
+(function quiz(){
+  document.querySelectorAll('.quiz-block').forEach(block => {
+    const answer = block.dataset.answer;
+    block.querySelectorAll('.quiz-block__opts li').forEach(li => {
+      li.addEventListener('click', () => {
+        block.querySelectorAll('.quiz-block__opts li').forEach(x => x.classList.remove('is-correct','is-wrong'));
+        if(li.dataset.opt === answer){
+          li.classList.add('is-correct');
+          block.classList.add('is-answered');
+        } else {
+          li.classList.add('is-wrong');
+        }
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

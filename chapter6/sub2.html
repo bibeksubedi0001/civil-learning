@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.2 Multi-Layer Networks & Forward Propagation | Civil Engineer's Guide to AI</title>
+<meta name="description" content="From a single perceptron to a Multi-Layer Perceptron (MLP). Learn forward propagation, matrix notation, and why depth matters — explained for civil engineers." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<!-- Scroll progress bar -->
+<div id="scroll-progress"></div>
+
+<!-- Top Navigation -->
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &times; AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html" class="nav-link">Home</a></li>
+      <li><a href="index.html" class="nav-link">Chapter 6</a></li>
+      <li><a href="sub1.html" class="nav-link">Prev</a></li>
+      <li><a href="sub3.html" class="nav-link">Next</a></li>
+    </ul>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-diagram-project"></i>
+      <span>Chapter 6 &middot; Section 6.2</span>
+    </div>
+    <h1 class="chapter-hero__title">Multi-Layer Networks &amp; Forward Propagation</h1>
+    <p class="chapter-hero__subtitle">
+      One neuron is a calculator. Stack many in layers, and you get a network that can model
+      almost anything — from beam deflection to traffic flow. Let's watch the signal flow.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-regular fa-clock"></i> 16 min read</span>
+      <span><i class="fa-solid fa-layer-group"></i> Architecture</span>
+      <span><i class="fa-solid fa-arrow-right-long"></i> Forward Pass</span>
+      <span><i class="fa-solid fa-square-root-variable"></i> Matrix Math</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+  <!-- ============================================================ -->
+  <!-- SECTION 1 : From One Neuron to a Network                     -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-network-wired"></i>
+        From One Neuron to a Network
+      </h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-circle-info"></i> The Limitation of a Single Perceptron</h3>
+        <p>
+          In <a href="sub1.html">Section 6.1</a> we built a single perceptron — a small machine
+          that draws <em>one straight line</em> through the data. That's enough to decide
+          "tension or compression?", but the world rarely cooperates with a single line.
+          Real engineering relationships — soil settlement, traffic congestion, concrete
+          creep — are <strong>non-linear</strong> and <strong>multi-modal</strong>.
+        </p>
+        <p>
+          The fix is brilliantly simple: <strong>stack neurons in layers</strong>, and feed
+          the output of one layer as the input to the next. The result is the
+          <strong>Multi-Layer Perceptron</strong> (MLP) — the workhorse of modern deep learning.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-sitemap"></i> Anatomy of an MLP</h3>
+        <p>Every MLP has three kinds of layers:</p>
+        <ul>
+          <li>
+            <strong>Input layer</strong> — one neuron per feature. No computation; just holds
+            the raw inputs (e.g. beam length, load, modulus).
+          </li>
+          <li>
+            <strong>Hidden layer(s)</strong> — the "brain". Each neuron takes a weighted sum
+            of <em>all</em> previous-layer outputs and applies a non-linear activation.
+            You can have one or many.
+          </li>
+          <li>
+            <strong>Output layer</strong> — produces the final prediction. One neuron for
+            regression (e.g. predicted deflection in mm), several for classification
+            (e.g. failure mode probabilities).
+          </li>
+        </ul>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__icon"><i class="fa-solid fa-bridge"></i></div>
+        <div class="analogy-block__content">
+          <h4>CE Analogy &mdash; The Neural Network as a Truss</h4>
+          <p>
+            Picture a steel truss. <strong>Load (signal)</strong> enters at the supports
+            (input layer), propagates through interconnected members (hidden layers), and
+            exits as <strong>reactions and forces</strong> at the far end (output layer).
+            Each joint redistributes the load according to the <em>stiffness of its members</em>
+            &mdash; exactly like how each neuron redistributes signal according to its
+            <em>weights</em>.
+          </p>
+          <p>
+            A taller, deeper truss can carry more complex load patterns. Likewise, a deeper
+            network can capture more complex input-output relationships.
+          </p>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-lightbulb"></i>
+        <div>
+          <strong>Naming convention:</strong> a network described as <code>3&ndash;4&ndash;3&ndash;2</code>
+          has 3 input neurons, two hidden layers (4 then 3 neurons), and 2 output neurons.
+          We will use this notation throughout the chapter.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 2 : Why Depth Matters                                -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-layer-group"></i>
+        Why Depth Matters
+      </h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-stairs"></i> Each Layer Learns a Higher Abstraction</h3>
+        <p>
+          The magic of deep networks is that each successive layer learns
+          <strong>increasingly abstract features</strong> built from the previous layer's outputs.
+        </p>
+        <p>Consider a network predicting whether a building plan is structurally sound:</p>
+        <ul>
+          <li><strong>Layer 1</strong> might detect basic patterns: "is the span very long?", "is the load very high?"</li>
+          <li><strong>Layer 2</strong> combines those: "long span + heavy load" &rarr; "high bending moment risk"</li>
+          <li><strong>Layer 3</strong> combines further: "high bending risk + low steel ratio" &rarr; "likely failure mode"</li>
+          <li><strong>Output</strong>: probability of safe / unsafe</li>
+        </ul>
+        <p>
+          You never <em>tell</em> the network this hierarchy &mdash; it discovers it on its own
+          during training. That's the breakthrough.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-scale-balanced"></i> Width vs Depth</h3>
+        <p>For a fixed parameter budget, you can spend it two ways:</p>
+        <div class="comparison-grid">
+          <div class="comparison-card">
+            <h4><i class="fa-solid fa-arrows-left-right"></i> Wide &amp; Shallow</h4>
+            <p>Few layers, many neurons each (e.g. <code>10&ndash;200&ndash;1</code>).</p>
+            <ul>
+              <li>Easier to train (fewer vanishing-gradient issues)</li>
+              <li>Memorises well, generalises less</li>
+              <li>Captures broad patterns but not deep hierarchies</li>
+            </ul>
+          </div>
+          <div class="comparison-card">
+            <h4><i class="fa-solid fa-arrows-up-down"></i> Narrow &amp; Deep</h4>
+            <p>Many layers, fewer neurons each (e.g. <code>10&ndash;16&ndash;16&ndash;16&ndash;16&ndash;1</code>).</p>
+            <ul>
+              <li>Captures hierarchical features beautifully</li>
+              <li>Harder to train (needs careful initialisation)</li>
+              <li>State-of-the-art for images, language, structural patterns</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:1rem;">
+          Modern practice (post-2015) overwhelmingly favours <strong>deep</strong>
+          architectures, with techniques like residual connections and batch normalisation
+          to keep training stable.
+        </p>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Engineer's rule of thumb:</strong> start with 2&ndash;3 hidden layers and
+          widths between 16 and 128. Most civil-engineering tabular problems don't need
+          ResNet-50.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 3 : Forward Propagation                              -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-arrow-right-long"></i>
+        Forward Propagation, Step by Step
+      </h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-play"></i> The Signal Flows Left to Right</h3>
+        <p>
+          <strong>Forward propagation</strong> (the "forward pass") is the process of
+          pushing an input through the network to get a prediction. It happens in three
+          steps per layer:
+        </p>
+        <ol>
+          <li><strong>Weighted sum</strong> &mdash; each neuron multiplies every incoming activation by its weight and adds them up.</li>
+          <li><strong>Add bias</strong> &mdash; a per-neuron offset, like the intercept in a linear regression.</li>
+          <li><strong>Apply activation</strong> &mdash; pass through a non-linear function (ReLU, sigmoid, tanh &mdash; see <a href="sub3.html">6.3</a>).</li>
+        </ol>
+        <p>
+          The output of one layer becomes the input of the next, until we reach the final
+          output. No randomness, no learning &mdash; just deterministic arithmetic.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-square-root-variable"></i> Matrix Notation</h3>
+        <p>Writing it out neuron-by-neuron is exhausting. Linear algebra makes it elegant:</p>
+        <div class="formula-block">
+          <span class="formula">
+            a<sup>(L)</sup> = &sigma;( W<sup>(L)</sup> &middot; a<sup>(L-1)</sup> + b<sup>(L)</sup> )
+          </span>
+        </div>
+        <p>Where:</p>
+        <ul>
+          <li><code>a<sup>(L)</sup></code> &mdash; the vector of activations at layer <em>L</em></li>
+          <li><code>W<sup>(L)</sup></code> &mdash; the weight matrix connecting layer <em>L&minus;1</em> to <em>L</em>. Its shape is <code>(neurons in L) &times; (neurons in L&minus;1)</code></li>
+          <li><code>b<sup>(L)</sup></code> &mdash; the bias vector for layer <em>L</em></li>
+          <li><code>&sigma;</code> &mdash; the activation function (applied element-wise)</li>
+        </ul>
+        <p>
+          To run the entire forward pass, you simply repeat this equation for each layer.
+          That's it. The whole network &mdash; potentially billions of parameters &mdash;
+          is just a chain of matrix multiplications interleaved with non-linearities.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-bolt"></i> Why Matrices? Parallelism.</h3>
+        <p>
+          Computing 128 weighted sums one-at-a-time in a Python loop is slow.
+          Computing them as a single matrix-vector product is <strong>massively parallel</strong>
+          on a GPU &mdash; thousands of multiplications happen in the same clock cycle.
+        </p>
+        <p>
+          This is why frameworks like PyTorch and TensorFlow store everything as tensors:
+          the math is identical to what we wrote above, but the hardware executes it at
+          terabytes-per-second.
+        </p>
+      </div>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span class="code-peek__lang">
+            <i class="fa-brands fa-python"></i> NumPy
+          </span>
+          <span class="code-peek__title">A 3-layer forward pass in 4 lines</span>
+        </div>
+<pre><code>def forward(x, weights, biases, activation):
+    a = x
+    for W, b in zip(weights, biases):
+        a = activation(W @ a + b)
+    return a</code></pre>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__icon"><i class="fa-solid fa-water"></i></div>
+        <div class="analogy-block__content">
+          <h4>CE Analogy &mdash; Hydraulic Network</h4>
+          <p>
+            Forward propagation is like water flowing through a pipe network. At each
+            junction (neuron), the inflows are summed (weighted by pipe diameter), a small
+            head loss (bias) is added, and a valve (activation) decides how much flows
+            onward. The final reservoir level is the network's prediction.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 4 : DEMO 1 - Forward Propagation Visualizer          -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-flask"></i>
+        Demo 1 &mdash; Forward Propagation Visualizer
+      </h2>
+
+      <p>
+        Watch a signal travel through a <code>3&ndash;4&ndash;3&ndash;2</code> network.
+        Click <strong>Inject Signal</strong> to release activations from the input layer
+        and see them light up neurons sequentially. Hover over any neuron to inspect its
+        weighted sum and final activation. The right panel shows the matrix multiplication
+        unfolding.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__header">
+          <h3><i class="fa-solid fa-diagram-project"></i> 3&ndash;4&ndash;3&ndash;2 Network</h3>
+          <div class="demo-panel__controls">
+            <button id="fp-inject" class="btn btn--primary">
+              <i class="fa-solid fa-bolt"></i> Inject Signal
+            </button>
+            <button id="fp-randomise" class="btn">
+              <i class="fa-solid fa-shuffle"></i> Randomise Weights
+            </button>
+            <button id="fp-reset" class="btn">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </div>
+        <div class="demo-panel__body demo-panel__body--split">
+          <div class="demo-canvas-wrapper">
+            <canvas id="fp-canvas"></canvas>
+            <div id="fp-tooltip" class="demo-tooltip"></div>
+          </div>
+          <aside class="demo-side-panel">
+            <h4><i class="fa-solid fa-square-root-variable"></i> Live Math</h4>
+            <div id="fp-math" class="demo-math"></div>
+            <h4 style="margin-top:1.25rem;"><i class="fa-solid fa-list-ol"></i> Step Log</h4>
+            <div id="fp-log" class="demo-log"></div>
+          </aside>
+        </div>
+        <div class="demo-panel__footer">
+          <span><i class="fa-solid fa-circle-info"></i> Activation: <code>tanh</code> &middot; Hover over any neuron for details</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5 : DEMO 2 - Architecture Builder                    -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+        Demo 2 &mdash; Network Architecture Builder
+      </h2>
+
+      <p>
+        Drag the sliders to add hidden layers and change neuron counts. The canvas redraws
+        instantly. Watch how the <strong>parameter count</strong> (weights + biases) explodes
+        as you go wider or deeper &mdash; this is why training cost grows so fast.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__header">
+          <h3><i class="fa-solid fa-sliders"></i> Build Your MLP</h3>
+        </div>
+        <div class="demo-panel__body">
+          <div class="demo-controls-grid">
+            <div class="control-group">
+              <label for="ab-inputs">Input neurons: <span id="ab-inputs-val">3</span></label>
+              <input type="range" id="ab-inputs" min="1" max="8" value="3" />
+            </div>
+            <div class="control-group">
+              <label for="ab-layers">Hidden layers: <span id="ab-layers-val">2</span></label>
+              <input type="range" id="ab-layers" min="1" max="5" value="2" />
+            </div>
+            <div class="control-group">
+              <label for="ab-width">Neurons per hidden layer: <span id="ab-width-val">5</span></label>
+              <input type="range" id="ab-width" min="2" max="12" value="5" />
+            </div>
+            <div class="control-group">
+              <label for="ab-outputs">Output neurons: <span id="ab-outputs-val">2</span></label>
+              <input type="range" id="ab-outputs" min="1" max="6" value="2" />
+            </div>
+          </div>
+          <div class="demo-canvas-wrapper" style="margin-top:1rem;">
+            <canvas id="ab-canvas"></canvas>
+          </div>
+          <div class="demo-stats">
+            <div class="stat-card">
+              <div class="stat-card__label">Total weights</div>
+              <div class="stat-card__value" id="ab-weights">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__label">Total biases</div>
+              <div class="stat-card__value" id="ab-biases">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__label">Total parameters</div>
+              <div class="stat-card__value" id="ab-params">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__label">Architecture</div>
+              <div class="stat-card__value" id="ab-arch" style="font-size:1rem;">&mdash;</div>
+            </div>
+          </div>
+          <div id="ab-warning" class="demo-warning" style="display:none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Over 1000 parameters &mdash; for a tabular CE problem this may overfit. Consider regularisation or fewer neurons.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 6 : Universal Approximation                          -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-infinity"></i>
+        The Universal Approximation Theorem
+      </h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> The Big Promise</h3>
+        <p>
+          In 1989, Cybenko (and later Hornik) proved an astonishing result, informally:
+        </p>
+        <blockquote class="info-quote">
+          A feed-forward network with a single hidden layer of <em>sufficient width</em>
+          and a non-linear activation function can approximate <strong>any continuous
+          function</strong> on a closed interval to arbitrary precision.
+        </blockquote>
+        <p>
+          In other words: there is no continuous engineering relationship &mdash; beam
+          deflection, soil consolidation curves, traffic flow &mdash; that an MLP cannot,
+          in principle, represent.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-circle-exclamation"></i> The Fine Print</h3>
+        <p>The theorem says <em>"can"</em>, not <em>"will easily"</em>. In practice:</p>
+        <ul>
+          <li>"Sufficient width" can mean <strong>enormously</strong> wide. Often impractical.</li>
+          <li>The theorem says nothing about <strong>how to find</strong> the right weights.</li>
+          <li>Going <strong>deep</strong> instead of wide tends to be exponentially more efficient.</li>
+          <li>Generalisation (performing well on unseen data) is a separate, harder problem.</li>
+        </ul>
+        <p>
+          Still, the theorem is the philosophical foundation: it tells us the architecture
+          is not the bottleneck &mdash; <em>training</em> is.
+        </p>
+      </div>
+
+      <div class="analogy-block">
+        <div class="analogy-block__icon"><i class="fa-solid fa-ruler-combined"></i></div>
+        <div class="analogy-block__content">
+          <h4>CE Analogy &mdash; Universal Cross-Section</h4>
+          <p>
+            It's like saying: "Given enough steel, you can build a beam to span any distance."
+            True &mdash; but the cost, deflection, and constructability eventually become
+            absurd. Engineering is about finding the <em>elegant</em> solution, not the
+            theoretically possible one. Same with neural networks.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 7 : CE Application                                   -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-helmet-safety"></i>
+        CE Application &mdash; Predicting Beam Deflection
+      </h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-ruler-vertical"></i> The Problem</h3>
+        <p>
+          You want to predict the maximum deflection <code>&delta;</code> of a simply
+          supported beam given:
+        </p>
+        <ul>
+          <li>span <code>L</code> (m)</li>
+          <li>uniform load <code>w</code> (kN/m)</li>
+          <li>moment of inertia <code>I</code> (m<sup>4</sup>)</li>
+          <li>Young's modulus <code>E</code> (GPa)</li>
+        </ul>
+        <p>
+          For a simple case, you'd use <code>&delta; = 5wL<sup>4</sup> / (384EI)</code>.
+          But for tapered sections, partial loads, end restraints, and composite
+          materials &mdash; closed-form solutions vanish quickly. Enter the MLP.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-diagram-project"></i> The Architecture</h3>
+        <p>A reasonable starting design:</p>
+        <ul>
+          <li><strong>Input layer (4 neurons):</strong> <code>L, w, I, E</code> (normalised)</li>
+          <li><strong>Hidden layer 1 (16 neurons, ReLU):</strong> learns combinations like <code>wL</code>, <code>wL<sup>4</sup></code>, <code>EI</code></li>
+          <li><strong>Hidden layer 2 (8 neurons, ReLU):</strong> learns ratios like <code>wL<sup>4</sup>/(EI)</code></li>
+          <li><strong>Output layer (1 neuron, linear):</strong> predicted &delta; in mm</li>
+        </ul>
+        <p>
+          Train it on a synthetic dataset of 10 000 finite-element simulations. After
+          training, you have a <strong>millisecond surrogate model</strong> for what would
+          otherwise be a multi-second FEA call &mdash; perfect for design optimisation
+          loops.
+        </p>
+      </div>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <span class="code-peek__lang">
+            <i class="fa-brands fa-python"></i> PyTorch
+          </span>
+          <span class="code-peek__title">Defining the beam-deflection MLP</span>
+        </div>
+<pre><code>import torch.nn as nn
+
+class BeamDeflectionMLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(4, 16),  nn.ReLU(),
+            nn.Linear(16, 8),  nn.ReLU(),
+            nn.Linear(8,  1),
+        )
+
+    def forward(self, x):
+        return self.net(x)   # one matrix multiply per layer</code></pre>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-circle-check"></i>
+        <div>
+          <strong>Reality check:</strong> always benchmark the MLP against the closed-form
+          solution where one exists. If it can't reproduce the textbook answer to within
+          a few percent, your data, normalisation, or architecture is wrong.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 8 : Quiz                                             -->
+  <!-- ============================================================ -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-circle-question"></i>
+        Check Your Understanding
+      </h2>
+
+      <div class="quiz-block" data-quiz>
+        <div class="quiz-question" data-correct="b">
+          <h4>Q1. In the equation <code>a<sup>(L)</sup> = &sigma;(W<sup>(L)</sup> a<sup>(L-1)</sup> + b<sup>(L)</sup>)</code>, what is <code>W<sup>(L)</sup></code>?</h4>
+          <ul class="quiz-options">
+            <li data-opt="a">The activation function applied to layer L.</li>
+            <li data-opt="b">A matrix of weights connecting layer L&minus;1 to layer L.</li>
+            <li data-opt="c">A scalar bias for the output layer only.</li>
+            <li data-opt="d">The training loss for layer L.</li>
+          </ul>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question" data-correct="c">
+          <h4>Q2. Why do we use matrix notation in forward propagation?</h4>
+          <ul class="quiz-options">
+            <li data-opt="a">It makes the math harder so researchers feel important.</li>
+            <li data-opt="b">It is the only way activations can be computed.</li>
+            <li data-opt="c">It allows all neurons in a layer to be computed in parallel on GPUs.</li>
+            <li data-opt="d">It eliminates the need for biases.</li>
+          </ul>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question" data-correct="b">
+          <h4>Q3. The Universal Approximation Theorem says, informally:</h4>
+          <ul class="quiz-options">
+            <li data-opt="a">Any neural network can be trained in finite time.</li>
+            <li data-opt="b">A wide-enough MLP with non-linear activation can approximate any continuous function.</li>
+            <li data-opt="c">Deep networks always outperform shallow networks.</li>
+            <li data-opt="d">Linear networks can solve any classification problem.</li>
+          </ul>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-question" data-correct="d">
+          <h4>Q4. What primarily distinguishes deep narrow networks from wide shallow ones?</h4>
+          <ul class="quiz-options">
+            <li data-opt="a">Deep networks always have more parameters.</li>
+            <li data-opt="b">Wide networks cannot have biases.</li>
+            <li data-opt="c">Deep networks must use sigmoid activation.</li>
+            <li data-opt="d">Deep networks build hierarchical features layer by layer; wide ones spread capacity in one layer.</li>
+          </ul>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Chapter nav footer                                           -->
+  <!-- ============================================================ -->
+  <nav class="chapter-nav-footer">
+    <a href="sub1.html" class="chapter-nav__link prev">
+      <i class="fa-solid fa-arrow-left"></i>
+      <div>
+        <span class="chapter-nav__label">Previous</span>
+        <span class="chapter-nav__title">6.1 The Perceptron</span>
+      </div>
+    </a>
+    <a href="sub3.html" class="chapter-nav__link next">
+      <div>
+        <span class="chapter-nav__label">Next</span>
+        <span class="chapter-nav__title">6.3 Activation Functions</span>
+      </div>
+      <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+</main>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-col">
+      <h4><i class="fa-solid fa-helmet-safety"></i> CE &times; AI</h4>
+      <p>A civil engineer's guide to artificial intelligence &mdash; from perceptrons to deep learning, with structures, soils, and traffic in mind.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Chapter 6</h4>
+      <ul>
+        <li><a href="sub1.html">6.1 The Perceptron</a></li>
+        <li><a href="sub2.html">6.2 Multi-Layer Networks</a></li>
+        <li><a href="sub3.html">6.3 Activation Functions</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Chapter Index</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 Civil Engineer's Guide to AI &middot; Built with curiosity</span>
+  </div>
+</footer>
+
+<!-- Common scripts -->
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+
+<!-- Page-specific demos -->
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------
+  // DPI-aware canvas helper
+  // ---------------------------------------------------------------
+  function initCanvas(c) {
+    const dpr = window.devicePixelRatio || 1;
+    const r = c.getBoundingClientRect();
+    c.width = r.width * dpr;
+    c.height = r.height * dpr;
+    const ctx = c.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: r.width, h: r.height };
+  }
+
+  // ---------------------------------------------------------------
+  // Activations
+  // ---------------------------------------------------------------
+  const tanh = (x) => Math.tanh(x);
+
+  // ---------------------------------------------------------------
+  // HERO CANVAS  -- animated multi-layer network
+  // ---------------------------------------------------------------
+  (function heroCanvas() {
+    const canvas = document.getElementById('hero-canvas');
+    if (!canvas) return;
+
+    let ctx, W, H;
+    let layers = [];
+    let pulses = [];
+    let raf;
+
+    function buildNetwork() {
+      const sizes = [4, 6, 6, 4, 2];
+      layers = [];
+      const margin = 60;
+      const usableW = W - margin * 2;
+      const stepX = usableW / (sizes.length - 1);
+      sizes.forEach((n, li) => {
+        const layer = [];
+        const stepY = H / (n + 1);
+        for (let i = 0; i < n; i++) {
+          layer.push({
+            x: margin + li * stepX,
+            y: stepY * (i + 1),
+            glow: 0,
+          });
+        }
+        layers.push(layer);
+      });
+    }
+
+    function spawnPulse() {
+      const fromLayer = Math.floor(Math.random() * (layers.length - 1));
+      const fromIdx = Math.floor(Math.random() * layers[fromLayer].length);
+      const toIdx = Math.floor(Math.random() * layers[fromLayer + 1].length);
+      pulses.push({
+        l: fromLayer,
+        from: fromIdx,
+        to: toIdx,
+        t: 0,
+        speed: 0.012 + Math.random() * 0.012,
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // edges
+      ctx.lineWidth = 1;
+      for (let l = 0; l < layers.length - 1; l++) {
+        const a = layers[l], b = layers[l + 1];
+        for (let i = 0; i < a.length; i++) {
+          for (let j = 0; j < b.length; j++) {
+            ctx.strokeStyle = 'rgba(120, 160, 220, 0.07)';
+            ctx.beginPath();
+            ctx.moveTo(a[i].x, a[i].y);
+            ctx.lineTo(b[j].x, b[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // pulses
+      for (let p = pulses.length - 1; p >= 0; p--) {
+        const pulse = pulses[p];
+        const a = layers[pulse.l][pulse.from];
+        const b = layers[pulse.l + 1][pulse.to];
+        const x = a.x + (b.x - a.x) * pulse.t;
+        const y = a.y + (b.y - a.y) * pulse.t;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, 14);
+        grad.addColorStop(0, 'rgba(120, 200, 255, 0.9)');
+        grad.addColorStop(1, 'rgba(120, 200, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        pulse.t += pulse.speed;
+        if (pulse.t >= 1) {
+          b.glow = 1;
+          pulses.splice(p, 1);
+        }
+      }
+
+      // nodes
+      layers.forEach((layer) => {
+        layer.forEach((n) => {
+          const r = 6 + n.glow * 4;
+          const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 2.4);
+          grad.addColorStop(0, `rgba(120, 220, 255, ${0.4 + n.glow * 0.5})`);
+          grad.addColorStop(1, 'rgba(120, 220, 255, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r * 2.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = `rgba(180, 230, 255, ${0.7 + n.glow * 0.3})`;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          n.glow *= 0.96;
+        });
+      });
+
+      if (Math.random() < 0.18) spawnPulse();
+      raf = requestAnimationFrame(draw);
+    }
+
+    function resize() {
+      const o = initCanvas(canvas);
+      ctx = o.ctx; W = o.w; H = o.h;
+      buildNetwork();
+    }
+
+    resize();
+    window.addEventListener('resize', () => {
+      cancelAnimationFrame(raf);
+      resize();
+      draw();
+    });
+    draw();
+  })();
+
+  // ---------------------------------------------------------------
+  // DEMO 1 -- Forward Propagation Visualizer (3-4-3-2)
+  // ---------------------------------------------------------------
+  (function fpDemo() {
+    const canvas = document.getElementById('fp-canvas');
+    if (!canvas) return;
+
+    const tooltip = document.getElementById('fp-tooltip');
+    const mathBox = document.getElementById('fp-math');
+    const logBox = document.getElementById('fp-log');
+
+    const sizes = [3, 4, 3, 2];
+    let weights = [];
+    let biases = [];
+    let activations = [];
+    let layerNodes = [];
+
+    let ctx, W, H;
+    let animatingLayer = -1;
+    let animProgress = 0;
+    let raf;
+    let hovered = null;
+
+    function rand() { return (Math.random() * 2 - 1).toFixed(2) * 1; }
+
+    function initWeights() {
+      weights = [];
+      biases = [];
+      for (let l = 1; l < sizes.length; l++) {
+        const W = [];
+        const b = [];
+        for (let j = 0; j < sizes[l]; j++) {
+          const row = [];
+          for (let i = 0; i < sizes[l - 1]; i++) row.push(rand());
+          W.push(row);
+          b.push(rand());
+        }
+        weights.push(W);
+        biases.push(b);
+      }
+    }
+
+    function initActivations() {
+      activations = sizes.map((n) => new Array(n).fill(null));
+      activations[0] = [0.6, -0.4, 0.8];
+    }
+
+    function buildNodes() {
+      layerNodes = [];
+      const margin = 50;
+      const stepX = (W - margin * 2) / (sizes.length - 1);
+      sizes.forEach((n, li) => {
+        const layer = [];
+        const stepY = H / (n + 1);
+        for (let i = 0; i < n; i++) {
+          layer.push({ x: margin + li * stepX, y: stepY * (i + 1), li, ni: i });
+        }
+        layerNodes.push(layer);
+      });
+    }
+
+    function activationColor(v) {
+      if (v === null || v === undefined) return 'rgba(80, 100, 130, 0.6)';
+      const t = (v + 1) / 2; // -1..1 -> 0..1
+      const r = Math.round(60 + (1 - t) * 200);
+      const g = Math.round(120 + t * 100);
+      const b = Math.round(200 + t * 50);
+      return `rgba(${r},${g},${b},0.95)`;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // edges
+      for (let l = 0; l < layerNodes.length - 1; l++) {
+        const a = layerNodes[l], bL = layerNodes[l + 1];
+        for (let i = 0; i < a.length; i++) {
+          for (let j = 0; j < bL.length; j++) {
+            const w = weights[l][j][i];
+            const alpha = Math.min(0.5, Math.abs(w) * 0.5 + 0.05);
+            ctx.strokeStyle = w >= 0
+              ? `rgba(110, 200, 255, ${alpha})`
+              : `rgba(255, 130, 150, ${alpha})`;
+            ctx.lineWidth = 0.6 + Math.abs(w) * 1.6;
+            ctx.beginPath();
+            ctx.moveTo(a[i].x, a[i].y);
+            ctx.lineTo(bL[j].x, bL[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // animating pulses for current layer
+      if (animatingLayer > 0 && animatingLayer < layerNodes.length) {
+        const a = layerNodes[animatingLayer - 1];
+        const b = layerNodes[animatingLayer];
+        for (let i = 0; i < a.length; i++) {
+          for (let j = 0; j < b.length; j++) {
+            const x = a[i].x + (b[j].x - a[i].x) * animProgress;
+            const y = a[i].y + (b[j].y - a[i].y) * animProgress;
+            ctx.fillStyle = 'rgba(140, 220, 255, 0.85)';
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      // nodes
+      layerNodes.forEach((layer, li) => {
+        layer.forEach((n, ni) => {
+          const v = activations[li][ni];
+          const isHover = hovered && hovered.li === li && hovered.ni === ni;
+          ctx.fillStyle = activationColor(v);
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, isHover ? 18 : 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(245, 250, 255, 0.95)';
+          ctx.font = '11px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(v === null ? '?' : v.toFixed(2), n.x, n.y);
+        });
+
+        // labels
+        const label = li === 0 ? 'Input'
+          : li === layerNodes.length - 1 ? 'Output'
+          : `Hidden ${li}`;
+        ctx.fillStyle = 'rgba(180, 200, 230, 0.8)';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, layer[0].x, 18);
+      });
+    }
+
+    function step() {
+      if (animatingLayer < 0) return;
+      animProgress += 0.025;
+      if (animProgress >= 1) {
+        // commit layer
+        const l = animatingLayer - 1; // weights index
+        const W_ = weights[l], b_ = biases[l];
+        const prev = activations[animatingLayer - 1];
+        const cur = [];
+        for (let j = 0; j < sizes[animatingLayer]; j++) {
+          let z = b_[j];
+          for (let i = 0; i < prev.length; i++) z += W_[j][i] * prev[i];
+          cur.push(tanh(z));
+        }
+        activations[animatingLayer] = cur;
+        logStep(animatingLayer, prev, W_, b_, cur);
+        animProgress = 0;
+        animatingLayer++;
+        if (animatingLayer >= sizes.length) {
+          animatingLayer = -1;
+          updateMath();
+        }
+      }
+      draw();
+      raf = requestAnimationFrame(step);
+    }
+
+    function logStep(l, prev, Wm, b, cur) {
+      const line = document.createElement('div');
+      line.className = 'demo-log__line';
+      line.innerHTML = `<strong>Layer ${l}:</strong> z = W&middot;a + b &rarr; tanh &rarr; [${cur.map((v) => v.toFixed(2)).join(', ')}]`;
+      logBox.appendChild(line);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function updateMath() {
+      let html = '';
+      for (let l = 0; l < weights.length; l++) {
+        html += `<div class="math-step"><span class="math-step__label">a<sup>(${l + 1})</sup> =</span> tanh(W<sup>(${l + 1})</sup> &middot; a<sup>(${l})</sup> + b<sup>(${l + 1})</sup>)</div>`;
+        if (activations[l + 1] && activations[l + 1][0] !== null) {
+          html += `<div class="math-step math-step--values">= [${activations[l + 1].map((v) => v.toFixed(2)).join(', ')}]</div>`;
+        }
+      }
+      mathBox.innerHTML = html;
+    }
+
+    function inject() {
+      // reset
+      for (let l = 1; l < sizes.length; l++) {
+        activations[l] = new Array(sizes[l]).fill(null);
+      }
+      logBox.innerHTML = '';
+      animatingLayer = 1;
+      animProgress = 0;
+      updateMath();
+      cancelAnimationFrame(raf);
+      step();
+    }
+
+    function reset() {
+      cancelAnimationFrame(raf);
+      animatingLayer = -1;
+      animProgress = 0;
+      initActivations();
+      logBox.innerHTML = '';
+      updateMath();
+      draw();
+    }
+
+    function randomise() {
+      initWeights();
+      reset();
+    }
+
+    function onMove(e) {
+      const r = canvas.getBoundingClientRect();
+      const mx = e.clientX - r.left;
+      const my = e.clientY - r.top;
+      hovered = null;
+      outer:
+      for (let li = 0; li < layerNodes.length; li++) {
+        for (let ni = 0; ni < layerNodes[li].length; ni++) {
+          const n = layerNodes[li][ni];
+          if ((n.x - mx) ** 2 + (n.y - my) ** 2 < 256) {
+            hovered = { li, ni };
+            break outer;
+          }
+        }
+      }
+      if (hovered) {
+        const v = activations[hovered.li][hovered.ni];
+        let z = '&mdash;';
+        if (hovered.li > 0 && v !== null) {
+          const W_ = weights[hovered.li - 1][hovered.ni];
+          const b_ = biases[hovered.li - 1][hovered.ni];
+          const prev = activations[hovered.li - 1];
+          let zVal = b_;
+          for (let i = 0; i < prev.length; i++) zVal += W_[i] * prev[i];
+          z = zVal.toFixed(3);
+        }
+        tooltip.innerHTML =
+          `<strong>L${hovered.li} N${hovered.ni}</strong><br>` +
+          `z = ${z}<br>` +
+          `a = ${v === null ? '&mdash;' : v.toFixed(3)}`;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (mx + 14) + 'px';
+        tooltip.style.top = (my + 14) + 'px';
+      } else {
+        tooltip.style.display = 'none';
+      }
+      draw();
+    }
+
+    function resize() {
+      const o = initCanvas(canvas);
+      ctx = o.ctx; W = o.w; H = o.h;
+      buildNodes();
+      draw();
+    }
+
+    canvas.style.height = '380px';
+    initWeights();
+    initActivations();
+    resize();
+    updateMath();
+    draw();
+
+    document.getElementById('fp-inject').addEventListener('click', inject);
+    document.getElementById('fp-reset').addEventListener('click', reset);
+    document.getElementById('fp-randomise').addEventListener('click', randomise);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseleave', () => {
+      hovered = null;
+      tooltip.style.display = 'none';
+      draw();
+    });
+    window.addEventListener('resize', resize);
+  })();
+
+  // ---------------------------------------------------------------
+  // DEMO 2 -- Architecture Builder
+  // ---------------------------------------------------------------
+  (function abDemo() {
+    const canvas = document.getElementById('ab-canvas');
+    if (!canvas) return;
+
+    const inputsEl = document.getElementById('ab-inputs');
+    const layersEl = document.getElementById('ab-layers');
+    const widthEl = document.getElementById('ab-width');
+    const outputsEl = document.getElementById('ab-outputs');
+    const inputsVal = document.getElementById('ab-inputs-val');
+    const layersVal = document.getElementById('ab-layers-val');
+    const widthVal = document.getElementById('ab-width-val');
+    const outputsVal = document.getElementById('ab-outputs-val');
+    const wOut = document.getElementById('ab-weights');
+    const bOut = document.getElementById('ab-biases');
+    const pOut = document.getElementById('ab-params');
+    const aOut = document.getElementById('ab-arch');
+    const warn = document.getElementById('ab-warning');
+
+    let ctx, W, H;
+
+    function getSizes() {
+      const inN = +inputsEl.value;
+      const hN = +layersEl.value;
+      const wN = +widthEl.value;
+      const oN = +outputsEl.value;
+      const sizes = [inN];
+      for (let i = 0; i < hN; i++) sizes.push(wN);
+      sizes.push(oN);
+      return sizes;
+    }
+
+    function paramCount(sizes) {
+      let w = 0, b = 0;
+      for (let l = 1; l < sizes.length; l++) {
+        w += sizes[l] * sizes[l - 1];
+        b += sizes[l];
+      }
+      return { w, b, total: w + b };
+    }
+
+    function draw() {
+      const sizes = getSizes();
+      ctx.clearRect(0, 0, W, H);
+
+      const margin = 40;
+      const stepX = (W - margin * 2) / (sizes.length - 1);
+      const nodes = [];
+      sizes.forEach((n, li) => {
+        const layer = [];
+        const stepY = (H - 30) / (n + 1);
+        for (let i = 0; i < n; i++) {
+          layer.push({ x: margin + li * stepX, y: 15 + stepY * (i + 1) });
+        }
+        nodes.push(layer);
+      });
+
+      // edges
+      for (let l = 0; l < nodes.length - 1; l++) {
+        const a = nodes[l], b = nodes[l + 1];
+        for (let i = 0; i < a.length; i++) {
+          for (let j = 0; j < b.length; j++) {
+            ctx.strokeStyle = 'rgba(120, 180, 230, 0.12)';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(a[i].x, a[i].y);
+            ctx.lineTo(b[j].x, b[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // nodes
+      nodes.forEach((layer, li) => {
+        const isInput = li === 0;
+        const isOutput = li === nodes.length - 1;
+        const color = isInput ? 'rgba(120, 220, 180, 0.9)'
+          : isOutput ? 'rgba(255, 180, 120, 0.9)'
+          : 'rgba(140, 200, 255, 0.9)';
+        layer.forEach((n) => {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+        ctx.fillStyle = 'rgba(180, 200, 230, 0.85)';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        const label = isInput ? `In (${layer.length})`
+          : isOutput ? `Out (${layer.length})`
+          : `H${li} (${layer.length})`;
+        ctx.fillText(label, layer[0].x, H - 6);
+      });
+    }
+
+    function update() {
+      inputsVal.textContent = inputsEl.value;
+      layersVal.textContent = layersEl.value;
+      widthVal.textContent = widthEl.value;
+      outputsVal.textContent = outputsEl.value;
+      const sizes = getSizes();
+      const { w, b, total } = paramCount(sizes);
+      wOut.textContent = w.toLocaleString();
+      bOut.textContent = b.toLocaleString();
+      pOut.textContent = total.toLocaleString();
+      aOut.textContent = sizes.join('-');
+      warn.style.display = total > 1000 ? 'flex' : 'none';
+      draw();
+    }
+
+    function resize() {
+      const o = initCanvas(canvas);
+      ctx = o.ctx; W = o.w; H = o.h;
+      draw();
+    }
+
+    canvas.style.height = '320px';
+    [inputsEl, layersEl, widthEl, outputsEl].forEach((el) =>
+      el.addEventListener('input', update)
+    );
+    window.addEventListener('resize', resize);
+    resize();
+    update();
+  })();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.6 Famous CNN Architectures | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="A tour of landmark CNN architectures from LeNet-5 (1998) to EfficientNet: AlexNet, VGG, GoogLeNet/Inception, ResNet, DenseNet, and MobileNet. Key innovations, civil engineering relevance, interactive architecture timeline, and residual connection visualizer.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ---- page-specific styles ---- */
+        .arch-timeline-wrapper{position:relative;width:100%;overflow-x:auto;margin:24px 0}
+        .arch-timeline-canvas{display:block;width:100%;min-height:420px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg);cursor:pointer}
+        .arch-detail-panel{margin-top:16px;padding:20px 24px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border-card);display:none}
+        .arch-detail-panel.active{display:block;animation:fadeSlideIn .35s ease}
+        .arch-detail-panel h4{margin:0 0 8px;font-size:1.15rem;color:var(--accent-primary)}
+        .arch-detail-panel .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
+        .arch-detail-panel .detail-item{background:var(--bg-tertiary);padding:10px 14px;border-radius:8px;font-size:.85rem}
+        .arch-detail-panel .detail-item strong{display:block;margin-bottom:4px;color:var(--accent-secondary);font-size:.72rem;text-transform:uppercase;letter-spacing:1px}
+
+        .residual-canvas{display:block;width:100%;min-height:380px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg)}
+        .residual-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .residual-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .residual-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+        .residual-controls button.active{background:var(--accent-primary);color:var(--text-inverse);border-color:var(--accent-primary)}
+        .residual-controls .signal-label{font-size:.82rem;color:var(--text-secondary)}
+
+        .arch-compare-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.88rem}
+        .arch-compare-table th{text-align:left;padding:10px 14px;background:var(--bg-tertiary);color:var(--accent-primary);font-weight:600;border-bottom:2px solid var(--border-active)}
+        .arch-compare-table td{padding:10px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary)}
+        .arch-compare-table tr:hover td{background:var(--table-row-hover)}
+        .arch-compare-table .highlight-cell{color:var(--accent-primary);font-weight:600}
+
+        .layer-badge{display:inline-block;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600;letter-spacing:.5px}
+        .layer-badge--conv{background:rgba(0,212,170,.12);color:var(--accent-primary)}
+        .layer-badge--pool{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+        .layer-badge--fc{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .layer-badge--skip{background:rgba(34,197,94,.12);color:var(--accent-success)}
+
+        @keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.6
+            </div>
+            <h1 class="chapter-hero__title">Famous CNN Architectures</h1>
+            <p class="chapter-hero__subtitle">
+                From LeNet-5's humble five layers to ResNet's 152-layer towers &mdash;
+                a guided tour of the landmark architectures that redefined computer
+                vision and now power civil engineering inspection systems worldwide.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-landmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Standing on the Shoulders of Giants</h2>
+                        <p>
+                            Every modern AI-powered bridge inspection camera, autonomous
+                            drone surveyor, and concrete crack classifier descends from a
+                            small family of breakthrough architectures. Understanding these
+                            milestones is not an exercise in history &mdash; it is the key
+                            to choosing the right backbone for your own civil engineering
+                            models.
+                        </p>
+                        <p>
+                            In the previous sub-chapter you learned <em>how</em> to train a
+                            CNN. Now we ask: <strong>which CNN should you train?</strong>
+                            The answer depends on your task, your data, your computing
+                            budget, and whether the model must run on a desktop GPU or an
+                            embedded sensor on a bridge. This sub-chapter introduces eight
+                            landmark architectures, explains the single key innovation each
+                            contributed, and maps them onto civil engineering use cases.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The history of CNNs is a story of overcoming obstacles. Each generation
+                    of researchers faced a fundamental limitation &mdash; too few pixels,
+                    too little data, vanishing gradients, excessive computation &mdash; and
+                    responded with an architectural innovation that changed the field
+                    forever. Knowing these innovations lets you read modern papers fluently
+                    and select pretrained models with confidence.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you are familiar with convolutional layers,
+                        pooling, activation functions, and fully connected layers
+                        (<strong>Sub-chapter 4.4</strong>) and the basics of training
+                        (<strong>Sub-chapter 4.5</strong>). We will refer to concepts such as
+                        feature maps, filter sizes, and gradient flow throughout.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: LeNet-5
+             ========================================== -->
+        <section class="ch-section" id="lenet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-1"></i>
+                    LeNet-5 (1998) &mdash; Where It All Began
+                </h2>
+
+                <p>
+                    Yann LeCun's <strong>LeNet-5</strong> was designed to read handwritten
+                    digits on checks for the United States Postal Service. With just five
+                    trainable layers &mdash; two convolutional and three fully connected
+                    &mdash; it was tiny by modern standards, yet it proved that learned
+                    convolutional filters outperform hand-crafted feature extractors for
+                    visual pattern recognition.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: End-to-End Learned Features</h3>
+                        <p>
+                            Before LeNet-5, engineers designed image features manually (edges,
+                            corners, texture histograms) and fed them to a classifier.
+                            LeNet-5 showed that a single differentiable pipeline &mdash; from
+                            raw pixels to class probabilities &mdash; could learn its own
+                            features via backpropagation. This paradigm shift is the
+                            foundation of every architecture that follows.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Architecture at a Glance</h3>
+
+                <table class="arch-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Type</th>
+                            <th>Output Shape</th>
+                            <th>Parameters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Input</td>
+                            <td>&mdash;</td>
+                            <td>32 &times; 32 &times; 1</td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td>C1</td>
+                            <td><span class="layer-badge layer-badge--conv">Conv 5&times;5</span></td>
+                            <td>28 &times; 28 &times; 6</td>
+                            <td>156</td>
+                        </tr>
+                        <tr>
+                            <td>S2</td>
+                            <td><span class="layer-badge layer-badge--pool">Avg Pool 2&times;2</span></td>
+                            <td>14 &times; 14 &times; 6</td>
+                            <td>12</td>
+                        </tr>
+                        <tr>
+                            <td>C3</td>
+                            <td><span class="layer-badge layer-badge--conv">Conv 5&times;5</span></td>
+                            <td>10 &times; 10 &times; 16</td>
+                            <td>1,516</td>
+                        </tr>
+                        <tr>
+                            <td>S4</td>
+                            <td><span class="layer-badge layer-badge--pool">Avg Pool 2&times;2</span></td>
+                            <td>5 &times; 5 &times; 16</td>
+                            <td>32</td>
+                        </tr>
+                        <tr>
+                            <td>F5&ndash;F7</td>
+                            <td><span class="layer-badge layer-badge--fc">Fully Connected</span></td>
+                            <td>120 &rarr; 84 &rarr; 10</td>
+                            <td>~59 K</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    With roughly 60,000 parameters, LeNet-5 could train on a single 1990s
+                    workstation in minutes. Compare that to the billions of parameters in
+                    today's largest models and you appreciate how far the field has
+                    traveled &mdash; yet the principles LeCun established remain unchanged.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>LeNet-5 is like the first steel-frame building.</strong>
+                            The Home Insurance Building in Chicago (1885) was only ten
+                            stories tall &mdash; modest by today's standards &mdash; but it
+                            proved the concept that a steel skeleton could support a
+                            structure. Every modern skyscraper follows the same principle.
+                            Similarly, LeNet-5 proved that learned convolutional filters
+                            work, and every subsequent CNN builds on that foundation.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: AlexNet
+             ========================================== -->
+        <section class="ch-section" id="alexnet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-2"></i>
+                    AlexNet (2012) &mdash; The ImageNet Breakthrough
+                </h2>
+
+                <p>
+                    For more than a decade after LeNet-5, most computer vision researchers
+                    relied on hand-crafted features such as SIFT and HOG. That changed
+                    dramatically in 2012 when Alex Krizhevsky, Ilya Sutskever, and Geoffrey
+                    Hinton submitted <strong>AlexNet</strong> to the ImageNet Large Scale
+                    Visual Recognition Challenge (ILSVRC) and reduced the top-5 error rate
+                    from 26% to 16% &mdash; a margin so large it shocked the community.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: GPU Training + ReLU + Dropout</h3>
+                        <p>
+                            AlexNet was the first major CNN trained on GPUs (two NVIDIA GTX
+                            580s), making deep networks feasible at scale. It also replaced
+                            the sigmoid activation with <strong>ReLU</strong> (Rectified
+                            Linear Unit), which trains 6&times; faster, and introduced
+                            <strong>dropout</strong> regularization to prevent overfitting.
+                            These three ideas became the default toolkit for all subsequent
+                            architectures.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why It Mattered</h3>
+
+                <p>
+                    AlexNet had 60 million parameters spread across five convolutional
+                    layers and three fully connected layers &mdash; 1,000&times; more
+                    parameters than LeNet-5. It processed 227&times;227 RGB images and
+                    classified them into 1,000 categories. The architectural recipe was
+                    straightforward: stack more layers, use bigger filters in early layers
+                    (11&times;11), and let the GPU handle the arithmetic.
+                </p>
+
+                <p>
+                    The ImageNet victory triggered an avalanche of deep learning research.
+                    Within two years, every top entry in ILSVRC was a CNN, and the error
+                    rate plummeted below human performance by 2015.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Relevance: Transfer Learning Pioneer</h3>
+                        <p>
+                            AlexNet's pretrained ImageNet weights became the first widely
+                            used feature extractor for civil engineering tasks. Researchers
+                            at the University of Illinois demonstrated that freezing
+                            AlexNet's convolutional layers and retraining only the classifier
+                            head on a small dataset of concrete crack images could achieve
+                            over 95% accuracy &mdash; proving that features learned from
+                            everyday objects generalize to structural defects.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: VGGNet
+             ========================================== -->
+        <section class="ch-section" id="vggnet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-3"></i>
+                    VGGNet (2014) &mdash; The Power of Depth
+                </h2>
+
+                <p>
+                    The Visual Geometry Group at Oxford asked a simple question:
+                    <em>what happens if we make the network deeper while keeping
+                    everything else uniform?</em> Their answer, <strong>VGG-16</strong>
+                    (and the deeper VGG-19), stacked 13&ndash;16 convolutional layers
+                    using exclusively 3&times;3 filters, separated by max-pooling layers,
+                    followed by three fully connected layers.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: Small Filters, Deep Stacks</h3>
+                        <p>
+                            VGG showed that two stacked 3&times;3 convolutional layers have
+                            the same receptive field as a single 5&times;5 layer, but with
+                            fewer parameters and an additional nonlinearity between them.
+                            Three stacked 3&times;3 layers replace a 7&times;7 layer. This
+                            insight &mdash; <strong>smaller filters, more layers</strong>
+                            &mdash; became a design principle adopted by nearly every
+                            architecture that followed.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Trade-off: Simplicity vs. Efficiency</h3>
+
+                <p>
+                    VGG-16 contains 138 million parameters, most concentrated in the
+                    three fully connected layers at the top. Training required four NVIDIA
+                    Titan GPUs for two to three weeks. Despite this computational cost, the
+                    architecture's regularity made it easy to understand and implement,
+                    which is why it remains one of the most frequently used backbones in
+                    academic research.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>VGG is like a multi-story car park with identical
+                            floors.</strong> Every level has the same layout: same beam
+                            spans, same column grid, same slab thickness. The repetition
+                            makes design, analysis, and construction straightforward, even
+                            if the total amount of concrete and steel is higher than a
+                            custom-designed structure with optimized floor plates. VGG
+                            trades efficiency for simplicity and predictability.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Relevance: Feature-Rich Backbone</h3>
+                        <p>
+                            VGG's intermediate feature maps are exceptionally good at
+                            capturing texture patterns, making it a popular backbone for
+                            civil engineering tasks such as surface defect classification
+                            (spalling, efflorescence, rebar exposure) and pavement distress
+                            recognition. Many published CE studies use VGG-16 with transfer
+                            learning as their baseline model.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: GoogLeNet / Inception
+             ========================================== -->
+        <section class="ch-section" id="googlenet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-4"></i>
+                    GoogLeNet / Inception (2014) &mdash; Going Wider
+                </h2>
+
+                <p>
+                    While VGG pushed depth, Google's team explored a different axis:
+                    <strong>width</strong>. The question was whether a network could
+                    examine each feature map with multiple filter sizes simultaneously
+                    and let the training process decide which scale matters most. The
+                    result was the <strong>Inception module</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: Inception Module + 1&times;1 Convolutions</h3>
+                        <p>
+                            An Inception module applies 1&times;1, 3&times;3, and 5&times;5
+                            convolutions <em>in parallel</em> to the same input, then
+                            concatenates their outputs along the channel axis. To control
+                            computational cost, <strong>1&times;1 convolutions</strong> are
+                            inserted before the larger filters to reduce the number of input
+                            channels &mdash; a technique called <em>bottleneck
+                            dimensionality reduction</em>. This single idea cut
+                            GoogLeNet's parameter count to just 5 million (27&times; smaller
+                            than VGG) while achieving better accuracy.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>How 1&times;1 Convolutions Work</h3>
+
+                <p>
+                    A 1&times;1 convolution operates on each spatial position independently,
+                    computing a weighted sum across channels. Think of it as a per-pixel
+                    fully connected layer that mixes channel information without altering
+                    spatial dimensions. By projecting 256 channels down to 64 before
+                    applying a 5&times;5 filter, the Inception module reduces computation
+                    by roughly 90%.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>An Inception module is like a multi-scale site
+                            investigation.</strong> When surveying a construction site, you
+                            simultaneously collect data at different scales: satellite imagery
+                            for regional context (5&times;5 filters), drone photos for
+                            site-level features (3&times;3 filters), and close-up soil
+                            samples for material properties (1&times;1 filters). Combining
+                            all scales into one report gives a richer picture than any
+                            single survey method.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Architectural Statistics</h3>
+
+                <table class="arch-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>GoogLeNet</th>
+                            <th>VGG-16</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Depth (layers)</td>
+                            <td class="highlight-cell">22</td>
+                            <td>16</td>
+                        </tr>
+                        <tr>
+                            <td>Parameters</td>
+                            <td class="highlight-cell">~5 M</td>
+                            <td>~138 M</td>
+                        </tr>
+                        <tr>
+                            <td>FLOPs</td>
+                            <td class="highlight-cell">~1.5 B</td>
+                            <td>~15.5 B</td>
+                        </tr>
+                        <tr>
+                            <td>Top-5 Error (ILSVRC 2014)</td>
+                            <td class="highlight-cell">6.67%</td>
+                            <td>7.32%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    GoogLeNet demonstrated that intelligent architecture design
+                    (going wider with bottlenecks) can outperform brute-force depth while
+                    using a fraction of the computational resources. Its successors &mdash;
+                    Inception v2, v3, and v4 &mdash; further refined the module with
+                    factorized convolutions and batch normalization.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: ResNet
+             ========================================== -->
+        <section class="ch-section" id="resnet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-5"></i>
+                    ResNet (2015) &mdash; Skip Connections Change Everything
+                </h2>
+
+                <p>
+                    By 2015, researchers knew that deeper networks should be more powerful
+                    &mdash; but in practice, networks deeper than about 20 layers became
+                    <em>harder</em> to train. Accuracy would saturate and then
+                    <strong>degrade</strong>, not because of overfitting, but because
+                    gradients vanished or exploded as they traversed dozens of layers
+                    during backpropagation.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: Residual (Skip) Connections</h3>
+                        <p>
+                            Kaiming He and colleagues at Microsoft Research introduced the
+                            <strong>residual block</strong>. Instead of learning a desired
+                            mapping $H(x)$ directly, the block learns the
+                            <strong>residual</strong> $F(x) = H(x) - x$ and adds the
+                            input back: $H(x) = F(x) + x$. This identity shortcut allows
+                            gradients to flow directly through the skip connection,
+                            alleviating the vanishing gradient problem and enabling training
+                            of networks with 50, 101, or even 152 layers.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why Skip Connections Work</h3>
+
+                <p>
+                    Consider the worst case: if the residual $F(x)$ learns to be zero,
+                    the block simply passes the input through unchanged &mdash; an identity
+                    mapping. This means adding more layers can never <em>hurt</em>
+                    performance, because the network can always fall back to the identity.
+                    In practice, the residual branch learns small, useful corrections on
+                    top of the identity, making optimization dramatically easier.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>A skip connection is like a structural bypass in a
+                            water distribution network.</strong> If a treatment stage (layer)
+                            fails or adds too little value, water (the signal) can flow
+                            through the bypass pipe directly to the next junction.
+                            The system never loses pressure (gradient magnitude) regardless
+                            of how many treatment stages you add in series.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>ResNet Variants</h3>
+
+                <table class="arch-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Variant</th>
+                            <th>Layers</th>
+                            <th>Parameters</th>
+                            <th>Top-5 Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ResNet-18</td>
+                            <td>18</td>
+                            <td>~11.7 M</td>
+                            <td>10.92%</td>
+                        </tr>
+                        <tr>
+                            <td>ResNet-34</td>
+                            <td>34</td>
+                            <td>~21.8 M</td>
+                            <td>8.58%</td>
+                        </tr>
+                        <tr>
+                            <td>ResNet-50</td>
+                            <td>50</td>
+                            <td>~25.6 M</td>
+                            <td>7.13%</td>
+                        </tr>
+                        <tr>
+                            <td>ResNet-101</td>
+                            <td>101</td>
+                            <td>~44.5 M</td>
+                            <td>6.44%</td>
+                        </tr>
+                        <tr>
+                            <td>ResNet-152</td>
+                            <td>152</td>
+                            <td>~60.2 M</td>
+                            <td class="highlight-cell">5.71%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Relevance: The Go-To Backbone</h3>
+                        <p>
+                            ResNet-50 is arguably the most widely used backbone in civil
+                            engineering deep learning. Its combination of high accuracy,
+                            reasonable parameter count, and well-understood behavior makes
+                            it the default choice for bridge damage detection, pavement
+                            crack segmentation, building damage assessment from satellite
+                            imagery, and construction site safety monitoring. When in doubt,
+                            start with a pretrained ResNet-50.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: DenseNet
+             ========================================== -->
+        <section class="ch-section" id="densenet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-6"></i>
+                    DenseNet (2017) &mdash; Connect Everything
+                </h2>
+
+                <p>
+                    If one skip connection is good, what about connecting <em>every</em>
+                    layer to every other layer? That is the idea behind
+                    <strong>DenseNet</strong> (Densely Connected Convolutional Networks).
+                    In a dense block, each layer receives the feature maps of all preceding
+                    layers as input and passes its own feature maps to all subsequent
+                    layers.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: Dense Connectivity + Feature Reuse</h3>
+                        <p>
+                            By concatenating (not adding) feature maps from all previous
+                            layers, DenseNet encourages maximum <strong>feature
+                            reuse</strong>. Each layer needs to produce only a small number
+                            of new feature maps (the <em>growth rate</em>, typically 12 or
+                            32), because it already has access to every feature computed
+                            earlier. This dramatically reduces the total number of
+                            parameters while maintaining strong gradient flow.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>DenseNet vs. ResNet</h3>
+
+                <p>
+                    Where ResNet <em>adds</em> the input to the output ($x + F(x)$),
+                    DenseNet <em>concatenates</em> all previous outputs
+                    ($[x_0, x_1, \ldots, x_{l-1}]$). This means the $l$-th layer in a
+                    dense block has $l$ skip connections rather than just one. Despite this
+                    explosion in connections, the narrow growth rate keeps the model compact:
+                    DenseNet-121 achieves comparable accuracy to ResNet-200 with fewer than
+                    half the parameters.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Relevance: Fine-Grained Defect Recognition</h3>
+                        <p>
+                            DenseNet's feature reuse is particularly valuable for civil
+                            engineering tasks that require distinguishing subtle defect
+                            types (e.g., hairline vs. structural cracks, early vs. advanced
+                            corrosion). The dense connectivity ensures that fine-grained
+                            low-level textures remain accessible to the final classifier,
+                            even in very deep networks.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: EfficientNet
+             ========================================== -->
+        <section class="ch-section" id="efficientnet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-7"></i>
+                    EfficientNet (2019) &mdash; Scaling Done Right
+                </h2>
+
+                <p>
+                    Prior architectures scaled in one dimension at a time: VGG scaled
+                    depth, GoogLeNet scaled width, and some models scaled input resolution.
+                    <strong>EfficientNet</strong>, developed by Mingxing Tan and Quoc Le
+                    at Google, asked: <em>can we scale all three dimensions simultaneously
+                    in a principled way?</em>
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: Compound Scaling</h3>
+                        <p>
+                            EfficientNet introduces a <strong>compound scaling
+                            coefficient</strong> $\phi$ that uniformly scales depth, width,
+                            and resolution using fixed ratios determined by a neural
+                            architecture search (NAS). Starting from a small baseline
+                            (EfficientNet-B0), increasing $\phi$ produces a family of models
+                            (B1 through B7) that achieve state-of-the-art accuracy at each
+                            computational budget. EfficientNet-B7 reached 84.3% top-1
+                            accuracy on ImageNet &mdash; the best at the time &mdash; while
+                            using 8.4&times; fewer parameters than the previous leader.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Scaling Formula</h3>
+
+                <p>
+                    Given a compound coefficient $\phi$:
+                </p>
+                <ul>
+                    <li>Depth: $d = \alpha^{\phi}$</li>
+                    <li>Width: $w = \beta^{\phi}$</li>
+                    <li>Resolution: $r = \gamma^{\phi}$</li>
+                </ul>
+                <p>
+                    where $\alpha$, $\beta$, $\gamma$ are constants determined by a grid
+                    search on the baseline network, subject to the constraint
+                    $\alpha \cdot \beta^{2} \cdot \gamma^{2} \approx 2$ so that total
+                    FLOPs roughly double with each integer increase in $\phi$.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Compound scaling is like proportional scaling in
+                            structural design.</strong> When you scale up a building, you
+                            cannot simply double the height without also widening the
+                            columns and deepening the foundations. EfficientNet's compound
+                            coefficient is the structural engineer's scaling law applied to
+                            neural network dimensions &mdash; depth, width, and resolution
+                            must grow together to maintain balance.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Relevance: Best Accuracy Per FLOP</h3>
+                        <p>
+                            For civil engineering teams with limited GPU budgets,
+                            EfficientNet offers the best accuracy-to-compute trade-off.
+                            EfficientNet-B3 or B4 are popular choices for bridge and
+                            tunnel inspection systems where cloud compute is expensive but
+                            accuracy requirements are high. The compound scaling principle
+                            also guides engineers when customizing architectures for
+                            domain-specific tasks.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: MobileNet
+             ========================================== -->
+        <section class="ch-section" id="mobilenet">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-8"></i>
+                    MobileNet (2017) &mdash; AI at the Edge
+                </h2>
+
+                <p>
+                    All previous architectures assumed access to powerful GPUs.
+                    <strong>MobileNet</strong>, developed by Andrew Howard and colleagues
+                    at Google, was designed from the ground up for
+                    <strong>edge deployment</strong> &mdash; mobile phones, embedded
+                    sensors, drones, and IoT devices with limited memory and compute.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Innovation: Depthwise Separable Convolutions</h3>
+                        <p>
+                            A standard convolution applies a 3D filter across all input
+                            channels simultaneously. MobileNet splits this into two steps:
+                            (1) a <strong>depthwise convolution</strong> that applies a
+                            single filter per input channel (spatial filtering), and (2) a
+                            <strong>pointwise 1&times;1 convolution</strong> that mixes the
+                            channel outputs. This factorization reduces computation by a
+                            factor of roughly $1/N + 1/D_K^2$ (where $N$ is the number of
+                            output channels and $D_K$ is the kernel size), typically
+                            8&ndash;9&times; fewer FLOPs with minimal accuracy loss.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>MobileNet Family</h3>
+
+                <table class="arch-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Year</th>
+                            <th>Key Addition</th>
+                            <th>Params</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>MobileNet v1</td>
+                            <td>2017</td>
+                            <td>Depthwise separable convolutions</td>
+                            <td>~4.2 M</td>
+                        </tr>
+                        <tr>
+                            <td>MobileNet v2</td>
+                            <td>2018</td>
+                            <td>Inverted residuals + linear bottlenecks</td>
+                            <td>~3.4 M</td>
+                        </tr>
+                        <tr>
+                            <td>MobileNet v3</td>
+                            <td>2019</td>
+                            <td>NAS-optimized + squeeze-and-excite</td>
+                            <td>~5.4 M</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Relevance: Drones, Sensors, and Real-Time Inspection</h3>
+                        <p>
+                            MobileNet is the architecture of choice when inference must
+                            happen <em>on the device</em> rather than in the cloud. Civil
+                            engineering applications include: real-time crack detection on
+                            inspection drones that lack internet connectivity, embedded
+                            corrosion sensors on bridges that classify images locally to
+                            reduce data transmission, and mobile apps that let field
+                            engineers photograph a structure and receive an instant damage
+                            assessment. If your model must run on a Raspberry Pi, NVIDIA
+                            Jetson, or smartphone, MobileNet is your starting point.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>MobileNet is like a prefabricated modular
+                            building.</strong> Traditional construction (full convolutions)
+                            is powerful but resource-intensive. Prefab modules (depthwise
+                            separable convolutions) break the process into standardized,
+                            lightweight components that can be assembled on-site with
+                            minimal equipment. The result is faster, cheaper, and nearly
+                            as strong &mdash; ideal for remote locations or tight budgets.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: CHOOSING FOR CE TASKS
+             ========================================== -->
+        <section class="ch-section" id="choosing-architecture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    Which Architecture for Which CE Task?
+                </h2>
+
+                <p>
+                    Selecting the right backbone is an engineering decision that balances
+                    accuracy, speed, model size, and deployment constraints. The table
+                    below maps common civil engineering tasks to recommended architectures:
+                </p>
+
+                <table class="arch-compare-table">
+                    <thead>
+                        <tr>
+                            <th>CE Task</th>
+                            <th>Recommended Architecture</th>
+                            <th>Rationale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Concrete crack classification (desktop GPU)</td>
+                            <td class="highlight-cell">ResNet-50</td>
+                            <td>Best balance of accuracy and efficiency; massive pretrained ecosystem</td>
+                        </tr>
+                        <tr>
+                            <td>Fine-grained defect typing (spalling, delamination, corrosion)</td>
+                            <td class="highlight-cell">DenseNet-121</td>
+                            <td>Dense connectivity preserves low-level texture cues needed for subtle distinctions</td>
+                        </tr>
+                        <tr>
+                            <td>Satellite damage assessment (high-res imagery)</td>
+                            <td class="highlight-cell">EfficientNet-B4</td>
+                            <td>Compound scaling handles large input resolutions efficiently</td>
+                        </tr>
+                        <tr>
+                            <td>Real-time drone inspection</td>
+                            <td class="highlight-cell">MobileNet v3</td>
+                            <td>Runs at 30+ FPS on edge devices; small model size fits drone compute</td>
+                        </tr>
+                        <tr>
+                            <td>Academic baseline / quick prototyping</td>
+                            <td class="highlight-cell">VGG-16</td>
+                            <td>Simple, well-understood; easy to implement and debug</td>
+                        </tr>
+                        <tr>
+                            <td>Multi-scale feature extraction (segmentation backbone)</td>
+                            <td class="highlight-cell">ResNet-101 or Inception v3</td>
+                            <td>Deep features + multi-scale receptive fields for pixel-level prediction</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Advice</span>
+                    </div>
+                    <p>
+                        When starting a new CE deep learning project, follow this decision
+                        process: (1) define your deployment target (cloud, desktop GPU,
+                        edge device), (2) estimate your dataset size, (3) pick a backbone
+                        from the table above, (4) start with pretrained ImageNet weights
+                        and fine-tune on your domain data. This approach consistently
+                        outperforms training from scratch on small CE datasets.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: GRAND COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="grand-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Grand Comparison Table
+                </h2>
+
+                <p>
+                    The following table summarizes the eight architectures side by side.
+                    Notice the trends: parameter counts first exploded (VGG), then shrank
+                    via clever design (Inception, MobileNet), and accuracy steadily improved
+                    as architectural innovations accumulated.
+                </p>
+
+                <div style="overflow-x:auto;">
+                    <table class="arch-compare-table">
+                        <thead>
+                            <tr>
+                                <th>Architecture</th>
+                                <th>Year</th>
+                                <th>Depth</th>
+                                <th>Params</th>
+                                <th>Key Idea</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>LeNet-5</td>
+                                <td>1998</td>
+                                <td>5</td>
+                                <td>~60 K</td>
+                                <td>End-to-end learned features</td>
+                            </tr>
+                            <tr>
+                                <td>AlexNet</td>
+                                <td>2012</td>
+                                <td>8</td>
+                                <td>~60 M</td>
+                                <td>GPU training, ReLU, dropout</td>
+                            </tr>
+                            <tr>
+                                <td>VGG-16</td>
+                                <td>2014</td>
+                                <td>16</td>
+                                <td>~138 M</td>
+                                <td>Small filters (3&times;3), deep stacks</td>
+                            </tr>
+                            <tr>
+                                <td>GoogLeNet</td>
+                                <td>2014</td>
+                                <td>22</td>
+                                <td>~5 M</td>
+                                <td>Inception module, 1&times;1 conv</td>
+                            </tr>
+                            <tr>
+                                <td>ResNet-50</td>
+                                <td>2015</td>
+                                <td>50</td>
+                                <td>~25.6 M</td>
+                                <td>Skip / residual connections</td>
+                            </tr>
+                            <tr>
+                                <td>DenseNet-121</td>
+                                <td>2017</td>
+                                <td>121</td>
+                                <td>~8 M</td>
+                                <td>Dense connectivity, feature reuse</td>
+                            </tr>
+                            <tr>
+                                <td>MobileNet v2</td>
+                                <td>2018</td>
+                                <td>53</td>
+                                <td>~3.4 M</td>
+                                <td>Depthwise separable convolutions</td>
+                            </tr>
+                            <tr>
+                                <td>EfficientNet-B0</td>
+                                <td>2019</td>
+                                <td>~18</td>
+                                <td>~5.3 M</td>
+                                <td>Compound scaling (depth + width + res)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: DEMO 1 — ARCHITECTURE TIMELINE
+             ========================================== -->
+        <section class="ch-section" id="demo-timeline">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-timeline"></i>
+                    Interactive Demo: Architecture Evolution Timeline
+                </h2>
+
+                <p>
+                    Click on any architecture in the timeline below to reveal its layer
+                    structure, parameter count, and key contribution. The vertical axis
+                    represents depth (number of layers), and the horizontal axis spans
+                    the years from 1998 to 2019.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-timeline">
+                    <div class="arch-timeline-wrapper">
+                        <canvas id="timeline-canvas" class="arch-timeline-canvas" aria-label="CNN architecture evolution timeline from 1998 to 2019"></canvas>
+                    </div>
+                    <div class="arch-detail-panel" id="arch-detail">
+                        <h4 id="detail-name"></h4>
+                        <p id="detail-desc"></p>
+                        <div class="detail-grid" id="detail-grid"></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: DEMO 2 — RESIDUAL CONNECTION VISUALIZER
+             ========================================== -->
+        <section class="ch-section" id="demo-residual">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-route"></i>
+                    Interactive Demo: Residual Connection Visualizer
+                </h2>
+
+                <p>
+                    This demo illustrates how skip connections preserve gradient magnitude
+                    during backpropagation. Toggle between a <strong>plain network</strong>
+                    (no skip connections) and a <strong>residual network</strong> to see
+                    how the gradient signal behaves as it travels backward through layers.
+                    Watch how the gradient shrinks to near-zero in the plain network but
+                    remains healthy in the residual version.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-residual">
+                    <canvas id="residual-canvas" class="residual-canvas" aria-label="Residual connection visualizer showing gradient flow"></canvas>
+                    <div class="residual-controls">
+                        <button id="btn-plain" class="active">
+                            <i class="fa-solid fa-diagram-project"></i> Plain Network
+                        </button>
+                        <button id="btn-residual">
+                            <i class="fa-solid fa-share-nodes"></i> Residual Network
+                        </button>
+                        <button id="btn-animate">
+                            <i class="fa-solid fa-play"></i> Animate Gradient
+                        </button>
+                        <span class="signal-label" id="gradient-label">Gradient magnitude: 100%</span>
+                    </div>
+                </div>
+
+                <div class="info-card" style="margin-top:24px;">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What to Observe</h3>
+                        <p>
+                            In the <strong>plain network</strong>, the gradient shrinks by
+                            roughly 50% at each layer. After 10 layers, only about 0.1% of
+                            the original gradient reaches the first layer &mdash; far too
+                            small to drive meaningful weight updates. In the
+                            <strong>residual network</strong>, the skip connections provide
+                            an additive path that preserves gradient magnitude above 50%
+                            even after 10 layers, enabling effective training of very deep
+                            architectures.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Q1</span>
+                        <span class="quiz-block__question">
+                            Which architecture introduced the concept of learning image
+                            features directly from raw pixels via backpropagation, replacing
+                            hand-crafted feature extractors?
+                        </span>
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-a"></i> AlexNet
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-b"></i> LeNet-5
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-c"></i> VGG-16
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-d"></i> ResNet-50
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback" id="quiz-1-feedback"></div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Q2</span>
+                        <span class="quiz-block__question">
+                            What is the primary purpose of 1&times;1 convolutions in the
+                            GoogLeNet/Inception architecture?
+                        </span>
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-a"></i> To increase spatial resolution
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-b"></i> To replace max-pooling layers
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-c"></i> To reduce the number of input channels before expensive convolutions
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-d"></i> To add skip connections
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback" id="quiz-2-feedback"></div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Q3</span>
+                        <span class="quiz-block__question">
+                            A civil engineer needs to deploy a crack detection model on
+                            a drone with limited compute. Which architecture family is
+                            most appropriate?
+                        </span>
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-a"></i> VGG-19 (138 M parameters)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-b"></i> ResNet-152 (60 M parameters)
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-c"></i> MobileNet v3 (~5 M parameters)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-d"></i> DenseNet-201 (20 M parameters)
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback" id="quiz-3-feedback"></div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <span class="quiz-block__number">Q4</span>
+                        <span class="quiz-block__question">
+                            ResNet solves the vanishing gradient problem by:
+                        </span>
+                    </div>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-a"></i> Using larger convolutional filters
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-b"></i> Replacing ReLU with sigmoid activations
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-c"></i> Adding identity shortcut connections that allow gradients to bypass layers
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this)">
+                            <i class="fa-solid fa-d"></i> Reducing the network to fewer than 10 layers
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback" id="quiz-4-feedback"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ol style="margin:8px 0;padding-left:20px;line-height:2.2;">
+                            <li>
+                                <strong>LeNet-5</strong> proved that end-to-end learned
+                                features via convolution + backpropagation work.
+                            </li>
+                            <li>
+                                <strong>AlexNet</strong> brought GPU training, ReLU, and
+                                dropout &mdash; triggering the modern deep learning era.
+                            </li>
+                            <li>
+                                <strong>VGG</strong> showed that deeper networks with small
+                                3&times;3 filters outperform shallower networks with large
+                                filters.
+                            </li>
+                            <li>
+                                <strong>GoogLeNet/Inception</strong> introduced multi-scale
+                                processing and 1&times;1 convolutions to control compute.
+                            </li>
+                            <li>
+                                <strong>ResNet</strong> solved the vanishing gradient problem
+                                with skip connections, enabling 100+ layer networks.
+                            </li>
+                            <li>
+                                <strong>DenseNet</strong> maximized feature reuse through
+                                dense connectivity with a narrow growth rate.
+                            </li>
+                            <li>
+                                <strong>EfficientNet</strong> introduced compound scaling to
+                                balance depth, width, and resolution simultaneously.
+                            </li>
+                            <li>
+                                <strong>MobileNet</strong> made CNNs practical for edge
+                                devices using depthwise separable convolutions.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub5.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">4.5 Training CNNs</div>
+        </a>
+        <a href="sub7.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">4.7 Object Detection</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    (function() {
+        'use strict';
+
+        /* ============================================================
+           UTILITIES
+           ============================================================ */
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+        const PI = Math.PI, TAU = PI * 2;
+        const lerp = (a,b,t) => a + (b - a) * t;
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+        function getColors() {
+            const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:   dark ? '#2dd4bf' : '#059669',
+                CYAN:   dark ? '#22d3ee' : '#0284c7',
+                AMBER:  dark ? '#fbbf24' : '#d97706',
+                RED:    dark ? '#ef4444' : '#dc2626',
+                GREEN:  dark ? '#22c55e' : '#16a34a',
+                PURPLE: dark ? '#a78bfa' : '#7c3aed',
+                PINK:   dark ? '#f472b6' : '#db2777',
+                ORANGE: dark ? '#fb923c' : '#ea580c',
+                BG:     dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT:   dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:    dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:   dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                STROKE: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE:  dark ? '#fff' : '#1a1a2e',
+                MUTED:  dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        }
+
+        function initCanvas(canvas) {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width  = rect.width  * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx, w: rect.width, h: rect.height, dpr };
+        }
+
+        /* ============================================================
+           HERO CANVAS — floating architecture blocks
+           ============================================================ */
+        (function heroCanvas() {
+            const canvas = $('#hero-canvas');
+            if (!canvas) return;
+            const { ctx, w, h } = initCanvas(canvas);
+            const blocks = [];
+            for (let i = 0; i < 30; i++) {
+                blocks.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: 8 + Math.random() * 24,
+                    alpha: 0.05 + Math.random() * 0.1,
+                    type: Math.floor(Math.random() * 3)
+                });
+            }
+            function draw() {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                blocks.forEach(b => {
+                    b.x += b.vx; b.y += b.vy;
+                    if (b.x < -30) b.x = w + 30;
+                    if (b.x > w + 30) b.x = -30;
+                    if (b.y < -30) b.y = h + 30;
+                    if (b.y > h + 30) b.y = -30;
+                    ctx.globalAlpha = b.alpha;
+                    ctx.fillStyle = b.type === 0 ? c.TEAL : b.type === 1 ? c.CYAN : c.AMBER;
+                    ctx.fillRect(b.x - b.size / 2, b.y - b.size / 2, b.size, b.size);
+                    ctx.strokeStyle = ctx.fillStyle;
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(b.x - b.size / 2, b.y - b.size / 2, b.size, b.size);
+                });
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        /* ============================================================
+           DEMO 1: ARCHITECTURE EVOLUTION TIMELINE
+           ============================================================ */
+        (function timelineDemo() {
+            const canvas = $('#timeline-canvas');
+            if (!canvas) return;
+
+            const architectures = [
+                {
+                    name: 'LeNet-5', year: 1998, depth: 5, params: '60 K',
+                    color: 'TEAL',
+                    desc: 'First successful CNN. Proved end-to-end learned convolutional features for handwritten digit recognition.',
+                    details: { 'Layers': '2 Conv + 3 FC', 'Input': '32x32 grayscale', 'Activation': 'Tanh/Sigmoid', 'Key Idea': 'Learned filters', 'Params': '~60,000', 'Dataset': 'MNIST' }
+                },
+                {
+                    name: 'AlexNet', year: 2012, depth: 8, params: '60 M',
+                    color: 'CYAN',
+                    desc: 'Won ILSVRC 2012 by a huge margin. Introduced GPU training, ReLU activation, and dropout regularization.',
+                    details: { 'Layers': '5 Conv + 3 FC', 'Input': '227x227 RGB', 'Activation': 'ReLU', 'Key Idea': 'GPU + ReLU + Dropout', 'Params': '~60 M', 'Top-5 Error': '16.4%' }
+                },
+                {
+                    name: 'VGG-16', year: 2014, depth: 16, params: '138 M',
+                    color: 'AMBER',
+                    desc: 'Demonstrated that depth with small 3x3 filters outperforms shallow networks with large filters.',
+                    details: { 'Layers': '13 Conv + 3 FC', 'Input': '224x224 RGB', 'Filter Size': '3x3 only', 'Key Idea': 'Depth + small filters', 'Params': '~138 M', 'Top-5 Error': '7.3%' }
+                },
+                {
+                    name: 'GoogLeNet', year: 2014, depth: 22, params: '5 M',
+                    color: 'GREEN',
+                    desc: 'Introduced the Inception module: parallel multi-scale convolutions with 1x1 bottlenecks.',
+                    details: { 'Layers': '22 deep', 'Input': '224x224 RGB', 'Module': 'Inception (1x1+3x3+5x5)', 'Key Idea': 'Width + 1x1 conv', 'Params': '~5 M', 'Top-5 Error': '6.7%' }
+                },
+                {
+                    name: 'ResNet-50', year: 2015, depth: 50, params: '25.6 M',
+                    color: 'PURPLE',
+                    desc: 'Skip connections solved the vanishing gradient problem, enabling training of 152+ layer networks.',
+                    details: { 'Layers': '50 (up to 152)', 'Input': '224x224 RGB', 'Block': 'Residual (identity shortcut)', 'Key Idea': 'Skip connections', 'Params': '~25.6 M', 'Top-5 Error': '5.7%' }
+                },
+                {
+                    name: 'DenseNet', year: 2017, depth: 121, params: '8 M',
+                    color: 'PINK',
+                    desc: 'Dense connectivity: every layer receives feature maps from all preceding layers for maximum feature reuse.',
+                    details: { 'Layers': '121 (up to 264)', 'Input': '224x224 RGB', 'Block': 'Dense block (concatenation)', 'Key Idea': 'Feature reuse', 'Params': '~8 M', 'Growth Rate': '32' }
+                },
+                {
+                    name: 'MobileNet', year: 2017, depth: 28, params: '3.4 M',
+                    color: 'ORANGE',
+                    desc: 'Depthwise separable convolutions for edge deployment: 8-9x fewer FLOPs with minimal accuracy loss.',
+                    details: { 'Layers': '28 (v1) / 53 (v2)', 'Input': '224x224 RGB', 'Conv Type': 'Depthwise separable', 'Key Idea': 'Edge efficiency', 'Params': '~3.4 M (v2)', 'Target': 'Mobile / IoT' }
+                },
+                {
+                    name: 'EfficientNet', year: 2019, depth: 18, params: '5.3 M',
+                    color: 'RED',
+                    desc: 'Compound scaling: jointly scale depth, width, and resolution using a single coefficient.',
+                    details: { 'Layers': '~18 (B0) to ~66 (B7)', 'Input': '224-600px', 'Scaling': 'Compound (d+w+r)', 'Key Idea': 'Balanced scaling', 'Params': '5.3 M (B0)', 'Top-1 Acc': '84.3% (B7)' }
+                }
+            ];
+
+            let selected = -1;
+            let hoveredIdx = -1;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            const PAD_LEFT = 70, PAD_RIGHT = 50, PAD_TOP = 50, PAD_BOTTOM = 60;
+            const MIN_YEAR = 1996, MAX_YEAR = 2021;
+            const MAX_DEPTH = 155;
+
+            function yearToX(year) {
+                return PAD_LEFT + (year - MIN_YEAR) / (MAX_YEAR - MIN_YEAR) * (w - PAD_LEFT - PAD_RIGHT);
+            }
+            function depthToY(depth) {
+                return PAD_TOP + (1 - depth / MAX_DEPTH) * (h - PAD_TOP - PAD_BOTTOM);
+            }
+
+            function drawTimeline() {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                for (let yr = 1998; yr <= 2020; yr += 2) {
+                    const x = yearToX(yr);
+                    ctx.beginPath(); ctx.moveTo(x, PAD_TOP); ctx.lineTo(x, h - PAD_BOTTOM); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(yr, x, h - PAD_BOTTOM + 20);
+                }
+                for (let d = 0; d <= 150; d += 25) {
+                    const y = depthToY(d);
+                    ctx.beginPath(); ctx.moveTo(PAD_LEFT, y); ctx.lineTo(w - PAD_RIGHT, y); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(d, PAD_LEFT - 10, y + 4);
+                }
+
+                /* axis labels */
+                ctx.fillStyle = c.TEXT;
+                ctx.font = '600 12px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Year', w / 2, h - 8);
+                ctx.save();
+                ctx.translate(16, h / 2);
+                ctx.rotate(-PI / 2);
+                ctx.fillText('Depth (layers)', 0, 0);
+                ctx.restore();
+
+                /* connections */
+                ctx.strokeStyle = c.DIM;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                for (let i = 1; i < architectures.length; i++) {
+                    const a = architectures[i - 1], b = architectures[i];
+                    ctx.beginPath();
+                    ctx.moveTo(yearToX(a.year), depthToY(a.depth));
+                    ctx.lineTo(yearToX(b.year), depthToY(b.depth));
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                /* nodes */
+                architectures.forEach((arch, i) => {
+                    const x = yearToX(arch.year);
+                    const y = depthToY(arch.depth);
+                    const isHovered = i === hoveredIdx;
+                    const isSelected = i === selected;
+                    const radius = isSelected ? 14 : isHovered ? 12 : 9;
+
+                    /* glow */
+                    if (isSelected || isHovered) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, radius + 8, 0, TAU);
+                        ctx.fillStyle = c[arch.color] + '22';
+                        ctx.fill();
+                    }
+
+                    /* circle */
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, TAU);
+                    ctx.fillStyle = c[arch.color];
+                    ctx.fill();
+                    if (isSelected) {
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2.5;
+                        ctx.stroke();
+                    }
+
+                    /* label */
+                    ctx.fillStyle = isSelected || isHovered ? c.WHITE : c.TEXT;
+                    ctx.font = (isSelected ? '700 ' : '500 ') + '11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    const labelY = y - radius - 8;
+                    ctx.fillText(arch.name, x, labelY);
+
+                    /* param text */
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '10px JetBrains Mono, monospace';
+                    ctx.fillText(arch.params, x, y + radius + 16);
+                });
+
+                /* title */
+                ctx.fillStyle = c.WHITE;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('CNN Evolution: Depth vs. Time', PAD_LEFT, 26);
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.fillText('Click an architecture to explore', PAD_LEFT, 42);
+            }
+
+            function getHitArch(mx, my) {
+                for (let i = 0; i < architectures.length; i++) {
+                    const a = architectures[i];
+                    const dx = mx - yearToX(a.year);
+                    const dy = my - depthToY(a.depth);
+                    if (dx * dx + dy * dy < 400) return i;
+                }
+                return -1;
+            }
+
+            function showDetail(idx) {
+                const panel = $('#arch-detail');
+                if (idx < 0) { panel.classList.remove('active'); return; }
+                const a = architectures[idx];
+                $('#detail-name').textContent = a.name + ' (' + a.year + ')';
+                $('#detail-desc').textContent = a.desc;
+                const grid = $('#detail-grid');
+                grid.innerHTML = '';
+                Object.entries(a.details).forEach(([k, v]) => {
+                    const div = document.createElement('div');
+                    div.className = 'detail-item';
+                    div.innerHTML = '<strong>' + k + '</strong>' + v;
+                    grid.appendChild(div);
+                });
+                panel.classList.add('active');
+            }
+
+            canvas.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const idx = getHitArch(mx, my);
+                hoveredIdx = idx;
+                canvas.style.cursor = idx >= 0 ? 'pointer' : 'default';
+                drawTimeline();
+            });
+
+            canvas.addEventListener('click', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const idx = getHitArch(mx, my);
+                selected = (idx === selected) ? -1 : idx;
+                showDetail(selected);
+                drawTimeline();
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                hoveredIdx = -1;
+                drawTimeline();
+            });
+
+            function handleResize() {
+                const result = initCanvas(canvas);
+                ctx = result.ctx; w = result.w; h = result.h;
+                drawTimeline();
+            }
+            window.addEventListener('resize', handleResize);
+
+            /* Redraw on theme change */
+            const observer = new MutationObserver(drawTimeline);
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            drawTimeline();
+        })();
+
+        /* ============================================================
+           DEMO 2: RESIDUAL CONNECTION VISUALIZER
+           ============================================================ */
+        (function residualDemo() {
+            const canvas = $('#residual-canvas');
+            if (!canvas) return;
+
+            const btnPlain = $('#btn-plain');
+            const btnResidual = $('#btn-residual');
+            const btnAnimate = $('#btn-animate');
+            const gradLabel = $('#gradient-label');
+
+            let mode = 'plain'; // 'plain' or 'residual'
+            let animating = false;
+            let animFrame = 0;
+            let animRAF = null;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            const NUM_LAYERS = 10;
+            const LAYER_W = 50;
+            const BLOCK_H = 28;
+
+            function getLayerPositions() {
+                const startX = 80;
+                const endX = w - 80;
+                const spacing = (endX - startX) / (NUM_LAYERS - 1);
+                const cy = h / 2;
+                const positions = [];
+                for (let i = 0; i < NUM_LAYERS; i++) {
+                    positions.push({ x: startX + i * spacing, y: cy });
+                }
+                return positions;
+            }
+
+            function getGradient(layerIdx) {
+                if (mode === 'plain') {
+                    /* Gradient decays by ~0.5 per layer */
+                    return Math.pow(0.65, NUM_LAYERS - 1 - layerIdx);
+                } else {
+                    /* Skip connections preserve gradient; decays much less */
+                    return Math.pow(0.92, NUM_LAYERS - 1 - layerIdx);
+                }
+            }
+
+            function drawNetwork(progress) {
+                const c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                const positions = getLayerPositions();
+                const skipY = positions[0].y - 70;
+
+                /* Title */
+                ctx.fillStyle = c.WHITE;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(mode === 'plain' ? 'Plain Network (no skip connections)' : 'Residual Network (with skip connections)', 20, 24);
+
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.fillText('Gradient flows backward (right to left)', 20, 42);
+
+                /* Draw skip connections (residual mode) */
+                if (mode === 'residual') {
+                    ctx.strokeStyle = c.GREEN + '40';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    for (let i = 0; i < NUM_LAYERS - 1; i += 2) {
+                        if (i + 2 >= NUM_LAYERS) break;
+                        const p1 = positions[i];
+                        const p2 = positions[i + 2];
+                        const arcY = skipY + (i % 4 === 0 ? 0 : 15);
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x + LAYER_W / 2, p1.y - BLOCK_H / 2);
+                        ctx.quadraticCurveTo(
+                            (p1.x + p2.x) / 2 + LAYER_W / 2, arcY,
+                            p2.x + LAYER_W / 2, p2.y - BLOCK_H / 2
+                        );
+                        ctx.stroke();
+                        /* arrow */
+                        const ax = p2.x + LAYER_W / 2;
+                        const ay = p2.y - BLOCK_H / 2;
+                        ctx.fillStyle = c.GREEN + '60';
+                        ctx.beginPath();
+                        ctx.moveTo(ax, ay);
+                        ctx.lineTo(ax - 5, ay - 8);
+                        ctx.lineTo(ax + 5, ay - 8);
+                        ctx.fill();
+                    }
+                    ctx.setLineDash([]);
+
+                    /* "Skip" label */
+                    ctx.fillStyle = c.GREEN;
+                    ctx.font = '600 10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('SKIP CONNECTIONS', w / 2, skipY - 8);
+                }
+
+                /* Draw forward connections */
+                for (let i = 0; i < NUM_LAYERS - 1; i++) {
+                    const p1 = positions[i];
+                    const p2 = positions[i + 1];
+                    ctx.strokeStyle = c.STROKE;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x + LAYER_W, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+
+                /* Draw layers */
+                positions.forEach((pos, i) => {
+                    const grad = getGradient(i);
+                    const isActive = animating && progress >= 0 && (NUM_LAYERS - 1 - i) <= progress * NUM_LAYERS;
+
+                    /* Layer block */
+                    ctx.fillStyle = isActive ? (mode === 'residual' ? c.GREEN : c.AMBER) : c.DIM;
+                    ctx.strokeStyle = isActive ? (mode === 'residual' ? c.GREEN : c.AMBER) : c.STROKE;
+                    ctx.lineWidth = isActive ? 2 : 1;
+                    const rx = pos.x;
+                    const ry = pos.y - BLOCK_H / 2;
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, LAYER_W, BLOCK_H, 6);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    /* Layer label */
+                    ctx.fillStyle = isActive ? c.WHITE : c.TEXT;
+                    ctx.font = '600 10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('L' + (i + 1), pos.x + LAYER_W / 2, pos.y + 4);
+
+                    /* Gradient bar below */
+                    const barW = LAYER_W;
+                    const barH = 8;
+                    const barY = pos.y + BLOCK_H / 2 + 16;
+
+                    ctx.fillStyle = c.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(rx, barY, barW, barH, 4);
+                    ctx.fill();
+
+                    if (isActive || !animating) {
+                        const fillW = barW * grad;
+                        const gradColor = grad > 0.5 ? c.GREEN : grad > 0.15 ? c.AMBER : c.RED;
+                        ctx.fillStyle = gradColor;
+                        ctx.beginPath();
+                        ctx.roundRect(rx, barY, fillW, barH, 4);
+                        ctx.fill();
+                    }
+
+                    /* Gradient percentage */
+                    if (!animating || isActive) {
+                        ctx.fillStyle = c.MUTED;
+                        ctx.font = '10px JetBrains Mono, monospace';
+                        ctx.textAlign = 'center';
+                        ctx.fillText((grad * 100).toFixed(1) + '%', pos.x + LAYER_W / 2, barY + barH + 14);
+                    }
+                });
+
+                /* Labels */
+                ctx.fillStyle = c.TEAL;
+                ctx.font = '600 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('OUTPUT', positions[NUM_LAYERS - 1].x + LAYER_W / 2, positions[0].y + BLOCK_H / 2 + 52);
+                ctx.fillText('INPUT', positions[0].x + LAYER_W / 2, positions[0].y + BLOCK_H / 2 + 52);
+
+                /* Gradient arrow */
+                if (animating && progress >= 0) {
+                    const arrowX = positions[NUM_LAYERS - 1].x + LAYER_W - progress * (positions[NUM_LAYERS - 1].x - positions[0].x + LAYER_W);
+                    const arrowY = positions[0].y - BLOCK_H / 2 - 30;
+                    ctx.fillStyle = mode === 'residual' ? c.GREEN : c.AMBER;
+                    ctx.beginPath();
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(arrowX + 10, arrowY - 6);
+                    ctx.lineTo(arrowX + 10, arrowY + 6);
+                    ctx.fill();
+                    ctx.fillStyle = c.WHITE;
+                    ctx.font = '600 10px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Gradient', arrowX + 14, arrowY + 4);
+                }
+
+                /* Gradient bar legend */
+                const legendY = h - 28;
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Gradient magnitude at each layer (100% = full signal)', 20, legendY);
+            }
+
+            function animate() {
+                if (!animating) return;
+                animFrame++;
+                const progress = Math.min(animFrame / 120, 1);
+                drawNetwork(progress);
+
+                const currentLayer = Math.floor(progress * NUM_LAYERS);
+                const layerIdx = NUM_LAYERS - 1 - Math.min(currentLayer, NUM_LAYERS - 1);
+                const grad = getGradient(layerIdx);
+                gradLabel.textContent = 'Gradient magnitude: ' + (grad * 100).toFixed(1) + '%';
+
+                if (progress < 1) {
+                    animRAF = requestAnimationFrame(animate);
+                } else {
+                    animating = false;
+                    btnAnimate.innerHTML = '<i class="fa-solid fa-play"></i> Animate Gradient';
+                    const finalGrad = getGradient(0);
+                    gradLabel.textContent = 'Final gradient at Layer 1: ' + (finalGrad * 100).toFixed(1) + '%';
+                }
+            }
+
+            btnPlain.addEventListener('click', function() {
+                mode = 'plain';
+                btnPlain.classList.add('active');
+                btnResidual.classList.remove('active');
+                animating = false;
+                if (animRAF) cancelAnimationFrame(animRAF);
+                animFrame = 0;
+                gradLabel.textContent = 'Gradient magnitude: 100%';
+                btnAnimate.innerHTML = '<i class="fa-solid fa-play"></i> Animate Gradient';
+                drawNetwork(-1);
+            });
+
+            btnResidual.addEventListener('click', function() {
+                mode = 'residual';
+                btnResidual.classList.add('active');
+                btnPlain.classList.remove('active');
+                animating = false;
+                if (animRAF) cancelAnimationFrame(animRAF);
+                animFrame = 0;
+                gradLabel.textContent = 'Gradient magnitude: 100%';
+                btnAnimate.innerHTML = '<i class="fa-solid fa-play"></i> Animate Gradient';
+                drawNetwork(-1);
+            });
+
+            btnAnimate.addEventListener('click', function() {
+                if (animating) {
+                    animating = false;
+                    if (animRAF) cancelAnimationFrame(animRAF);
+                    btnAnimate.innerHTML = '<i class="fa-solid fa-play"></i> Animate Gradient';
+                    return;
+                }
+                animating = true;
+                animFrame = 0;
+                btnAnimate.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                animate();
+            });
+
+            function handleResize() {
+                const result = initCanvas(canvas);
+                ctx = result.ctx; w = result.w; h = result.h;
+                drawNetwork(animating ? animFrame / 120 : -1);
+            }
+            window.addEventListener('resize', handleResize);
+
+            const observer = new MutationObserver(function() {
+                drawNetwork(animating ? animFrame / 120 : -1);
+            });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            drawNetwork(-1);
+        })();
+
+        /* ============================================================
+           QUIZ HANDLER
+           ============================================================ */
+        window.checkQuiz = function(btn) {
+            const quizBlock = btn.closest('.quiz-block');
+            if (quizBlock.classList.contains('answered')) return;
+            quizBlock.classList.add('answered');
+
+            const isCorrect = btn.getAttribute('data-correct') === 'true';
+            const options = quizBlock.querySelectorAll('.quiz-option');
+            const feedback = quizBlock.querySelector('.quiz-block__feedback');
+
+            options.forEach(opt => {
+                opt.disabled = true;
+                opt.style.pointerEvents = 'none';
+                if (opt.getAttribute('data-correct') === 'true') {
+                    opt.style.background = 'rgba(34,197,94,0.15)';
+                    opt.style.borderColor = '#22c55e';
+                    opt.style.color = '#22c55e';
+                } else if (opt === btn && !isCorrect) {
+                    opt.style.background = 'rgba(239,68,68,0.15)';
+                    opt.style.borderColor = '#ef4444';
+                    opt.style.color = '#ef4444';
+                }
+            });
+
+            if (isCorrect) {
+                feedback.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#22c55e"></i> Correct!';
+                feedback.style.color = '#22c55e';
+            } else {
+                feedback.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:#ef4444"></i> Incorrect. The correct answer is highlighted above.';
+                feedback.style.color = '#ef4444';
+            }
+            feedback.style.display = 'block';
+            feedback.style.marginTop = '12px';
+            feedback.style.fontWeight = '600';
+        };
+
+        /* ============================================================
+           INTERSECTION OBSERVER — fade-in for info-cards
+           ============================================================ */
+        const cards = $$('.info-card, .analogy-block, .quiz-block, .demo-panel');
+        const io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+        cards.forEach(function(c) { io.observe(c); });
+
+    })();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>6.8 Regularization & Generalization | Civil Engineer's Guide to AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../css/theme.css" />
+<link rel="stylesheet" href="../css/chapters.css" />
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="main-nav">
+  <div class="nav-container">
+    <a href="../index.html" class="nav-logo">
+      <i class="fa-solid fa-helmet-safety"></i>
+      <span>CE &times; AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html" class="nav-link">Home</a></li>
+      <li><a href="index.html" class="nav-link">Chapter 6</a></li>
+      <li><a href="sub7.html" class="nav-link">Prev</a></li>
+      <li><a href="sub9.html" class="nav-link">Next</a></li>
+    </ul>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+<header class="chapter-hero">
+  <div class="chapter-hero__background">
+    <canvas id="hero-canvas"></canvas>
+  </div>
+  <div class="chapter-hero__content">
+    <div class="chapter-hero__badge">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>Sub-chapter 6.8</span>
+    </div>
+    <h1 class="chapter-hero__title">Regularization &amp; Generalization</h1>
+    <p class="chapter-hero__subtitle">
+      A model that memorizes the training set is like a beam designed for one
+      load case. Regularization is the safety factor that keeps it standing when
+      the world looks different tomorrow.
+    </p>
+    <div class="chapter-hero__meta">
+      <span><i class="fa-solid fa-clock"></i> ~30 min read</span>
+      <span><i class="fa-solid fa-layer-group"></i> 8 techniques</span>
+      <span><i class="fa-solid fa-flask"></i> 2 demos</span>
+      <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+    </div>
+  </div>
+  <div class="chapter-hero__scroll-cue">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</header>
+
+<main class="chapter-content">
+
+  <!-- ============== SECTION 1: WHAT IS GENERALIZATION ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-bullseye"></i> The Real Goal: Generalization</h2>
+      <p>
+        Training loss is a means, not the end. The number you actually care
+        about is how the model performs on data it has <em>never seen</em>. That
+        property &mdash; behaving sensibly on new inputs &mdash; is called
+        <strong>generalization</strong>, and every technique in this
+        sub-chapter exists to protect it.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-circle-info"></i> Three loss numbers, three meanings</h3>
+        <ul>
+          <li><strong>Training loss</strong> &mdash; error on the data the model
+            was optimized on. Always optimistic.</li>
+          <li><strong>Validation loss</strong> &mdash; error on a held-out set
+            used during development to tune hyperparameters.</li>
+          <li><strong>Test loss</strong> &mdash; error on a final, untouched
+            set. The honest report card.</li>
+        </ul>
+      </div>
+
+      <div class="analogy-block">
+        <h3><i class="fa-solid fa-helmet-safety"></i> Civil Engineering Analogy</h3>
+        <p>
+          A bridge that perfectly resists last week's measured truck loads but
+          collapses under a slightly heavier one tomorrow has zero engineering
+          value. Codes mandate <strong>safety factors</strong>, minimum
+          reinforcement ratios, and load combinations precisely because the
+          design data is a sample, not the truth. Regularization plays the same
+          role for neural networks: it deliberately worsens fit on the training
+          data to buy robustness against the data that hasn't arrived yet.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 2: BIAS-VARIANCE ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-scale-balanced"></i> The Bias&ndash;Variance Tradeoff</h2>
+      <p>
+        Every supervised model lives somewhere on a spectrum between two
+        failure modes:
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-arrow-down-wide-short"></i> High bias (underfitting)</h3>
+        <p>
+          The model is too simple to capture the underlying pattern. A linear
+          regression fitting a sinusoidal signal. Both training and validation
+          errors are high and roughly equal.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-arrow-up-wide-short"></i> High variance (overfitting)</h3>
+        <p>
+          The model is so flexible it memorizes noise. Training error is tiny,
+          validation error is huge. Tiny perturbations to training data swing
+          the prediction wildly.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-bullseye"></i> The sweet spot</h3>
+        <p>
+          Just enough capacity to capture the signal, plus regularization to
+          discourage chasing noise. Total expected error decomposes as:
+        </p>
+        <pre><code>Error = Bias&sup2; + Variance + IrreducibleNoise</code></pre>
+        <p>
+          You can trade bias for variance and vice versa &mdash; you cannot
+          eliminate the noise floor.
+        </p>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-lightbulb"></i>
+        <p>
+          Diagnosis rule of thumb: if <em>both</em> losses are high &rarr; bigger
+          model or better features. If <em>training is low but validation is
+          high</em> &rarr; regularize, augment, or get more data.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 3: OVERFITTING DEMO ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-flask"></i> Demo 1 &mdash; Overfitting Playground</h2>
+      <p>
+        A noisy 1D regression problem. Choose the polynomial degree and the
+        amount of L2 regularization (&lambda;). Watch the curve flail wildly at
+        high degrees, then snap back to a sensible shape as &lambda; grows.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__controls">
+          <label>
+            Polynomial degree:
+            <input type="range" id="poly-degree" min="1" max="15" value="9" />
+            <span id="poly-degree-val">9</span>
+          </label>
+          <label>
+            <input type="checkbox" id="l2-toggle" />
+            Apply L2 regularization
+          </label>
+          <label>
+            log&#8321;&#8320;(&lambda;):
+            <input type="range" id="l2-lambda" min="-6" max="2" step="0.1" value="-3" />
+            <span id="l2-lambda-val">1e-3</span>
+          </label>
+          <button id="poly-resample" class="demo-btn">
+            <i class="fa-solid fa-shuffle"></i> Resample data
+          </button>
+        </div>
+        <canvas id="poly-canvas" style="width:100%;height:380px;"></canvas>
+        <div class="demo-panel__readout">
+          <span>Train MSE: <strong id="poly-train-mse">&mdash;</strong></span>
+          <span>Val MSE: <strong id="poly-val-mse">&mdash;</strong></span>
+          <span>Train R&sup2;: <strong id="poly-train-r2">&mdash;</strong></span>
+          <span>Val R&sup2;: <strong id="poly-val-r2">&mdash;</strong></span>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <p>
+          Try degree 13 with &lambda; off &mdash; the curve will whip between
+          points. Now flip L2 on and slide &lambda; up: the curve calms. Train
+          MSE rises slightly, but validation MSE often <em>drops</em>. That gap
+          closing is the entire point of regularization.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 4: L1 / L2 ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-weight-hanging"></i> Weight Penalties: L1 and L2</h2>
+      <p>
+        The simplest regularizers add a term to the loss that punishes large
+        weights. The optimizer now has two jobs: fit the data <em>and</em> keep
+        the weights modest.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-1"></i> L1 regularization (Lasso)</h3>
+        <p>Loss becomes:</p>
+        <pre><code>L = L_data + &lambda; &Sigma; |w_i|</code></pre>
+        <p>
+          The absolute-value penalty has a corner at zero, which pushes weights
+          all the way to <strong>exactly zero</strong>. Result: a sparse model
+          that effectively performs <em>feature selection</em>. Useful when you
+          suspect most input features are irrelevant.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-2"></i> L2 regularization (Ridge / weight decay)</h3>
+        <p>Loss becomes:</p>
+        <pre><code>L = L_data + &lambda; &Sigma; w_i&sup2;</code></pre>
+        <p>
+          The quadratic penalty pushes weights toward zero but rarely all the
+          way there. Solutions are <strong>smooth</strong> and well-conditioned.
+          This is the default in deep learning, often implemented as
+          <em>weight decay</em> in the optimizer step.
+        </p>
+      </div>
+
+      <div class="analogy-block">
+        <h3><i class="fa-solid fa-helmet-safety"></i> CE Analogy</h3>
+        <p>
+          <strong>L2</strong> is like applying a uniform safety factor to every
+          structural member &mdash; everyone takes a slight haircut.
+          <strong>L1</strong> is like a value-engineering pass that
+          <em>removes</em> non-essential members entirely, leaving a sparse
+          truss with only the load-carrying elements.
+        </p>
+      </div>
+
+      <div class="code-peek">
+        <div class="code-peek__header">
+          <i class="fa-brands fa-python"></i>
+          <span>weight_decay in PyTorch</span>
+        </div>
+<pre><code># L2 weight decay built into the optimizer
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=1e-3,
+    weight_decay=1e-4,   # &lambda; for L2
+)
+
+# L1 has to be added manually to the loss
+l1 = sum(p.abs().sum() for p in model.parameters())
+loss = data_loss + 1e-5 * l1
+</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 5: DROPOUT ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-network-wired"></i> Dropout</h2>
+      <p>
+        On every training forward pass, randomly set a fraction <em>p</em> of
+        activations to zero. The remaining activations are scaled by
+        <code>1/(1-p)</code> so the expected magnitude stays the same. At
+        inference time, dropout is <strong>off</strong> &mdash; all neurons are
+        active.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-dice"></i> Why it works</h3>
+        <ul>
+          <li>The network can't rely on any single neuron, so features become
+            robust and redundant.</li>
+          <li>Mathematically equivalent to training an exponential ensemble of
+            sub-networks and averaging them at test time.</li>
+          <li>Typical values: <code>p = 0.2&ndash;0.5</code> for fully connected
+            layers, <code>0.1</code> or less for conv layers, often skipped
+            entirely between BatchNorm layers.</li>
+        </ul>
+      </div>
+
+      <div class="analogy-block">
+        <h3><i class="fa-solid fa-helmet-safety"></i> CE Analogy</h3>
+        <p>
+          Dropout is like designing a structure assuming any random subset of
+          components might fail during the service life. The remaining members
+          must still carry the load. The structure that emerges is over-redundant
+          but extraordinarily robust.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 6: DROPOUT DEMO ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-flask"></i> Demo 2 &mdash; Dropout Visualizer</h2>
+      <p>
+        A small 8&ndash;12&ndash;8&ndash;3 network. In <strong>training
+        mode</strong>, watch random neurons get masked each forward pass. In
+        <strong>inference mode</strong>, all neurons are on, but outgoing
+        weights are scaled by <code>(1-p)</code>. The right-hand chart compares
+        training trajectories with and without dropout.
+      </p>
+
+      <div class="demo-panel">
+        <div class="demo-panel__controls">
+          <label>
+            Dropout p:
+            <input type="range" id="dropout-p" min="0" max="0.7" step="0.05" value="0.3" />
+            <span id="dropout-p-val">0.30</span>
+          </label>
+          <button id="dropout-train" class="demo-btn">
+            <i class="fa-solid fa-play"></i> Training mode
+          </button>
+          <button id="dropout-infer" class="demo-btn">
+            <i class="fa-solid fa-eye"></i> Inference mode
+          </button>
+          <button id="dropout-reset" class="demo-btn">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+        <div class="demo-panel__split">
+          <canvas id="dropout-canvas" style="width:100%;height:360px;"></canvas>
+          <canvas id="dropout-loss-canvas" style="width:100%;height:360px;"></canvas>
+        </div>
+        <div class="demo-panel__readout">
+          <span>Mode: <strong id="dropout-mode">training</strong></span>
+          <span>Cycles: <strong id="dropout-cycles">0</strong></span>
+          <span>Active neurons: <strong id="dropout-active">&mdash;</strong></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 7: NORMALIZATION ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-wave-square"></i> Batch &amp; Layer Normalization</h2>
+      <p>
+        Normalization layers were introduced to stabilize training of deep
+        networks, but they also act as mild regularizers because of the noise
+        injected by mini-batch statistics.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-cubes"></i> Batch Normalization</h3>
+        <p>
+          For each feature, normalize across the <em>batch dimension</em> using
+          the mean and variance of the current mini-batch:
+        </p>
+        <pre><code>x&#770; = (x - &mu;_batch) / &radic;(&sigma;&sup2;_batch + &epsilon;)
+y  = &gamma; x&#770; + &beta;</code></pre>
+        <p>
+          Learnable scale (&gamma;) and shift (&beta;) restore expressiveness.
+          At inference time, running averages of &mu; and &sigma; are used.
+          Common in CNNs.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-layer-group"></i> Layer Normalization</h3>
+        <p>
+          Normalize across the <em>feature dimension</em> within a single
+          sample. Independent of batch size, which makes it the default in
+          Transformers and RNNs where batch statistics are unreliable or
+          impossible.
+        </p>
+      </div>
+
+      <div class="tip-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <p>
+          BatchNorm and Dropout interact badly. The standard recipe in modern
+          architectures is BatchNorm <em>or</em> Dropout per block, not both. In
+          Transformers, LayerNorm + a small dropout is the canonical pairing.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 8: EARLY STOPPING / AUG / LABEL SMOOTHING ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-toolbox"></i> The Rest of the Toolkit</h2>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-stop"></i> Early stopping</h3>
+        <p>
+          Track validation loss every epoch. When it stops improving for
+          <em>n</em> consecutive epochs (the <strong>patience</strong>), halt
+          training and restore the weights from the best epoch. Free
+          regularization &mdash; no extra hyperparameter on the model itself,
+          just a training-loop policy.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-images"></i> Data augmentation</h3>
+        <p>
+          The single most effective regularizer when applicable. Apply
+          label-preserving transformations to the inputs:
+        </p>
+        <ul>
+          <li><strong>Vision:</strong> random crops, flips, rotations, color
+            jitter, Cutout, MixUp, CutMix.</li>
+          <li><strong>Audio:</strong> time-stretch, pitch-shift, SpecAugment.</li>
+          <li><strong>Text:</strong> back-translation, synonym replacement,
+            random masking.</li>
+          <li><strong>Tabular:</strong> SMOTE, Gaussian noise, feature dropout.</li>
+        </ul>
+        <p>
+          Augmentation effectively grows the dataset for free and forces the
+          model to learn invariances that match the real world.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-tags"></i> Label smoothing</h3>
+        <p>
+          Instead of one-hot targets like <code>[0, 0, 1, 0]</code>, use
+          <code>[&epsilon;/K, &epsilon;/K, 1-&epsilon;+&epsilon;/K, &epsilon;/K]</code>
+          with a small <code>&epsilon;</code> (e.g., 0.1). This prevents the
+          network from driving its logits to infinity and reduces
+          overconfidence on uncertain predictions &mdash; a common ailment of
+          classifiers trained with cross-entropy.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-clipboard-list"></i> Choosing your dosage</h3>
+        <ul>
+          <li><strong>Small dataset</strong> (thousands): heavy dropout (0.5),
+            aggressive augmentation, strong weight decay, early stopping with
+            short patience.</li>
+          <li><strong>Medium dataset</strong>: moderate dropout (0.2&ndash;0.3),
+            standard augmentation, weight decay 1e-4.</li>
+          <li><strong>Large dataset</strong> (millions+): mild or no dropout,
+            light augmentation, small weight decay. The data itself becomes the
+            regularizer.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 9: DOUBLE DESCENT ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-chart-line"></i> The Double Descent Curiosity</h2>
+      <p>
+        The classical bias-variance picture predicts a U-shaped test error
+        curve: too few parameters underfits, too many overfits. Modern deep
+        learning observed something stranger.
+      </p>
+      <p>
+        As model size grows past the <em>interpolation threshold</em> (where
+        training error hits zero), test error first rises &mdash; then
+        <strong>falls again</strong>, sometimes below the classical sweet spot.
+        This is <strong>double descent</strong>.
+      </p>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-circle-info"></i> Why it matters</h3>
+        <ul>
+          <li>Massively overparameterized networks can generalize well, which
+            classical statistics did not predict.</li>
+          <li>Implicit regularization from SGD and architecture choices does
+            heavy lifting in this regime.</li>
+          <li>Don't be afraid of "too many" parameters &mdash; just keep
+            regularizing and watch validation loss.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION 10: QUIZ ============== -->
+  <section class="ch-section">
+    <div class="section-container">
+      <h2><i class="fa-solid fa-circle-question"></i> Self-Check</h2>
+
+      <div class="quiz-block" data-correct="b">
+        <p class="quiz-block__q">
+          1. Training MSE is 0.01, validation MSE is 0.42. Most likely diagnosis?
+        </p>
+        <ul class="quiz-block__opts">
+          <li data-key="a">High bias (underfitting); the model is too small.</li>
+          <li data-key="b">High variance (overfitting); regularize, augment, or get more data.</li>
+          <li data-key="c">Bug in the loss function.</li>
+          <li data-key="d">Learning rate is too low.</li>
+        </ul>
+        <div class="quiz-block__feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-correct="c">
+        <p class="quiz-block__q">
+          2. Which regularizer drives many weights to <em>exactly</em> zero,
+          producing a sparse model?
+        </p>
+        <ul class="quiz-block__opts">
+          <li data-key="a">L2 / weight decay</li>
+          <li data-key="b">Dropout</li>
+          <li data-key="c">L1 / Lasso</li>
+          <li data-key="d">Batch normalization</li>
+        </ul>
+        <div class="quiz-block__feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-correct="b">
+        <p class="quiz-block__q">
+          3. At inference time with dropout p = 0.3, the trained network should:
+        </p>
+        <ul class="quiz-block__opts">
+          <li data-key="a">Continue zeroing 30% of activations randomly.</li>
+          <li data-key="b">Use all neurons; weights are effectively scaled to compensate.</li>
+          <li data-key="c">Zero exactly the same 30% used in the last training step.</li>
+          <li data-key="d">Disable BatchNorm too.</li>
+        </ul>
+        <div class="quiz-block__feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-correct="d">
+        <p class="quiz-block__q">
+          4. Your dataset is small (~5,000 samples). Which combination is most reasonable?
+        </p>
+        <ul class="quiz-block__opts">
+          <li data-key="a">No dropout, no augmentation, no weight decay &mdash; let the data speak.</li>
+          <li data-key="b">Dropout 0.0, weight decay 0, train for thousands of epochs.</li>
+          <li data-key="c">Use the largest possible model with no regularization at all.</li>
+          <li data-key="d">Dropout ~0.5, strong augmentation, weight decay, early stopping.</li>
+        </ul>
+        <div class="quiz-block__feedback"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== NAV FOOTER ============== -->
+  <nav class="chapter-nav-footer">
+    <a href="sub7.html" class="chapter-nav__link prev">
+      <i class="fa-solid fa-arrow-left"></i>
+      <div>
+        <span class="chapter-nav__label">Previous</span>
+        <span class="chapter-nav__title">6.7 Training, Epochs &amp; Mini-Batches</span>
+      </div>
+    </a>
+    <a href="sub9.html" class="chapter-nav__link next">
+      <div>
+        <span class="chapter-nav__label">Next</span>
+        <span class="chapter-nav__title">6.9 Hardware &amp; Frameworks</span>
+      </div>
+      <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <p>
+      <i class="fa-solid fa-helmet-safety"></i>
+      A Civil Engineer's Guide to AI &middot; Chapter 6 &middot; Sub-chapter 6.8
+    </p>
+    <p class="site-footer__sub">
+      Built for engineers who'd rather understand a model than worship it.
+    </p>
+  </div>
+</footer>
+
+<script src="../js/theme.js"></script>
+<script src="../js/sub-common.js"></script>
+
+<script>
+/* =====================================================================
+   DPI-aware canvas helper
+   ===================================================================== */
+function initCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width  = r.width  * dpr;
+  c.height = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* =====================================================================
+   HERO CANVAS — wiggly overfit curve smoothing into a clean fit
+   ===================================================================== */
+(function heroCanvas(){
+  const c = document.getElementById('hero-canvas');
+  if (!c) return;
+  let ctx, w, h;
+  function size(){ const o = initCanvas(c); ctx = o.ctx; w = o.w; h = o.h; }
+  size();
+  window.addEventListener('resize', size);
+
+  // Generate fixed noisy points
+  const N = 22;
+  const pts = [];
+  for (let i = 0; i < N; i++){
+    const x = i / (N - 1);
+    const y = 0.5 + 0.25 * Math.sin(x * Math.PI * 2.0)
+                  + 0.07 * Math.sin(x * Math.PI * 5.0)
+                  + (Math.random() - 0.5) * 0.10;
+    pts.push({ x, y });
+  }
+
+  let t = 0;
+  function frame(){
+    ctx.clearRect(0, 0, w, h);
+
+    // morph factor: 0 = wild overfit, 1 = smooth fit, oscillating
+    t += 0.006;
+    const morph = 0.5 + 0.5 * Math.sin(t);
+
+    // Background gradient sheen
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, 'rgba(80,140,255,0.05)');
+    g.addColorStop(1, 'rgba(180,80,255,0.03)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+
+    // Plot points
+    for (const p of pts){
+      const px = p.x * w;
+      const py = p.y * h;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(180,200,230,0.55)';
+      ctx.fill();
+    }
+
+    // Overfit curve (high-frequency, jittery)
+    ctx.beginPath();
+    for (let i = 0; i <= 240; i++){
+      const x = i / 240;
+      const baseline = 0.5 + 0.25 * Math.sin(x * Math.PI * 2.0);
+      const wiggle = 0.18 * Math.sin(x * 30 + t * 4)
+                   + 0.10 * Math.sin(x * 47 - t * 3);
+      const y = baseline + wiggle * (1 - morph);
+      const px = x * w;
+      const py = y * h;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = `rgba(255,120,80,${0.25 + 0.45 * (1 - morph)})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Smooth fit curve
+    ctx.beginPath();
+    for (let i = 0; i <= 240; i++){
+      const x = i / 240;
+      const y = 0.5 + 0.25 * Math.sin(x * Math.PI * 2.0);
+      const px = x * w;
+      const py = y * h;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = `rgba(80,200,255,${0.30 + 0.55 * morph})`;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* =====================================================================
+   DEMO 1 — Overfitting Playground
+   Polynomial regression with optional L2 (ridge)
+   ===================================================================== */
+(function polyDemo(){
+  const canvas = document.getElementById('poly-canvas');
+  if (!canvas) return;
+
+  const degEl    = document.getElementById('poly-degree');
+  const degVal   = document.getElementById('poly-degree-val');
+  const l2El     = document.getElementById('l2-toggle');
+  const lamEl    = document.getElementById('l2-lambda');
+  const lamVal   = document.getElementById('l2-lambda-val');
+  const resampBt = document.getElementById('poly-resample');
+
+  const trainMSEel = document.getElementById('poly-train-mse');
+  const valMSEel   = document.getElementById('poly-val-mse');
+  const trainR2el  = document.getElementById('poly-train-r2');
+  const valR2el    = document.getElementById('poly-val-r2');
+
+  let ctx, w, h;
+  function size(){ const o = initCanvas(canvas); ctx = o.ctx; w = o.w; h = o.h; draw(); }
+  size();
+  window.addEventListener('resize', size);
+
+  // Data generation
+  let train = [], val = [];
+  function trueFn(x){
+    return 0.6 * Math.sin(2.2 * Math.PI * x) + 0.15 * x;
+  }
+  function generate(){
+    train = []; val = [];
+    const Nt = 22, Nv = 60;
+    for (let i = 0; i < Nt; i++){
+      const x = Math.random();
+      train.push({ x, y: trueFn(x) + (Math.random() - 0.5) * 0.35 });
+    }
+    for (let i = 0; i < Nv; i++){
+      const x = i / (Nv - 1);
+      val.push({ x, y: trueFn(x) + (Math.random() - 0.5) * 0.35 });
+    }
+  }
+  generate();
+
+  // ---- linear algebra helpers (small matrices only) ----
+  function buildDesign(xs, deg){
+    const X = [];
+    for (const x of xs){
+      const row = [];
+      for (let p = 0; p <= deg; p++) row.push(Math.pow(x, p));
+      X.push(row);
+    }
+    return X; // n x (deg+1)
+  }
+  function transpose(A){
+    const r = A.length, c = A[0].length;
+    const T = Array.from({ length: c }, () => new Array(r).fill(0));
+    for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) T[j][i] = A[i][j];
+    return T;
+  }
+  function matMul(A, B){
+    const r = A.length, c = B[0].length, k = B.length;
+    const C = Array.from({ length: r }, () => new Array(c).fill(0));
+    for (let i = 0; i < r; i++)
+      for (let j = 0; j < c; j++){
+        let s = 0;
+        for (let m = 0; m < k; m++) s += A[i][m] * B[m][j];
+        C[i][j] = s;
+      }
+    return C;
+  }
+  function matVec(A, v){
+    const r = A.length, c = A[0].length;
+    const o = new Array(r).fill(0);
+    for (let i = 0; i < r; i++){
+      let s = 0;
+      for (let j = 0; j < c; j++) s += A[i][j] * v[j];
+      o[i] = s;
+    }
+    return o;
+  }
+  // Solve (A) w = b  with Gaussian elimination, A is square
+  function solve(A, b){
+    const n = A.length;
+    const M = A.map((row, i) => row.concat([b[i]]));
+    for (let i = 0; i < n; i++){
+      // pivot
+      let piv = i;
+      for (let r = i + 1; r < n; r++){
+        if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) piv = r;
+      }
+      [M[i], M[piv]] = [M[piv], M[i]];
+      const d = M[i][i];
+      if (Math.abs(d) < 1e-12) continue;
+      for (let j = i; j <= n; j++) M[i][j] /= d;
+      for (let r = 0; r < n; r++){
+        if (r === i) continue;
+        const f = M[r][i];
+        for (let j = i; j <= n; j++) M[r][j] -= f * M[i][j];
+      }
+    }
+    return M.map(row => row[n]);
+  }
+
+  function fitPoly(deg, lambda){
+    const xs = train.map(p => p.x);
+    const ys = train.map(p => p.y);
+    const X = buildDesign(xs, deg);
+    const Xt = transpose(X);
+    const XtX = matMul(Xt, X);          // (d+1)x(d+1)
+    if (lambda > 0){
+      // Add lambda*I, but typically don't penalize the bias term
+      for (let i = 1; i < XtX.length; i++) XtX[i][i] += lambda;
+    }
+    const Xty = matVec(Xt, ys);
+    const w = solve(XtX, Xty);
+    return w;
+  }
+
+  function predict(w, x){
+    let s = 0;
+    for (let p = 0; p < w.length; p++) s += w[p] * Math.pow(x, p);
+    return s;
+  }
+
+  function mse(w, set){
+    let s = 0;
+    for (const p of set){ const e = predict(w, p.x) - p.y; s += e * e; }
+    return s / set.length;
+  }
+  function r2(w, set){
+    const mean = set.reduce((a, p) => a + p.y, 0) / set.length;
+    let ssRes = 0, ssTot = 0;
+    for (const p of set){
+      const e = predict(w, p.x) - p.y;
+      ssRes += e * e;
+      ssTot += (p.y - mean) * (p.y - mean);
+    }
+    if (ssTot < 1e-12) return 0;
+    return 1 - ssRes / ssTot;
+  }
+
+  function draw(){
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+
+    // axes
+    const padL = 50, padR = 20, padT = 20, padB = 40;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const xMin = 0, xMax = 1, yMin = -1.4, yMax = 1.4;
+    const X2 = x => padL + (x - xMin) / (xMax - xMin) * plotW;
+    const Y2 = y => padT + (1 - (y - yMin) / (yMax - yMin)) * plotH;
+
+    // grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++){
+      const x = padL + (i / 10) * plotW;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+    }
+    for (let i = 0; i <= 7; i++){
+      const y = padT + (i / 7) * plotH;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+    }
+
+    // axes labels
+    ctx.fillStyle = 'rgba(220,220,235,0.7)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('x', padL + plotW - 10, padT + plotH + 25);
+    ctx.fillText('y', padL - 35, padT + 12);
+
+    // true function
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++){
+      const x = i / 200;
+      const y = trueFn(x);
+      if (i === 0) ctx.moveTo(X2(x), Y2(y)); else ctx.lineTo(X2(x), Y2(y));
+    }
+    ctx.strokeStyle = 'rgba(120,255,180,0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // get parameters
+    const deg = parseInt(degEl.value, 10);
+    degVal.textContent = deg;
+    const useL2 = l2El.checked;
+    const logLam = parseFloat(lamEl.value);
+    const lambda = useL2 ? Math.pow(10, logLam) : 0;
+    lamVal.textContent = lambda.toExponential(1);
+    lamEl.disabled = !useL2;
+
+    // fit
+    let w_fit;
+    try { w_fit = fitPoly(deg, lambda); }
+    catch(e){ w_fit = new Array(deg + 1).fill(0); }
+
+    // fitted curve
+    ctx.beginPath();
+    for (let i = 0; i <= 400; i++){
+      const x = i / 400;
+      const y = predict(w_fit, x);
+      const py = Math.max(yMin - 1, Math.min(yMax + 1, y));
+      if (i === 0) ctx.moveTo(X2(x), Y2(py)); else ctx.lineTo(X2(x), Y2(py));
+    }
+    ctx.strokeStyle = useL2 ? 'rgba(120,180,255,0.95)' : 'rgba(255,140,90,0.95)';
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    // points
+    for (const p of train){
+      ctx.beginPath();
+      ctx.arc(X2(p.x), Y2(p.y), 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,210,120,0.95)';
+      ctx.fill();
+    }
+    for (const p of val){
+      ctx.beginPath();
+      ctx.arc(X2(p.x), Y2(p.y), 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(160,170,200,0.5)';
+      ctx.fill();
+    }
+
+    // legend
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(120,255,180,0.9)';
+    ctx.fillText('— true f(x)', padL + 10, padT + 16);
+    ctx.fillStyle = useL2 ? 'rgba(120,180,255,0.95)' : 'rgba(255,140,90,0.95)';
+    ctx.fillText(useL2 ? '— fit (L2)' : '— fit (no reg.)', padL + 10, padT + 34);
+    ctx.fillStyle = 'rgba(255,210,120,0.95)';
+    ctx.fillText('• train', padL + 10, padT + 52);
+    ctx.fillStyle = 'rgba(160,170,200,0.7)';
+    ctx.fillText('• val', padL + 10, padT + 70);
+
+    // metrics
+    const mTr = mse(w_fit, train);
+    const mVa = mse(w_fit, val);
+    const r2Tr = r2(w_fit, train);
+    const r2Va = r2(w_fit, val);
+    trainMSEel.textContent = mTr.toFixed(4);
+    valMSEel.textContent   = mVa.toFixed(4);
+    trainR2el.textContent  = r2Tr.toFixed(3);
+    valR2el.textContent    = r2Va.toFixed(3);
+  }
+
+  degEl.addEventListener('input', draw);
+  l2El.addEventListener('change', draw);
+  lamEl.addEventListener('input', draw);
+  resampBt.addEventListener('click', () => { generate(); draw(); });
+
+  draw();
+})();
+
+/* =====================================================================
+   DEMO 2 — Dropout visualizer + train/val loss comparison
+   ===================================================================== */
+(function dropoutDemo(){
+  const netCanvas  = document.getElementById('dropout-canvas');
+  const lossCanvas = document.getElementById('dropout-loss-canvas');
+  if (!netCanvas || !lossCanvas) return;
+
+  const pEl     = document.getElementById('dropout-p');
+  const pVal    = document.getElementById('dropout-p-val');
+  const trainBt = document.getElementById('dropout-train');
+  const inferBt = document.getElementById('dropout-infer');
+  const resetBt = document.getElementById('dropout-reset');
+  const modeEl  = document.getElementById('dropout-mode');
+  const cycEl   = document.getElementById('dropout-cycles');
+  const actEl   = document.getElementById('dropout-active');
+
+  const layers = [8, 12, 8, 3];
+  let mode = 'training';        // 'training' | 'inference'
+  let running = false;
+  let cycles = 0;
+  let mask  = layers.map(n => new Array(n).fill(1));
+  let lossHistDrop   = [];
+  let lossValDrop    = [];
+  let lossHistNoDrop = [];
+  let lossValNoDrop  = [];
+  let step = 0;
+
+  // ---- network canvas ----
+  let nctx, nw, nh;
+  function sizeNet(){ const o = initCanvas(netCanvas); nctx = o.ctx; nw = o.w; nh = o.h; }
+  sizeNet();
+
+  // ---- loss canvas ----
+  let lctx, lw, lh;
+  function sizeLoss(){ const o = initCanvas(lossCanvas); lctx = o.ctx; lw = o.w; lh = o.h; }
+  sizeLoss();
+
+  window.addEventListener('resize', () => { sizeNet(); sizeLoss(); drawNet(); drawLoss(); });
+
+  function neuronPositions(){
+    const pad = 40;
+    const xs = layers.map((_, i) => pad + (i / (layers.length - 1)) * (nw - 2 * pad));
+    return layers.map((n, li) => {
+      const ys = [];
+      for (let i = 0; i < n; i++){
+        const y = pad + ((i + 0.5) / n) * (nh - 2 * pad);
+        ys.push(y);
+      }
+      return ys.map(y => ({ x: xs[li], y }));
+    });
+  }
+
+  function sampleMask(p){
+    mask = layers.map((n, li) => {
+      // never drop input or output
+      if (li === 0 || li === layers.length - 1) return new Array(n).fill(1);
+      return Array.from({ length: n }, () => Math.random() < p ? 0 : 1);
+    });
+  }
+
+  function drawNet(){
+    if (!nctx) return;
+    nctx.clearRect(0, 0, nw, nh);
+
+    const pos = neuronPositions();
+    const p = parseFloat(pEl.value);
+
+    // edges
+    for (let li = 0; li < layers.length - 1; li++){
+      for (let i = 0; i < layers[li]; i++){
+        for (let j = 0; j < layers[li + 1]; j++){
+          const live = (mode === 'inference')
+            ? true
+            : (mask[li][i] === 1 && mask[li + 1][j] === 1);
+          let alpha = live ? 0.25 : 0.04;
+          let scale = (mode === 'inference') ? (1 - p) : 1;
+          nctx.beginPath();
+          nctx.moveTo(pos[li][i].x, pos[li][i].y);
+          nctx.lineTo(pos[li + 1][j].x, pos[li + 1][j].y);
+          nctx.strokeStyle = `rgba(120,180,255,${alpha * (0.5 + scale * 0.5)})`;
+          nctx.lineWidth = 0.8;
+          nctx.stroke();
+        }
+      }
+    }
+
+    // neurons
+    for (let li = 0; li < layers.length; li++){
+      for (let i = 0; i < layers[li]; i++){
+        const active = (mode === 'inference') ? 1 : mask[li][i];
+        nctx.beginPath();
+        nctx.arc(pos[li][i].x, pos[li][i].y, 9, 0, Math.PI * 2);
+        nctx.fillStyle = active
+          ? 'rgba(120,200,255,0.95)'
+          : 'rgba(90,90,110,0.55)';
+        nctx.fill();
+        nctx.strokeStyle = active
+          ? 'rgba(180,230,255,0.9)'
+          : 'rgba(140,140,160,0.4)';
+        nctx.lineWidth = 1.2;
+        nctx.stroke();
+      }
+    }
+
+    // labels
+    nctx.fillStyle = 'rgba(220,220,235,0.7)';
+    nctx.font = '12px Inter, sans-serif';
+    const names = ['input', 'hidden 1', 'hidden 2', 'output'];
+    for (let li = 0; li < layers.length; li++){
+      nctx.fillText(names[li], pos[li][0].x - 22, 22);
+    }
+
+    // mode badge
+    nctx.font = '600 13px Inter, sans-serif';
+    nctx.fillStyle = mode === 'training'
+      ? 'rgba(255,180,90,0.95)'
+      : 'rgba(120,255,180,0.95)';
+    nctx.fillText(`mode: ${mode}${mode==='inference' ? `   (weights × ${(1-p).toFixed(2)})` : ''}`,
+                  20, nh - 14);
+
+    // active count
+    let active = 0, total = 0;
+    for (let li = 0; li < layers.length; li++){
+      for (let i = 0; i < layers[li]; i++){
+        total++;
+        if ((mode === 'inference' ? 1 : mask[li][i]) === 1) active++;
+      }
+    }
+    actEl.textContent = `${active} / ${total}`;
+  }
+
+  function drawLoss(){
+    if (!lctx) return;
+    lctx.clearRect(0, 0, lw, lh);
+
+    const padL = 50, padR = 20, padT = 30, padB = 36;
+    const plotW = lw - padL - padR;
+    const plotH = lh - padT - padB;
+
+    lctx.fillStyle = 'rgba(220,220,235,0.85)';
+    lctx.font = '600 13px Inter, sans-serif';
+    lctx.fillText('Loss curves: with vs without dropout', padL, 20);
+
+    // grid
+    lctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    lctx.lineWidth = 1;
+    for (let i = 0; i <= 8; i++){
+      const x = padL + (i / 8) * plotW;
+      lctx.beginPath(); lctx.moveTo(x, padT); lctx.lineTo(x, padT + plotH); lctx.stroke();
+    }
+    for (let i = 0; i <= 5; i++){
+      const y = padT + (i / 5) * plotH;
+      lctx.beginPath(); lctx.moveTo(padL, y); lctx.lineTo(padL + plotW, y); lctx.stroke();
+    }
+
+    const maxLen = 80;
+    function plot(arr, color, dash){
+      if (arr.length < 2) return;
+      lctx.beginPath();
+      for (let i = 0; i < arr.length; i++){
+        const x = padL + (i / (maxLen - 1)) * plotW;
+        const y = padT + (1 - Math.min(1, arr[i])) * plotH;
+        if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
+      }
+      lctx.strokeStyle = color;
+      lctx.lineWidth = 2;
+      lctx.setLineDash(dash || []);
+      lctx.stroke();
+      lctx.setLineDash([]);
+    }
+
+    plot(lossHistNoDrop, 'rgba(255,140,90,0.95)');           // train no drop
+    plot(lossValNoDrop , 'rgba(255,140,90,0.55)', [4,4]);    // val   no drop
+    plot(lossHistDrop  , 'rgba(120,200,255,0.95)');          // train drop
+    plot(lossValDrop   , 'rgba(120,200,255,0.55)', [4,4]);   // val   drop
+
+    // legend
+    lctx.font = '12px Inter, sans-serif';
+    let yL = padT + 14;
+    lctx.fillStyle = 'rgba(255,140,90,0.95)';
+    lctx.fillText('— no dropout (train)', padL + plotW - 170, yL); yL += 16;
+    lctx.fillStyle = 'rgba(255,140,90,0.55)';
+    lctx.fillText('-- no dropout (val)', padL + plotW - 170, yL); yL += 16;
+    lctx.fillStyle = 'rgba(120,200,255,0.95)';
+    lctx.fillText('— dropout (train)', padL + plotW - 170, yL); yL += 16;
+    lctx.fillStyle = 'rgba(120,200,255,0.55)';
+    lctx.fillText('-- dropout (val)', padL + plotW - 170, yL);
+
+    // axes
+    lctx.fillStyle = 'rgba(220,220,235,0.7)';
+    lctx.font = '11px Inter, sans-serif';
+    lctx.fillText('epoch →', padL + plotW - 50, padT + plotH + 24);
+    lctx.fillText('loss', padL - 30, padT + 8);
+  }
+
+  function pushSyntheticLosses(){
+    // Synthetic but plausible curves driven by step counter.
+    // No-dropout: train drops fast, val flattens then rises (overfit).
+    // Dropout:    train drops slower, val keeps decreasing, smaller gap.
+    const t = step;
+    const decayN = Math.exp(-t / 18);
+    const decayD = Math.exp(-t / 26);
+
+    const trN = 0.05 + 0.85 * decayN;
+    const vlN = 0.20 + 0.55 * decayN + 0.0035 * Math.max(0, t - 25);
+    const trD = 0.18 + 0.70 * decayD;
+    const vlD = 0.22 + 0.50 * decayD;
+
+    const noise = () => (Math.random() - 0.5) * 0.02;
+    lossHistNoDrop.push(Math.max(0.02, trN + noise()));
+    lossValNoDrop .push(Math.max(0.05, vlN + noise()));
+    lossHistDrop  .push(Math.max(0.05, trD + noise()));
+    lossValDrop   .push(Math.max(0.07, vlD + noise()));
+
+    if (lossHistNoDrop.length > 80){
+      lossHistNoDrop.shift(); lossValNoDrop.shift();
+      lossHistDrop.shift();   lossValDrop.shift();
+    }
+  }
+
+  function tick(){
+    if (!running) return;
+    if (mode === 'training'){
+      sampleMask(parseFloat(pEl.value));
+      cycles++;
+      step++;
+      pushSyntheticLosses();
+      cycEl.textContent = cycles;
+    }
+    drawNet();
+    drawLoss();
+    setTimeout(() => requestAnimationFrame(tick), 280);
+  }
+
+  pEl.addEventListener('input', () => {
+    pVal.textContent = parseFloat(pEl.value).toFixed(2);
+    drawNet();
+  });
+
+  trainBt.addEventListener('click', () => {
+    mode = 'training';
+    modeEl.textContent = 'training';
+    if (!running){ running = true; tick(); }
+  });
+
+  inferBt.addEventListener('click', () => {
+    mode = 'inference';
+    modeEl.textContent = 'inference';
+    running = false;
+    drawNet();
+  });
+
+  resetBt.addEventListener('click', () => {
+    cycles = 0; step = 0;
+    lossHistDrop = []; lossValDrop = [];
+    lossHistNoDrop = []; lossValNoDrop = [];
+    mask = layers.map(n => new Array(n).fill(1));
+    cycEl.textContent = 0;
+    drawNet(); drawLoss();
+  });
+
+  // initial paint
+  pVal.textContent = parseFloat(pEl.value).toFixed(2);
+  drawNet();
+  drawLoss();
+})();
+
+/* =====================================================================
+   QUIZ — light handler in case sub-common.js doesn't bind these
+   ===================================================================== */
+(function quiz(){
+  document.querySelectorAll('.quiz-block').forEach(block => {
+    const correct = block.getAttribute('data-correct');
+    const fb = block.querySelector('.quiz-block__feedback');
+    block.querySelectorAll('.quiz-block__opts li').forEach(li => {
+      li.addEventListener('click', () => {
+        const k = li.getAttribute('data-key');
+        block.querySelectorAll('.quiz-block__opts li').forEach(x => {
+          x.classList.remove('is-correct', 'is-wrong');
+        });
+        if (k === correct){
+          li.classList.add('is-correct');
+          if (fb){ fb.textContent = 'Correct.'; fb.className = 'quiz-block__feedback is-correct'; }
+        } else {
+          li.classList.add('is-wrong');
+          if (fb){ fb.textContent = 'Not quite — try another option.'; fb.className = 'quiz-block__feedback is-wrong'; }
+        }
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

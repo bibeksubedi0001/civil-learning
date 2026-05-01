@@ -1,0 +1,2578 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1.12 Bias, Ethics &amp; CE Applications | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore bias in AI/ML systems, ethical considerations for civil engineering, and a comprehensive overview of real-world AI applications in structural health monitoring, crack detection, traffic optimization, and more.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ── Bias Pipeline Diagram ── */
+        .pipeline-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 2rem 0;
+        }
+
+        .pipeline-stage {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 22px 18px;
+            text-align: center;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .pipeline-stage:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .pipeline-stage::after {
+            content: '\f061';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+            z-index: 1;
+        }
+
+        .pipeline-stage:last-child::after {
+            display: none;
+        }
+
+        .pipeline-stage__icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin: 0 auto 12px;
+        }
+
+        .pipeline-stage h4 {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            margin: 0 0 6px;
+        }
+
+        .pipeline-stage p {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .pipeline-stage .bias-risk {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .bias-risk.high {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .bias-risk.medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .bias-risk.low {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        /* ── Bias Type Cards ── */
+        .bias-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin: 2rem 0;
+        }
+
+        .bias-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 24px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .bias-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .bias-card__icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 14px;
+        }
+
+        .bias-card__icon.data {
+            background: rgba(45, 212, 191, 0.15);
+            color: #2dd4bf;
+        }
+
+        .bias-card__icon.algo {
+            background: rgba(139, 92, 246, 0.15);
+            color: #8b5cf6;
+        }
+
+        .bias-card__icon.confirm {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .bias-card__icon.selection {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .bias-card h3 {
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            margin: 0 0 8px;
+        }
+
+        .bias-card p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin: 0 0 10px;
+        }
+
+        .bias-card .ce-example {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--accent-primary);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .bias-card .ce-example strong {
+            color: var(--accent-primary);
+        }
+
+        /* ── Ethics Grid ── */
+        .ethics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 2rem 0;
+        }
+
+        .ethics-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 24px;
+            border-top: 3px solid var(--accent-primary);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .ethics-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .ethics-card h3 {
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            margin: 0 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ethics-card h3 i {
+            color: var(--accent-primary);
+        }
+
+        .ethics-card p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* ── Tradeoff Spectrum ── */
+        .tradeoff-bar {
+            position: relative;
+            height: 60px;
+            border-radius: 12px;
+            margin: 2rem 0;
+            background: linear-gradient(90deg,
+                rgba(34, 197, 94, 0.25) 0%,
+                rgba(251, 191, 36, 0.25) 50%,
+                rgba(239, 68, 68, 0.25) 100%);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .tradeoff-bar .tradeoff-end {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .tradeoff-bar .tradeoff-center {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* ── CE Application Cards ── */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 2rem 0;
+        }
+
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 24px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .app-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .app-card__header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .app-card__icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--accent-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .app-card__header h3 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .app-card p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin: 0 0 12px;
+        }
+
+        .app-card .app-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .app-tag {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: var(--bg-tertiary);
+            color: var(--accent-primary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* ── Demo Canvases ── */
+        .demo-canvas-wrap {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .demo-canvas-wrap canvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 14px 18px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            align-items: center;
+        }
+
+        .demo-controls button {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s, border-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .demo-controls button:hover,
+        .demo-controls button.active {
+            background: var(--accent-primary);
+            color: #fff;
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        .demo-controls .demo-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .demo-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            padding: 12px 18px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .demo-stat {
+            text-align: center;
+        }
+
+        .demo-stat .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .demo-stat .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        /* ── Chapter Summary Recap ── */
+        .recap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin: 2rem 0;
+        }
+
+        .recap-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 18px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .recap-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-primary);
+        }
+
+        .recap-card h4 {
+            color: var(--accent-primary);
+            font-size: 0.88rem;
+            margin: 0 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recap-card p {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* ── App Map Detail Overlay ── */
+        .app-map-detail {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--accent-primary);
+            border-radius: 10px;
+            padding: 14px 18px;
+            max-width: 260px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .app-map-detail.visible {
+            opacity: 1;
+        }
+
+        .app-map-detail h4 {
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+            margin: 0 0 4px;
+        }
+
+        .app-map-detail p {
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* ── Comparison Table ── */
+        .comparison-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            margin: 2rem 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+            font-size: 0.88rem;
+        }
+
+        .comparison-table thead {
+            background: var(--accent-primary);
+            color: #fff;
+        }
+
+        .comparison-table thead th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .comparison-table tbody tr {
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background 0.2s;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .comparison-table tbody td {
+            padding: 12px 16px;
+            color: var(--text-primary);
+            vertical-align: top;
+        }
+
+        .comparison-table tbody td:first-child {
+            font-weight: 600;
+            color: var(--accent-primary);
+            white-space: nowrap;
+        }
+
+        .comparison-table tbody td i {
+            margin-right: 6px;
+            color: var(--accent-primary);
+        }
+
+        /* ── Checklist ── */
+        .checklist {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .checklist li i {
+            color: var(--accent-primary);
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .pipeline-diagram {
+                grid-template-columns: 1fr;
+            }
+            .pipeline-stage::after {
+                content: '\f063';
+                right: 50%;
+                top: auto;
+                bottom: -14px;
+                transform: translateX(50%);
+            }
+            .bias-grid,
+            .ethics-grid,
+            .app-grid,
+            .recap-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 1</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-scale-balanced"></i> Chapter 1 &mdash; Sub-chapter 1.12
+            </div>
+            <h1 class="chapter-hero__title">Bias, Ethics &amp; CE Applications</h1>
+            <p class="chapter-hero__subtitle">
+                With great power comes great responsibility &mdash; understanding bias, ethical
+                obligations, and the transformative real-world applications of AI across
+                every domain of civil engineering.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 30 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING &mdash; GREAT RESPONSIBILITY
+             ========================================== -->
+        <section class="ch-section" id="opening">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>With Great Power Comes Great Responsibility</h2>
+                        <p>
+                            Throughout Chapter 1, you have learned how AI and machine learning
+                            work &mdash; from neurons and gradient descent to deep learning.
+                            These techniques are extraordinarily powerful. But in civil
+                            engineering, our systems are <strong>safety-critical</strong>.
+                            A misclassified image on social media is an inconvenience; a
+                            misclassified bridge condition rating can be a catastrophe.
+                        </p>
+                        <p>
+                            Before you deploy a single model in the field, you must understand
+                            where things can go wrong &mdash; not just technically, but
+                            <strong>ethically</strong>. Bias can creep into every stage of the
+                            ML pipeline, and the consequences in infrastructure engineering
+                            are measured in lives, not likes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h3>The Engineer's Oath</h3>
+                        <p>
+                            Just as structural engineers stamp their seal on drawings &mdash;
+                            accepting personal liability for public safety &mdash; AI
+                            practitioners in civil engineering must accept responsibility for
+                            the data their models consume, the biases those models inherit,
+                            and the decisions those models influence. There is no
+                            <code>model.disclaim_liability()</code> function.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This final sub-chapter covers three critical topics: the types of bias
+                    that can corrupt your models, the ethical framework every CE professional
+                    needs, and a comprehensive tour of real-world AI applications across
+                    civil engineering. We close with a full recap of everything you have
+                    learned in Chapter 1.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: TYPES OF BIAS
+             ========================================== -->
+        <section class="ch-section" id="types-of-bias">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-filter-circle-xmark"></i> Types of Bias in AI/ML</h2>
+
+                <p>
+                    Bias is not just a technical bug &mdash; it is a systemic failure that
+                    can be embedded at every level of your machine learning pipeline. Here
+                    are the four most common types, each illustrated with a civil
+                    engineering scenario.
+                </p>
+
+                <div class="bias-grid">
+
+                    <!-- Data Bias -->
+                    <div class="bias-card">
+                        <div class="bias-card__icon data">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                        <h3>Data Bias</h3>
+                        <p>
+                            The training data does not represent the real-world distribution.
+                            The model learns patterns that are true only for a narrow slice
+                            of reality.
+                        </p>
+                        <div class="ce-example">
+                            <strong>CE Example:</strong> Your crack-detection model was trained
+                            exclusively on images from temperate-climate concrete. It fails
+                            catastrophically on freeze-thaw-damaged surfaces common in
+                            northern regions.
+                        </div>
+                    </div>
+
+                    <!-- Algorithmic Bias -->
+                    <div class="bias-card">
+                        <div class="bias-card__icon algo">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3>Algorithmic Bias</h3>
+                        <p>
+                            The model architecture or optimisation objective systematically
+                            favours certain outcomes, even when the data is balanced. Some
+                            algorithms amplify small imbalances into large prediction skews.
+                        </p>
+                        <div class="ce-example">
+                            <strong>CE Example:</strong> A cost-estimation model penalises
+                            projects in rural areas more heavily because the loss function
+                            weights large urban projects disproportionately, leading to
+                            inflated rural estimates.
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Bias -->
+                    <div class="bias-card">
+                        <div class="bias-card__icon confirm">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </div>
+                        <h3>Confirmation Bias</h3>
+                        <p>
+                            Engineers unconsciously select features, tune hyperparameters, or
+                            interpret results in ways that confirm their pre-existing beliefs,
+                            ignoring contradictory evidence from the data.
+                        </p>
+                        <div class="ce-example">
+                            <strong>CE Example:</strong> A team believes soil type is the
+                            dominant factor in settlement prediction. They over-engineer
+                            soil features while ignoring groundwater data &mdash; producing
+                            a model that validates their assumption but fails in the field.
+                        </div>
+                    </div>
+
+                    <!-- Selection Bias -->
+                    <div class="bias-card">
+                        <div class="bias-card__icon selection">
+                            <i class="fa-solid fa-arrow-pointer"></i>
+                        </div>
+                        <h3>Selection Bias</h3>
+                        <p>
+                            The data collection process itself is skewed. Only certain types
+                            of samples are gathered, creating a dataset that does not reflect
+                            the full population of interest.
+                        </p>
+                        <div class="ce-example">
+                            <strong>CE Example:</strong> Your bridge inspection dataset only
+                            includes bridges that were <em>already suspected</em> of damage.
+                            The model never learns what a healthy bridge looks like, leading
+                            to excessive false positives.
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div class="tip-box__content">
+                        <strong>Key Insight:</strong> If your model only trained on bridge
+                        data from temperate climates, it will fail in seismic zones.
+                        Always ask: <em>"What does my training data NOT include?"</em>
+                        The absence of data is itself a source of bias.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: HOW BIAS ENTERS THE ML PIPELINE
+             ========================================== -->
+        <section class="ch-section" id="bias-pipeline">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-diagram-project"></i> How Bias Enters the ML Pipeline</h2>
+
+                <p>
+                    Bias does not appear at a single point. It can infiltrate at
+                    <strong>every stage</strong> of your machine learning workflow.
+                    Understanding where bias can enter is the first step to preventing it.
+                </p>
+
+                <div class="pipeline-diagram">
+                    <div class="pipeline-stage">
+                        <div class="pipeline-stage__icon">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <h4>Data Collection</h4>
+                        <p>
+                            Which sites are sampled? Which sensors are used? What time
+                            periods are captured? Every choice excludes something.
+                        </p>
+                        <span class="bias-risk high">
+                            <i class="fa-solid fa-circle-exclamation"></i> High Risk
+                        </span>
+                    </div>
+
+                    <div class="pipeline-stage">
+                        <div class="pipeline-stage__icon">
+                            <i class="fa-solid fa-tags"></i>
+                        </div>
+                        <h4>Labeling</h4>
+                        <p>
+                            Who labels the data? Are labelers experienced engineers or
+                            crowdsourced workers? Inconsistent labels inject noise and bias.
+                        </p>
+                        <span class="bias-risk high">
+                            <i class="fa-solid fa-circle-exclamation"></i> High Risk
+                        </span>
+                    </div>
+
+                    <div class="pipeline-stage">
+                        <div class="pipeline-stage__icon">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <h4>Feature Selection</h4>
+                        <p>
+                            Which variables do you include? Dropping correlated features or
+                            ignoring domain-specific predictors introduces systematic errors.
+                        </p>
+                        <span class="bias-risk medium">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Medium Risk
+                        </span>
+                    </div>
+
+                    <div class="pipeline-stage">
+                        <div class="pipeline-stage__icon">
+                            <i class="fa-solid fa-gears"></i>
+                        </div>
+                        <h4>Model Design</h4>
+                        <p>
+                            Architecture choices, loss functions, and regularisation methods
+                            can all amplify or suppress certain data patterns.
+                        </p>
+                        <span class="bias-risk medium">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Medium Risk
+                        </span>
+                    </div>
+
+                    <div class="pipeline-stage">
+                        <div class="pipeline-stage__icon">
+                            <i class="fa-solid fa-gauge-high"></i>
+                        </div>
+                        <h4>Evaluation</h4>
+                        <p>
+                            If your test set has the same bias as training data, your metrics
+                            will look great &mdash; while the model fails in production.
+                        </p>
+                        <span class="bias-risk medium">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Medium Risk
+                        </span>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h3>The Foundation Analogy</h3>
+                        <p>
+                            Think of bias in ML like poor soil preparation under a foundation.
+                            You can build the most sophisticated superstructure on top, but
+                            if the foundation is compromised, the entire system will
+                            eventually fail. Data is the foundation of every ML model &mdash;
+                            get it wrong and nothing you build on top will save you.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: ETHICAL CONSIDERATIONS FOR CE AI
+             ========================================== -->
+        <section class="ch-section" id="ethics">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-scale-balanced"></i> Ethical Considerations for CE AI</h2>
+
+                <p>
+                    Civil engineering has always been governed by codes, standards, and a
+                    professional duty to protect public welfare. As AI becomes embedded in
+                    CE workflows, we need a parallel ethical framework for algorithmic
+                    decision-making.
+                </p>
+
+                <div class="ethics-grid">
+
+                    <div class="ethics-card">
+                        <h3>
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Safety
+                        </h3>
+                        <p>
+                            AI models that predict structural failure, assess seismic
+                            vulnerability, or monitor dam integrity are life-safety systems.
+                            A false negative &mdash; failing to detect a critical defect
+                            &mdash; can lead to catastrophic consequences. Models must be
+                            validated against known failure modes and tested under adversarial
+                            conditions before deployment.
+                        </p>
+                    </div>
+
+                    <div class="ethics-card">
+                        <h3>
+                            <i class="fa-solid fa-gavel"></i>
+                            Liability
+                        </h3>
+                        <p>
+                            When an AI model recommends that a bridge is safe and it
+                            subsequently fails, who bears responsibility? The engineer who
+                            deployed it? The data scientist who built it? The vendor who
+                            sold it? Current legal frameworks are struggling to keep pace
+                            with AI adoption. Engineers must document model limitations,
+                            assumptions, and validation results meticulously.
+                        </p>
+                    </div>
+
+                    <div class="ethics-card">
+                        <h3>
+                            <i class="fa-solid fa-eye"></i>
+                            Transparency
+                        </h3>
+                        <p>
+                            Can you explain your model's decision to a regulator, a judge,
+                            or the public? If a model flags a building for demolition, the
+                            affected community deserves to understand <em>why</em>. Black-box
+                            models may be accurate, but they erode trust in engineering
+                            judgement when decisions cannot be explained.
+                        </p>
+                    </div>
+
+                    <div class="ethics-card">
+                        <h3>
+                            <i class="fa-solid fa-people-group"></i>
+                            Fairness
+                        </h3>
+                        <p>
+                            Infrastructure investment decisions informed by AI must not
+                            perpetuate or amplify existing inequities. If historical data
+                            reflects decades of under-investment in certain communities,
+                            a model trained on that data will recommend continued neglect.
+                            AI systems must be audited for equity across demographics and
+                            geographies.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </div>
+                    <div class="tip-box__content">
+                        <strong>The Four Pillars:</strong> Safety, Liability, Transparency,
+                        and Fairness form the ethical foundation for AI in civil engineering.
+                        Every model you build or deploy should be evaluated against all four
+                        pillars before it reaches production.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: EXPLAINABILITY VS ACCURACY
+             ========================================== -->
+        <section class="ch-section" id="explainability-tradeoff">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-arrows-left-right"></i> Explainability vs. Accuracy Tradeoff</h2>
+
+                <p>
+                    One of the most important tensions in applied AI is the tradeoff between
+                    how well a model performs and how easily its decisions can be understood.
+                    In civil engineering, this tradeoff has direct safety implications.
+                </p>
+
+                <div class="tradeoff-bar">
+                    <span class="tradeoff-end">
+                        <i class="fa-solid fa-magnifying-glass"></i> High Explainability
+                    </span>
+                    <span class="tradeoff-center">
+                        <i class="fa-solid fa-arrows-left-right"></i> The Tradeoff
+                    </span>
+                    <span class="tradeoff-end">
+                        <i class="fa-solid fa-bullseye"></i> High Accuracy
+                    </span>
+                </div>
+
+                <div class="comparison-table-wrap">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Model Type</th>
+                                <th>Explainability</th>
+                                <th>Accuracy (Complex Tasks)</th>
+                                <th>CE Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><i class="fa-solid fa-chart-line"></i> Linear Regression</td>
+                                <td>Very High</td>
+                                <td>Low&ndash;Moderate</td>
+                                <td>Preliminary cost estimation</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-tree"></i> Decision Tree</td>
+                                <td>High</td>
+                                <td>Moderate</td>
+                                <td>Soil classification rules</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-forest"></i> Random Forest</td>
+                                <td>Moderate</td>
+                                <td>High</td>
+                                <td>Concrete strength prediction</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-bolt"></i> Gradient Boosting</td>
+                                <td>Low&ndash;Moderate</td>
+                                <td>Very High</td>
+                                <td>Traffic flow forecasting</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-brain"></i> Deep Neural Network</td>
+                                <td>Low</td>
+                                <td>Very High</td>
+                                <td>Crack detection from images</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-layer-group"></i> CNN / Transformer</td>
+                                <td>Very Low</td>
+                                <td>Highest</td>
+                                <td>Satellite damage assessment</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h3>The Regulator Test</h3>
+                        <p>
+                            Before choosing a model, ask yourself: <em>"If a regulatory body
+                            asks me to justify this prediction, can I?"</em> For a linear
+                            regression, you can point to exact coefficients. For a 50-layer
+                            CNN, you may need techniques like SHAP values, Grad-CAM, or
+                            LIME to provide post-hoc explanations &mdash; and even those
+                            are approximations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div class="tip-box__content">
+                        <strong>Practical Rule:</strong> Start with the simplest model that
+                        meets your accuracy requirement. Only move to more complex (less
+                        explainable) architectures when simpler models demonstrably fail.
+                        Document <em>why</em> complexity was necessary.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: REAL-WORLD CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-city"></i> Real-World AI/ML Applications in Civil Engineering</h2>
+
+                <p>
+                    AI and machine learning are already transforming every sub-discipline
+                    of civil engineering. Here is a comprehensive tour of the most impactful
+                    applications, the ML techniques that power them, and where they stand
+                    today.
+                </p>
+
+                <div class="app-grid">
+
+                    <!-- 1. Structural Health Monitoring -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon">
+                                <i class="fa-solid fa-tower-broadcast"></i>
+                            </div>
+                            <h3>Structural Health Monitoring</h3>
+                        </div>
+                        <p>
+                            Networks of accelerometers, strain gauges, and fibre-optic sensors
+                            continuously stream data from bridges, buildings, and dams. ML
+                            models detect anomalies &mdash; subtle shifts in natural frequency,
+                            unexpected strain patterns &mdash; that signal early-stage damage
+                            invisible to visual inspection.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Anomaly Detection</span>
+                            <span class="app-tag">Time Series</span>
+                            <span class="app-tag">LSTM / Autoencoders</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Crack Detection -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#8b5cf6;">
+                                <i class="fa-solid fa-camera"></i>
+                            </div>
+                            <h3>Crack Detection &amp; Classification</h3>
+                        </div>
+                        <p>
+                            Computer vision models, primarily CNNs, analyse images of concrete
+                            surfaces to detect, localise, and classify cracks by severity. Drone
+                            surveys combined with deep learning can inspect an entire bridge
+                            deck in hours instead of weeks.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Computer Vision</span>
+                            <span class="app-tag">CNN / YOLO</span>
+                            <span class="app-tag">Semantic Segmentation</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Traffic Flow -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#f59e0b;">
+                                <i class="fa-solid fa-traffic-light"></i>
+                            </div>
+                            <h3>Traffic Flow Optimisation</h3>
+                        </div>
+                        <p>
+                            Reinforcement learning agents learn optimal signal timing by
+                            interacting with traffic simulations. They adapt in real time to
+                            congestion, accidents, and special events &mdash; reducing average
+                            commute times by 15&ndash;25% in pilot deployments.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Reinforcement Learning</span>
+                            <span class="app-tag">Multi-Agent RL</span>
+                            <span class="app-tag">Simulation</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Cost Estimation -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#22c55e;">
+                                <i class="fa-solid fa-calculator"></i>
+                            </div>
+                            <h3>Cost Estimation &amp; Scheduling</h3>
+                        </div>
+                        <p>
+                            Regression models trained on historical project data predict costs
+                            and durations based on scope, location, materials, and complexity.
+                            Gradient-boosted models typically outperform parametric estimating
+                            tools by 20&ndash;40% in mean absolute error.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Regression</span>
+                            <span class="app-tag">XGBoost</span>
+                            <span class="app-tag">Feature Engineering</span>
+                        </div>
+                    </div>
+
+                    <!-- 5. Earthquake Damage -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#ef4444;">
+                                <i class="fa-solid fa-house-crack"></i>
+                            </div>
+                            <h3>Earthquake Damage Assessment</h3>
+                        </div>
+                        <p>
+                            Classification models process post-earthquake satellite imagery and
+                            sensor data to rapidly categorise buildings as safe, restricted, or
+                            unsafe. This accelerates emergency response from weeks to hours,
+                            helping first responders prioritise rescue operations.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Classification</span>
+                            <span class="app-tag">Remote Sensing</span>
+                            <span class="app-tag">Transfer Learning</span>
+                        </div>
+                    </div>
+
+                    <!-- 6. Environmental Impact -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#06b6d4;">
+                                <i class="fa-solid fa-leaf"></i>
+                            </div>
+                            <h3>Environmental Impact Prediction</h3>
+                        </div>
+                        <p>
+                            ML models predict air quality, noise propagation, and watershed
+                            effects of proposed construction projects. They integrate
+                            meteorological data, terrain models, and construction schedules
+                            to forecast environmental impact before ground is broken.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Regression</span>
+                            <span class="app-tag">Spatial Analysis</span>
+                            <span class="app-tag">GIS Integration</span>
+                        </div>
+                    </div>
+
+                    <!-- 7. Construction Safety -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#f97316;">
+                                <i class="fa-solid fa-helmet-safety"></i>
+                            </div>
+                            <h3>Construction Safety Monitoring</h3>
+                        </div>
+                        <p>
+                            Computer vision systems monitor job sites in real time, detecting
+                            workers without hard hats, unsafe scaffold configurations, and
+                            proximity to heavy equipment. Alert systems notify supervisors
+                            instantly, reducing incident rates by up to 30%.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">Object Detection</span>
+                            <span class="app-tag">Real-Time CV</span>
+                            <span class="app-tag">Edge Computing</span>
+                        </div>
+                    </div>
+
+                    <!-- 8. BIM + AI -->
+                    <div class="app-card">
+                        <div class="app-card__header">
+                            <div class="app-card__icon" style="background:#a855f7;">
+                                <i class="fa-solid fa-cube"></i>
+                            </div>
+                            <h3>BIM Integration with AI</h3>
+                        </div>
+                        <p>
+                            AI enhances Building Information Modelling by automating clash
+                            detection, generating design alternatives, optimising energy
+                            performance, and predicting maintenance schedules. NLP models
+                            even extract specifications from unstructured contract documents
+                            and link them to BIM elements.
+                        </p>
+                        <div class="app-tags">
+                            <span class="app-tag">NLP</span>
+                            <span class="app-tag">Generative Design</span>
+                            <span class="app-tag">Graph Neural Networks</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: INTERACTIVE DEMO 1 &mdash; BIAS EXPLORER
+             ========================================== -->
+        <section class="ch-section" id="demo-bias-explorer">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-flask"></i> Interactive Demo: Bias Explorer</h2>
+
+                <p>
+                    This demo visualises how training-data distribution affects model
+                    predictions. The canvas shows data points from two regions (e.g.,
+                    temperate vs. seismic zones). Click to add biased data and watch how
+                    the decision boundary shifts.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-canvas-wrap">
+                        <canvas id="bias-canvas" height="420"></canvas>
+                        <div id="bias-detail" class="app-map-detail"></div>
+                    </div>
+                    <div class="demo-controls">
+                        <span class="demo-label">Add Data:</span>
+                        <button id="bias-btn-A" class="active" onclick="setBiasClass('A')">
+                            <i class="fa-solid fa-circle" style="color:#2dd4bf;"></i> Region A (Temperate)
+                        </button>
+                        <button id="bias-btn-B" onclick="setBiasClass('B')">
+                            <i class="fa-solid fa-circle" style="color:#f59e0b;"></i> Region B (Seismic)
+                        </button>
+                        <button onclick="resetBiasDemo()">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button onclick="addBiasCluster()">
+                            <i class="fa-solid fa-plus-circle"></i> Add Cluster
+                        </button>
+                    </div>
+                    <div class="demo-stats">
+                        <div class="demo-stat">
+                            <div class="stat-label">Region A Points</div>
+                            <div class="stat-value" id="stat-a-count">0</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Region B Points</div>
+                            <div class="stat-value" id="stat-b-count">0</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Data Imbalance</div>
+                            <div class="stat-value" id="stat-imbalance">0%</div>
+                        </div>
+                        <div class="demo-stat">
+                            <div class="stat-label">Boundary Shift</div>
+                            <div class="stat-value" id="stat-shift">0px</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__icon">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <div class="tip-box__content">
+                        <strong>Try it:</strong> Click on the canvas to add individual data
+                        points. Use "Add Cluster" to inject a burst of biased data.
+                        Notice how the decision boundary (dashed line) shifts toward
+                        the over-represented class &mdash; the model becomes biased toward
+                        predicting that class.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: INTERACTIVE DEMO 2 &mdash; CE AI MAP
+             ========================================== -->
+        <section class="ch-section" id="demo-ce-map">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-map"></i> Interactive Demo: CE AI Applications Map</h2>
+
+                <p>
+                    Explore the landscape of AI applications across civil engineering
+                    domains. Hover over each icon to see details about the AI technique,
+                    maturity level, and impact potential.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-canvas-wrap" style="position:relative;">
+                        <canvas id="app-map-canvas" height="480"></canvas>
+                        <div id="app-map-tooltip" class="app-map-detail"></div>
+                    </div>
+                    <div class="demo-controls">
+                        <span class="demo-label">Filter:</span>
+                        <button id="filter-all" class="active" onclick="filterAppMap('all')">
+                            <i class="fa-solid fa-border-all"></i> All
+                        </button>
+                        <button id="filter-structural" onclick="filterAppMap('structural')">
+                            <i class="fa-solid fa-building"></i> Structural
+                        </button>
+                        <button id="filter-transport" onclick="filterAppMap('transport')">
+                            <i class="fa-solid fa-road"></i> Transport
+                        </button>
+                        <button id="filter-env" onclick="filterAppMap('env')">
+                            <i class="fa-solid fa-leaf"></i> Environmental
+                        </button>
+                        <button id="filter-safety" onclick="filterAppMap('safety')">
+                            <i class="fa-solid fa-helmet-safety"></i> Safety
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: BEST PRACTICES CHECKLIST
+             ========================================== -->
+        <section class="ch-section" id="best-practices">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-clipboard-list"></i> Best Practices for Ethical AI in CE</h2>
+
+                <p>
+                    Follow this checklist throughout every AI/ML project in civil
+                    engineering. These steps are not optional &mdash; they are the
+                    professional standard for responsible AI deployment.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Audit Your Data</h3>
+                        <p>
+                            Before training begins, profile your dataset for demographic,
+                            geographic, and temporal representation. Document what is present
+                            <em>and what is missing</em>. If your bridge data covers only
+                            one seismic zone, acknowledge the limitation explicitly.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Define Success Metrics Beyond Accuracy</h3>
+                        <p>
+                            Overall accuracy can mask critical failures in subgroups. Track
+                            precision, recall, and F1-score <em>per class and per subgroup</em>.
+                            For safety-critical applications, optimise for recall (minimising
+                            false negatives) even at the cost of some precision.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Implement Explainability from Day One</h3>
+                        <p>
+                            Do not treat interpretability as an afterthought. Choose models
+                            appropriate to the decision stakes. For high-stakes CE decisions,
+                            pair complex models with explainability tools like SHAP,
+                            Grad-CAM, or counterfactual explanations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Conduct Adversarial Testing</h3>
+                        <p>
+                            Deliberately test your model with edge cases and out-of-distribution
+                            inputs. What happens when sensor data is noisy? When images are
+                            taken in poor lighting? When input values are outside the training
+                            range? Document failure modes and define fallback procedures.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Establish Human-in-the-Loop Oversight</h3>
+                        <p>
+                            No AI model should make final decisions on life-safety issues
+                            without human review. Design your system so that AI
+                            <em>recommends</em> and humans <em>decide</em>. Build dashboards
+                            that surface model confidence levels and flag uncertain predictions
+                            for expert review.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">6</div>
+                    <div class="process-step__content">
+                        <h3>Monitor Continuously Post-Deployment</h3>
+                        <p>
+                            Model performance degrades over time as real-world conditions
+                            drift from training data. Implement automated monitoring that
+                            tracks prediction distributions, flags anomalies, and triggers
+                            retraining when performance drops below defined thresholds.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">7</div>
+                    <div class="process-step__content">
+                        <h3>Document Everything</h3>
+                        <p>
+                            Maintain a model card for every deployed model: training data
+                            sources, preprocessing steps, architecture choices, validation
+                            results, known limitations, and update history. This is your
+                            audit trail &mdash; the AI equivalent of stamped engineering
+                            drawings.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: THE FUTURE
+             ========================================== -->
+        <section class="ch-section" id="future">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-rocket"></i> Where is AI in CE Heading?</h2>
+
+                <p>
+                    The integration of AI into civil engineering is accelerating. Here are
+                    the trends that will shape the next decade of infrastructure engineering.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Emerging Frontiers</h2>
+                        <ul style="color:var(--text-secondary); line-height:1.8; padding-left:1.2rem;">
+                            <li>
+                                <strong>Digital Twins:</strong> Real-time virtual replicas of
+                                physical infrastructure, continuously updated with sensor data
+                                and ML predictions. Every bridge, building, and pipeline will
+                                have a living digital counterpart.
+                            </li>
+                            <li>
+                                <strong>Autonomous Construction Equipment:</strong> Self-driving
+                                excavators, graders, and drones coordinated by multi-agent
+                                reinforcement learning systems.
+                            </li>
+                            <li>
+                                <strong>Generative Design:</strong> AI that explores millions
+                                of design alternatives under multi-objective constraints
+                                (cost, carbon, safety) and presents Pareto-optimal solutions
+                                to engineers.
+                            </li>
+                            <li>
+                                <strong>Foundation Models for Infrastructure:</strong>
+                                Large pre-trained models, fine-tuned for CE-specific tasks,
+                                will democratise AI access for small firms that lack massive
+                                proprietary datasets.
+                            </li>
+                            <li>
+                                <strong>Edge AI for Real-Time Monitoring:</strong>
+                                ML inference running directly on IoT sensors at the bridge,
+                                dam, or tunnel &mdash; no cloud latency, no connectivity
+                                dependency.
+                            </li>
+                            <li>
+                                <strong>Physics-Informed Neural Networks (PINNs):</strong>
+                                Neural networks that embed physical laws (equilibrium, material
+                                constitutive models) as constraints, ensuring predictions
+                                respect engineering principles even outside training data.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h3>The Road Ahead</h3>
+                        <p>
+                            The civil engineers who thrive in the coming decades will not be
+                            those who ignore AI, nor those who blindly trust it. They will be
+                            the engineers who understand AI deeply enough to wield it
+                            responsibly &mdash; who can interrogate a model's assumptions,
+                            validate its outputs, and know when to override its recommendations.
+                            That is exactly what this course is preparing you to do.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-circle-question"></i> Test Your Understanding</h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A crack-detection model trained only on images from dry, sunny conditions
+                        performs poorly on rain-soaked surfaces. Which type of bias is this?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Data bias
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Algorithmic bias
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Confirmation bias
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Overfitting bias
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! This is data bias
+                        &mdash; the training data did not represent the full range of
+                        real-world conditions. The model learned patterns specific to dry
+                        surfaces and cannot generalise to wet conditions.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. This is
+                        <strong>data bias</strong>. The training dataset only included dry,
+                        sunny images &mdash; it does not represent the real-world distribution
+                        that includes rain, snow, and varying lighting conditions.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        Which ethical pillar is most directly concerned with the question:
+                        "Can you explain this AI decision to a regulatory body?"
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Safety
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> Liability
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Transparency
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Fairness
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Transparency is
+                        about ensuring that AI decisions can be understood, explained, and
+                        justified to stakeholders &mdash; including regulators, clients,
+                        and the public.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The ability to
+                        explain a model's decision to a regulator falls under
+                        <strong>Transparency</strong>. Safety concerns failure prevention,
+                        Liability concerns legal responsibility, and Fairness concerns
+                        equitable outcomes.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        In the explainability vs. accuracy tradeoff, which model type offers
+                        the highest explainability but typically the lowest accuracy on complex
+                        tasks?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> Random Forest
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Linear Regression
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Convolutional Neural Network
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Gradient Boosting
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Linear regression
+                        is the most interpretable model &mdash; every coefficient has a direct
+                        physical meaning. However, it cannot capture non-linear relationships,
+                        limiting its accuracy on complex engineering problems.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite.
+                        <strong>Linear Regression</strong> offers the highest explainability
+                        (each coefficient is directly interpretable) but the lowest accuracy
+                        on complex, non-linear tasks.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        Which AI application uses reinforcement learning to improve signal
+                        timing in real time?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Crack detection
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Cost estimation
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Traffic flow optimisation
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Structural health monitoring
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Traffic flow
+                        optimisation uses reinforcement learning agents that learn optimal
+                        signal timing by interacting with traffic environments. The agent
+                        receives rewards for reducing congestion and adapts its policy in
+                        real time.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite.
+                        <strong>Traffic flow optimisation</strong> uses reinforcement learning.
+                        Crack detection uses CNNs (supervised learning), cost estimation uses
+                        regression, and SHM uses anomaly detection / time-series models.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: CHAPTER 1 SUMMARY RECAP
+             ========================================== -->
+        <section class="ch-section" id="chapter-recap">
+            <div class="section-container">
+
+                <h2><i class="fa-solid fa-flag-checkered"></i> Chapter 1 Summary &mdash; All 12 Sub-Chapters</h2>
+
+                <p>
+                    Congratulations &mdash; you have completed Chapter 1! Here is a recap
+                    of everything you have learned on your journey from zero AI knowledge
+                    to understanding bias, ethics, and real-world applications.
+                </p>
+
+                <div class="recap-grid">
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-microchip"></i> 1.1 What is AI?</h4>
+                        <p>
+                            AI is the science of making machines perform tasks that require
+                            human intelligence. We explored its history, types (narrow vs.
+                            general), and relevance to civil engineering.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-gears"></i> 1.2 What is ML?</h4>
+                        <p>
+                            Machine learning enables systems to learn from data without
+                            explicit programming. We learned the core paradigm: data in,
+                            patterns out, predictions forward.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-chart-bar"></i> 1.3 Data &amp; Features</h4>
+                        <p>
+                            Features are the measurable properties your model learns from.
+                            Feature engineering &mdash; crafting the right inputs &mdash; is
+                            often more important than algorithm choice.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-bullseye"></i> 1.4 Training &amp; Testing</h4>
+                        <p>
+                            Splitting data into training, validation, and test sets prevents
+                            overfitting. We learned why you never test on training data &mdash;
+                            it is like grading your own exam.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-wave-square"></i> 1.5 Underfitting &amp; Overfitting</h4>
+                        <p>
+                            Underfitting means your model is too simple; overfitting means
+                            it memorised noise. The goal is the sweet spot of generalisation
+                            in between.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-chart-line"></i> 1.6 Linear Regression</h4>
+                        <p>
+                            The simplest ML model: fit a line through data points. We used
+                            it to predict concrete strength from water-cement ratio and saw
+                            the math behind the magic.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-stairs"></i> 1.7 Gradient Descent</h4>
+                        <p>
+                            The optimisation engine behind ML. Like rolling a ball downhill
+                            on a loss surface, gradient descent iteratively adjusts weights
+                            to minimise error.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-tags"></i> 1.8 Classification</h4>
+                        <p>
+                            Predicting categories instead of numbers. We classified soil
+                            types, structural conditions, and learned about decision
+                            boundaries and confusion matrices.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-gauge-high"></i> 1.9 Evaluation Metrics</h4>
+                        <p>
+                            Accuracy alone is not enough. We explored precision, recall,
+                            F1-score, ROC curves, and why metric choice depends on the
+                            cost of different error types.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-diagram-project"></i> 1.10 Types of ML</h4>
+                        <p>
+                            Supervised, unsupervised, and reinforcement learning &mdash;
+                            three paradigms for three kinds of problems. Each has distinct
+                            strengths and CE applications.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-brain"></i> 1.11 Deep Learning</h4>
+                        <p>
+                            Neural networks with many layers that automatically extract
+                            features from raw data. We built intuition for neurons, layers,
+                            activation functions, and backpropagation.
+                        </p>
+                    </div>
+
+                    <div class="recap-card">
+                        <h4><i class="fa-solid fa-scale-balanced"></i> 1.12 Bias, Ethics &amp; CE Apps</h4>
+                        <p>
+                            This sub-chapter! Bias types, ethical pillars, the
+                            explainability-accuracy tradeoff, and a comprehensive tour of
+                            AI applications transforming civil engineering.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Ready for Chapter 2</h2>
+                        <p>
+                            You now have the foundational understanding of AI and ML needed
+                            to dive into the specifics. In <strong>Chapter 2: Supervised
+                            Learning</strong>, you will get hands-on with regression and
+                            classification algorithms, implement them from scratch, and apply
+                            them to real civil engineering datasets. The foundation is set
+                            &mdash; let us build on it.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── Chapter Navigation Footer ── -->
+    <nav class="chapter-nav-footer">
+        <a href="sub11.html" class="nav-prev">
+            <i class="fas fa-arrow-left"></i>
+            <div>
+                <span class="nav-dir">Previous</span>
+                <span class="nav-label">1.11 Deep Learning</span>
+            </div>
+        </a>
+        <a href="../chapter2/index.html" class="nav-next">
+            <div>
+                <span class="nav-dir">Next</span>
+                <span class="nav-label">Chapter 2: Supervised Learning</span>
+            </div>
+            <i class="fas fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ── Footer ── -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ── Scripts ── -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var CU = window.ChapterUtils;
+        var $ = CU.$, $$ = CU.$$;
+        var getColors = CU.getColors, initCanvas = CU.initCanvas;
+        var rand = CU.rand, clamp = CU.clamp, PI = CU.PI, TAU = CU.TAU;
+
+        /* ================================================================
+           HERO CANVAS &mdash; Animated network / scale motif
+           ================================================================ */
+        (function heroAnim() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var nodes = [];
+            var NUM = 50;
+            var animId;
+
+            function resize() {
+                var C = initCanvas(canvas);
+                return C;
+            }
+
+            function initNodes(w, h) {
+                nodes = [];
+                for (var i = 0; i < NUM; i++) {
+                    nodes.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.6,
+                        vy: (Math.random() - 0.5) * 0.6,
+                        r: 2 + Math.random() * 3
+                    });
+                }
+            }
+
+            function draw() {
+                var C = resize();
+                var ctx = C.ctx, w = C.w, h = C.h;
+                var col = getColors();
+
+                if (nodes.length === 0) initNodes(w, h);
+
+                ctx.clearRect(0, 0, w, h);
+
+                // Update positions
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    n.x += n.vx;
+                    n.y += n.vy;
+                    if (n.x < 0 || n.x > w) n.vx *= -1;
+                    if (n.y < 0 || n.y > h) n.vy *= -1;
+                    n.x = clamp(n.x, 0, w);
+                    n.y = clamp(n.y, 0, h);
+                }
+
+                // Draw connections
+                ctx.strokeStyle = col.DIM;
+                ctx.lineWidth = 1;
+                for (var i = 0; i < nodes.length; i++) {
+                    for (var j = i + 1; j < nodes.length; j++) {
+                        var dx = nodes[i].x - nodes[j].x;
+                        var dy = nodes[i].y - nodes[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.globalAlpha = 1 - dist / 120;
+                            ctx.beginPath();
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                // Draw nodes
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.r, 0, TAU);
+                    ctx.fillStyle = col.TEAL;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+
+                animId = requestAnimationFrame(draw);
+            }
+
+            draw();
+
+            window.addEventListener('resize', function () {
+                var C = resize();
+                initNodes(C.w, C.h);
+            });
+
+            var obs = new MutationObserver(function () {
+                if (animId) cancelAnimationFrame(animId);
+                draw();
+            });
+            obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           DEMO 1: BIAS EXPLORER
+           ================================================================ */
+        (function biasExplorer() {
+            var canvas = document.getElementById('bias-canvas');
+            if (!canvas) return;
+
+            var pointsA = [];
+            var pointsB = [];
+            var activeClass = 'A';
+
+            // Seed initial balanced data
+            function seedData() {
+                pointsA = [];
+                pointsB = [];
+                for (var i = 0; i < 30; i++) {
+                    pointsA.push({
+                        x: 0.15 + Math.random() * 0.3,
+                        y: 0.2 + Math.random() * 0.6
+                    });
+                }
+                for (var i = 0; i < 30; i++) {
+                    pointsB.push({
+                        x: 0.55 + Math.random() * 0.3,
+                        y: 0.2 + Math.random() * 0.6
+                    });
+                }
+            }
+
+            seedData();
+
+            function calcBoundary() {
+                // Simple centroid-based decision boundary
+                var ax = 0, ay = 0, bx = 0, by = 0;
+                for (var i = 0; i < pointsA.length; i++) {
+                    ax += pointsA[i].x; ay += pointsA[i].y;
+                }
+                for (var i = 0; i < pointsB.length; i++) {
+                    bx += pointsB[i].x; by += pointsB[i].y;
+                }
+                if (pointsA.length > 0) { ax /= pointsA.length; ay /= pointsA.length; }
+                if (pointsB.length > 0) { bx /= pointsB.length; by /= pointsB.length; }
+
+                var midX = (ax + bx) / 2;
+                var midY = (ay + by) / 2;
+
+                // Weight boundary toward the less-represented class
+                var totalA = pointsA.length;
+                var totalB = pointsB.length;
+                var total = totalA + totalB;
+                if (total > 0) {
+                    var ratioA = totalA / total;
+                    midX = ax + (bx - ax) * ratioA;
+                }
+
+                return { x: midX, y: midY, ax: ax, ay: ay, bx: bx, by: by };
+            }
+
+            function drawBias() {
+                var C = initCanvas(canvas);
+                var ctx = C.ctx, w = C.w, h = C.h;
+                var col = getColors();
+
+                ctx.clearRect(0, 0, w, h);
+
+                // Grid
+                ctx.strokeStyle = col.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                // Axis labels
+                ctx.fillStyle = col.MUTED;
+                ctx.font = '600 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Feature 1 (e.g., Span Length)', w / 2, h - 6);
+                ctx.save();
+                ctx.translate(14, h / 2);
+                ctx.rotate(-PI / 2);
+                ctx.fillText('Feature 2 (e.g., Load Rating)', 0, 0);
+                ctx.restore();
+
+                // Decision boundary
+                var bd = calcBoundary();
+                var bndX = bd.x * w;
+
+                // Shaded regions
+                ctx.fillStyle = 'rgba(45, 212, 191, 0.06)';
+                ctx.fillRect(0, 0, bndX, h);
+                ctx.fillStyle = 'rgba(245, 158, 11, 0.06)';
+                ctx.fillRect(bndX, 0, w - bndX, h);
+
+                // Boundary line
+                ctx.setLineDash([8, 6]);
+                ctx.strokeStyle = col.WHITE;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(bndX, 0);
+                ctx.lineTo(bndX, h);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Label boundary
+                ctx.fillStyle = col.WHITE;
+                ctx.font = '700 12px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Decision Boundary', bndX, 20);
+
+                // Region labels
+                ctx.font = '600 11px Inter, sans-serif';
+                ctx.fillStyle = 'rgba(45, 212, 191, 0.6)';
+                ctx.textAlign = 'center';
+                ctx.fillText('Predict: Region A', bndX / 2, 38);
+                ctx.fillStyle = 'rgba(245, 158, 11, 0.6)';
+                ctx.fillText('Predict: Region B', bndX + (w - bndX) / 2, 38);
+
+                // Draw points A
+                for (var i = 0; i < pointsA.length; i++) {
+                    var px = pointsA[i].x * w;
+                    var py = pointsA[i].y * h;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 6, 0, TAU);
+                    ctx.fillStyle = 'rgba(45, 212, 191, 0.8)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#2dd4bf';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Draw points B
+                for (var i = 0; i < pointsB.length; i++) {
+                    var px = pointsB[i].x * w;
+                    var py = pointsB[i].y * h;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 6, 0, TAU);
+                    ctx.fillStyle = 'rgba(245, 158, 11, 0.8)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // Draw centroids
+                ctx.beginPath();
+                ctx.arc(bd.ax * w, bd.ay * h, 10, 0, TAU);
+                ctx.strokeStyle = '#2dd4bf';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([3, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.beginPath();
+                ctx.arc(bd.bx * w, bd.by * h, 10, 0, TAU);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([3, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Update stats
+                var totalA = pointsA.length;
+                var totalB = pointsB.length;
+                var total = totalA + totalB;
+                var imbalance = total > 0 ?
+                    Math.abs(totalA - totalB) / total * 100 : 0;
+                var originalBnd = 0.5;
+                var shift = Math.abs(bd.x - originalBnd) * w;
+
+                document.getElementById('stat-a-count').textContent = totalA;
+                document.getElementById('stat-b-count').textContent = totalB;
+                document.getElementById('stat-imbalance').textContent =
+                    imbalance.toFixed(0) + '%';
+                document.getElementById('stat-shift').textContent =
+                    shift.toFixed(0) + 'px';
+            }
+
+            // Click to add point
+            canvas.addEventListener('click', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var nx = (e.clientX - rect.left) / rect.width;
+                var ny = (e.clientY - rect.top) / rect.height;
+
+                if (activeClass === 'A') {
+                    pointsA.push({ x: nx, y: ny });
+                } else {
+                    pointsB.push({ x: nx, y: ny });
+                }
+                drawBias();
+            });
+
+            window.setBiasClass = function (cls) {
+                activeClass = cls;
+                document.getElementById('bias-btn-A').classList.toggle('active', cls === 'A');
+                document.getElementById('bias-btn-B').classList.toggle('active', cls === 'B');
+            };
+
+            window.resetBiasDemo = function () {
+                seedData();
+                drawBias();
+            };
+
+            window.addBiasCluster = function () {
+                var cx = 0.1 + Math.random() * 0.3;
+                var cy = 0.3 + Math.random() * 0.4;
+                if (activeClass === 'B') {
+                    cx = 0.5 + Math.random() * 0.3;
+                }
+                for (var i = 0; i < 15; i++) {
+                    var pt = {
+                        x: cx + (Math.random() - 0.5) * 0.12,
+                        y: cy + (Math.random() - 0.5) * 0.12
+                    };
+                    if (activeClass === 'A') pointsA.push(pt);
+                    else pointsB.push(pt);
+                }
+                drawBias();
+            };
+
+            drawBias();
+            window.addEventListener('resize', drawBias);
+
+            var tObs = new MutationObserver(drawBias);
+            tObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           DEMO 2: CE AI APPLICATIONS MAP
+           ================================================================ */
+        (function appMapDemo() {
+            var canvas = document.getElementById('app-map-canvas');
+            if (!canvas) return;
+
+            var tooltip = document.getElementById('app-map-tooltip');
+            var currentFilter = 'all';
+            var hoveredApp = null;
+
+            var apps = [
+                {
+                    id: 'shm', label: 'Structural\nHealth Mon.',
+                    icon: '\uf519', category: 'structural',
+                    technique: 'Anomaly Detection / LSTM',
+                    maturity: 'Production',
+                    impact: 'High',
+                    desc: 'Sensors + ML for early warning of structural damage in bridges and buildings.'
+                },
+                {
+                    id: 'crack', label: 'Crack\nDetection',
+                    icon: '\uf030', category: 'structural',
+                    technique: 'CNN / YOLO',
+                    maturity: 'Production',
+                    impact: 'High',
+                    desc: 'Computer vision identifies and classifies cracks in concrete from drone imagery.'
+                },
+                {
+                    id: 'traffic', label: 'Traffic Flow\nOptimisation',
+                    icon: '\uf637', category: 'transport',
+                    technique: 'Reinforcement Learning',
+                    maturity: 'Pilot',
+                    impact: 'Very High',
+                    desc: 'RL agents learn optimal signal timing to reduce congestion in real time.'
+                },
+                {
+                    id: 'cost', label: 'Cost\nEstimation',
+                    icon: '\uf1ec', category: 'structural',
+                    technique: 'XGBoost / Regression',
+                    maturity: 'Production',
+                    impact: 'Medium',
+                    desc: 'Predicts project costs from historical data with 20-40% less error than parametric tools.'
+                },
+                {
+                    id: 'earthquake', label: 'Earthquake\nDamage',
+                    icon: '\ue515', category: 'structural',
+                    technique: 'Classification / CNN',
+                    maturity: 'Pilot',
+                    impact: 'Very High',
+                    desc: 'Rapid post-earthquake building damage assessment from satellite imagery.'
+                },
+                {
+                    id: 'enviro', label: 'Environmental\nImpact',
+                    icon: '\uf06c', category: 'env',
+                    technique: 'Regression / Spatial ML',
+                    maturity: 'Research',
+                    impact: 'Medium',
+                    desc: 'Predicts air quality, noise, and watershed effects before construction begins.'
+                },
+                {
+                    id: 'safety', label: 'Construction\nSafety',
+                    icon: '\ue51d', category: 'safety',
+                    technique: 'Object Detection / Edge AI',
+                    maturity: 'Pilot',
+                    impact: 'High',
+                    desc: 'Real-time monitoring of PPE compliance and hazardous proximity on job sites.'
+                },
+                {
+                    id: 'bim', label: 'BIM + AI\nIntegration',
+                    icon: '\uf1b2', category: 'structural',
+                    technique: 'NLP / Graph NN',
+                    maturity: 'Research',
+                    impact: 'High',
+                    desc: 'AI automates clash detection, energy optimization, and spec extraction in BIM.'
+                },
+                {
+                    id: 'pavement', label: 'Pavement\nCondition',
+                    icon: '\uf018', category: 'transport',
+                    technique: 'CNN / Regression',
+                    maturity: 'Production',
+                    impact: 'Medium',
+                    desc: 'Classifies pavement distress types and severity from vehicle-mounted cameras.'
+                },
+                {
+                    id: 'flood', label: 'Flood\nPrediction',
+                    icon: '\uf773', category: 'env',
+                    technique: 'LSTM / GIS',
+                    maturity: 'Pilot',
+                    impact: 'Very High',
+                    desc: 'Time-series models predict flood events from rainfall, soil moisture, and river levels.'
+                },
+                {
+                    id: 'geotech', label: 'Geotechnical\nClassification',
+                    icon: '\uf6fc', category: 'structural',
+                    technique: 'Random Forest / SVM',
+                    maturity: 'Production',
+                    impact: 'Medium',
+                    desc: 'Classifies soil types from CPT/SPT data for foundation design recommendations.'
+                },
+                {
+                    id: 'ppe', label: 'PPE\nDetection',
+                    icon: '\uf807', category: 'safety',
+                    technique: 'YOLO / MobileNet',
+                    maturity: 'Production',
+                    impact: 'High',
+                    desc: 'Detects missing hard hats, vests, and safety equipment from site camera feeds.'
+                }
+            ];
+
+            function getGridPos(idx, total, w, h) {
+                var cols = 4;
+                var rows = Math.ceil(total / cols);
+                var cellW = w / cols;
+                var cellH = h / rows;
+                var col = idx % cols;
+                var row = Math.floor(idx / cols);
+                return {
+                    x: cellW * col + cellW / 2,
+                    y: cellH * row + cellH / 2,
+                    cellW: cellW,
+                    cellH: cellH
+                };
+            }
+
+            function getFilteredApps() {
+                if (currentFilter === 'all') return apps;
+                return apps.filter(function (a) { return a.category === currentFilter; });
+            }
+
+            function drawAppMap() {
+                var C = initCanvas(canvas);
+                var ctx = C.ctx, w = C.w, h = C.h;
+                var col = getColors();
+                var filtered = getFilteredApps();
+
+                ctx.clearRect(0, 0, w, h);
+
+                // Background grid
+                ctx.strokeStyle = col.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 50) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 50) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                if (filtered.length === 0) {
+                    ctx.fillStyle = col.MUTED;
+                    ctx.font = '600 14px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No applications in this category', w / 2, h / 2);
+                    return;
+                }
+
+                var catColors = {
+                    structural: col.TEAL,
+                    transport: col.AMBER,
+                    env: col.GREEN,
+                    safety: col.RED
+                };
+
+                // Draw app nodes
+                for (var i = 0; i < filtered.length; i++) {
+                    var app = filtered[i];
+                    var pos = getGridPos(i, filtered.length, w, h);
+                    var isHovered = hoveredApp && hoveredApp.id === app.id;
+                    var nodeColor = catColors[app.category] || col.CYAN;
+                    var nodeR = isHovered ? 36 : 30;
+
+                    // Glow
+                    if (isHovered) {
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, nodeR + 10, 0, TAU);
+                        var grd = ctx.createRadialGradient(pos.x, pos.y, nodeR, pos.x, pos.y, nodeR + 10);
+                        grd.addColorStop(0, nodeColor.replace(')', ',0.3)').replace('rgb', 'rgba'));
+                        grd.addColorStop(1, 'transparent');
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                    }
+
+                    // Circle
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, nodeR, 0, TAU);
+                    ctx.fillStyle = isHovered ? nodeColor : col.NODE;
+                    ctx.fill();
+                    ctx.strokeStyle = nodeColor;
+                    ctx.lineWidth = isHovered ? 3 : 2;
+                    ctx.stroke();
+
+                    // Icon (use first character as fallback)
+                    ctx.fillStyle = isHovered ? '#fff' : nodeColor;
+                    ctx.font = '900 16px "Font Awesome 6 Free"';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(app.icon, pos.x, pos.y);
+
+                    // Label
+                    ctx.fillStyle = col.TEXT;
+                    ctx.font = '600 11px Inter, sans-serif';
+                    ctx.textBaseline = 'top';
+                    var lines = app.label.split('\n');
+                    for (var l = 0; l < lines.length; l++) {
+                        ctx.fillText(lines[l], pos.x, pos.y + nodeR + 8 + l * 14);
+                    }
+                    ctx.textBaseline = 'alphabetic';
+
+                    // Maturity badge
+                    var badgeColors = {
+                        'Production': col.GREEN,
+                        'Pilot': col.AMBER,
+                        'Research': col.CYAN
+                    };
+                    var bc = badgeColors[app.maturity] || col.MUTED;
+                    ctx.fillStyle = bc;
+                    ctx.font = '700 9px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(app.maturity.toUpperCase(), pos.x, pos.y - nodeR - 8);
+                }
+            }
+
+            // Mouse hover for tooltip
+            canvas.addEventListener('mousemove', function (e) {
+                var rect = canvas.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                var filtered = getFilteredApps();
+                var C = { w: rect.width, h: rect.height };
+                var found = null;
+
+                for (var i = 0; i < filtered.length; i++) {
+                    var pos = getGridPos(i, filtered.length, C.w, C.h);
+                    var dx = mx - pos.x;
+                    var dy = my - pos.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 35) {
+                        found = filtered[i];
+                        break;
+                    }
+                }
+
+                if (found && found !== hoveredApp) {
+                    hoveredApp = found;
+                    tooltip.innerHTML =
+                        '<h4>' + found.label.replace('\n', ' ') + '</h4>' +
+                        '<p>' + found.desc + '</p>' +
+                        '<p style="margin-top:6px;"><strong>Technique:</strong> ' + found.technique +
+                        '<br><strong>Maturity:</strong> ' + found.maturity +
+                        '<br><strong>Impact:</strong> ' + found.impact + '</p>';
+                    tooltip.classList.add('visible');
+
+                    var tx = mx + 20;
+                    var ty = my - 20;
+                    if (tx + 260 > C.w) tx = mx - 280;
+                    if (ty < 0) ty = 10;
+                    tooltip.style.left = tx + 'px';
+                    tooltip.style.top = ty + 'px';
+                    drawAppMap();
+                } else if (!found && hoveredApp) {
+                    hoveredApp = null;
+                    tooltip.classList.remove('visible');
+                    drawAppMap();
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function () {
+                hoveredApp = null;
+                tooltip.classList.remove('visible');
+                drawAppMap();
+            });
+
+            window.filterAppMap = function (cat) {
+                currentFilter = cat;
+                hoveredApp = null;
+                tooltip.classList.remove('visible');
+
+                // Update active button
+                var btns = document.querySelectorAll('[id^="filter-"]');
+                btns.forEach(function (b) {
+                    b.classList.toggle('active', b.id === 'filter-' + cat);
+                });
+
+                drawAppMap();
+            };
+
+            drawAppMap();
+            window.addEventListener('resize', drawAppMap);
+
+            var mObs = new MutationObserver(drawAppMap);
+            mObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

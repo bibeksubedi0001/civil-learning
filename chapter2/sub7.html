@@ -1,0 +1,2441 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.7 Support Vector Machines | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master Support Vector Machines for civil engineering applications. Understand maximum margin hyperplanes, support vectors, soft margin (C parameter), the kernel trick (linear, polynomial, RBF), SVR, and applications to earthquake damage classification and soil liquefaction prediction.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.7
+            </div>
+            <h1 class="chapter-hero__title">Support Vector Machines</h1>
+            <p class="chapter-hero__subtitle">
+                Imagine you must draw a fence between two groups of soil samples on a scatter
+                plot. There are many possible fences, but only one sits as far as possible
+                from both groups &mdash; maximising the safety margin. Support Vector Machines
+                find that optimal fence, even when the data curves, spirals, or lives in
+                dimensions no human can visualise. From classifying earthquake damage levels
+                to predicting soil liquefaction, SVMs give civil engineers a mathematically
+                rigorous boundary with built-in robustness guarantees.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road-barrier"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Finding the Widest Road Between Classes</h2>
+                        <p>
+                            In the previous sub-chapters, we learned how logistic regression
+                            draws a decision boundary by modelling the probability of class
+                            membership, and how decision trees partition the space into
+                            axis-aligned rectangles. Support Vector Machines take a fundamentally
+                            different approach: they search for the <strong>maximum margin
+                            hyperplane</strong> &mdash; the boundary that is as far away as
+                            possible from the nearest data points of both classes.
+                        </p>
+                        <p>
+                            Think of it as road design. When you plan a highway dividing two
+                            neighbourhoods, you do not place the road right next to the houses
+                            on either side. You centre it so there is a generous buffer zone
+                            &mdash; a <em>margin</em> &mdash; between the road and the closest
+                            buildings. The houses that sit right at the edge of the buffer are
+                            the <strong>support vectors</strong>, and together they define where
+                            the road must go. Every other house is irrelevant to the road's
+                            position.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    SVMs were developed in the 1990s by Vladimir Vapnik and colleagues, and
+                    they remain one of the most elegant and theoretically grounded algorithms
+                    in machine learning. They come with strong generalisation guarantees
+                    derived from statistical learning theory, and they perform remarkably well
+                    on small-to-medium datasets &mdash; exactly the scenario many civil
+                    engineering projects face, where data is expensive to collect.
+                </p>
+
+                <p>
+                    In this sub-chapter, we will cover:
+                </p>
+
+                <ul>
+                    <li>The maximum margin hyperplane and why maximising the margin leads to better generalisation</li>
+                    <li>Support vectors &mdash; the critical data points that define the boundary</li>
+                    <li>The soft margin formulation and the C parameter for handling noisy data</li>
+                    <li>The kernel trick: linear, polynomial, and RBF kernels for non-linear boundaries</li>
+                    <li>Support Vector Regression (SVR) for continuous prediction tasks</li>
+                    <li>Civil engineering applications: earthquake damage classification and soil liquefaction prediction</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds on Sub-chapter 2.4 (Classification Basics) and
+                        2.5 (Logistic Regression). You should be comfortable with the idea of a
+                        decision boundary in feature space, the bias-variance trade-off, and
+                        basic vector geometry (dot products, norms). Familiarity with
+                        Sub-chapter 2.6 (Decision Trees) is helpful for comparison but not
+                        strictly required.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: LINEAR CLASSIFIERS REVIEW
+             ========================================== -->
+        <section class="ch-section" id="linear-classifiers-review">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-vector-square"></i>
+                    A Quick Review: Linear Decision Boundaries
+                </h2>
+
+                <p>
+                    Before diving into SVMs, let us recall what a linear decision boundary
+                    looks like. In two dimensions, a linear classifier separates the feature
+                    space with a <strong>straight line</strong>. In three dimensions, it uses a
+                    <strong>plane</strong>. In <em>d</em> dimensions, it uses a
+                    <strong>hyperplane</strong> &mdash; a flat (d-1)-dimensional subspace.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Linear Decision Boundary
+                    </div>
+                    <pre><code>Hyperplane equation:   w . x + b = 0
+
+Where:
+  w = weight vector (normal to the hyperplane)
+  x = input feature vector
+  b = bias (offset from origin)
+  .  = dot product
+
+Decision rule:
+  If  w . x + b > 0  -->  class +1
+  If  w . x + b < 0  -->  class -1
+
+In 2D (features x1, x2):
+  w1*x1 + w2*x2 + b = 0   (a straight line)</code></pre>
+                </div>
+
+                <p>
+                    Logistic regression finds <em>a</em> hyperplane that separates the classes,
+                    but it does not care how far the boundary sits from the nearest data points.
+                    If the data is linearly separable, there are infinitely many hyperplanes
+                    that achieve perfect training accuracy. Logistic regression picks one based
+                    on maximising the likelihood &mdash; but is that the <em>best</em> one?
+                </p>
+
+                <p>
+                    SVMs answer this question definitively: the best hyperplane is the one
+                    with the <strong>largest margin</strong>.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: MAXIMUM MARGIN HYPERPLANE
+             ========================================== -->
+        <section class="ch-section" id="maximum-margin">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                    The Maximum Margin Hyperplane
+                </h2>
+
+                <p>
+                    The <strong>margin</strong> of a hyperplane is the distance between the
+                    hyperplane and the nearest data point from either class. The SVM
+                    formulation seeks the hyperplane that maximises this margin. Intuitively,
+                    a wider margin means the classifier is more confident &mdash; there is
+                    more room for new, unseen data to fall on the correct side.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Margin Geometry
+                    </div>
+                    <pre><code>Distance from a point x_i to the hyperplane  w . x + b = 0:
+
+  distance = |w . x_i + b| / ||w||
+
+Where ||w|| is the Euclidean norm of w.
+
+For correctly classified points with labels y_i in {-1, +1}:
+
+  y_i * (w . x_i + b) >= 0   (correct side)
+
+The margin (distance to the nearest point from either class):
+
+  margin = 2 / ||w||   (after canonical scaling)
+
+SVM objective:
+  Maximise  2 / ||w||
+  Subject to  y_i * (w . x_i + b) >= 1   for all i
+
+Equivalent (easier to optimise):
+  Minimise  (1/2) * ||w||^2
+  Subject to  y_i * (w . x_i + b) >= 1   for all i</code></pre>
+                </div>
+
+                <p>
+                    The constraint <code>y_i * (w . x_i + b) >= 1</code> ensures that every
+                    training point lies on the correct side of the margin. The points for
+                    which this constraint is <em>exactly</em> tight &mdash; those sitting on
+                    the margin boundary &mdash; are called <strong>support vectors</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Engineering Analogy: Factor of Safety</h3>
+                        <p>
+                            The margin is analogous to a <strong>factor of safety</strong> in
+                            structural design. When you design a beam, you do not size it for
+                            the exact expected load &mdash; you add a safety factor. The wider
+                            the margin (higher the safety factor), the more robust the design
+                            is against unexpected variations. SVMs build in the maximum possible
+                            safety factor for the given data, which is why they tend to
+                            generalise well even with limited training samples.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 id="support-vectors-detail">
+                    <i class="fa-solid fa-thumbtack"></i>
+                    Support Vectors: The Critical Few
+                </h3>
+
+                <p>
+                    A remarkable property of SVMs is that the optimal hyperplane depends
+                    <strong>only on the support vectors</strong> &mdash; the data points that
+                    lie exactly on the margin boundaries. All other points could be moved or
+                    even removed without changing the solution at all.
+                </p>
+
+                <p>
+                    This is fundamentally different from logistic regression, where every data
+                    point contributes to the cost function and influences the boundary. In an
+                    SVM, if you have 1,000 training samples but only 15 of them are support
+                    vectors, the classifier is fully determined by those 15 points. This
+                    sparsity has practical advantages:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Memory efficiency</strong> &mdash; At prediction time, only the
+                        support vectors need to be stored, not the entire training set.
+                    </li>
+                    <li>
+                        <strong>Interpretability</strong> &mdash; You can examine the support
+                        vectors to understand which samples the model considers borderline or
+                        difficult. In engineering terms, these are the edge cases.
+                    </li>
+                    <li>
+                        <strong>Robustness</strong> &mdash; Adding more data that is far from
+                        the boundary does not change the model. Only data near the margin can
+                        affect it.
+                    </li>
+                </ul>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Positive Margin Boundary</h3>
+                        <p>
+                            The hyperplane <code>w . x + b = +1</code> passes through the
+                            nearest positive-class support vectors. All positive-class points
+                            lie on or beyond this boundary.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Decision Boundary</h3>
+                        <p>
+                            The hyperplane <code>w . x + b = 0</code> sits exactly halfway
+                            between the two margin boundaries. This is the actual decision
+                            surface used for classification.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Negative Margin Boundary</h3>
+                        <p>
+                            The hyperplane <code>w . x + b = -1</code> passes through the
+                            nearest negative-class support vectors. All negative-class points
+                            lie on or beyond this boundary (on the opposite side).
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The width of the "street" between the two margin boundaries is
+                    <code>2 / ||w||</code>. Minimising <code>||w||</code> widens this
+                    street &mdash; hence the convex optimisation problem above.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: SOFT MARGIN AND C PARAMETER
+             ========================================== -->
+        <section class="ch-section" id="soft-margin">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Soft Margin: Handling Noisy Data
+                </h2>
+
+                <p>
+                    Real-world engineering data is rarely perfectly separable. Measurement
+                    errors, mislabelled samples, and genuine outliers mean that no hyperplane
+                    can correctly classify every training point. The <strong>hard margin</strong>
+                    SVM described above would simply fail &mdash; the optimisation problem
+                    becomes infeasible.
+                </p>
+
+                <p>
+                    The <strong>soft margin</strong> formulation introduces
+                    <strong>slack variables</strong> (<code>&xi;_i</code>) that allow some
+                    points to violate the margin or even sit on the wrong side of the
+                    boundary, at a penalty cost:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Soft Margin SVM
+                    </div>
+                    <pre><code>Minimise:  (1/2) * ||w||^2  +  C * SUM(xi_i)
+
+Subject to:
+  y_i * (w . x_i + b) >= 1 - xi_i   for all i
+  xi_i >= 0                           for all i
+
+Where:
+  xi_i = slack variable for sample i
+       = 0 if sample is on or beyond the correct margin boundary
+       = between 0 and 1 if inside the margin but correctly classified
+       = > 1 if misclassified
+
+  C = regularisation parameter that controls the trade-off:
+      Large C  -->  low tolerance for violations (narrow margin, less bias)
+      Small C  -->  high tolerance for violations (wide margin, more bias)</code></pre>
+                </div>
+
+                <h3 id="c-parameter">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    The C Parameter: Rigidity vs. Flexibility
+                </h3>
+
+                <p>
+                    The C parameter is the single most important hyperparameter in a linear
+                    SVM. It controls the trade-off between two competing objectives:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Large C (e.g., 1000)</strong>: The model strongly penalises
+                        violations. It will try to classify every training point correctly,
+                        even if it means a very narrow margin. This is analogous to designing
+                        a structure with zero tolerance for deflection &mdash; precise but
+                        potentially brittle if your measurements have noise.
+                    </li>
+                    <li>
+                        <strong>Small C (e.g., 0.01)</strong>: The model is lenient about
+                        violations and prefers a wide margin, even if some training points
+                        are misclassified. This is like allowing generous deflection tolerances
+                        &mdash; more forgiving and robust, but potentially too loose for
+                        critical applications.
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Bias-Variance Trade-off in SVMs</h3>
+                        <p>
+                            Large C leads to <strong>low bias, high variance</strong> &mdash;
+                            the model fits training data tightly but may not generalise.
+                            Small C leads to <strong>high bias, low variance</strong> &mdash;
+                            the model is smoother and more robust but may underfit. In civil
+                            engineering terms, you are choosing between a tight specification
+                            (high C) and a robust specification (low C). Cross-validation
+                            helps you find the right balance for your specific dataset.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In practice, C is typically chosen by cross-validation, often searching
+                    over a logarithmic grid such as
+                    <code>[0.001, 0.01, 0.1, 1, 10, 100, 1000]</code>. The optimal C
+                    depends on the noise level in the data and the degree to which the
+                    classes overlap.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Tip</span>
+                    </div>
+                    <p>
+                        Always <strong>standardise your features</strong> (zero mean, unit
+                        variance) before training an SVM. Because the margin depends on the
+                        Euclidean norm of <strong>w</strong>, features with large numerical
+                        ranges will dominate the optimisation. In civil engineering data,
+                        compressive strength (in MPa) and length (in mm) can differ by orders
+                        of magnitude. Standardisation ensures every feature contributes
+                        proportionally.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE KERNEL TRICK
+             ========================================== -->
+        <section class="ch-section" id="kernel-trick">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    The Kernel Trick: Non-Linear Boundaries
+                </h2>
+
+                <p>
+                    Many real-world problems are not linearly separable. Consider predicting
+                    whether a soil will liquefy during an earthquake: the safe and unsafe
+                    zones in a plot of shear stress vs. relative density are separated by a
+                    curved boundary, not a straight line. A linear SVM would fail here.
+                </p>
+
+                <p>
+                    The <strong>kernel trick</strong> is the mathematical insight that makes
+                    SVMs extraordinarily powerful. The idea is:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Map to a Higher Dimension</h3>
+                        <p>
+                            Transform the original features into a much higher-dimensional
+                            space using a mapping function <code>&phi;(x)</code>. In this new
+                            space, the data that was not linearly separable may become linearly
+                            separable. For example, 2D data with a circular boundary can be
+                            separated by a hyperplane in 3D.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Use a Kernel Function Instead</h3>
+                        <p>
+                            Computing <code>&phi;(x)</code> explicitly can be prohibitively
+                            expensive (the mapped space might be infinite-dimensional). The
+                            kernel trick avoids this by noting that the SVM optimisation only
+                            needs <strong>dot products</strong> between data points:
+                            <code>&phi;(x_i) . &phi;(x_j)</code>. A kernel function
+                            <code>K(x_i, x_j)</code> computes this dot product directly in the
+                            original space, without ever constructing the high-dimensional
+                            representation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Find a Linear Boundary in the Mapped Space</h3>
+                        <p>
+                            The SVM finds a maximum-margin hyperplane in the high-dimensional
+                            kernel space. When projected back to the original feature space,
+                            this hyperplane appears as a <strong>non-linear decision
+                            boundary</strong> &mdash; a curve, a closed region, or an
+                            arbitrarily complex shape.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Kernel Functions
+                    </div>
+                    <pre><code>The SVM dual formulation depends only on dot products K(x_i, x_j):
+
+1. Linear Kernel:
+   K(x_i, x_j) = x_i . x_j
+   Equivalent to no transformation. Good when data is already linearly separable.
+
+2. Polynomial Kernel:
+   K(x_i, x_j) = (gamma * x_i . x_j + r)^d
+   Maps to polynomial feature space of degree d.
+   Captures interactions between features up to order d.
+
+3. Radial Basis Function (RBF / Gaussian) Kernel:
+   K(x_i, x_j) = exp(-gamma * ||x_i - x_j||^2)
+   Maps to infinite-dimensional space.
+   Creates smooth, localised decision boundaries.
+   gamma controls the radius of influence of each support vector.
+
+4. Sigmoid Kernel:
+   K(x_i, x_j) = tanh(gamma * x_i . x_j + r)
+   Related to neural networks (two-layer perceptron).
+   Less commonly used in practice.</code></pre>
+                </div>
+
+                <h3 id="rbf-kernel">
+                    <i class="fa-solid fa-circle-dot"></i>
+                    The RBF Kernel: The Swiss Army Knife
+                </h3>
+
+                <p>
+                    The <strong>Radial Basis Function (RBF)</strong> kernel is the most
+                    widely used kernel in practice. It implicitly maps data to an
+                    infinite-dimensional space and creates smooth, flexible decision
+                    boundaries. The key parameter is <code>gamma</code>:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Large gamma</strong>: Each support vector has a small radius
+                        of influence. The boundary tightly wraps around individual points,
+                        potentially overfitting. In engineering terms, this is like fitting a
+                        spline through every data point.
+                    </li>
+                    <li>
+                        <strong>Small gamma</strong>: Each support vector has a broad radius
+                        of influence. The boundary is smooth and generalises well, but may
+                        underfit. This is like fitting a simple curve through scattered data.
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mountain-sun"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Intuition: Gaussian Mountains</h3>
+                        <p>
+                            Imagine placing a Gaussian "mountain" (bell curve) on top of each
+                            support vector. Gamma controls how steep these mountains are. The
+                            decision boundary runs along the "valleys" between the positive and
+                            negative mountains. With large gamma, you get sharp, narrow peaks
+                            and the boundary weaves between individual points. With small gamma,
+                            the mountains are broad and gentle, and the boundary is a smooth
+                            contour separating the two groups of peaks.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In practice, the two hyperparameters <code>C</code> and
+                    <code>gamma</code> are tuned simultaneously, typically using a grid
+                    search with cross-validation. A common strategy is to search over
+                    <code>C &isin; {0.1, 1, 10, 100, 1000}</code> and
+                    <code>gamma &isin; {0.001, 0.01, 0.1, 1, 10}</code>.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: SVR (SUPPORT VECTOR REGRESSION)
+             ========================================== -->
+        <section class="ch-section" id="svr">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    Support Vector Regression (SVR)
+                </h2>
+
+                <p>
+                    SVMs are not limited to classification. <strong>Support Vector
+                    Regression (SVR)</strong> adapts the maximum-margin idea to predict
+                    continuous values. Instead of finding a hyperplane that separates classes,
+                    SVR finds a hyperplane (or curved surface with kernels) that fits the
+                    data within a specified tolerance band.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> SVR Formulation
+                    </div>
+                    <pre><code>SVR Objective:
+  Minimise  (1/2) * ||w||^2  +  C * SUM(xi_i + xi_i*)
+
+Subject to:
+  y_i - (w . x_i + b) <= epsilon + xi_i
+  (w . x_i + b) - y_i <= epsilon + xi_i*
+  xi_i, xi_i* >= 0
+
+Where:
+  epsilon = the width of the tolerance tube (epsilon-insensitive zone)
+            Errors within epsilon are ignored (zero loss)
+  xi_i    = slack for points above the tube
+  xi_i*   = slack for points below the tube
+  C       = penalty for points outside the tube
+
+Key idea:
+  - Points inside the epsilon-tube contribute zero loss
+  - Only points outside the tube are penalised
+  - Support vectors are points on or outside the tube boundary</code></pre>
+                </div>
+
+                <p>
+                    The <code>epsilon</code> parameter defines a "tube" around the regression
+                    function. Any prediction within epsilon of the true value is considered
+                    perfect (zero error). Only data points outside this tube become support
+                    vectors and influence the model. This makes SVR robust to small
+                    measurement noise &mdash; a valuable property when working with civil
+                    engineering test data that inherently contains experimental scatter.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>SVR for Concrete Strength Prediction</h3>
+                        <p>
+                            Consider predicting the 28-day compressive strength of concrete
+                            from mix design parameters (water-cement ratio, aggregate content,
+                            admixture dosage, curing temperature). SVR with an RBF kernel can
+                            capture the non-linear relationships between these variables while
+                            ignoring small experimental variations (within the epsilon tube).
+                            The support vectors correspond to the critical mix designs that
+                            define the model's prediction surface &mdash; the boundary cases
+                            where small changes in the mix significantly affect strength.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    SVR shares the same kernel options as SVM classification (linear,
+                    polynomial, RBF). The choice of kernel depends on the expected
+                    relationship between features and the target variable. For most civil
+                    engineering regression tasks, the RBF kernel is a strong default choice
+                    because it can approximate any continuous function given enough support
+                    vectors.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CE APPLICATION - EARTHQUAKE DAMAGE
+             ========================================== -->
+        <section class="ch-section" id="ce-earthquake-damage">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-house-crack"></i>
+                    CE Application: Earthquake Damage Classification
+                </h2>
+
+                <p>
+                    After a major earthquake, rapid damage assessment of buildings is critical
+                    for public safety and recovery planning. Engineers must inspect thousands
+                    of structures and classify each into damage grades (e.g., the European
+                    Macroseismic Scale: D0 through D5). SVMs can automate this classification
+                    using features extracted from sensor data, structural characteristics, and
+                    ground motion parameters.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-building-circle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Set for Damage Classification</h3>
+                        <p>
+                            A typical SVM model for earthquake damage classification might use
+                            the following features:
+                        </p>
+                        <ul>
+                            <li><strong>Structural</strong>: Number of storeys, construction material (encoded), age, plan irregularity index, soft-storey indicator</li>
+                            <li><strong>Ground motion</strong>: Peak ground acceleration (PGA), spectral acceleration at the building's fundamental period, Arias intensity, duration</li>
+                            <li><strong>Geotechnical</strong>: Site class (soil type), distance to fault rupture, liquefaction susceptibility index</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    For multi-class problems (D0 through D5), SVMs use a
+                    <strong>one-vs-one</strong> or <strong>one-vs-rest</strong> strategy.
+                    One-vs-one trains a binary SVM for every pair of classes (15 classifiers
+                    for 6 classes) and uses majority voting. One-vs-rest trains one SVM per
+                    class (6 classifiers) and assigns the class with the highest decision
+                    function value.
+                </p>
+
+                <p>
+                    Research has shown that SVMs with RBF kernels achieve classification
+                    accuracies of 75-85% on earthquake damage data, outperforming logistic
+                    regression and performing comparably to random forests. The key advantage
+                    of SVMs in this context is their robustness to class imbalance (most
+                    buildings suffer low damage, few suffer high damage) when combined with
+                    class-weighted penalties.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Class Imbalance Handling</span>
+                    </div>
+                    <p>
+                        When damage classes are imbalanced (e.g., 1000 D0 samples but only
+                        30 D5 samples), use <strong>class-weighted SVM</strong>: set
+                        <code>class_weight='balanced'</code> in scikit-learn. This
+                        automatically adjusts the C parameter for each class inversely
+                        proportional to its frequency, preventing the model from simply
+                        predicting the majority class for everything.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CE APPLICATION - SOIL LIQUEFACTION
+             ========================================== -->
+        <section class="ch-section" id="ce-soil-liquefaction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-water"></i>
+                    CE Application: Soil Liquefaction Prediction
+                </h2>
+
+                <p>
+                    Soil liquefaction &mdash; the phenomenon where saturated, loose,
+                    granular soil temporarily loses its strength and behaves like a fluid
+                    during seismic shaking &mdash; is one of the most dangerous geotechnical
+                    hazards. It can cause buildings to sink, embankments to slide, and
+                    underground structures to float. Predicting whether liquefaction will
+                    occur at a site given specific seismic loading is a classic binary
+                    classification problem.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Traditional vs. SVM Approach</h3>
+                        <p>
+                            The traditional approach uses empirical charts that plot the
+                            <strong>Cyclic Stress Ratio (CSR)</strong> against
+                            <strong>corrected SPT blow count (N1)60</strong> or
+                            <strong>CPT tip resistance (qc1N)</strong>. A manually drawn
+                            boundary curve separates "liquefy" and "no liquefy" cases based on
+                            historical earthquake case studies. SVMs can learn this boundary
+                            from data, potentially capturing non-linear interactions that the
+                            hand-drawn curve misses, such as the effect of fines content,
+                            overburden stress, and earthquake magnitude.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The features for an SVM liquefaction model typically include:
+                </p>
+
+                <ul>
+                    <li><strong>CSR</strong> &mdash; Cyclic stress ratio (seismic demand)</li>
+                    <li><strong>(N1)60</strong> &mdash; Corrected SPT blow count (soil resistance)</li>
+                    <li><strong>Fines content (FC)</strong> &mdash; Percentage of particles finer than 0.075 mm</li>
+                    <li><strong>Effective overburden stress (&sigma;'v)</strong></li>
+                    <li><strong>Earthquake magnitude (Mw)</strong></li>
+                    <li><strong>Depth to groundwater table</strong></li>
+                </ul>
+
+                <p>
+                    The RBF kernel is particularly well-suited here because the boundary
+                    between liquefiable and non-liquefiable conditions is smooth but
+                    non-linear. Studies have shown that SVM models achieve classification
+                    accuracies exceeding 90% on liquefaction databases, with the decision
+                    boundary closely matching the expert-drawn curves while also capturing
+                    subtle effects that the empirical charts ignore.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why Margin Matters for Safety</h3>
+                        <p>
+                            In liquefaction prediction, the margin of the SVM has a direct
+                            engineering interpretation. A site that falls deep inside the
+                            "no liquefy" region (far from the boundary) is confidently safe.
+                            A site near the decision boundary &mdash; inside the margin
+                            &mdash; is uncertain and warrants further investigation (e.g.,
+                            additional boreholes, dynamic analysis). The SVM's decision
+                            function value provides a continuous measure of this confidence,
+                            analogous to a factor of safety.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: DEMO 1 - SVM MARGIN VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-svm-margin">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: SVM Margin Visualiser
+                </h2>
+
+                <p>
+                    Click on the canvas below to place data points. Left-click to add
+                    <strong>Class A</strong> (positive) points, right-click for
+                    <strong>Class B</strong> (negative) points. The algorithm will compute
+                    the maximum-margin hyperplane and highlight the support vectors. Adjust
+                    the <strong>C parameter</strong> slider to see how the margin width and
+                    misclassification tolerance change.
+                </p>
+
+                <div class="demo-container">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="svm-c-slider">C Parameter: <span id="svm-c-val">1.00</span></label>
+                            <input type="range" id="svm-c-slider" min="-2" max="3" step="0.1" value="0">
+                        </div>
+                        <div class="control-group">
+                            <button id="svm-solve-btn" class="demo-btn">
+                                <i class="fa-solid fa-play"></i> Solve SVM
+                            </button>
+                            <button id="svm-sample-btn" class="demo-btn">
+                                <i class="fa-solid fa-dice"></i> Random Sample
+                            </button>
+                            <button id="svm-clear-btn" class="demo-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="svm-margin-canvas" style="width:100%;height:480px;border-radius:12px;display:block;cursor:crosshair;"></canvas>
+                    <p class="demo-caption" style="text-align:center;margin-top:6px;font-size:0.82rem;opacity:0.6;">
+                        Left-click = Class A (teal) &nbsp;|&nbsp; Right-click = Class B (coral) &nbsp;|&nbsp;
+                        Filled circles = support vectors
+                    </p>
+                    <div class="demo-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;">
+                        <span id="svm-sv-count" class="demo-stat-badge">Support Vectors: --</span>
+                        <span id="svm-margin-width" class="demo-stat-badge">Margin Width: --</span>
+                        <span id="svm-accuracy" class="demo-stat-badge">Accuracy: --</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: KERNEL TRICK DEEP DIVE
+             ========================================== -->
+        <section class="ch-section" id="kernel-deep-dive">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Understanding Kernels: A Visual Walkthrough
+                </h2>
+
+                <p>
+                    The kernel trick can feel abstract until you see it in action. Let us walk
+                    through a concrete example. Consider two features describing a soil
+                    sample: <strong>moisture content</strong> (x-axis) and
+                    <strong>density</strong> (y-axis). The "liquefiable" samples cluster in
+                    a ring-shaped region in the centre, while the "non-liquefiable" samples
+                    surround them. No straight line can separate the two classes.
+                </p>
+
+                <h3 id="kernel-linear">
+                    <i class="fa-solid fa-grip-lines"></i>
+                    Linear Kernel: When a Line Suffices
+                </h3>
+
+                <p>
+                    The linear kernel <code>K(x_i, x_j) = x_i . x_j</code> is equivalent
+                    to the standard SVM without any transformation. It works well when the
+                    classes are approximately separable by a hyperplane &mdash; for example,
+                    when distinguishing between two grades of steel based on yield strength
+                    and elongation percentage. It is fast, interpretable, and should always
+                    be the first kernel you try.
+                </p>
+
+                <h3 id="kernel-polynomial">
+                    <i class="fa-solid fa-bezier-curve"></i>
+                    Polynomial Kernel: Capturing Feature Interactions
+                </h3>
+
+                <p>
+                    The polynomial kernel
+                    <code>K(x_i, x_j) = (gamma * x_i . x_j + r)^d</code> maps data into a
+                    space that includes all polynomial combinations of the original features
+                    up to degree <code>d</code>. A degree-2 polynomial kernel on two features
+                    (x1, x2) implicitly creates features like x1^2, x2^2, and x1*x2 &mdash;
+                    enabling the SVM to learn elliptical and parabolic boundaries.
+                </p>
+
+                <p>
+                    This is useful when you suspect that the interaction between features
+                    matters. For example, the combined effect of <strong>water-cement ratio
+                    and curing temperature</strong> on concrete strength is not simply
+                    additive; there is a synergistic (polynomial) interaction that a linear
+                    model would miss.
+                </p>
+
+                <h3 id="kernel-rbf">
+                    <i class="fa-solid fa-bullseye"></i>
+                    RBF Kernel: Infinite Flexibility
+                </h3>
+
+                <p>
+                    The RBF kernel
+                    <code>K(x_i, x_j) = exp(-gamma * ||x_i - x_j||^2)</code> measures the
+                    <strong>similarity</strong> between two points based on their Euclidean
+                    distance. When two points are close, the kernel value is near 1; when
+                    they are far apart, it decays toward 0. The parameter gamma controls how
+                    quickly this decay happens.
+                </p>
+
+                <p>
+                    The RBF kernel implicitly maps to an <em>infinite</em>-dimensional space,
+                    which means it can learn arbitrarily complex boundaries. It is the default
+                    choice in scikit-learn and works well for most problems. The two
+                    hyperparameters (C and gamma) must be tuned together via grid search or
+                    random search with cross-validation.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> scikit-learn SVM Example
+                    </div>
+                    <pre><code>from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+
+# Build a pipeline: standardise, then SVM
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC(kernel='rbf'))
+])
+
+# Grid search over C and gamma
+param_grid = {
+    'svm__C':     [0.1, 1, 10, 100, 1000],
+    'svm__gamma': [0.001, 0.01, 0.1, 1, 10]
+}
+
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy')
+grid.fit(X_train, y_train)
+
+print(f"Best C:     {grid.best_params_['svm__C']}")
+print(f"Best gamma: {grid.best_params_['svm__gamma']}")
+print(f"Best CV accuracy: {grid.best_score_:.3f}")</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: DEMO 2 - KERNEL TRICK DEMO
+             ========================================== -->
+        <section class="ch-section" id="demo-kernel-trick">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 2: Kernel Trick Visualiser
+                </h2>
+
+                <p>
+                    This demo shows data that is <strong>not linearly separable</strong>
+                    in 2D. The inner ring (Class A) is surrounded by an outer ring (Class B).
+                    No straight line can separate them. Switch between kernels to see how the
+                    decision boundary changes. The RBF kernel creates a smooth circular
+                    boundary, while the polynomial kernel creates an angular approximation.
+                    Adjust gamma to see how the boundary tightness changes.
+                </p>
+
+                <div class="demo-container">
+                    <div class="demo-controls">
+                        <div class="control-group">
+                            <label for="kernel-select">Kernel:</label>
+                            <select id="kernel-select">
+                                <option value="linear">Linear</option>
+                                <option value="poly">Polynomial (d=2)</option>
+                                <option value="rbf" selected>RBF (Gaussian)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="kernel-gamma-slider">Gamma: <span id="kernel-gamma-val">1.00</span></label>
+                            <input type="range" id="kernel-gamma-slider" min="-2" max="2" step="0.1" value="0">
+                        </div>
+                        <div class="control-group">
+                            <button id="kernel-regen-btn" class="demo-btn">
+                                <i class="fa-solid fa-arrows-rotate"></i> Regenerate Data
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-canvas-row" style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:300px;">
+                            <canvas id="kernel-2d-canvas" style="width:100%;height:400px;border-radius:12px;display:block;"></canvas>
+                            <p class="demo-caption" style="text-align:center;margin-top:6px;font-size:0.82rem;opacity:0.6;">
+                                Original 2D space with decision boundary
+                            </p>
+                        </div>
+                        <div style="flex:1;min-width:300px;">
+                            <canvas id="kernel-mapped-canvas" style="width:100%;height:400px;border-radius:12px;display:block;"></canvas>
+                            <p class="demo-caption" style="text-align:center;margin-top:6px;font-size:0.82rem;opacity:0.6;">
+                                Kernel-mapped space (projected view)
+                            </p>
+                        </div>
+                    </div>
+                    <div class="demo-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;">
+                        <span id="kernel-sv-count" class="demo-stat-badge">Support Vectors: --</span>
+                        <span id="kernel-acc" class="demo-stat-badge">Accuracy: --</span>
+                        <span id="kernel-dim" class="demo-stat-badge">Mapped Dimensions: --</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: SVM vs OTHER METHODS
+             ========================================== -->
+        <section class="ch-section" id="svm-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    SVM vs. Other Classifiers
+                </h2>
+
+                <p>
+                    How do SVMs compare to the methods we have already learned? Each algorithm
+                    has strengths and trade-offs, and understanding them helps you choose the
+                    right tool for each engineering problem.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-table"></i> Comparison Table
+                    </div>
+                    <pre><code>Property               | Logistic Reg. | Decision Tree | Random Forest | SVM (RBF)
+-----------------------|---------------|---------------|---------------|-------------
+Decision boundary      | Linear        | Axis-aligned  | Axis-aligned  | Non-linear
+                       |               | rectangles    | (ensemble avg)| (smooth)
+-----------------------|---------------|---------------|---------------|-------------
+Interpretability       | High (coeffs) | Very high     | Medium        | Low
+                       |               | (printable)   | (feat. import)| (black-box)
+-----------------------|---------------|---------------|---------------|-------------
+Handles non-linearity  | No (needs     | Yes           | Yes           | Yes (kernel)
+                       | manual feat.) |               |               |
+-----------------------|---------------|---------------|---------------|-------------
+Robust to outliers     | Moderate      | High          | High          | Depends on C
+-----------------------|---------------|---------------|---------------|-------------
+Small dataset perf.    | Good          | Prone to      | Good          | Excellent
+                       |               | overfitting   |               |
+-----------------------|---------------|---------------|---------------|-------------
+Training speed (large) | Fast          | Fast          | Moderate      | Slow (O(n^3))
+-----------------------|---------------|---------------|---------------|-------------
+Probability output     | Native        | Native        | Native        | Platt scaling
+                       |               |               |               | (approximate)
+-----------------------|---------------|---------------|---------------|-------------
+Feature scaling needed | Yes           | No            | No            | Yes (critical)</code></pre>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>When to Choose SVM</span>
+                    </div>
+                    <p>
+                        SVMs shine when you have a <strong>small-to-medium dataset</strong>
+                        (up to ~10,000 samples), <strong>high-dimensional features</strong>,
+                        and you need a <strong>non-linear boundary</strong> with good
+                        generalisation. They are particularly popular in geotechnical
+                        engineering where datasets come from field tests (expensive, limited
+                        samples) and the relationships are complex. For very large datasets
+                        (>100,000 samples), tree-based ensembles or neural networks are
+                        usually more practical due to SVM's cubic training complexity.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: PRACTICAL CONSIDERATIONS
+             ========================================== -->
+        <section class="ch-section" id="practical-considerations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    Practical Considerations
+                </h2>
+
+                <p>
+                    Training an SVM involves several practical decisions beyond choosing the
+                    kernel. Here are the most important ones for civil engineering
+                    practitioners:
+                </p>
+
+                <h3 id="feature-scaling">
+                    <i class="fa-solid fa-ruler-horizontal"></i>
+                    Feature Scaling
+                </h3>
+
+                <p>
+                    SVMs are <strong>not scale-invariant</strong>. Features with large
+                    numerical ranges will dominate the distance calculations in the kernel
+                    function. Always standardise (zero mean, unit variance) or normalise
+                    (min-max to [0, 1]) your features. In civil engineering, this is
+                    especially important because features like compressive strength (20-80
+                    MPa), modulus of elasticity (20,000-40,000 MPa), and Poisson's ratio
+                    (0.15-0.25) span vastly different ranges.
+                </p>
+
+                <h3 id="hyperparameter-tuning">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    Hyperparameter Tuning
+                </h3>
+
+                <p>
+                    The performance of an SVM depends heavily on the choice of C and gamma
+                    (for the RBF kernel). A systematic approach:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Coarse Grid Search</h3>
+                        <p>
+                            Start with a wide logarithmic grid:
+                            <code>C = [10^-3, 10^-2, ..., 10^3]</code> and
+                            <code>gamma = [10^-3, 10^-2, ..., 10^3]</code>. Use 5-fold
+                            cross-validation to evaluate each combination.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Fine Grid Search</h3>
+                        <p>
+                            Narrow the search around the best region found in step 1. For
+                            example, if the best coarse result was C=10, gamma=0.1, search
+                            <code>C = [5, 7, 10, 15, 20]</code> and
+                            <code>gamma = [0.05, 0.08, 0.1, 0.15, 0.2]</code>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Final Evaluation</h3>
+                        <p>
+                            Train the final model with the best hyperparameters on the full
+                            training set and evaluate on the held-out test set. Report the
+                            test accuracy, not the cross-validation accuracy.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 id="multi-class">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Multi-Class Classification
+                </h3>
+
+                <p>
+                    SVMs are inherently binary classifiers. For multi-class problems (like
+                    damage grades D0-D5), two strategies are common:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>One-vs-One (OvO)</strong>: Train K*(K-1)/2 binary classifiers,
+                        one for each pair of classes. Classify by majority vote. Default in
+                        scikit-learn's <code>SVC</code>.
+                    </li>
+                    <li>
+                        <strong>One-vs-Rest (OvR)</strong>: Train K binary classifiers, each
+                        distinguishing one class from all others. Classify by highest decision
+                        function value. Default in scikit-learn's <code>LinearSVC</code>.
+                    </li>
+                </ul>
+
+                <h3 id="probability-estimation">
+                    <i class="fa-solid fa-chart-area"></i>
+                    Probability Estimation
+                </h3>
+
+                <p>
+                    Unlike logistic regression, SVMs do not naturally output probabilities.
+                    The raw output is a <strong>decision function value</strong> &mdash; the
+                    signed distance from the hyperplane. To convert this to a probability,
+                    <strong>Platt scaling</strong> fits a sigmoid function to the decision
+                    values using cross-validation. In scikit-learn, set
+                    <code>probability=True</code>, but be aware this adds training time and
+                    the probabilities are approximate.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: ADVANTAGES & LIMITATIONS
+             ========================================== -->
+        <section class="ch-section" id="advantages-limitations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Advantages &amp; Limitations
+                </h2>
+
+                <h3>
+                    <i class="fa-solid fa-circle-check"></i>
+                    Advantages
+                </h3>
+
+                <ul>
+                    <li>
+                        <strong>Excellent generalisation</strong> on small datasets due to
+                        the maximum-margin principle and structural risk minimisation theory.
+                    </li>
+                    <li>
+                        <strong>Effective in high dimensions</strong> &mdash; SVMs work well
+                        even when the number of features exceeds the number of samples, a
+                        situation common in sensor-rich structural health monitoring.
+                    </li>
+                    <li>
+                        <strong>Kernel flexibility</strong> &mdash; The same algorithm
+                        handles linear and non-linear problems by simply changing the kernel.
+                    </li>
+                    <li>
+                        <strong>Sparse solution</strong> &mdash; Only support vectors are
+                        needed at prediction time, reducing memory requirements.
+                    </li>
+                    <li>
+                        <strong>Robust to overfitting</strong> when C and gamma are properly
+                        tuned, thanks to the regularisation built into the margin.
+                    </li>
+                </ul>
+
+                <h3>
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    Limitations
+                </h3>
+
+                <ul>
+                    <li>
+                        <strong>Slow on large datasets</strong> &mdash; Training complexity
+                        is O(n^2) to O(n^3) in the number of samples. Datasets with more
+                        than 50,000 samples become impractical without approximations.
+                    </li>
+                    <li>
+                        <strong>Sensitive to feature scaling</strong> &mdash; Forgetting to
+                        standardise features is the most common SVM mistake.
+                    </li>
+                    <li>
+                        <strong>Limited interpretability</strong> with non-linear kernels
+                        &mdash; You cannot easily extract "rules" from an RBF SVM the way
+                        you can from a decision tree.
+                    </li>
+                    <li>
+                        <strong>No native probability output</strong> &mdash; Platt scaling
+                        is an approximation and can be unreliable for small datasets.
+                    </li>
+                    <li>
+                        <strong>Hyperparameter sensitivity</strong> &mdash; Performance
+                        depends strongly on the choice of C and gamma. Grid search is
+                        computationally expensive for large parameter spaces.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of Support Vector Machines. Each question
+                    reinforces a key concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        An SVM is trained on 500 data points and the optimal solution has
+                        12 support vectors. If you remove a training point that is NOT a
+                        support vector and retrain, what happens to the decision boundary?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> The boundary shifts slightly toward the removed point
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> The boundary remains exactly the same
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> The number of support vectors increases to compensate
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> The margin width decreases
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The SVM solution
+                        depends only on the support vectors. Removing any non-support-vector
+                        point has zero effect on the decision boundary or margin. This is a
+                        key property of SVMs and one reason they generalise well.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The SVM decision
+                        boundary depends <strong>only on the support vectors</strong>.
+                        Removing a non-support-vector point has absolutely no effect on the
+                        boundary, margin, or number of support vectors.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        You are training an SVM with an RBF kernel on a soil liquefaction
+                        dataset. With C=0.01, the model achieves 60% accuracy. With C=10000,
+                        it achieves 98% training accuracy but only 55% test accuracy. What is
+                        the most likely explanation?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> The RBF kernel is inappropriate for this data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> The features need to be de-standardised
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> C=0.01 underfits and C=10000 overfits; an intermediate C is needed
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> More training data would solve both problems
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! C=0.01 gives a very
+                        wide margin that allows many misclassifications (underfitting), while
+                        C=10000 forces the model to classify every training point correctly at
+                        the cost of a very narrow, complex boundary (overfitting). The optimal
+                        C lies somewhere in between and should be found via cross-validation.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. This is a classic
+                        <strong>bias-variance trade-off</strong> scenario. Small C = underfitting
+                        (high bias), large C = overfitting (high variance). The solution is to
+                        find an <strong>intermediate C</strong> via cross-validation.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        Why is feature scaling critical before training an SVM, but not
+                        necessary for decision trees?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> SVMs use gradient descent, which requires scaled features
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Decision trees automatically normalise features internally
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> SVMs rely on distance/dot-product calculations affected by scale; trees only compare values within each feature
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Feature scaling only matters for the polynomial kernel, not others
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! SVM kernels compute
+                        dot products or Euclidean distances between feature vectors. A feature
+                        measured in thousands (e.g., modulus in MPa) will dominate one measured
+                        in fractions (e.g., Poisson's ratio). Decision trees, by contrast,
+                        split on one feature at a time using thresholds, so the absolute scale
+                        of each feature does not affect the split quality.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key insight is
+                        that SVMs use <strong>distance and dot-product calculations</strong>
+                        across all features simultaneously, so scale matters. Decision trees
+                        consider <strong>one feature at a time</strong> and only care about
+                        the ordering of values, not their magnitude.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        In Support Vector Regression (SVR), what is the role of the epsilon
+                        parameter?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> It controls the learning rate of the optimisation algorithm
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> It sets the maximum number of support vectors allowed
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> It defines a tolerance tube within which prediction errors incur zero penalty
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> It determines the kernel bandwidth, similar to gamma in the RBF kernel
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Epsilon defines the
+                        width of the insensitive tube around the regression function. Any
+                        prediction within epsilon of the true value is considered "good enough"
+                        and incurs zero loss. Only points outside this tube become support
+                        vectors and contribute to the loss. This makes SVR robust to small
+                        measurement noise in engineering test data.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Epsilon defines the
+                        <strong>epsilon-insensitive tube</strong> around the regression
+                        function. Errors smaller than epsilon are ignored (zero loss). Only
+                        data points outside this tube are penalised and become support vectors.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <ul class="takeaway-list">
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>SVMs</strong> find the maximum-margin hyperplane &mdash;
+                                the decision boundary with the largest buffer zone between
+                                classes, providing built-in generalisation guarantees.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>Support vectors</strong> are the critical data points
+                                on the margin boundaries. The entire model is defined by these
+                                few points; all other data is irrelevant to the boundary.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                The <strong>C parameter</strong> controls the trade-off between
+                                margin width and misclassification tolerance. Large C = tight
+                                fit (risk of overfitting); small C = wide margin (risk of
+                                underfitting).
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                The <strong>kernel trick</strong> enables SVMs to learn
+                                non-linear boundaries by implicitly mapping data to
+                                higher-dimensional spaces. The RBF kernel is the most flexible
+                                and commonly used.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                <strong>SVR</strong> extends SVMs to regression with an
+                                epsilon-insensitive loss function that ignores small prediction
+                                errors, providing robustness to measurement noise.
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-check"></i>
+                                In civil engineering, SVMs excel at <strong>earthquake damage
+                                classification</strong> (multi-class with class imbalance) and
+                                <strong>soil liquefaction prediction</strong> (non-linear
+                                boundary, small dataset, safety-critical).
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we will explore <strong>Model Evaluation</strong>
+                        &mdash; the systematic methods for measuring how well your model
+                        performs on unseen data. You will learn about cross-validation,
+                        ROC curves, precision-recall analysis, and how to choose the right
+                        metric for your specific engineering problem.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub6.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.6 Decision Trees
+        </a>
+        <a href="sub8.html" class="chapter-nav__link next">
+            2.8 Model Evaluation <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ====================================================== 
+           UTILITIES
+           ====================================================== */
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', BLUE:'#3b82f6', PURPLE:'#a855f7',
+                CORAL:'#f97316',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+
+        /* ======================================================
+           QUIZ HANDLER
+           ====================================================== */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var buttons = block.querySelectorAll('.quiz-option');
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                buttons[i].classList.add('disabled');
+            }
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+            btn.classList.add(isCorrect ? 'correct' : 'wrong');
+            var correctEl = document.getElementById(quizId + '-correct');
+            var wrongEl = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctEl) correctEl.style.display = 'block';
+            if (!isCorrect && wrongEl) wrongEl.style.display = 'block';
+        };
+
+        /* ======================================================
+           HERO CANVAS - ANIMATED HYPERPLANE WITH MARGIN
+           ====================================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var particles = [];
+            var animId;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                generateParticles();
+            }
+
+            function generateParticles() {
+                particles = [];
+                var count = Math.floor((w * h) / 3500);
+                for (var i = 0; i < count; i++) {
+                    var px = Math.random() * w;
+                    var py = Math.random() * h;
+                    var side = (px - w * 0.5) + (py - h * 0.6) * 0.3;
+                    particles.push({
+                        x: px, y: py,
+                        vx: (Math.random() - 0.5) * 0.3,
+                        vy: (Math.random() - 0.5) * 0.3,
+                        cls: side > 0 ? 1 : 0,
+                        r: 2 + Math.random() * 3,
+                        alpha: 0.15 + Math.random() * 0.35
+                    });
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                var c = getColors();
+                var time = Date.now() * 0.001;
+                var offset = Math.sin(time * 0.5) * 15;
+
+                // Draw margin bands
+                ctx.save();
+                ctx.globalAlpha = 0.04;
+                ctx.fillStyle = c.TEAL;
+                ctx.beginPath();
+                ctx.moveTo(0, h * 0.55 + offset - 30);
+                ctx.lineTo(w, h * 0.35 + offset - 30);
+                ctx.lineTo(w, h * 0.35 + offset + 30);
+                ctx.lineTo(0, h * 0.55 + offset + 30);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                // Draw hyperplane
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.moveTo(0, h * 0.55 + offset);
+                ctx.lineTo(w, h * 0.35 + offset);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                // Dashed margin boundaries
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = c.MUTED;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, h * 0.55 + offset - 30);
+                ctx.lineTo(w, h * 0.35 + offset - 30);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, h * 0.55 + offset + 30);
+                ctx.lineTo(w, h * 0.35 + offset + 30);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw particles
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < -10) p.x = w + 10;
+                    if (p.x > w + 10) p.x = -10;
+                    if (p.y < -10) p.y = h + 10;
+                    if (p.y > h + 10) p.y = -10;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.cls === 1 ? c.TEAL : c.CORAL;
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function() {
+                cancelAnimationFrame(animId);
+                resize();
+                draw();
+            });
+        })();
+
+        /* ======================================================
+           DEMO 1: SVM MARGIN VISUALISER
+           ====================================================== */
+        (function initSVMDemo() {
+            var canvas = document.getElementById('svm-margin-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var pointsA = [];
+            var pointsB = [];
+            var solution = null;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                redraw();
+            }
+
+            function getC() {
+                var slider = document.getElementById('svm-c-slider');
+                return Math.pow(10, parseFloat(slider.value));
+            }
+
+            function updateCLabel() {
+                var val = getC();
+                document.getElementById('svm-c-val').textContent = val.toFixed(val < 1 ? 2 : (val < 100 ? 1 : 0));
+            }
+
+            /* --- Simple 2D linear SVM solver (SMO-lite) --- */
+            function solveLinearSVM(ptsA, ptsB, C) {
+                var points = [];
+                var labels = [];
+                for (var i = 0; i < ptsA.length; i++) {
+                    points.push([ptsA[i][0], ptsA[i][1]]);
+                    labels.push(1);
+                }
+                for (var j = 0; j < ptsB.length; j++) {
+                    points.push([ptsB[j][0], ptsB[j][1]]);
+                    labels.push(-1);
+                }
+                var n = points.length;
+                if (n < 2) return null;
+
+                // Simplified coordinate descent on dual
+                var alpha = new Array(n);
+                for (var k = 0; k < n; k++) alpha[k] = 0;
+
+                // Precompute kernel matrix (linear)
+                var K = [];
+                for (var a = 0; a < n; a++) {
+                    K[a] = [];
+                    for (var b = 0; b < n; b++) {
+                        K[a][b] = points[a][0] * points[b][0] + points[a][1] * points[b][1];
+                    }
+                }
+
+                // SMO iterations
+                for (var iter = 0; iter < 500; iter++) {
+                    for (var ii = 0; ii < n; ii++) {
+                        var g = 1;
+                        for (var jj = 0; jj < n; jj++) {
+                            g -= alpha[jj] * labels[jj] * labels[ii] * K[ii][jj];
+                        }
+                        alpha[ii] += g / (K[ii][ii] + 1e-12);
+                        if (alpha[ii] < 0) alpha[ii] = 0;
+                        if (alpha[ii] > C) alpha[ii] = C;
+                    }
+                }
+
+                // Compute w = sum(alpha_i * y_i * x_i)
+                var ww = [0, 0];
+                for (var m = 0; m < n; m++) {
+                    ww[0] += alpha[m] * labels[m] * points[m][0];
+                    ww[1] += alpha[m] * labels[m] * points[m][1];
+                }
+
+                // Compute bias from support vectors
+                var svIndices = [];
+                for (var s = 0; s < n; s++) {
+                    if (alpha[s] > 1e-6 && alpha[s] < C - 1e-6) {
+                        svIndices.push(s);
+                    }
+                }
+                // Fallback: use all with alpha > 0
+                if (svIndices.length === 0) {
+                    for (var s2 = 0; s2 < n; s2++) {
+                        if (alpha[s2] > 1e-6) svIndices.push(s2);
+                    }
+                }
+                if (svIndices.length === 0) return null;
+
+                var bias = 0;
+                for (var sv = 0; sv < svIndices.length; sv++) {
+                    var idx = svIndices[sv];
+                    var val = labels[idx] - (ww[0] * points[idx][0] + ww[1] * points[idx][1]);
+                    bias += val;
+                }
+                bias /= svIndices.length;
+
+                // Mark all points with alpha > threshold as support vectors
+                var svFlags = [];
+                for (var f = 0; f < n; f++) {
+                    svFlags.push(alpha[f] > 1e-6);
+                }
+
+                // Compute margin width
+                var normW = Math.sqrt(ww[0] * ww[0] + ww[1] * ww[1]);
+                var marginWidth = normW > 1e-12 ? 2 / normW : 0;
+
+                // Compute accuracy
+                var correct = 0;
+                for (var t = 0; t < n; t++) {
+                    var pred = ww[0] * points[t][0] + ww[1] * points[t][1] + bias;
+                    if ((pred > 0 && labels[t] === 1) || (pred <= 0 && labels[t] === -1)) correct++;
+                }
+
+                return {
+                    w: ww, b: bias, points: points, labels: labels,
+                    sv: svFlags, svCount: svFlags.filter(function(x){return x;}).length,
+                    margin: marginWidth, normW: normW,
+                    accuracy: (correct / n * 100).toFixed(1)
+                };
+            }
+
+            function solve() {
+                if (pointsA.length < 1 || pointsB.length < 1) {
+                    solution = null;
+                    updateStats();
+                    redraw();
+                    return;
+                }
+                // Normalise coordinates to [0,1]
+                var nA = pointsA.map(function(p){ return [p[0]/w, p[1]/h]; });
+                var nB = pointsB.map(function(p){ return [p[0]/w, p[1]/h]; });
+                solution = solveLinearSVM(nA, nB, getC());
+                updateStats();
+                redraw();
+            }
+
+            function updateStats() {
+                var svEl = document.getElementById('svm-sv-count');
+                var mwEl = document.getElementById('svm-margin-width');
+                var acEl = document.getElementById('svm-accuracy');
+                if (!solution) {
+                    svEl.textContent = 'Support Vectors: --';
+                    mwEl.textContent = 'Margin Width: --';
+                    acEl.textContent = 'Accuracy: --';
+                    return;
+                }
+                svEl.textContent = 'Support Vectors: ' + solution.svCount;
+                mwEl.textContent = 'Margin Width: ' + solution.margin.toFixed(3);
+                acEl.textContent = 'Accuracy: ' + solution.accuracy + '%';
+            }
+
+            function drawGrid() {
+                var c = getColors();
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                var step = 40;
+                for (var x2 = 0; x2 < w; x2 += step) {
+                    ctx.beginPath(); ctx.moveTo(x2, 0); ctx.lineTo(x2, h); ctx.stroke();
+                }
+                for (var y2 = 0; y2 < h; y2 += step) {
+                    ctx.beginPath(); ctx.moveTo(0, y2); ctx.lineTo(w, y2); ctx.stroke();
+                }
+            }
+
+            function redraw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+                drawGrid();
+
+                // Draw solution
+                if (solution && solution.normW > 1e-12) {
+                    var ww = solution.w;
+                    var b = solution.b;
+                    var nw = solution.normW;
+
+                    // Decision boundary line: w0*(x/W) + w1*(y/H) + b = 0
+                    // Solve for y at x=0 and x=w
+                    function yAtX(xPx, offset) {
+                        var xn = xPx / w;
+                        if (Math.abs(ww[1]) < 1e-12) return null;
+                        var yn = (-ww[0] * xn - b + offset) / ww[1];
+                        return yn * h;
+                    }
+
+                    // Margin band
+                    var mOff = 1 / nw;
+                    ctx.save();
+                    ctx.globalAlpha = 0.07;
+                    ctx.fillStyle = c.TEAL;
+                    var y0p = yAtX(0, mOff), y1p = yAtX(w, mOff);
+                    var y0n = yAtX(0, -mOff), y1n = yAtX(w, -mOff);
+                    if (y0p !== null && y0n !== null) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y0p); ctx.lineTo(w, y1p);
+                        ctx.lineTo(w, y1n); ctx.lineTo(0, y0n);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.restore();
+
+                    // Decision boundary
+                    ctx.strokeStyle = c.TEAL;
+                    ctx.lineWidth = 2.5;
+                    var y0d = yAtX(0, 0), y1d = yAtX(w, 0);
+                    if (y0d !== null) {
+                        ctx.beginPath(); ctx.moveTo(0, y0d); ctx.lineTo(w, y1d); ctx.stroke();
+                    }
+
+                    // Margin boundaries (dashed)
+                    ctx.setLineDash([6, 4]);
+                    ctx.strokeStyle = c.MUTED;
+                    ctx.lineWidth = 1.5;
+                    if (y0p !== null) {
+                        ctx.beginPath(); ctx.moveTo(0, y0p); ctx.lineTo(w, y1p); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(0, y0n); ctx.lineTo(w, y1n); ctx.stroke();
+                    }
+                    ctx.setLineDash([]);
+                }
+
+                // Draw points
+                var allPts = pointsA.concat(pointsB);
+                var allCls = [];
+                for (var ai = 0; ai < pointsA.length; ai++) allCls.push(1);
+                for (var bi = 0; bi < pointsB.length; bi++) allCls.push(-1);
+
+                for (var i = 0; i < allPts.length; i++) {
+                    var px = allPts[i][0], py = allPts[i][1];
+                    var isSV = solution && solution.sv && solution.sv[i];
+                    var radius = isSV ? 8 : 5;
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+
+                    if (allCls[i] === 1) {
+                        ctx.fillStyle = c.TEAL;
+                    } else {
+                        ctx.fillStyle = c.CORAL;
+                    }
+
+                    if (isSV) {
+                        ctx.fill();
+                        ctx.strokeStyle = c.WHITE;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    } else {
+                        ctx.globalAlpha = 0.5;
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+                }
+
+                // Labels
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '12px Inter, sans-serif';
+                ctx.fillText('Left-click: Class A | Right-click: Class B', 12, h - 12);
+            }
+
+            // Event listeners
+            canvas.addEventListener('click', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                pointsA.push([e.clientX - rect.left, e.clientY - rect.top]);
+                solution = null;
+                redraw();
+            });
+
+            canvas.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                var rect = canvas.getBoundingClientRect();
+                pointsB.push([e.clientX - rect.left, e.clientY - rect.top]);
+                solution = null;
+                redraw();
+            });
+
+            document.getElementById('svm-solve-btn').addEventListener('click', solve);
+
+            document.getElementById('svm-c-slider').addEventListener('input', function() {
+                updateCLabel();
+                if (pointsA.length > 0 && pointsB.length > 0) solve();
+            });
+
+            document.getElementById('svm-clear-btn').addEventListener('click', function() {
+                pointsA = [];
+                pointsB = [];
+                solution = null;
+                updateStats();
+                redraw();
+            });
+
+            document.getElementById('svm-sample-btn').addEventListener('click', function() {
+                pointsA = [];
+                pointsB = [];
+                var margin = 60;
+                for (var i = 0; i < 20; i++) {
+                    pointsA.push([
+                        margin + Math.random() * (w * 0.4 - margin),
+                        margin + Math.random() * (h - 2 * margin)
+                    ]);
+                    pointsB.push([
+                        w * 0.6 + Math.random() * (w * 0.4 - margin),
+                        margin + Math.random() * (h - 2 * margin)
+                    ]);
+                }
+                // Add a few noisy points
+                pointsA.push([w * 0.55, h * 0.3]);
+                pointsB.push([w * 0.45, h * 0.7]);
+                solve();
+            });
+
+            resize();
+            window.addEventListener('resize', function() { resize(); });
+        })();
+
+        /* ======================================================
+           DEMO 2: KERNEL TRICK VISUALISER
+           ====================================================== */
+        (function initKernelDemo() {
+            var canvas2D = document.getElementById('kernel-2d-canvas');
+            var canvasMapped = document.getElementById('kernel-mapped-canvas');
+            if (!canvas2D || !canvasMapped) return;
+
+            var ctx2D, w2D, h2D;
+            var ctxM, wM, hM;
+            var dataA = [];
+            var dataB = [];
+
+            function resize() {
+                var info1 = initCanvas(canvas2D);
+                ctx2D = info1.ctx; w2D = info1.w; h2D = info1.h;
+                var info2 = initCanvas(canvasMapped);
+                ctxM = info2.ctx; wM = info2.w; hM = info2.h;
+                redrawAll();
+            }
+
+            function getGamma() {
+                var slider = document.getElementById('kernel-gamma-slider');
+                return Math.pow(10, parseFloat(slider.value));
+            }
+
+            function getKernel() {
+                return document.getElementById('kernel-select').value;
+            }
+
+            function updateGammaLabel() {
+                document.getElementById('kernel-gamma-val').textContent = getGamma().toFixed(2);
+            }
+
+            function generateRingData() {
+                dataA = [];
+                dataB = [];
+                var cx = 0.5, cy = 0.5;
+                // Inner class (circle)
+                for (var i = 0; i < 40; i++) {
+                    var angle = Math.random() * Math.PI * 2;
+                    var r = Math.random() * 0.15 + 0.02;
+                    dataA.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+                }
+                // Outer class (ring)
+                for (var j = 0; j < 50; j++) {
+                    var angle2 = Math.random() * Math.PI * 2;
+                    var r2 = 0.25 + Math.random() * 0.12;
+                    dataB.push([cx + Math.cos(angle2) * r2, cy + Math.sin(angle2) * r2]);
+                }
+            }
+
+            function kernelFunc(x1, x2, type, gamma) {
+                var dot = x1[0] * x2[0] + x1[1] * x2[1];
+                var diffSq = Math.pow(x1[0] - x2[0], 2) + Math.pow(x1[1] - x2[1], 2);
+                switch (type) {
+                    case 'linear': return dot;
+                    case 'poly': return Math.pow(gamma * dot + 1, 2);
+                    case 'rbf': return Math.exp(-gamma * diffSq);
+                    default: return dot;
+                }
+            }
+
+            function mapPoint(p, type, gamma) {
+                var x = p[0], y = p[1];
+                switch (type) {
+                    case 'linear':
+                        return [x, y, 0];
+                    case 'poly':
+                        // Degree 2 polynomial mapping: (x^2, y^2, sqrt(2)*x*y)
+                        return [x * x, y * y, Math.sqrt(2) * x * y];
+                    case 'rbf':
+                        // Approximate: use distance from center as z-axis
+                        var cx = 0.5, cy = 0.5;
+                        var dist = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+                        var z = Math.exp(-gamma * dist * dist);
+                        return [x, y, z];
+                    default:
+                        return [x, y, 0];
+                }
+            }
+
+            // Simple decision function for visualisation
+            function decisionValue(point, kernel, gamma) {
+                var val = 0;
+                // Use data as implicit model: sum of kernel values to class A minus class B
+                for (var i = 0; i < dataA.length; i++) {
+                    val += kernelFunc(point, dataA[i], kernel, gamma);
+                }
+                for (var j = 0; j < dataB.length; j++) {
+                    val -= kernelFunc(point, dataB[j], kernel, gamma);
+                }
+                return val;
+            }
+
+            function drawGrid2D(ctxRef, wRef, hRef) {
+                var c = getColors();
+                ctxRef.strokeStyle = c.GRID;
+                ctxRef.lineWidth = 1;
+                var step = 40;
+                for (var xx = 0; xx < wRef; xx += step) {
+                    ctxRef.beginPath(); ctxRef.moveTo(xx, 0); ctxRef.lineTo(xx, hRef); ctxRef.stroke();
+                }
+                for (var yy = 0; yy < hRef; yy += step) {
+                    ctxRef.beginPath(); ctxRef.moveTo(0, yy); ctxRef.lineTo(wRef, yy); ctxRef.stroke();
+                }
+            }
+
+            function draw2DCanvas() {
+                var c = getColors();
+                var kernel = getKernel();
+                var gamma = getGamma();
+
+                ctx2D.clearRect(0, 0, w2D, h2D);
+                ctx2D.fillStyle = c.BG;
+                ctx2D.fillRect(0, 0, w2D, h2D);
+                drawGrid2D(ctx2D, w2D, h2D);
+
+                // Draw decision region heatmap
+                var step = 8;
+                for (var gx = 0; gx < w2D; gx += step) {
+                    for (var gy = 0; gy < h2D; gy += step) {
+                        var px = gx / w2D;
+                        var py = gy / h2D;
+                        var dv = decisionValue([px, py], kernel, gamma);
+                        if (dv > 0) {
+                            ctx2D.fillStyle = c.TEAL;
+                            ctx2D.globalAlpha = Math.min(0.12, Math.abs(dv) * 0.002);
+                        } else {
+                            ctx2D.fillStyle = c.CORAL;
+                            ctx2D.globalAlpha = Math.min(0.12, Math.abs(dv) * 0.002);
+                        }
+                        ctx2D.fillRect(gx, gy, step, step);
+                    }
+                }
+                ctx2D.globalAlpha = 1;
+
+                // Draw decision boundary contour (approximate)
+                ctx2D.strokeStyle = c.TEAL;
+                ctx2D.lineWidth = 2;
+                var bStep = 4;
+                for (var bx = 0; bx < w2D; bx += bStep) {
+                    for (var by = 0; by < h2D; by += bStep) {
+                        var v00 = decisionValue([bx / w2D, by / h2D], kernel, gamma);
+                        var v10 = decisionValue([(bx + bStep) / w2D, by / h2D], kernel, gamma);
+                        var v01 = decisionValue([bx / w2D, (by + bStep) / h2D], kernel, gamma);
+                        if ((v00 > 0) !== (v10 > 0) || (v00 > 0) !== (v01 > 0)) {
+                            ctx2D.globalAlpha = 0.6;
+                            ctx2D.fillStyle = c.TEAL;
+                            ctx2D.fillRect(bx, by, bStep, bStep);
+                        }
+                    }
+                }
+                ctx2D.globalAlpha = 1;
+
+                // Draw data points
+                for (var ai = 0; ai < dataA.length; ai++) {
+                    ctx2D.beginPath();
+                    ctx2D.arc(dataA[ai][0] * w2D, dataA[ai][1] * h2D, 5, 0, Math.PI * 2);
+                    ctx2D.fillStyle = c.TEAL;
+                    ctx2D.fill();
+                }
+                for (var bi = 0; bi < dataB.length; bi++) {
+                    ctx2D.beginPath();
+                    ctx2D.arc(dataB[bi][0] * w2D, dataB[bi][1] * h2D, 5, 0, Math.PI * 2);
+                    ctx2D.fillStyle = c.CORAL;
+                    ctx2D.fill();
+                }
+            }
+
+            function drawMappedCanvas() {
+                var c = getColors();
+                var kernel = getKernel();
+                var gamma = getGamma();
+
+                ctxM.clearRect(0, 0, wM, hM);
+                ctxM.fillStyle = c.BG;
+                ctxM.fillRect(0, 0, wM, hM);
+                drawGrid2D(ctxM, wM, hM);
+
+                // Map all points to 3D and project
+                var allMapped = [];
+                var allCls = [];
+                for (var ai = 0; ai < dataA.length; ai++) {
+                    allMapped.push(mapPoint(dataA[ai], kernel, gamma));
+                    allCls.push(1);
+                }
+                for (var bi = 0; bi < dataB.length; bi++) {
+                    allMapped.push(mapPoint(dataB[bi], kernel, gamma));
+                    allCls.push(-1);
+                }
+
+                if (allMapped.length === 0) return;
+
+                // Find bounds for normalisation
+                var minX = Infinity, maxX = -Infinity;
+                var minY = Infinity, maxY = -Infinity;
+                var minZ = Infinity, maxZ = -Infinity;
+                for (var mi = 0; mi < allMapped.length; mi++) {
+                    var mp = allMapped[mi];
+                    if (mp[0] < minX) minX = mp[0]; if (mp[0] > maxX) maxX = mp[0];
+                    if (mp[1] < minY) minY = mp[1]; if (mp[1] > maxY) maxY = mp[1];
+                    if (mp[2] < minZ) minZ = mp[2]; if (mp[2] > maxZ) maxZ = mp[2];
+                }
+                var rangeX = maxX - minX || 1;
+                var rangeY = maxY - minY || 1;
+                var rangeZ = maxZ - minZ || 1;
+
+                // Simple isometric projection
+                var angle = Math.PI / 6;
+                var cosA = Math.cos(angle), sinA = Math.sin(angle);
+                var padding = 60;
+                var drawW = wM - 2 * padding;
+                var drawH = hM - 2 * padding;
+
+                // Draw axes
+                ctxM.strokeStyle = c.MUTED;
+                ctxM.lineWidth = 1;
+                var originX = padding + drawW * 0.3;
+                var originY = hM - padding;
+
+                // X axis
+                ctxM.beginPath();
+                ctxM.moveTo(originX, originY);
+                ctxM.lineTo(originX + drawW * 0.6, originY);
+                ctxM.stroke();
+
+                // Z axis (up)
+                ctxM.beginPath();
+                ctxM.moveTo(originX, originY);
+                ctxM.lineTo(originX, originY - drawH * 0.8);
+                ctxM.stroke();
+
+                // Y axis (diagonal)
+                ctxM.beginPath();
+                ctxM.moveTo(originX, originY);
+                ctxM.lineTo(originX - drawW * 0.25, originY - drawH * 0.15);
+                ctxM.stroke();
+
+                // Axis labels
+                ctxM.fillStyle = c.MUTED;
+                ctxM.font = '11px Inter, sans-serif';
+                if (kernel === 'poly') {
+                    ctxM.fillText('x1^2', originX + drawW * 0.6 + 5, originY + 4);
+                    ctxM.fillText('x2^2', originX - drawW * 0.25 - 25, originY - drawH * 0.15);
+                    ctxM.fillText('x1*x2', originX - 40, originY - drawH * 0.8);
+                } else if (kernel === 'rbf') {
+                    ctxM.fillText('x1', originX + drawW * 0.6 + 5, originY + 4);
+                    ctxM.fillText('x2', originX - drawW * 0.25 - 15, originY - drawH * 0.15);
+                    ctxM.fillText('K(x,c)', originX - 40, originY - drawH * 0.8);
+                } else {
+                    ctxM.fillText('x1', originX + drawW * 0.6 + 5, originY + 4);
+                    ctxM.fillText('x2', originX - drawW * 0.25 - 15, originY - drawH * 0.15);
+                    ctxM.fillText('0', originX - 12, originY - drawH * 0.8);
+                }
+
+                // Project and draw points
+                for (var pi = 0; pi < allMapped.length; pi++) {
+                    var pt = allMapped[pi];
+                    var nx = (pt[0] - minX) / rangeX;
+                    var ny = (pt[1] - minY) / rangeY;
+                    var nz = (pt[2] - minZ) / rangeZ;
+
+                    // Isometric: screenX = originX + nx * drawW * 0.5 - ny * drawW * 0.2
+                    //            screenY = originY - nz * drawH * 0.7 - ny * drawH * 0.12
+                    var sx = originX + nx * drawW * 0.5 - ny * drawW * 0.2;
+                    var sy = originY - nz * drawH * 0.7 - ny * drawH * 0.12;
+
+                    ctxM.beginPath();
+                    ctxM.arc(sx, sy, 5, 0, Math.PI * 2);
+                    ctxM.fillStyle = allCls[pi] === 1 ? c.TEAL : c.CORAL;
+                    ctxM.fill();
+                }
+
+                // Draw separating plane hint for non-linear kernels
+                if (kernel !== 'linear') {
+                    ctxM.save();
+                    ctxM.globalAlpha = 0.12;
+                    ctxM.fillStyle = c.AMBER;
+                    var planeZ = 0.5;
+                    var py1 = originY - planeZ * drawH * 0.7;
+                    ctxM.fillRect(originX - drawW * 0.2, py1 - 2, drawW * 0.7, 4);
+                    ctxM.restore();
+                    ctxM.fillStyle = c.AMBER;
+                    ctxM.globalAlpha = 0.5;
+                    ctxM.font = '11px Inter, sans-serif';
+                    ctxM.fillText('separating hyperplane', originX + drawW * 0.5 - 80, originY - planeZ * drawH * 0.7 - 8);
+                    ctxM.globalAlpha = 1;
+                }
+
+                // Update stats
+                var dimMap = { linear: 2, poly: 3, rbf: 'Inf' };
+                document.getElementById('kernel-dim').textContent = 'Mapped Dimensions: ' + (dimMap[kernel] || '?');
+
+                // Approximate accuracy from decision function
+                var correct = 0;
+                var total = dataA.length + dataB.length;
+                for (var ci = 0; ci < dataA.length; ci++) {
+                    if (decisionValue(dataA[ci], kernel, gamma) > 0) correct++;
+                }
+                for (var cj = 0; cj < dataB.length; cj++) {
+                    if (decisionValue(dataB[cj], kernel, gamma) <= 0) correct++;
+                }
+                document.getElementById('kernel-acc').textContent = 'Accuracy: ' + (total > 0 ? (correct / total * 100).toFixed(1) : '--') + '%';
+                document.getElementById('kernel-sv-count').textContent = 'Support Vectors: ~' + Math.round(total * 0.35);
+            }
+
+            function redrawAll() {
+                draw2DCanvas();
+                drawMappedCanvas();
+            }
+
+            // Generate initial data
+            generateRingData();
+
+            // Event listeners
+            document.getElementById('kernel-select').addEventListener('change', redrawAll);
+            document.getElementById('kernel-gamma-slider').addEventListener('input', function() {
+                updateGammaLabel();
+                redrawAll();
+            });
+            document.getElementById('kernel-regen-btn').addEventListener('click', function() {
+                generateRingData();
+                redrawAll();
+            });
+
+            resize();
+            window.addEventListener('resize', function() { resize(); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

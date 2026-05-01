@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.5 Dimensionality Reduction &mdash; PCA | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn Principal Component Analysis (PCA) for civil engineering. Explore the curse of dimensionality, eigenvalues and eigenvectors, explained variance, scree plots, and interactive demos for reducing multi-sensor bridge monitoring data and compressing soil test results.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.5
+            </div>
+            <h1 class="chapter-hero__title">Dimensionality Reduction &mdash; PCA</h1>
+            <p class="chapter-hero__subtitle">
+                When your bridge has 200 sensors recording 50 measurements each,
+                you drown in 10,000 dimensions. Principal Component Analysis finds the
+                handful of axes that capture almost all the information &mdash; compressing
+                the data while preserving its essential structure.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 55 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE CURSE OF DIMENSIONALITY
+             ========================================== -->
+        <section class="ch-section" id="curse-of-dimensionality">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Curse of Dimensionality</h2>
+                        <p>
+                            Picture a geotechnical engineer collecting soil samples across a
+                            construction site. For each sample, the lab returns grain size
+                            distribution, moisture content, liquid limit, plastic limit,
+                            specific gravity, cohesion, angle of internal friction, dry
+                            density, permeability, organic content, and several more
+                            parameters. A single borehole log easily generates 15&ndash;25
+                            numeric features. Scale this to 200 boreholes, and you have a
+                            dataset with thousands of rows and dozens of columns.
+                        </p>
+                        <p>
+                            Now imagine a structural health monitoring system on a cable-stayed
+                            bridge. Each of the 300 sensors records acceleration, velocity,
+                            displacement, temperature, and humidity at 100 Hz. A one-hour
+                            recording produces hundreds of millions of data points across
+                            hundreds of dimensions. Trying to visualise, cluster, or model
+                            this raw high-dimensional data is practically impossible.
+                        </p>
+                        <p>
+                            This is the <strong>curse of dimensionality</strong> &mdash; a
+                            term coined by Richard Bellman in 1961. As the number of features
+                            (dimensions) grows, several problems compound:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Volume Explodes Exponentially</h3>
+                        <p>
+                            In one dimension, 10 evenly spaced sample points cover an interval
+                            well. In two dimensions, you need 10<sup>2</sup> = 100 points to
+                            achieve the same density in a square. In 20 dimensions, you need
+                            10<sup>20</sup> points &mdash; more than the number of grains of
+                            sand on Earth. Real datasets cannot possibly fill
+                            high-dimensional spaces uniformly, so every data point becomes
+                            effectively isolated.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Distances Become Meaningless</h3>
+                        <p>
+                            In high-dimensional spaces, the ratio of the distance to the
+                            nearest neighbour and the distance to the farthest neighbour
+                            converges to 1. All points appear roughly equidistant. Algorithms
+                            that rely on distance &mdash; K-Means, DBSCAN, k-NN &mdash; lose
+                            their discriminative power. A clustering algorithm cannot
+                            distinguish "close" from "far" when every pair is effectively the
+                            same distance apart.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Models Overfit</h3>
+                        <p>
+                            With many features and limited samples, models can memorise the
+                            training data rather than learning genuine patterns. A regression
+                            model predicting concrete strength from 50 mix-design parameters
+                            might achieve perfect training accuracy but fail completely on new
+                            mixes. Reducing dimensionality before modelling is often the most
+                            effective regularisation strategy.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Storage and Computation Costs</h3>
+                        <p>
+                            Structural health monitoring systems generate terabytes of
+                            high-dimensional time-series data every month. Transmitting,
+                            storing, and processing all raw dimensions is expensive.
+                            Compressing the data to a lower-dimensional representation
+                            &mdash; while retaining the information needed for damage
+                            detection &mdash; drastically cuts cost and latency.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of a structural drawing set for a high-rise building: plan
+                            view, elevation, section, detail &mdash; each is a different
+                            "projection" of the same 3D structure onto 2D paper. No single
+                            drawing captures everything, but together two or three well-chosen
+                            views convey nearly all the geometric information. PCA is the
+                            mathematical equivalent: it finds the best "views" (projections) of
+                            your high-dimensional data so that a few projections capture most
+                            of the variability.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with basic linear algebra
+                        (vectors, matrices, matrix multiplication) and the unsupervised
+                        learning fundamentals from Sub-chapter 3.1. You do not need prior
+                        experience with eigenvalues or eigenvectors &mdash; we will build
+                        that intuition from scratch using civil engineering examples.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHAT IS DIMENSIONALITY REDUCTION?
+             ========================================== -->
+        <section class="ch-section" id="what-is-dim-reduction">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compress"></i>
+                    What Is Dimensionality Reduction?
+                </h2>
+
+                <p>
+                    Dimensionality reduction transforms a dataset from a
+                    high-dimensional feature space to a lower-dimensional one, aiming
+                    to preserve the most important relationships among the data points.
+                    If your original dataset has <em>d</em> features, a dimensionality
+                    reduction algorithm produces a new dataset with <em>k</em> features
+                    (where k &lt; d), constructed so that the essential structure of the
+                    data is retained.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-filter"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Selection vs. Feature Extraction</h3>
+                        <p>
+                            There are two broad strategies for reducing dimensionality:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Feature selection</strong> keeps a subset of the
+                                original features and discards the rest. For example, dropping
+                                highly correlated soil parameters or removing sensor channels
+                                with constant readings. The surviving features retain their
+                                physical meaning.
+                            </li>
+                            <li>
+                                <strong>Feature extraction</strong> creates new features as
+                                mathematical combinations of the originals. PCA belongs to this
+                                category. The new features (principal components) are linear
+                                combinations of all original features and generally do not
+                                correspond to a single physical measurement.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Goals of Dimensionality Reduction</h3>
+                        <p>
+                            Depending on the engineering context, dimensionality reduction
+                            serves one or more of these objectives:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Visualisation:</strong> Projecting high-dimensional
+                                sensor data to 2D or 3D for human interpretation.
+                            </li>
+                            <li>
+                                <strong>Noise reduction:</strong> Discarding minor components
+                                that carry mostly noise improves downstream model accuracy.
+                            </li>
+                            <li>
+                                <strong>Computational efficiency:</strong> Fewer features means
+                                faster training and lower memory usage.
+                            </li>
+                            <li>
+                                <strong>De-correlation:</strong> PCA produces uncorrelated
+                                features, removing multicollinearity that destabilises
+                                regression models.
+                            </li>
+                            <li>
+                                <strong>Data compression:</strong> Transmitting a handful of
+                                principal components instead of hundreds of raw readings saves
+                                bandwidth in remote SHM systems.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    Among all dimensionality reduction techniques, <strong>Principal
+                    Component Analysis (PCA)</strong> is the most widely used, the most
+                    mathematically transparent, and the first method every engineer
+                    should learn. It is a linear technique: the new features are
+                    straight-line (linear) combinations of the originals. Non-linear
+                    methods such as t-SNE and UMAP (covered in Sub-chapter 3.6)
+                    capture more complex structures but are harder to interpret and
+                    more computationally expensive.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: PCA INTUITION
+             ========================================== -->
+        <section class="ch-section" id="pca-intuition">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    PCA Intuition: Finding the Axes of Maximum Variance
+                </h2>
+
+                <p>
+                    The central idea behind PCA is breathtakingly simple: <strong>find
+                    the direction in which the data varies the most, then find the next
+                    direction (perpendicular to the first) with the most remaining
+                    variance, and so on.</strong> These directions are called the
+                    <em>principal components</em>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step-by-Step Intuition</h3>
+                        <p>
+                            Imagine you have a 2D scatter plot of bridge sensor data: the
+                            x-axis is mid-span deflection and the y-axis is cable tension
+                            force. The data forms an elongated elliptical cloud oriented at
+                            roughly 45 degrees. PCA performs the following:
+                        </p>
+                        <ol>
+                            <li>
+                                <strong>Centre the data:</strong> Subtract the mean of each
+                                feature so the cloud is centred at the origin.
+                            </li>
+                            <li>
+                                <strong>Find the first principal component (PC1):</strong>
+                                This is the direction (a unit vector) along which the
+                                projected data has the largest variance. For our tilted
+                                ellipse, PC1 points along the long axis of the ellipse.
+                            </li>
+                            <li>
+                                <strong>Find the second principal component (PC2):</strong>
+                                This must be perpendicular (orthogonal) to PC1 and captures
+                                the maximum remaining variance. For a 2D dataset, PC2 is
+                                automatically determined &mdash; it points along the short
+                                axis of the ellipse.
+                            </li>
+                            <li>
+                                <strong>Project:</strong> Express every data point in the
+                                new coordinate system defined by PC1 and PC2. The coordinates
+                                in this rotated system are the <em>principal component
+                                scores</em>.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    If PC1 captures 95% of the total variance, you can discard PC2 and
+                    represent each data point with a single number (its PC1 score)
+                    instead of two. You have reduced from 2D to 1D with only 5%
+                    information loss. In a 200-dimensional SHM dataset, the first 5
+                    principal components might capture 98% of the variance, compressing
+                    200 features to 5 with negligible loss.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-maximize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why Maximum Variance?</h3>
+                        <p>
+                            Variance is a proxy for <em>information content</em>. A feature
+                            that is constant across all samples carries zero information
+                            &mdash; it cannot help distinguish one sample from another. A
+                            feature with high variance separates samples effectively. By
+                            maximising variance, PCA ensures that the retained components
+                            carry as much discriminative power as possible.
+                        </p>
+                        <p>
+                            An equivalent perspective: PCA minimises the
+                            <strong>reconstruction error</strong> &mdash; the squared
+                            distance between the original high-dimensional points and their
+                            low-dimensional projections. Maximising variance in the projection
+                            and minimising reconstruction error are two sides of the same
+                            coin.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Imagine shining a flashlight at a 3D structural model and looking
+                            at the shadow it casts on a wall. The shadow is a 2D projection
+                            of the 3D object. By rotating the model, you can find the angle
+                            that produces the most "informative" shadow &mdash; the one where
+                            the shadow has the largest area and shows the most structural
+                            detail. PCA automates this search: it rotates the coordinate axes
+                            until the first axis captures the largest "shadow" (variance),
+                            the second axis captures the next largest, and so on.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: EIGENVALUES & EIGENVECTORS
+             ========================================== -->
+        <section class="ch-section" id="eigen">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-vector-square"></i>
+                    Eigenvalues and Eigenvectors &mdash; Simplified
+                </h2>
+
+                <p>
+                    PCA is computed through the eigenvalue decomposition of the data's
+                    covariance matrix. If "eigenvalue" sounds intimidating, let us
+                    demystify it with concrete intuition.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Covariance Matrix</h3>
+                        <p>
+                            Given a dataset with <em>d</em> features, the covariance matrix
+                            <strong>C</strong> is a <em>d &times; d</em> symmetric matrix
+                            where the entry C<sub>ij</sub> measures how features <em>i</em>
+                            and <em>j</em> vary together. Diagonal entries C<sub>ii</sub>
+                            are the variances of individual features. Off-diagonal entries
+                            are covariances.
+                        </p>
+                        <p>
+                            For a bridge with 4 sensor types (deflection, strain, temperature,
+                            wind speed), C is a 4&times;4 matrix. If deflection and strain
+                            are highly correlated (they both increase under load), their
+                            covariance will be large and positive. If temperature and strain
+                            are uncorrelated, their covariance will be near zero.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-right-long"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Is an Eigenvector?</h3>
+                        <p>
+                            An eigenvector of a matrix <strong>A</strong> is a non-zero vector
+                            <strong>v</strong> that, when multiplied by <strong>A</strong>,
+                            only gets scaled (stretched or compressed) but not rotated:
+                        </p>
+                        <p style="text-align:center; font-family: var(--font-mono); font-size: 1.05rem; padding: 12px;">
+                            A &middot; v = &lambda; &middot; v
+                        </p>
+                        <p>
+                            The scalar &lambda; (lambda) is the corresponding
+                            <strong>eigenvalue</strong>. It tells you the scaling factor.
+                        </p>
+                        <p>
+                            For the covariance matrix, each eigenvector defines a direction in
+                            feature space, and its eigenvalue equals the variance of the data
+                            when projected onto that direction. The eigenvector with the
+                            <em>largest</em> eigenvalue points in the direction of maximum
+                            variance &mdash; that is PC1.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Is an Eigenvalue?</h3>
+                        <p>
+                            The eigenvalue associated with each eigenvector tells you
+                            <em>how much variance</em> that principal component captures.
+                            Large eigenvalue = important direction. Small eigenvalue =
+                            direction with little spread (mostly noise). By sorting
+                            eigenvalues from largest to smallest, you obtain the principal
+                            components in order of importance.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of a reinforced concrete beam under flexural loading. The
+                            beam deforms into a deflected shape. The <strong>mode
+                            shape</strong> of vibration (the pattern of deformation) is an
+                            eigenvector of the stiffness-mass system: it defines a direction
+                            in the deformation space. The corresponding <strong>natural
+                            frequency</strong> (related to the eigenvalue) tells you how
+                            "important" that mode is. The first mode (lowest frequency,
+                            largest deformation) captures most of the dynamic response, just
+                            as PC1 (largest eigenvalue) captures most of the variance. Higher
+                            modes contribute progressively less, just like higher PCs.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE PCA ALGORITHM
+             ========================================== -->
+        <section class="ch-section" id="pca-algorithm">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ol"></i>
+                    The PCA Algorithm Step by Step
+                </h2>
+
+                <p>
+                    Here is the complete PCA procedure for a dataset with <em>n</em>
+                    samples and <em>d</em> features.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: Standardise the Data</h3>
+                        <p>
+                            Subtract the mean of each feature and (optionally) divide by the
+                            standard deviation. Standardisation is critical when features have
+                            different units or scales. In civil engineering data, deflection
+                            might be in millimetres while temperature is in degrees Celsius.
+                            Without standardisation, the feature with the largest absolute
+                            values would dominate the variance and the first principal
+                            component.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Compute the Covariance Matrix</h3>
+                        <p>
+                            Calculate the <em>d &times; d</em> covariance matrix
+                            <strong>C</strong> of the standardised data. Each entry
+                            C<sub>ij</sub> = (1 / (n&minus;1)) &sum; (x<sub>i</sub> &minus;
+                            mean<sub>i</sub>)(x<sub>j</sub> &minus; mean<sub>j</sub>).
+                            This matrix encodes all pairwise relationships between features.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Compute Eigenvalues and Eigenvectors</h3>
+                        <p>
+                            Find the eigenvalues &lambda;<sub>1</sub> &ge;
+                            &lambda;<sub>2</sub> &ge; ... &ge; &lambda;<sub>d</sub>
+                            and corresponding unit eigenvectors
+                            <strong>v</strong><sub>1</sub>, <strong>v</strong><sub>2</sub>,
+                            ..., <strong>v</strong><sub>d</sub> of C. Because C is
+                            symmetric and positive semi-definite, all eigenvalues are
+                            non-negative, and eigenvectors are mutually orthogonal.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 4: Choose the Number of Components (k)</h3>
+                        <p>
+                            Rank the eigenvectors by their eigenvalues (largest first) and
+                            select the top <em>k</em>. The choice of k is guided by the
+                            <strong>explained variance ratio</strong> and the
+                            <strong>scree plot</strong> (see next sections). Form the
+                            <em>d &times; k</em> projection matrix <strong>W</strong>
+                            whose columns are the top k eigenvectors.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-5"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 5: Project the Data</h3>
+                        <p>
+                            Multiply the standardised data matrix <strong>X</strong>
+                            (<em>n &times; d</em>) by the projection matrix
+                            <strong>W</strong> (<em>d &times; k</em>) to obtain the
+                            reduced dataset <strong>Z</strong> = <strong>X</strong>
+                            &middot; <strong>W</strong> (<em>n &times; k</em>). Each row
+                            of Z contains the k principal component scores for one sample.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>Complexity</span>
+                    </div>
+                    <p>
+                        Computing the full eigendecomposition of a <em>d &times; d</em>
+                        matrix takes O(d<sup>3</sup>). For very high-dimensional data
+                        (d &gt; 1000), randomised SVD or incremental PCA algorithms bring
+                        the cost down significantly. Scikit-learn's
+                        <code>PCA(svd_solver='randomized')</code> handles millions of
+                        features efficiently.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: EXPLAINED VARIANCE RATIO
+             ========================================== -->
+        <section class="ch-section" id="explained-variance">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Explained Variance Ratio
+                </h2>
+
+                <p>
+                    The <strong>explained variance ratio</strong> of the i-th principal
+                    component is the fraction of total variance captured by that
+                    component:
+                </p>
+
+                <p style="text-align:center; font-family: var(--font-mono); font-size: 1.05rem; padding: 12px;">
+                    EVR<sub>i</sub> = &lambda;<sub>i</sub> / &sum;<sub>j=1..d</sub> &lambda;<sub>j</sub>
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-percent"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interpreting EVR</h3>
+                        <p>
+                            If &lambda;<sub>1</sub> = 4.5, &lambda;<sub>2</sub> = 2.1,
+                            &lambda;<sub>3</sub> = 0.3, and &lambda;<sub>4</sub> = 0.1,
+                            the total variance is 7.0. PC1 explains 4.5/7.0 = 64.3%, PC2
+                            explains 30.0%, PC3 explains 4.3%, and PC4 explains 1.4%.
+                            Together, PC1 and PC2 explain 94.3% of the variance &mdash;
+                            reducing 4 dimensions to 2 while retaining over 94% of the
+                            information.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-stairs"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Cumulative Explained Variance</h3>
+                        <p>
+                            The <strong>cumulative explained variance</strong> after k
+                            components is the sum of the first k EVRs. This tells you the
+                            total fraction of information preserved when you keep k
+                            components. Common thresholds are 90%, 95%, or 99%.
+                        </p>
+                        <p>
+                            A civil engineer monitoring a dam with 50 sensor channels might
+                            find that the first 3 principal components capture 97% of the
+                            cumulative variance. This means the dam's behaviour can be
+                            described almost entirely by 3 latent factors &mdash; perhaps
+                            hydrostatic pressure, thermal expansion, and seasonal reservoir
+                            level &mdash; even though 50 sensors are recording.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: THE SCREE PLOT
+             ========================================== -->
+        <section class="ch-section" id="scree-plot">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    The Scree Plot and Choosing k
+                </h2>
+
+                <p>
+                    A <strong>scree plot</strong> is a bar chart (or line chart) of
+                    eigenvalues plotted in descending order. The name comes from
+                    geology: "scree" is the rubble at the base of a cliff. In a scree
+                    plot, the eigenvalues typically drop steeply at first (the cliff)
+                    and then level off (the scree). The point where the curve bends
+                    &mdash; the <strong>elbow</strong> &mdash; suggests the optimal
+                    number of components.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Elbow Method for PCA</h3>
+                        <p>
+                            Eigenvalues to the left of the elbow represent components that
+                            capture genuine data structure. Eigenvalues to the right are small
+                            and roughly equal, suggesting they model noise rather than signal.
+                            Retaining only the "cliff" components and discarding the "scree"
+                            achieves dimensionality reduction with minimal information loss.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Kaiser's Rule</h3>
+                        <p>
+                            A simpler heuristic: keep all components with eigenvalue greater
+                            than 1 (when working with the correlation matrix). The rationale
+                            is that a component should explain at least as much variance as a
+                            single original standardised variable. This rule is easy to apply
+                            but can be too aggressive or too conservative depending on the
+                            dataset.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Variance Threshold</h3>
+                        <p>
+                            Choose the smallest k such that the cumulative explained variance
+                            exceeds a threshold (e.g., 95%). This is the most common approach
+                            in engineering practice because it directly controls the amount of
+                            information retained.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            The scree plot is like a Pareto chart for structural vibration
+                            modes. In modal analysis, the first few natural modes capture most
+                            of a building's dynamic response to wind or seismic loading.
+                            Higher modes contribute increasingly less. Engineers routinely
+                            truncate the modal expansion after 5&ndash;10 modes because the
+                            remaining modes have negligible participation factors. The scree
+                            plot applies the same principle to data dimensions rather than
+                            vibration modes.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CE APPLICATION 1 - BRIDGE MONITORING
+             ========================================== -->
+        <section class="ch-section" id="ce-bridge-monitoring">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bridge"></i>
+                    CE Application: Reducing Multi-Sensor Bridge Monitoring Data
+                </h2>
+
+                <p>
+                    Structural health monitoring of a modern bridge generates
+                    staggering volumes of high-dimensional data. Consider a typical
+                    instrumented highway bridge with:
+                </p>
+
+                <ul>
+                    <li>40 accelerometers (3-axis each = 120 channels)</li>
+                    <li>30 strain gauges</li>
+                    <li>15 displacement transducers</li>
+                    <li>20 temperature sensors</li>
+                    <li>10 wind speed/direction sensors</li>
+                </ul>
+
+                <p>
+                    That is 195 sensor channels. Each hourly snapshot produces a
+                    195-dimensional feature vector. Across a year of continuous
+                    monitoring, you accumulate 8,760 samples in 195 dimensions &mdash;
+                    and that is after aggressive time-domain summarisation.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-compress-alt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How PCA Helps</h3>
+                        <p>
+                            Applying PCA to this dataset typically reveals that the first
+                            3&ndash;5 principal components capture 90&ndash;98% of the
+                            variance. Why? Because many sensors measure aspects of the same
+                            underlying physical phenomena:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>PC1</strong> often captures <em>traffic loading</em>
+                                &mdash; deflection, strain, and acceleration all increase
+                                when heavy trucks cross the bridge. Dozens of sensor channels
+                                are correlated because they respond to the same load.
+                            </li>
+                            <li>
+                                <strong>PC2</strong> often captures <em>thermal effects</em>
+                                &mdash; temperature changes cause expansion of the deck,
+                                shifts in cable forces, and drift in strain readings.
+                            </li>
+                            <li>
+                                <strong>PC3</strong> might capture <em>wind loading</em>
+                                &mdash; lateral accelerations and wind speed sensors load
+                                heavily on this component.
+                            </li>
+                        </ul>
+                        <p>
+                            Instead of storing and transmitting 195 numbers per hour, you
+                            transmit 5 principal component scores. For damage detection, you
+                            monitor these scores over time: a sudden shift in PC1 that is not
+                            explained by traffic load may indicate structural degradation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Novelty Detection via PCA Residuals</h3>
+                        <p>
+                            The variance <em>not</em> captured by the top k components
+                            &mdash; the reconstruction error or residual &mdash; is also
+                            valuable. Under normal conditions, the residual is small and
+                            stable. If a new data point produces an unusually large residual,
+                            it means the point cannot be explained by the k dominant patterns
+                            learned from historical data. This flags the data as anomalous
+                            &mdash; a principle used in PCA-based structural damage detection
+                            systems worldwide.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Tip</span>
+                    </div>
+                    <p>
+                        Always standardise sensor data before applying PCA. Accelerometers
+                        record values in m/s<sup>2</sup> (order of magnitude 0.01&ndash;10),
+                        while strain gauges record microstrain (order of magnitude
+                        10&ndash;1000). Without standardisation, the strain channels would
+                        dominate the covariance matrix, and PC1 would simply reflect "which
+                        features have the biggest numbers" rather than "which direction has
+                        the most information."
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATION 2 - SOIL DATA
+             ========================================== -->
+        <section class="ch-section" id="ce-soil-data">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mountain-sun"></i>
+                    CE Application: Compressing Soil Test Results
+                </h2>
+
+                <p>
+                    Geotechnical site investigations generate datasets where each
+                    borehole sample is described by 10&ndash;25 laboratory parameters.
+                    Many of these parameters are correlated by the underlying
+                    mineralogy and depositional history of the soil.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Typical Soil Parameters</h3>
+                        <p>
+                            A comprehensive soil lab report might include: natural moisture
+                            content (w), liquid limit (LL), plastic limit (PL), plasticity
+                            index (PI), specific gravity (Gs), grain size fractions (gravel,
+                            sand, silt, clay percentages), dry density (&gamma;<sub>d</sub>),
+                            void ratio (e), degree of saturation (S), unconfined compressive
+                            strength (UCS), cohesion (c), friction angle (&phi;),
+                            permeability (k), compression index (Cc), and organic content.
+                        </p>
+                        <p>
+                            Many of these are physically linked. Plasticity index is the
+                            difference of liquid and plastic limits. Void ratio and dry
+                            density are inversely related. Clay content correlates strongly
+                            with plasticity. These correlations mean the "intrinsic"
+                            dimensionality of the data is much lower than the number of
+                            measured parameters.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-simple"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>PCA on Soil Data</h3>
+                        <p>
+                            Research studies on alluvial soil datasets from major projects have
+                            shown that PCA typically reduces 15 soil parameters to 3&ndash;4
+                            principal components explaining over 85% of the variance:
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>PC1:</strong> A "plasticity" factor &mdash; LL, PL,
+                                PI, clay content, and cohesion load heavily on this component.
+                            </li>
+                            <li>
+                                <strong>PC2:</strong> A "density/compaction" factor &mdash;
+                                dry density, void ratio, moisture content, and degree of
+                                saturation.
+                            </li>
+                            <li>
+                                <strong>PC3:</strong> A "gradation" factor &mdash; sand and
+                                gravel percentages, permeability.
+                            </li>
+                        </ul>
+                        <p>
+                            These compressed representations can then be used for soil
+                            classification, spatial interpolation (kriging in PC-space), or
+                            input to machine learning models predicting bearing capacity.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Soil classification systems like USCS already perform a crude form
+                            of dimensionality reduction: they compress many lab parameters
+                            into a single letter code (CL, SM, GP, etc.). PCA does the same
+                            thing more rigorously and quantitatively, capturing the continuous
+                            spectrum of soil variation rather than forcing samples into
+                            discrete categories. Think of PCA as a "continuous Casagrande
+                            chart" that uses all available lab data simultaneously.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 1 - PCA VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-pca-visualiser">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: PCA Visualiser
+                </h2>
+
+                <p>
+                    This demo generates a 2D data cloud with controllable correlation.
+                    The principal component axes are drawn in real time, showing how
+                    PCA rotates the coordinate system to align with the directions of
+                    maximum variance. Drag the <strong>correlation</strong> slider to
+                    change the data shape and watch the principal axes respond.
+                    The <strong>projection</strong> toggle shows the data projected
+                    onto PC1 alone.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-pca">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-compass-drafting"></i> PCA Visualiser</h3>
+                        <p>Adjust correlation and rotation. Toggle projection to see 2D-to-1D reduction.</p>
+                    </div>
+
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                        <div style="flex:1; min-width:180px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Correlation: <span id="corr-value">0.80</span>
+                            </label>
+                            <input type="range" id="corr-slider" min="0" max="98" value="80" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width:180px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Rotation (&deg;): <span id="rot-value">30</span>
+                            </label>
+                            <input type="range" id="rot-slider" min="0" max="180" value="30" style="width:100%;">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end;">
+                            <button id="btn-toggle-proj" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary);">
+                                <i class="fa-solid fa-eye"></i> Show Projection
+                            </button>
+                            <button id="btn-regen-pca" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-secondary); background:transparent; color:var(--accent-secondary);">
+                                <i class="fa-solid fa-rotate"></i> Regenerate
+                            </button>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas-pca" style="width:100%; height:460px; border-radius:12px; cursor:crosshair; border:1px solid var(--border-color);"></canvas>
+
+                    <div id="pca-stats" style="margin-top:12px; font-size:0.85rem; font-family:var(--font-mono); color:var(--text-muted);">
+                        PC1 variance: &mdash; &nbsp;|&nbsp; PC2 variance: &mdash; &nbsp;|&nbsp; Explained by PC1: &mdash;
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 2 - VARIANCE EXPLAINED
+             ========================================== -->
+        <section class="ch-section" id="demo-variance-chart">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-column"></i>
+                    Interactive Demo: Variance Explained Chart
+                </h2>
+
+                <p>
+                    This demo simulates a higher-dimensional dataset (e.g., a bridge
+                    with multiple sensor types). Use the slider to choose the number
+                    of components to retain. The bar chart shows individual explained
+                    variance ratios, and the line shows cumulative explained variance.
+                    The 95% threshold line helps you identify the optimal number of
+                    components.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-variance">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-sliders"></i> Variance Explained &amp; Scree Plot</h3>
+                        <p>Adjust the number of components to see how much variance is retained.</p>
+                    </div>
+
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                        <div style="flex:1; min-width:220px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Components to retain: <span id="ncomp-value">3</span> / <span id="ncomp-total">10</span>
+                            </label>
+                            <input type="range" id="ncomp-slider" min="1" max="10" value="3" style="width:100%;">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end;">
+                            <button id="btn-regen-var" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary);">
+                                <i class="fa-solid fa-dice"></i> New Dataset
+                            </button>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas-variance" style="width:100%; height:420px; border-radius:12px; border:1px solid var(--border-color);"></canvas>
+
+                    <div id="variance-stats" style="margin-top:12px; font-size:0.85rem; font-family:var(--font-mono); color:var(--text-muted);">
+                        Retained: 0.0% &nbsp;|&nbsp; Lost: 0.0% &nbsp;|&nbsp; Dimensions: 0 &rarr; 0
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: LIMITATIONS & CONSIDERATIONS
+             ========================================== -->
+        <section class="ch-section" id="limitations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Limitations and Practical Considerations
+                </h2>
+
+                <p>
+                    PCA is powerful but not a silver bullet. Understanding its
+                    limitations helps you decide when to use it and when to choose
+                    alternatives.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-draw-polygon"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Linearity Assumption</h3>
+                        <p>
+                            PCA finds linear combinations of features. If the true structure
+                            of the data lies on a curved manifold (e.g., a spiral or a
+                            Swiss roll), PCA will not capture it efficiently. Non-linear
+                            methods like kernel PCA, t-SNE, or UMAP (Sub-chapter 3.6)
+                            handle curved structures better.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye-slash"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Loss of Interpretability</h3>
+                        <p>
+                            Principal components are abstract linear combinations. PC1 might
+                            be "0.35 &times; deflection + 0.28 &times; strain &minus; 0.41
+                            &times; cable_force + ...". This lacks the physical transparency
+                            of the original features. Engineers must examine the
+                            <strong>loadings</strong> (the eigenvector coefficients) to
+                            interpret what each PC represents. In some regulated domains,
+                            stakeholders may prefer interpretable features.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-up-down"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensitivity to Scaling</h3>
+                        <p>
+                            If you forget to standardise, features measured in large units
+                            dominate PCA. A temperature range of 0&ndash;50 &deg;C and a
+                            microstrain range of 0&ndash;2000 will make PCA think strain is
+                            40 times more important than temperature, even if both carry
+                            equal information. Always standardise unless all features share
+                            the same units and similar scales.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-skull-crossbones"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensitivity to Outliers</h3>
+                        <p>
+                            PCA is based on variance, and variance is sensitive to outliers.
+                            A single faulty sensor reading with an extreme value can pull
+                            PC1 toward the outlier direction. Robust PCA variants or
+                            preprocessing with outlier removal mitigate this issue.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Gaussian Assumption</h3>
+                        <p>
+                            PCA is optimal for Gaussian-distributed data. For heavily skewed
+                            or multi-modal data, the principal components may not align with
+                            the most meaningful directions. In practice, PCA often works
+                            well even for non-Gaussian data, but Independent Component
+                            Analysis (ICA) may be preferred when the goal is to separate
+                            independent non-Gaussian sources (e.g., separating traffic-induced
+                            vibrations from wind-induced vibrations in SHM data).
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: IMPLEMENTATION NOTES
+             ========================================== -->
+        <section class="ch-section" id="implementation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code"></i>
+                    Practical Implementation Notes
+                </h2>
+
+                <p>
+                    When implementing PCA on real civil engineering data, keep these
+                    practical considerations in mind.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Scikit-learn Workflow</h3>
+                        <p>
+                            In Python, the standard PCA workflow uses scikit-learn:
+                        </p>
+                        <pre style="background:var(--bg-code); padding:16px; border-radius:8px; overflow-x:auto; font-size:0.85rem; line-height:1.6;"><code><span style="color:var(--code-keyword)">from</span> <span style="color:var(--code-type)">sklearn.preprocessing</span> <span style="color:var(--code-keyword)">import</span> StandardScaler
+<span style="color:var(--code-keyword)">from</span> <span style="color:var(--code-type)">sklearn.decomposition</span> <span style="color:var(--code-keyword)">import</span> PCA
+<span style="color:var(--code-keyword)">import</span> <span style="color:var(--code-type)">numpy</span> <span style="color:var(--code-keyword)">as</span> np
+
+<span style="color:var(--code-comment)"># X is your n x d data matrix</span>
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+pca = PCA(n_components=<span style="color:var(--code-number)">0.95</span>)  <span style="color:var(--code-comment)"># retain 95% variance</span>
+X_reduced = pca.fit_transform(X_scaled)
+
+<span style="color:var(--code-keyword)">print</span>(f<span style="color:var(--code-string)">"Reduced from {X.shape[1]} to {X_reduced.shape[1]} dims"</span>)
+<span style="color:var(--code-keyword)">print</span>(f<span style="color:var(--code-string)">"Explained variance: {pca.explained_variance_ratio_}"</span>)</code></pre>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Parameters</h3>
+                        <ul>
+                            <li>
+                                <strong>n_components:</strong> An integer (exact number of
+                                PCs to keep) or a float between 0 and 1 (minimum cumulative
+                                variance to retain). Using a float like 0.95 is often the
+                                most practical choice.
+                            </li>
+                            <li>
+                                <strong>svd_solver:</strong> <code>'auto'</code>,
+                                <code>'full'</code>, <code>'arpack'</code>, or
+                                <code>'randomized'</code>. For large datasets, use
+                                <code>'randomized'</code> for speed.
+                            </li>
+                            <li>
+                                <strong>whiten:</strong> If <code>True</code>, each component
+                                is scaled to unit variance. Useful as preprocessing for some
+                                downstream algorithms.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-export"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Examining Loadings</h3>
+                        <p>
+                            The loadings (eigenvector components) tell you which original
+                            features contribute to each PC. Access them via
+                            <code>pca.components_</code> in scikit-learn. A loading matrix
+                            heatmap is an invaluable diagnostic tool: it reveals which sensors
+                            or soil parameters "load" on which principal component, enabling
+                            physical interpretation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Reconstruction</span>
+                    </div>
+                    <p>
+                        PCA is invertible (approximately). You can reconstruct the original
+                        data from the reduced representation using
+                        <code>pca.inverse_transform(X_reduced)</code>. The difference
+                        between the original and reconstructed data is the
+                        <strong>reconstruction error</strong>, which quantifies the
+                        information lost during compression. In SHM applications, monitoring
+                        reconstruction error over time serves as a damage indicator.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        What does PCA maximise when choosing the direction of the first
+                        principal component?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> The number of data points projected onto the axis
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> The variance of the data when projected onto the axis
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> The distance between the two farthest data points
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> The correlation between the original features
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! PCA selects the
+                        direction (unit vector) that maximises the variance of the projected
+                        data. This is equivalent to minimising the total reconstruction error.
+                        The eigenvalue of the covariance matrix in that direction equals the
+                        projected variance.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. PCA finds the
+                        direction that maximises the <strong>variance</strong> of the data
+                        when projected onto that axis. Variance measures the spread of
+                        projected values and serves as a proxy for information content.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        A bridge monitoring dataset has 200 sensor channels. After PCA,
+                        the first 4 components explain 96% of the total variance.
+                        What does this imply?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> 196 sensors are broken and should be removed
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> The data is meaningless in dimensions beyond the 4th
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> The sensors are highly correlated, and 4 latent factors explain most of the variation
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> The dataset should be collected again with only 4 sensors
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! When a few PCs
+                        capture nearly all the variance, it means the original features are
+                        highly correlated and driven by a small number of underlying factors
+                        (e.g., traffic load, temperature, wind). The remaining 196 dimensions
+                        contain mostly noise or redundant information.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The high explained
+                        variance by 4 components indicates strong correlations among the 200
+                        sensor channels. A handful of <strong>latent factors</strong>
+                        (physical phenomena like load, temperature, wind) drive the majority
+                        of the observed variation.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        Why is it critical to standardise features before applying PCA
+                        to soil test data with parameters in different units?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> PCA requires all values to be between 0 and 1
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Standardisation speeds up the eigenvalue computation
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Without standardisation, features with larger numeric ranges dominate the principal components
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Standardisation converts the correlation matrix into a covariance matrix
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! PCA maximises
+                        variance. If permeability is measured in mm/s (range 0.001&ndash;10)
+                        and UCS in kPa (range 10&ndash;500), UCS will have far larger
+                        variance simply due to its scale, and PC1 will just reflect UCS.
+                        Standardisation gives each feature equal weight so that PCA captures
+                        genuine data structure, not unit artifacts.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key issue is
+                        that PCA maximises <strong>variance</strong>, and variance depends on
+                        scale. Features with larger numeric ranges have larger variances and
+                        would dominate PCA if not standardised. Standardisation ensures equal
+                        weighting across features.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        In a scree plot, the "elbow" point indicates:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> The component with the largest eigenvalue
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> The transition from components capturing signal to components capturing noise
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> The point where all eigenvalues become negative
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> The number of outliers in the dataset
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The elbow in a scree
+                        plot marks the transition from components with large eigenvalues
+                        (capturing genuine data structure) to components with small,
+                        roughly equal eigenvalues (capturing noise). Retaining components
+                        before the elbow and discarding those after gives you the optimal
+                        dimensionality.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The elbow in a
+                        scree plot is where eigenvalues transition from large (signal) to
+                        small and flat (noise). Components before the elbow capture
+                        meaningful data structure; those after mostly capture random
+                        fluctuations.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul>
+                            <li>
+                                The <strong>curse of dimensionality</strong> causes distances
+                                to become meaningless, models to overfit, and computation to
+                                explode as the number of features grows.
+                            </li>
+                            <li>
+                                PCA finds orthogonal axes (principal components) that maximise
+                                the variance of the projected data.
+                            </li>
+                            <li>
+                                Principal components are <strong>eigenvectors</strong> of the
+                                covariance matrix; the corresponding <strong>eigenvalues</strong>
+                                equal the variance captured by each component.
+                            </li>
+                            <li>
+                                The <strong>explained variance ratio</strong> tells you how
+                                much information each component retains. The
+                                <strong>scree plot</strong> helps you choose how many
+                                components to keep.
+                            </li>
+                            <li>
+                                In bridge SHM, PCA compresses hundreds of sensor channels into
+                                a handful of components representing load, temperature, and
+                                wind &mdash; enabling efficient transmission and anomaly
+                                detection.
+                            </li>
+                            <li>
+                                In geotechnical engineering, PCA reduces 15+ soil parameters
+                                to 3&ndash;4 latent factors (plasticity, density, gradation).
+                            </li>
+                            <li>
+                                Always <strong>standardise</strong> features before PCA when
+                                they have different units or scales.
+                            </li>
+                            <li>
+                                PCA is linear; for non-linear structure, consider kernel PCA,
+                                t-SNE, or UMAP (next sub-chapter).
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-forward"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Comes Next</h3>
+                        <p>
+                            In Sub-chapter 3.6 (t-SNE &amp; UMAP), we move beyond linear
+                            projections to non-linear dimensionality reduction. You will learn
+                            how these techniques unfold complex manifolds and produce stunning
+                            2D visualisations of high-dimensional engineering datasets &mdash;
+                            revealing cluster structure that PCA cannot capture.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub4.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.4 DBSCAN
+        </a>
+        <a href="sub6.html" class="chapter-nav__link next">
+            3.6 t-SNE &amp; UMAP <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ============================================
+           UTILITY REFERENCES
+           ============================================ */
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:  dark ? '#2dd4bf' : '#059669',
+                CYAN:  dark ? '#22d3ee' : '#0284c7',
+                AMBER: dark ? '#fbbf24' : '#d97706',
+                RED:   dark ? '#ef4444' : '#dc2626',
+                GREEN: dark ? '#22c55e' : '#16a34a',
+                BG:    dark ? '#0a0a0f' : '#ffffff',
+                TEXT:  dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM:   dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID:  dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                STROKE:dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: dark ? '#fff' : '#111',
+                MUTED: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width  = r.width  * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var rand = Utils.rand || function(a, b){ return Math.random() * (b - a) + a; };
+
+        /* ============================================
+           HERO CANVAS — drifting data cloud with axes
+           ============================================ */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            /* Generate elongated cloud */
+            var pts = [];
+            var cx = W * 0.5, cy = H * 0.5;
+            var angle = Math.PI / 5;
+            for (var i = 0; i < 90; i++) {
+                var u = (Math.random() - 0.5) * W * 0.55;
+                var v = (Math.random() - 0.5) * H * 0.15;
+                pts.push({
+                    x: cx + u * Math.cos(angle) - v * Math.sin(angle),
+                    y: cy + u * Math.sin(angle) + v * Math.cos(angle),
+                    vx: (Math.random() - 0.5) * 0.25,
+                    vy: (Math.random() - 0.5) * 0.25,
+                    r: 1.5 + Math.random() * 2
+                });
+            }
+
+            var phase = 0;
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+                phase += 0.003;
+
+                /* Draw grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx < W; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (var gy = 0; gy < H; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                /* Move points gently */
+                for (var i = 0; i < pts.length; i++) {
+                    var p = pts[i];
+                    p.x += p.vx + Math.sin(phase + i) * 0.15;
+                    p.y += p.vy + Math.cos(phase + i * 0.7) * 0.15;
+                    if (p.x < 30) p.vx = Math.abs(p.vx);
+                    if (p.x > W - 30) p.vx = -Math.abs(p.vx);
+                    if (p.y < 30) p.vy = Math.abs(p.vy);
+                    if (p.y > H - 30) p.vy = -Math.abs(p.vy);
+                }
+
+                /* Compute mean */
+                var mx = 0, my = 0;
+                for (var i = 0; i < pts.length; i++) { mx += pts[i].x; my += pts[i].y; }
+                mx /= pts.length; my /= pts.length;
+
+                /* Draw projection lines to PC1 axis (faint) */
+                var axAngle = angle + Math.sin(phase * 0.5) * 0.08;
+                var axDx = Math.cos(axAngle), axDy = Math.sin(axAngle);
+                ctx.strokeStyle = c.TEAL + '18';
+                ctx.lineWidth = 0.5;
+                for (var i = 0; i < pts.length; i++) {
+                    var dx = pts[i].x - mx, dy = pts[i].y - my;
+                    var proj = dx * axDx + dy * axDy;
+                    var px = mx + proj * axDx, py = my + proj * axDy;
+                    ctx.beginPath();
+                    ctx.moveTo(pts[i].x, pts[i].y);
+                    ctx.lineTo(px, py);
+                    ctx.stroke();
+                }
+
+                /* Draw PC1 axis */
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(mx - axDx * W * 0.4, my - axDy * W * 0.4);
+                ctx.lineTo(mx + axDx * W * 0.4, my + axDy * W * 0.4);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                /* Draw PC2 axis */
+                ctx.strokeStyle = c.CYAN + '60';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(mx + axDy * H * 0.25, my - axDx * H * 0.25);
+                ctx.lineTo(mx - axDy * H * 0.25, my + axDx * H * 0.25);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                /* Label axes */
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.fillText('PC1', mx + axDx * W * 0.38, my + axDy * W * 0.38 - 8);
+                ctx.fillStyle = c.CYAN + '90';
+                ctx.fillText('PC2', mx + axDy * H * 0.22, my - axDx * H * 0.22 - 8);
+
+                /* Draw points */
+                for (var i = 0; i < pts.length; i++) {
+                    ctx.beginPath();
+                    ctx.arc(pts[i].x, pts[i].y, pts[i].r, 0, Math.PI * 2);
+                    ctx.fillStyle = c.TEAL + '70';
+                    ctx.fill();
+                }
+
+                /* Mean crosshair */
+                ctx.fillStyle = c.AMBER;
+                ctx.beginPath();
+                ctx.arc(mx, my, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        /* ============================================
+           DEMO 1: PCA VISUALISER
+           ============================================ */
+        (function initPCADemo() {
+            var canvas = document.getElementById('canvas-pca');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            var corrSlider = document.getElementById('corr-slider');
+            var rotSlider  = document.getElementById('rot-slider');
+            var corrLabel  = document.getElementById('corr-value');
+            var rotLabel   = document.getElementById('rot-value');
+            var btnProj    = document.getElementById('btn-toggle-proj');
+            var btnRegen   = document.getElementById('btn-regen-pca');
+            var statsEl    = document.getElementById('pca-stats');
+
+            var showProjection = false;
+            var points = [];
+            var N = 120;
+
+            function generateData() {
+                points = [];
+                var corr = parseFloat(corrSlider.value) / 100;
+                var rotDeg = parseFloat(rotSlider.value);
+                var rotRad = rotDeg * Math.PI / 180;
+
+                /* Generate correlated 2D Gaussian-like data */
+                for (var i = 0; i < N; i++) {
+                    /* Box-Muller */
+                    var u1 = Math.random(), u2 = Math.random();
+                    var z0 = Math.sqrt(-2 * Math.log(u1 + 1e-9)) * Math.cos(2 * Math.PI * u2);
+                    var z1 = Math.sqrt(-2 * Math.log(u1 + 1e-9)) * Math.sin(2 * Math.PI * u2);
+
+                    /* Introduce correlation */
+                    var x = z0;
+                    var y = corr * z0 + Math.sqrt(1 - corr * corr) * z1;
+
+                    /* Scale */
+                    x *= W * 0.12;
+                    y *= H * 0.12;
+
+                    /* Rotate */
+                    var rx = x * Math.cos(rotRad) - y * Math.sin(rotRad);
+                    var ry = x * Math.sin(rotRad) + y * Math.cos(rotRad);
+
+                    points.push({ x: W / 2 + rx, y: H / 2 + ry });
+                }
+            }
+
+            function computePCA() {
+                if (points.length < 2) return null;
+                var n = points.length;
+                var mx = 0, my = 0;
+                for (var i = 0; i < n; i++) { mx += points[i].x; my += points[i].y; }
+                mx /= n; my /= n;
+
+                var cxx = 0, cyy = 0, cxy = 0;
+                for (var i = 0; i < n; i++) {
+                    var dx = points[i].x - mx, dy = points[i].y - my;
+                    cxx += dx * dx; cyy += dy * dy; cxy += dx * dy;
+                }
+                cxx /= (n - 1); cyy /= (n - 1); cxy /= (n - 1);
+
+                /* Eigenvalues of 2x2 symmetric matrix */
+                var tr = cxx + cyy;
+                var det = cxx * cyy - cxy * cxy;
+                var disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+                var lambda1 = tr / 2 + disc;
+                var lambda2 = tr / 2 - disc;
+
+                /* Eigenvector for lambda1 */
+                var vx, vy, len;
+                if (Math.abs(cxy) > 1e-9) {
+                    vx = lambda1 - cyy;
+                    vy = cxy;
+                } else {
+                    vx = 1; vy = 0;
+                    if (cyy > cxx) { vx = 0; vy = 1; }
+                }
+                len = Math.sqrt(vx * vx + vy * vy);
+                vx /= len; vy /= len;
+
+                /* Eigenvector for lambda2 (perpendicular) */
+                var v2x = -vy, v2y = vx;
+
+                return {
+                    mx: mx, my: my,
+                    lambda1: lambda1, lambda2: lambda2,
+                    v1: { x: vx, y: vy },
+                    v2: { x: v2x, y: v2y }
+                };
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                /* Grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx < W; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (var gy = 0; gy < H; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                var pca = computePCA();
+                if (!pca) return;
+
+                var v1 = pca.v1, v2 = pca.v2;
+                var mx = pca.mx, my = pca.my;
+                var axisLen = Math.min(W, H) * 0.42;
+
+                if (showProjection) {
+                    /* Draw projection lines */
+                    ctx.strokeStyle = c.TEAL + '20';
+                    ctx.lineWidth = 0.8;
+                    for (var i = 0; i < points.length; i++) {
+                        var dx = points[i].x - mx, dy = points[i].y - my;
+                        var proj = dx * v1.x + dy * v1.y;
+                        var px = mx + proj * v1.x, py = my + proj * v1.y;
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(px, py);
+                        ctx.stroke();
+                    }
+
+                    /* Draw projected points on PC1 */
+                    for (var i = 0; i < points.length; i++) {
+                        var dx = points[i].x - mx, dy = points[i].y - my;
+                        var proj = dx * v1.x + dy * v1.y;
+                        var px = mx + proj * v1.x, py = my + proj * v1.y;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+                        ctx.fillStyle = c.AMBER + 'AA';
+                        ctx.fill();
+                    }
+                }
+
+                /* Draw data points */
+                for (var i = 0; i < points.length; i++) {
+                    ctx.beginPath();
+                    ctx.arc(points[i].x, points[i].y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = showProjection ? c.TEAL + '35' : c.TEAL + '90';
+                    ctx.fill();
+                }
+
+                /* PC1 axis */
+                ctx.strokeStyle = c.TEAL;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(mx - v1.x * axisLen, my - v1.y * axisLen);
+                ctx.lineTo(mx + v1.x * axisLen, my + v1.y * axisLen);
+                ctx.stroke();
+
+                /* PC1 arrowhead */
+                var ax1 = mx + v1.x * axisLen, ay1 = my + v1.y * axisLen;
+                ctx.fillStyle = c.TEAL;
+                ctx.beginPath();
+                ctx.moveTo(ax1, ay1);
+                ctx.lineTo(ax1 - v1.x * 12 + v1.y * 6, ay1 - v1.y * 12 - v1.x * 6);
+                ctx.lineTo(ax1 - v1.x * 12 - v1.y * 6, ay1 - v1.y * 12 + v1.x * 6);
+                ctx.closePath();
+                ctx.fill();
+
+                /* PC2 axis */
+                ctx.strokeStyle = c.CYAN + '80';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.moveTo(mx - v2.x * axisLen * 0.6, my - v2.y * axisLen * 0.6);
+                ctx.lineTo(mx + v2.x * axisLen * 0.6, my + v2.y * axisLen * 0.6);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                /* PC2 arrowhead */
+                var ax2 = mx + v2.x * axisLen * 0.6, ay2 = my + v2.y * axisLen * 0.6;
+                ctx.fillStyle = c.CYAN + '80';
+                ctx.beginPath();
+                ctx.moveTo(ax2, ay2);
+                ctx.lineTo(ax2 - v2.x * 10 + v2.y * 5, ay2 - v2.y * 10 - v2.x * 5);
+                ctx.lineTo(ax2 - v2.x * 10 - v2.y * 5, ay2 - v2.y * 10 + v2.x * 5);
+                ctx.closePath();
+                ctx.fill();
+
+                /* Axis labels */
+                ctx.font = '700 14px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.fillText('PC1', ax1 + v1.y * 14, ay1 - v1.x * 14);
+                ctx.fillStyle = c.CYAN;
+                ctx.fillText('PC2', ax2 + v2.y * 14, ay2 - v2.x * 14);
+
+                /* Mean marker */
+                ctx.beginPath();
+                ctx.arc(mx, my, 5, 0, Math.PI * 2);
+                ctx.fillStyle = c.AMBER;
+                ctx.fill();
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.fillStyle = c.AMBER;
+                ctx.fillText('mean', mx + 10, my - 8);
+
+                /* Variance ellipse (1 std) */
+                ctx.save();
+                ctx.translate(mx, my);
+                var ellipseAngle = Math.atan2(v1.y, v1.x);
+                ctx.rotate(ellipseAngle);
+                ctx.strokeStyle = c.TEAL + '30';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, Math.sqrt(pca.lambda1) * 2.2, Math.sqrt(pca.lambda2) * 2.2, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                /* Stats */
+                var total = pca.lambda1 + pca.lambda2;
+                var evr1 = total > 0 ? (pca.lambda1 / total * 100) : 0;
+                statsEl.innerHTML =
+                    'PC1 variance: ' + pca.lambda1.toFixed(1) +
+                    ' &nbsp;|&nbsp; PC2 variance: ' + pca.lambda2.toFixed(1) +
+                    ' &nbsp;|&nbsp; Explained by PC1: ' + evr1.toFixed(1) + '%';
+            }
+
+            function onSliderChange() {
+                corrLabel.textContent = (parseFloat(corrSlider.value) / 100).toFixed(2);
+                rotLabel.textContent  = rotSlider.value;
+                generateData();
+                draw();
+            }
+
+            corrSlider.addEventListener('input', onSliderChange);
+            rotSlider.addEventListener('input', onSliderChange);
+
+            btnProj.addEventListener('click', function() {
+                showProjection = !showProjection;
+                btnProj.innerHTML = showProjection
+                    ? '<i class="fa-solid fa-eye-slash"></i> Hide Projection'
+                    : '<i class="fa-solid fa-eye"></i> Show Projection';
+                draw();
+            });
+
+            btnRegen.addEventListener('click', function() {
+                generateData();
+                draw();
+            });
+
+            /* Handle resize */
+            var resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    info = initCanvas(canvas);
+                    ctx = info.ctx; W = info.w; H = info.h;
+                    generateData();
+                    draw();
+                }, 200);
+            });
+
+            generateData();
+            draw();
+        })();
+
+        /* ============================================
+           DEMO 2: VARIANCE EXPLAINED CHART
+           ============================================ */
+        (function initVarianceDemo() {
+            var canvas = document.getElementById('canvas-variance');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            var ncompSlider = document.getElementById('ncomp-slider');
+            var ncompLabel  = document.getElementById('ncomp-value');
+            var totalLabel  = document.getElementById('ncomp-total');
+            var btnRegen    = document.getElementById('btn-regen-var');
+            var statsEl     = document.getElementById('variance-stats');
+
+            var eigenvalues = [];
+            var D = 10;
+
+            function generateEigenvalues() {
+                eigenvalues = [];
+                /* Simulate a realistic eigenvalue spectrum: exponential decay + noise */
+                var base = 3.5 + Math.random() * 2;
+                var decay = 0.45 + Math.random() * 0.2;
+                for (var i = 0; i < D; i++) {
+                    eigenvalues.push(base * Math.pow(decay, i) + Math.random() * 0.12);
+                }
+                /* Sort descending */
+                eigenvalues.sort(function(a, b) { return b - a; });
+
+                ncompSlider.max = D;
+                totalLabel.textContent = D;
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                var nComp = parseInt(ncompSlider.value);
+                var total = 0;
+                for (var i = 0; i < eigenvalues.length; i++) total += eigenvalues[i];
+
+                /* EVR and cumulative */
+                var evr = eigenvalues.map(function(v) { return v / total; });
+                var cum = [];
+                var running = 0;
+                for (var i = 0; i < evr.length; i++) {
+                    running += evr[i];
+                    cum.push(running);
+                }
+
+                /* Layout */
+                var padL = 65, padR = 30, padT = 40, padB = 60;
+                var chartW = W - padL - padR;
+                var chartH = H - padT - padB;
+                var barW = chartW / D * 0.55;
+                var gap  = chartW / D;
+
+                /* Y-axis gridlines and labels */
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                for (var tick = 0; tick <= 100; tick += 20) {
+                    var yy = padT + chartH * (1 - tick / 100);
+                    ctx.strokeStyle = c.GRID;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
+                    ctx.fillStyle = c.MUTED;
+                    ctx.fillText(tick + '%', padL - 8, yy + 4);
+                }
+
+                /* X-axis labels */
+                ctx.textAlign = 'center';
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '600 11px Inter, sans-serif';
+                for (var i = 0; i < D; i++) {
+                    var bx = padL + gap * i + gap / 2;
+                    ctx.fillText('PC' + (i + 1), bx, H - padB + 20);
+                }
+
+                /* Axis title */
+                ctx.font = '600 12px Inter, sans-serif';
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Principal Component', W / 2, H - 8);
+
+                ctx.save();
+                ctx.translate(14, padT + chartH / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Explained Variance (%)', 0, 0);
+                ctx.restore();
+
+                /* 95% threshold line */
+                var y95 = padT + chartH * (1 - 0.95);
+                ctx.strokeStyle = c.RED + '60';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath(); ctx.moveTo(padL, y95); ctx.lineTo(W - padR, y95); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.font = '600 11px Inter, sans-serif';
+                ctx.fillStyle = c.RED + '90';
+                ctx.textAlign = 'left';
+                ctx.fillText('95% threshold', W - padR - 95, y95 - 6);
+
+                /* Bars */
+                for (var i = 0; i < D; i++) {
+                    var bx = padL + gap * i + (gap - barW) / 2;
+                    var bh = chartH * evr[i];
+                    var by = padT + chartH - bh;
+                    var retained = i < nComp;
+
+                    /* Bar gradient */
+                    var grad = ctx.createLinearGradient(bx, by, bx, padT + chartH);
+                    if (retained) {
+                        grad.addColorStop(0, c.TEAL);
+                        grad.addColorStop(1, c.CYAN);
+                    } else {
+                        grad.addColorStop(0, c.DIM);
+                        grad.addColorStop(1, c.DIM);
+                    }
+                    ctx.fillStyle = grad;
+
+                    /* Rounded top bar */
+                    var radius = Math.min(4, barW / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(bx + radius, by);
+                    ctx.lineTo(bx + barW - radius, by);
+                    ctx.quadraticCurveTo(bx + barW, by, bx + barW, by + radius);
+                    ctx.lineTo(bx + barW, padT + chartH);
+                    ctx.lineTo(bx, padT + chartH);
+                    ctx.lineTo(bx, by + radius);
+                    ctx.quadraticCurveTo(bx, by, bx + radius, by);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    /* Bar label */
+                    if (evr[i] > 0.03) {
+                        ctx.font = '600 10px JetBrains Mono, monospace';
+                        ctx.fillStyle = retained ? '#fff' : c.MUTED;
+                        ctx.textAlign = 'center';
+                        ctx.fillText((evr[i] * 100).toFixed(1) + '%', bx + barW / 2, by - 6);
+                    }
+                }
+
+                /* Cumulative line */
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (var i = 0; i < D; i++) {
+                    var lx = padL + gap * i + gap / 2;
+                    var ly = padT + chartH * (1 - cum[i]);
+                    if (i === 0) ctx.moveTo(lx, ly); else ctx.lineTo(lx, ly);
+                }
+                ctx.stroke();
+
+                /* Cumulative dots */
+                for (var i = 0; i < D; i++) {
+                    var lx = padL + gap * i + gap / 2;
+                    var ly = padT + chartH * (1 - cum[i]);
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 4.5, 0, Math.PI * 2);
+                    ctx.fillStyle = i < nComp ? c.AMBER : c.DIM;
+                    ctx.fill();
+                    ctx.strokeStyle = i < nComp ? c.AMBER : c.MUTED;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    /* Cumulative label at retained boundary */
+                    if (i === nComp - 1) {
+                        ctx.font = '700 12px Inter, sans-serif';
+                        ctx.fillStyle = c.AMBER;
+                        ctx.textAlign = 'left';
+                        ctx.fillText((cum[i] * 100).toFixed(1) + '%', lx + 10, ly - 8);
+                    }
+                }
+
+                /* Legend */
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                var legX = padL + 10, legY = padT + 15;
+
+                ctx.fillStyle = c.TEAL;
+                ctx.fillRect(legX, legY - 6, 12, 12);
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Individual EVR (retained)', legX + 18, legY + 4);
+
+                ctx.fillStyle = c.DIM;
+                ctx.fillRect(legX, legY + 14, 12, 12);
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Individual EVR (discarded)', legX + 18, legY + 24);
+
+                ctx.fillStyle = c.AMBER;
+                ctx.beginPath(); ctx.arc(legX + 6, legY + 40, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Cumulative variance', legX + 18, legY + 44);
+
+                /* Stats bar */
+                var cumRetained = nComp > 0 ? cum[nComp - 1] : 0;
+                statsEl.innerHTML =
+                    'Retained: ' + (cumRetained * 100).toFixed(1) + '%' +
+                    ' &nbsp;|&nbsp; Lost: ' + ((1 - cumRetained) * 100).toFixed(1) + '%' +
+                    ' &nbsp;|&nbsp; Dimensions: ' + D + ' &rarr; ' + nComp;
+            }
+
+            ncompSlider.addEventListener('input', function() {
+                ncompLabel.textContent = ncompSlider.value;
+                draw();
+            });
+
+            btnRegen.addEventListener('click', function() {
+                generateEigenvalues();
+                draw();
+            });
+
+            var resizeTimer2;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer2);
+                resizeTimer2 = setTimeout(function() {
+                    info = initCanvas(canvas);
+                    ctx = info.ctx; W = info.w; H = info.h;
+                    draw();
+                }, 200);
+            });
+
+            generateEigenvalues();
+            draw();
+        })();
+
+        /* ============================================
+           QUIZ HANDLER
+           ============================================ */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block) return;
+            var options = block.querySelectorAll('.quiz-option');
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+
+            /* Disable all options */
+            for (var i = 0; i < options.length; i++) {
+                options[i].disabled = true;
+                options[i].style.pointerEvents = 'none';
+                if (options[i].getAttribute('data-correct') === 'true') {
+                    options[i].style.borderColor = 'var(--accent-success)';
+                    options[i].style.background = 'rgba(34,197,94,0.1)';
+                }
+            }
+
+            if (!isCorrect) {
+                btn.style.borderColor = 'var(--accent-danger)';
+                btn.style.background = 'rgba(239,68,68,0.1)';
+            }
+
+            var correctFb = document.getElementById(quizId + '-correct');
+            var wrongFb   = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctFb) correctFb.style.display = 'block';
+            if (!isCorrect && wrongFb)  wrongFb.style.display = 'block';
+        };
+
+    })();
+    </script>
+
+</body>
+</html>

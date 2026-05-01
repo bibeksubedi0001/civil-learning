@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.3 Hierarchical Clustering | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn hierarchical clustering for civil engineering applications. Explore agglomerative and divisive approaches, linkage methods, dendrograms, and interactive demos for material classification and bridge condition grouping.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.3
+            </div>
+            <h1 class="chapter-hero__title">Hierarchical Clustering</h1>
+            <p class="chapter-hero__subtitle">
+                Build a tree of clusters from the ground up &mdash; discover how hierarchical
+                methods reveal nested groupings at every scale, much like classifying
+                construction materials from individual specimens up through families and classes.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 45 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sitemap"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>A Natural Hierarchy</h2>
+                        <p>
+                            You are a materials engineer cataloguing the concrete mixes used across
+                            a mega-project: airport runways, bridge decks, high-rise columns, and
+                            precast tunnel segments. Each mix has a unique recipe &mdash; cement
+                            content, water-to-cement ratio, aggregate gradation, admixture dosage,
+                            28-day compressive strength. You want to organise these mixes into a
+                            tree-like classification: individual mixes group into families, families
+                            into categories, and categories into broad classes.
+                        </p>
+                        <p>
+                            K-Means could give you a flat partitioning, but it would hide the
+                            multi-level relationships. <strong>Hierarchical clustering</strong>
+                            builds precisely that tree &mdash; a <em>dendrogram</em> &mdash;
+                            revealing which mixes are closest cousins, which families merge next,
+                            and at what dissimilarity level every grouping forms.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Hierarchical clustering is a family of algorithms that produce a nested
+                    sequence of partitions rather than a single flat assignment. Instead of
+                    committing to a fixed number of clusters upfront, it constructs a full
+                    hierarchy from individual observations all the way up to one all-encompassing
+                    cluster (or vice versa). This hierarchy is encoded in a tree diagram called
+                    a <strong>dendrogram</strong>, which an engineer can "cut" at any height to
+                    obtain the desired number of groups.
+                </p>
+                <p>
+                    In this sub-chapter, we will explore two flavours of hierarchical
+                    clustering &mdash; <strong>agglomerative</strong> (bottom-up) and
+                    <strong>divisive</strong> (top-down) &mdash; study the critical role of
+                    <strong>linkage methods</strong> in shaping the resulting clusters, learn
+                    how to read and cut dendrograms, and ground every concept in civil
+                    engineering practice. Two interactive demos let you build dendrograms and
+                    compare linkage methods in real time.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have completed Sub-chapter 3.1 (unsupervised
+                        learning fundamentals) and Sub-chapter 3.2 (K-Means). You should
+                        understand what clustering is, how Euclidean distance works, and what
+                        within-cluster sum of squares measures. Familiarity with K-Means will help
+                        you appreciate why hierarchical clustering addresses some of its
+                        limitations.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: AGGLOMERATIVE VS DIVISIVE
+             ========================================== -->
+        <section class="ch-section" id="agglomerative-vs-divisive">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-up-down"></i>
+                    Two Directions: Bottom-Up and Top-Down
+                </h2>
+
+                <p>
+                    Hierarchical clustering can proceed in two opposite directions. Both produce
+                    the same kind of output &mdash; a nested tree of clusters &mdash; but they
+                    build it very differently.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Agglomerative Clustering (Bottom-Up)</h3>
+                        <p>
+                            Start with every data point as its own individual cluster (N clusters
+                            for N points). At each step, find the <strong>two closest
+                            clusters</strong> and merge them into one. Repeat until all points
+                            belong to a single cluster. This produces N&minus;1 merges, each
+                            recorded as a node in the dendrogram.
+                        </p>
+                        <p>
+                            Agglomerative clustering is by far the more common approach. It is
+                            conceptually simple, computationally tractable (though still O(N&sup2;)
+                            in memory and O(N&sup3;) in time for a naive implementation), and
+                            supported by all major ML libraries.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-down-to-bracket"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Divisive Clustering (Top-Down)</h3>
+                        <p>
+                            Start with all data points in one giant cluster. At each step, select
+                            a cluster and <strong>split it into two</strong> (usually by running
+                            a flat clustering algorithm like K-Means with K=2 on that cluster).
+                            Repeat until every point is its own cluster.
+                        </p>
+                        <p>
+                            Divisive clustering is less common in practice because the splitting
+                            decision at each level is more computationally expensive and the
+                            results depend heavily on the splitting criterion. However, it can
+                            be useful when you care most about the top-level structure &mdash;
+                            for example, first splitting bridge inspection data into "pass" vs
+                            "requires action" before further subdividing.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Agglomerative = building a classification from specimens
+                            up.</strong> Imagine you have 200 concrete core samples from different
+                            structures. You start by treating each core as its own category. Then
+                            you merge the two most similar cores (perhaps both are C30 mixes from
+                            adjacent bridge piers). You keep merging similar groups: C30 bridge mixes
+                            join other bridge mixes, bridge mixes join infrastructure mixes, until
+                            everything is in one "all concrete" category.
+                        </p>
+                        <p>
+                            <strong>Divisive = classifying from broad categories down.</strong>
+                            Instead, you start with "all 200 cores are concrete." First split:
+                            structural vs non-structural. Next split: high-strength vs normal-
+                            strength within structural. Keep splitting until each core stands alone.
+                        </p>
+                        <p>
+                            Both approaches produce the same family tree, just built in opposite
+                            order. In practice, the bottom-up approach (agglomerative) is almost
+                            always preferred because it avoids the difficult question of how to
+                            optimally split a large cluster.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    For the remainder of this sub-chapter, we focus on
+                    <strong>agglomerative hierarchical clustering (AHC)</strong> because it is
+                    the dominant method in both research and engineering practice. Everything you
+                    learn about dendrograms, linkage methods, and cluster evaluation applies
+                    equally to divisive approaches.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: THE AGGLOMERATIVE ALGORITHM
+             ========================================== -->
+        <section class="ch-section" id="algorithm-steps">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ol"></i>
+                    The Agglomerative Algorithm Step by Step
+                </h2>
+
+                <p>
+                    The agglomerative algorithm is elegant in its simplicity. Here is the
+                    complete procedure:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Initialise: Each Point is a Cluster</h3>
+                        <p>
+                            Begin with N singleton clusters, one per data point. Compute the
+                            <strong>distance matrix</strong>: an N&times;N symmetric matrix where
+                            entry (i, j) records the distance between points i and j. For
+                            numerical features, Euclidean distance is the most common choice.
+                        </p>
+                        <p>
+                            In a civil engineering context, each row might represent a soil sample
+                            described by moisture content, liquid limit, and plasticity index.
+                            The distance matrix captures how different every pair of samples is.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Find the Closest Pair of Clusters</h3>
+                        <p>
+                            Scan the distance matrix (or a condensed version of it) to find the
+                            two clusters with the <strong>smallest inter-cluster distance</strong>.
+                            How "inter-cluster distance" is defined depends on the
+                            <strong>linkage method</strong> &mdash; the subject of our next
+                            section.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Merge the Closest Pair</h3>
+                        <p>
+                            Combine the two closest clusters into a single new cluster. Record
+                            this merge event: the two clusters that merged and the distance at
+                            which they merged. This information becomes a node in the dendrogram.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Update the Distance Matrix</h3>
+                        <p>
+                            Recompute distances between the newly formed cluster and all remaining
+                            clusters. The specific formula depends on the linkage method. Remove
+                            the rows and columns of the two merged clusters and add one row/column
+                            for the new cluster.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Repeat Until One Cluster Remains</h3>
+                        <p>
+                            Go back to Step 2 and repeat. After N&minus;1 iterations, all points
+                            have been merged into a single cluster. The complete sequence of merges
+                            defines the dendrogram.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-microchip"></i>
+                        <span>Computational Complexity</span>
+                    </div>
+                    <p>
+                        The naive agglomerative algorithm runs in O(N&sup3;) time and O(N&sup2;)
+                        space because it must scan the full distance matrix at each of N&minus;1
+                        iterations. Optimised implementations using priority queues bring this
+                        down to O(N&sup2; log N) for single and complete linkage. For datasets
+                        with more than about 10,000 points, consider using approximate methods or
+                        switching to algorithms like BIRCH or mini-batch approaches.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: LINKAGE METHODS
+             ========================================== -->
+        <section class="ch-section" id="linkage-methods">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-link"></i>
+                    Linkage Methods: How to Measure Cluster Distance
+                </h2>
+
+                <p>
+                    The <strong>linkage method</strong> is the most critical decision in
+                    hierarchical clustering. It defines how we measure the distance between
+                    two clusters that each contain multiple points. Different linkage methods
+                    produce dramatically different dendrograms and cluster shapes from the
+                    same data.
+                </p>
+
+                <!-- Single Linkage -->
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-minimize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Single Linkage (Nearest Neighbour)</h3>
+                        <p>
+                            The distance between two clusters is the <strong>minimum distance
+                            between any point in one cluster and any point in the other</strong>.
+                        </p>
+                        <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;padding:12px 0;color:var(--accent-primary);">
+                            d(A, B) = min { d(a, b) : a &isin; A, b &isin; B }
+                        </p>
+                        <p>
+                            <strong>Pros:</strong> Can detect elongated, chain-like clusters.
+                            Computationally efficient.
+                        </p>
+                        <p>
+                            <strong>Cons:</strong> Prone to the <em>chaining effect</em> &mdash;
+                            a single noisy point between two natural clusters can cause them to
+                            merge prematurely. Tends to produce unbalanced, straggly dendrograms.
+                        </p>
+                        <p>
+                            <strong>CE example:</strong> Useful when crack patterns on a concrete
+                            surface form elongated chains rather than compact blobs.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Complete Linkage -->
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-maximize"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Complete Linkage (Farthest Neighbour)</h3>
+                        <p>
+                            The distance between two clusters is the <strong>maximum distance
+                            between any point in one cluster and any point in the other</strong>.
+                        </p>
+                        <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;padding:12px 0;color:var(--accent-primary);">
+                            d(A, B) = max { d(a, b) : a &isin; A, b &isin; B }
+                        </p>
+                        <p>
+                            <strong>Pros:</strong> Produces compact, tightly bound clusters of
+                            roughly equal diameter. Avoids the chaining problem.
+                        </p>
+                        <p>
+                            <strong>Cons:</strong> Sensitive to outliers (a single far-flung point
+                            can inflate the inter-cluster distance). Tends to break large clusters
+                            apart.
+                        </p>
+                        <p>
+                            <strong>CE example:</strong> Good for grouping structural elements
+                            (beams, columns) where you want every member of a group to be within
+                            a guaranteed maximum dissimilarity.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Average Linkage -->
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-equals"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Average Linkage (UPGMA)</h3>
+                        <p>
+                            The distance between two clusters is the <strong>average of all
+                            pairwise distances</strong> between points in the two clusters.
+                        </p>
+                        <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;padding:12px 0;color:var(--accent-primary);">
+                            d(A, B) = (1 / |A||B|) &Sigma;<sub>a &isin; A</sub>
+                            &Sigma;<sub>b &isin; B</sub> d(a, b)
+                        </p>
+                        <p>
+                            <strong>Pros:</strong> A balanced compromise between single and
+                            complete linkage. Less sensitive to outliers than complete linkage
+                            and less prone to chaining than single linkage.
+                        </p>
+                        <p>
+                            <strong>Cons:</strong> Can still be influenced by cluster size
+                            imbalance. Slightly more expensive to compute.
+                        </p>
+                        <p>
+                            <strong>CE example:</strong> A solid default choice for grouping
+                            soil samples or traffic patterns where you want a middle ground.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Ward's Method -->
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Ward's Linkage (Minimum Variance)</h3>
+                        <p>
+                            Instead of a simple distance, Ward's method merges the pair of
+                            clusters that causes the <strong>smallest increase in total
+                            within-cluster variance</strong> (sum of squares). It is the
+                            hierarchical analogue of K-Means' inertia objective.
+                        </p>
+                        <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;padding:12px 0;color:var(--accent-primary);">
+                            &Delta;(A, B) = (|A| &middot; |B|) / (|A| + |B|)
+                            &middot; || &mu;<sub>A</sub> &minus; &mu;<sub>B</sub> ||&sup2;
+                        </p>
+                        <p>
+                            <strong>Pros:</strong> Produces compact, spherical clusters similar
+                            to K-Means. Often yields the most "natural-looking" dendrograms.
+                            Best for well-separated, globular clusters.
+                        </p>
+                        <p>
+                            <strong>Cons:</strong> Assumes clusters are spherical and similar
+                            in size (same assumption as K-Means). Requires Euclidean distance.
+                        </p>
+                        <p>
+                            <strong>CE example:</strong> Ideal for classifying concrete mixes
+                            by strength class, where groups tend to be compact and well-separated.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Linkage is like deciding when two construction crews should
+                            share a field office.</strong> Under <em>single linkage</em>, two
+                            crews merge if their nearest workers are close &mdash; even if the
+                            crews are spread across the site (chaining risk). Under <em>complete
+                            linkage</em>, they merge only if their most distant workers are close
+                            &mdash; a strict criterion. <em>Average linkage</em> considers the
+                            typical commute across both crews. <em>Ward's method</em> asks:
+                            "Will merging these two crews increase the average commute the
+                            least?" &mdash; optimising for overall efficiency.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Which Linkage Should I Use?</span>
+                    </div>
+                    <p>
+                        For most civil engineering datasets (material properties, sensor readings,
+                        inspection scores), start with <strong>Ward's linkage</strong>. It
+                        produces intuitive, compact clusters and is the default in many libraries.
+                        Switch to average linkage if you suspect unequal cluster sizes, and
+                        consider single linkage only if you expect elongated, chain-like patterns
+                        (rare in CE data).
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: UNDERSTANDING DENDROGRAMS
+             ========================================== -->
+        <section class="ch-section" id="dendrograms">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Understanding Dendrograms
+                </h2>
+
+                <p>
+                    The <strong>dendrogram</strong> is the signature output of hierarchical
+                    clustering. It is a tree diagram that encodes the complete merge history.
+                    Reading it correctly is essential for extracting meaningful clusters.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Anatomy of a Dendrogram</h3>
+                        <p>
+                            A dendrogram has <strong>leaves</strong> at the bottom (or left),
+                            one per data point. Each horizontal line connecting two branches
+                            represents a <strong>merge event</strong>. The <strong>height</strong>
+                            of that connecting line indicates the distance (or dissimilarity) at
+                            which the two clusters were merged. The higher the merge, the more
+                            dissimilar the clusters were.
+                        </p>
+                        <ul>
+                            <li><strong>Short vertical lines near the bottom:</strong> very
+                                similar points merged early.</li>
+                            <li><strong>Tall vertical lines near the top:</strong> very different
+                                groups merged late, suggesting distinct clusters below.</li>
+                            <li><strong>Large jumps in merge height:</strong> indicate natural
+                                cluster boundaries &mdash; the optimal place to "cut."</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    The key insight is that <strong>you do not need to choose the number of
+                    clusters before running the algorithm</strong>. The dendrogram contains all
+                    possible partitions from N clusters (every point alone) to 1 cluster
+                    (everything together). You simply draw a horizontal line at the desired
+                    height, and every branch that line crosses defines one cluster.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scissors"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Cutting the Dendrogram</h3>
+                        <p>
+                            To extract K clusters from a dendrogram, draw a horizontal line that
+                            crosses exactly K vertical branches. Equivalently, choose a
+                            <strong>distance threshold</strong> t: every merge below t is kept
+                            (those points stay in the same cluster), and every merge above t is
+                            ignored (those branches become separate clusters).
+                        </p>
+                        <p>
+                            The best cut height is typically where you see the <strong>largest
+                            gap</strong> between consecutive merge distances &mdash; a jump that
+                            says "the clusters below here are natural, but the next merge would
+                            combine genuinely different groups."
+                        </p>
+                        <p>
+                            In civil engineering, this is like deciding at what level of material
+                            dissimilarity you want to draw the line between "same class" and
+                            "different class." A low cut gives many fine-grained classes; a high
+                            cut gives few broad categories.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>A dendrogram is like a classification tree for construction
+                            materials.</strong> At the lowest level, you have individual concrete
+                            mixes (C25/30 with fly ash, C30/37 with silica fume, etc.). Moving
+                            up, these merge into strength classes (C25, C30, C35). Higher still,
+                            strength classes merge into categories (normal-strength, high-
+                            strength). At the very top, everything is simply "concrete."
+                        </p>
+                        <p>
+                            Where you "cut" depends on the engineering question. For a structural
+                            design check, you might cut at the strength-class level. For a
+                            procurement decision, the broad category level suffices. The
+                            dendrogram lets you answer all these questions from a single analysis.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: CE APPLICATION - MATERIAL CLASSIFICATION
+             ========================================== -->
+        <section class="ch-section" id="ce-material-classification">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-cubes"></i>
+                    CE Application: Material Classification Hierarchy
+                </h2>
+
+                <p>
+                    One of the most natural applications of hierarchical clustering in civil
+                    engineering is building a <strong>material classification hierarchy</strong>
+                    from measured properties. Unlike K-Means, which gives a flat grouping,
+                    hierarchical clustering reveals the nested relationships between materials.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Scenario: Soil Classification from Lab Data</h3>
+                        <p>
+                            A geotechnical investigation for a highway project produces 150 soil
+                            samples with measured liquid limit, plastic limit, grain size
+                            distribution, moisture content, and specific gravity. Rather than
+                            manually applying the Unified Soil Classification System (USCS) to
+                            each sample, you run agglomerative clustering with Ward's linkage on
+                            the standardised feature matrix.
+                        </p>
+                        <p>
+                            The resulting dendrogram reveals three main branches at the top level:
+                            coarse-grained soils (gravels and sands), fine-grained soils with low
+                            plasticity (silts), and fine-grained soils with high plasticity
+                            (clays). Within the clay branch, sub-groups naturally separate into
+                            lean clays (CL) and fat clays (CH). This hierarchical view mirrors
+                            the USCS structure and helps the engineer verify that the lab data is
+                            consistent with standard classification.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Scenario: Bridge Condition Grouping</h3>
+                        <p>
+                            A transport authority maintains 500 bridges, each assessed on deck
+                            condition, superstructure rating, substructure rating, load capacity,
+                            age, and average daily traffic. Hierarchical clustering groups these
+                            bridges into a tree of condition states.
+                        </p>
+                        <p>
+                            At the coarsest level (K=2), the dendrogram splits bridges into
+                            "good condition" and "needs attention." At K=4, it further separates
+                            "needs attention" into "minor maintenance," "major rehabilitation,"
+                            and "replacement candidates." The engineer can choose the granularity
+                            that matches their budget planning cycle. This multi-resolution view
+                            is impossible with flat clustering alone.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    These examples illustrate a key advantage: hierarchical clustering naturally
+                    handles <strong>multi-scale decision-making</strong>. A project director
+                    needs broad categories; a field engineer needs fine-grained groups. The same
+                    dendrogram serves both.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: HIERARCHICAL VS K-MEANS
+             ========================================== -->
+        <section class="ch-section" id="vs-kmeans">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Hierarchical Clustering vs K-Means
+                </h2>
+
+                <p>
+                    Having studied both K-Means (Sub-chapter 3.2) and hierarchical clustering,
+                    let us compare them directly. Understanding when to choose one over the
+                    other is a practical skill every data-literate civil engineer should have.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison at a Glance</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;font-size:0.92rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--accent-primary);">
+                                        <th style="text-align:left;padding:8px;">Criterion</th>
+                                        <th style="text-align:left;padding:8px;">K-Means</th>
+                                        <th style="text-align:left;padding:8px;">Hierarchical (AHC)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                        <td style="padding:8px;">Must choose K upfront?</td>
+                                        <td style="padding:8px;">Yes</td>
+                                        <td style="padding:8px;">No (cut dendrogram later)</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                        <td style="padding:8px;">Output</td>
+                                        <td style="padding:8px;">Flat partition</td>
+                                        <td style="padding:8px;">Nested hierarchy (dendrogram)</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                        <td style="padding:8px;">Cluster shape assumption</td>
+                                        <td style="padding:8px;">Spherical</td>
+                                        <td style="padding:8px;">Depends on linkage</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                        <td style="padding:8px;">Time complexity</td>
+                                        <td style="padding:8px;">O(NKI) &mdash; fast</td>
+                                        <td style="padding:8px;">O(N&sup2; log N) to O(N&sup3;)</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                        <td style="padding:8px;">Scalability</td>
+                                        <td style="padding:8px;">Handles large N well</td>
+                                        <td style="padding:8px;">Impractical for N &gt; ~10k</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                        <td style="padding:8px;">Deterministic?</td>
+                                        <td style="padding:8px;">No (random init)</td>
+                                        <td style="padding:8px;">Yes (given same linkage)</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px;">Multi-resolution?</td>
+                                        <td style="padding:8px;">No</td>
+                                        <td style="padding:8px;">Yes (cut at any height)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Rule of Thumb</span>
+                    </div>
+                    <p>
+                        Use <strong>K-Means</strong> when you have a large dataset and a
+                        reasonable idea of K. Use <strong>hierarchical clustering</strong> when
+                        your dataset is moderate-sized (up to a few thousand points), you want
+                        to explore different numbers of clusters without re-running the algorithm,
+                        or you need the interpretive power of a dendrogram for stakeholder
+                        communication.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 1 - DENDROGRAM BUILDER
+             ========================================== -->
+        <section class="ch-section" id="demo-dendrogram">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Interactive Dendrogram Builder
+                </h2>
+
+                <p>
+                    Click on the canvas below to place data points, then watch agglomerative
+                    clustering build a dendrogram step by step. You can control the animation
+                    speed, step through merges one at a time, or let it run automatically.
+                    The left panel shows the 2D scatter of points with merge connections; the
+                    right panel shows the dendrogram growing upward.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        <span>Dendrogram Builder</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+                        <button id="dendro-step" class="demo-btn"><i class="fa-solid fa-forward-step"></i> Step</button>
+                        <button id="dendro-run" class="demo-btn"><i class="fa-solid fa-play"></i> Auto Run</button>
+                        <button id="dendro-reset" class="demo-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                        <button id="dendro-random" class="demo-btn"><i class="fa-solid fa-dice"></i> Random 15</button>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                            Linkage:
+                            <select id="dendro-linkage" style="padding:4px 8px;border-radius:6px;background:var(--bg-secondary,#1a1a2e);color:var(--text-primary,#fff);border:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                <option value="single">Single</option>
+                                <option value="complete">Complete</option>
+                                <option value="average">Average</option>
+                                <option value="ward" selected>Ward</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <p style="font-size:0.8rem;margin-bottom:4px;opacity:0.7;">Click to add points</p>
+                            <canvas id="dendro-scatter" style="width:100%;height:320px;border-radius:8px;cursor:crosshair;border:1px solid var(--border-color,rgba(255,255,255,0.1));"></canvas>
+                        </div>
+                        <div>
+                            <p style="font-size:0.8rem;margin-bottom:4px;opacity:0.7;">Dendrogram</p>
+                            <canvas id="dendro-tree" style="width:100%;height:320px;border-radius:8px;border:1px solid var(--border-color,rgba(255,255,255,0.1));"></canvas>
+                        </div>
+                    </div>
+                    <p id="dendro-info" style="margin-top:10px;font-size:0.88rem;min-height:1.4em;color:var(--accent-primary);">
+                        Place points by clicking the left canvas, or click "Random 15" to generate sample data. Then step through the merging process.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: DEMO 2 - LINKAGE COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="demo-linkage">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    Demo 2: Linkage Method Comparison
+                </h2>
+
+                <p>
+                    This demo runs all four linkage methods on the same dataset simultaneously
+                    and shows the resulting dendrograms side by side. Generate a dataset, choose
+                    the desired number of clusters (cut height), and observe how single, complete,
+                    average, and Ward's linkage produce different groupings from identical data.
+                </p>
+
+                <div class="demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-link"></i>
+                        <span>Linkage Comparison</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+                        <button id="link-generate" class="demo-btn"><i class="fa-solid fa-dice"></i> Generate Data</button>
+                        <button id="link-cluster" class="demo-btn"><i class="fa-solid fa-play"></i> Cluster</button>
+                        <button id="link-reset" class="demo-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                            Clusters (K):
+                            <select id="link-k" style="padding:4px 8px;border-radius:6px;background:var(--bg-secondary,#1a1a2e);color:var(--text-primary,#fff);border:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                            Points:
+                            <select id="link-n" style="padding:4px 8px;border-radius:6px;background:var(--bg-secondary,#1a1a2e);color:var(--text-primary,#fff);border:1px solid var(--border-color,rgba(255,255,255,0.1));">
+                                <option value="20" selected>20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <p style="font-size:0.8rem;margin-bottom:4px;opacity:0.7;">Single Linkage</p>
+                            <canvas id="link-single" style="width:100%;height:220px;border-radius:8px;border:1px solid var(--border-color,rgba(255,255,255,0.1));"></canvas>
+                        </div>
+                        <div>
+                            <p style="font-size:0.8rem;margin-bottom:4px;opacity:0.7;">Complete Linkage</p>
+                            <canvas id="link-complete" style="width:100%;height:220px;border-radius:8px;border:1px solid var(--border-color,rgba(255,255,255,0.1));"></canvas>
+                        </div>
+                        <div>
+                            <p style="font-size:0.8rem;margin-bottom:4px;opacity:0.7;">Average Linkage</p>
+                            <canvas id="link-average" style="width:100%;height:220px;border-radius:8px;border:1px solid var(--border-color,rgba(255,255,255,0.1));"></canvas>
+                        </div>
+                        <div>
+                            <p style="font-size:0.8rem;margin-bottom:4px;opacity:0.7;">Ward's Linkage</p>
+                            <canvas id="link-ward" style="width:100%;height:220px;border-radius:8px;border:1px solid var(--border-color,rgba(255,255,255,0.1));"></canvas>
+                        </div>
+                    </div>
+                    <p id="link-info" style="margin-top:10px;font-size:0.88rem;min-height:1.4em;color:var(--accent-primary);">
+                        Click "Generate Data" to create clustered points, then "Cluster" to see all four linkage methods side by side.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: PRACTICAL CONSIDERATIONS
+             ========================================== -->
+        <section class="ch-section" id="practical-considerations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    Practical Considerations
+                </h2>
+
+                <p>
+                    Before applying hierarchical clustering to a real engineering dataset, keep
+                    the following practical points in mind.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Scaling</h3>
+                        <p>
+                            Just like K-Means, hierarchical clustering with Euclidean distance is
+                            sensitive to feature scales. If compressive strength ranges from 20 to
+                            80 MPa while water-to-cement ratio ranges from 0.3 to 0.6, the
+                            strength feature will dominate distance calculations. Always
+                            <strong>standardise</strong> (zero mean, unit variance) or
+                            <strong>normalise</strong> (min-max to [0, 1]) your features before
+                            clustering.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Handling Outliers</h3>
+                        <p>
+                            Outliers can distort the dendrogram significantly. A single anomalous
+                            measurement (e.g., a lab error producing an impossibly high UCS value)
+                            may form its own long branch, compressing the rest of the tree. Inspect
+                            your data for outliers before clustering. Consider removing or capping
+                            extreme values, or use robust distance metrics like Manhattan distance.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-memory"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Memory and Scalability</h3>
+                        <p>
+                            The full distance matrix requires O(N&sup2;) memory. For N=10,000,
+                            this is about 800 MB of floating-point storage. For large datasets,
+                            consider: (1) sub-sampling the data, (2) using BIRCH or mini-batch
+                            hierarchical methods, or (3) running K-Means first to produce a
+                            manageable number of cluster centres and then applying hierarchical
+                            clustering to those centres.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Choosing the Number of Clusters</h3>
+                        <p>
+                            While the dendrogram provides visual guidance, formal methods include:
+                        </p>
+                        <ul>
+                            <li><strong>Inconsistency coefficient:</strong> measures the relative
+                                increase in merge distance at each node.</li>
+                            <li><strong>Gap statistic:</strong> compares within-cluster dispersion
+                                to a reference null distribution.</li>
+                            <li><strong>Silhouette analysis:</strong> same metric used for K-Means,
+                                applicable to any clustering result.</li>
+                            <li><strong>Domain knowledge:</strong> often the most reliable guide.
+                                If you know there are 4 soil types on site, cut at K=4.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: ADVANCED TOPICS
+             ========================================== -->
+        <section class="ch-section" id="advanced-topics">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-microscope"></i>
+                    Advanced Topics
+                </h2>
+
+                <p>
+                    Beyond the basics, several extensions and refinements make hierarchical
+                    clustering more powerful in engineering applications.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Non-Euclidean Distance Metrics</h3>
+                        <p>
+                            Hierarchical clustering works with <em>any</em> distance metric, not
+                            just Euclidean. For categorical features (soil type codes, structural
+                            element types), use Hamming distance or Gower's distance. For time
+                            series data (sensor readings), consider Dynamic Time Warping (DTW).
+                            This flexibility is an advantage over K-Means, which is fundamentally
+                            tied to Euclidean distance.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-object-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Cophenetic Correlation</h3>
+                        <p>
+                            The <strong>cophenetic correlation coefficient</strong> measures how
+                            faithfully the dendrogram preserves the original pairwise distances.
+                            It is the Pearson correlation between the original distance matrix
+                            and the cophenetic distance matrix (where the cophenetic distance
+                            between two points is the height at which they first merge in the
+                            dendrogram). Values close to 1.0 indicate excellent preservation.
+                            This metric can help you choose between linkage methods: the one
+                            with the highest cophenetic correlation best represents the true
+                            data structure.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Hybrid Approaches</h3>
+                        <p>
+                            A common practical strategy is to combine hierarchical clustering with
+                            K-Means: run K-Means to reduce N data points to, say, 50 representative
+                            centroids. Then apply hierarchical clustering to the 50 centroids for
+                            interpretable dendrogram analysis. This <strong>two-stage
+                            approach</strong> scales to very large datasets while retaining the
+                            visual and interpretive benefits of dendrograms.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of hierarchical clustering with these four questions.
+                    Each reinforces a core concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        What is the main advantage of hierarchical clustering over K-Means?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> It always runs faster than K-Means
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> It does not require specifying the number of clusters in advance and produces a full hierarchy
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> It always produces better clusters than K-Means
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> It can only be used with numerical data
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Hierarchical clustering
+                        builds a dendrogram that encodes all possible numbers of clusters. You can
+                        decide K after the fact by cutting the dendrogram at the appropriate height,
+                        giving you multi-resolution flexibility that K-Means lacks.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key advantage is that
+                        hierarchical clustering produces a <strong>full hierarchy</strong> (dendrogram)
+                        without requiring K upfront. You can extract any number of clusters by cutting
+                        at different heights. It is actually slower than K-Means, not faster.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        In single linkage, the distance between two clusters is defined as:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> The distance between the two cluster centroids
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> The maximum distance between any pair of points across the two clusters
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> The minimum distance between any pair of points across the two clusters
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> The average distance across all pairs of points in both clusters
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Single linkage (also called
+                        nearest-neighbour linkage) defines inter-cluster distance as the minimum
+                        pairwise distance. This can detect elongated cluster shapes but is prone to
+                        the chaining effect.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Single linkage uses the
+                        <strong>minimum</strong> (nearest-neighbour) distance. The maximum defines
+                        complete linkage, and the average defines average linkage.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        What does the height of a merge in a dendrogram represent?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> The number of points in the merged cluster
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> The distance (dissimilarity) at which the two clusters were merged
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> The iteration number at which the merge occurred
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The total number of clusters remaining after the merge
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The height (y-axis value)
+                        at which two branches join represents the inter-cluster distance at which they
+                        merged. Larger heights mean more dissimilar clusters. Large jumps in height
+                        indicate natural cluster boundaries.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The merge height represents
+                        the <strong>distance (dissimilarity)</strong> between the two clusters at the
+                        time of merging. It is not the iteration number or the cluster size, though
+                        merges at higher dissimilarity do tend to happen later.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        Ward's linkage merges the pair of clusters that:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Has the smallest single-link distance
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Has the largest number of combined points
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Causes the smallest increase in total within-cluster variance
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Has the shortest average pairwise distance
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Ward's method minimises the
+                        increase in total within-cluster sum of squares upon merging. This is the
+                        hierarchical analogue of K-Means' inertia objective and tends to produce
+                        compact, spherical clusters.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Ward's linkage is unique
+                        in that it does not use simple distance. It merges the pair that causes the
+                        <strong>minimum increase in within-cluster variance</strong> (sum of squares),
+                        acting as the hierarchical equivalent of the K-Means objective.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul>
+                            <li>Hierarchical clustering builds a nested tree (dendrogram) of
+                                clusters, allowing you to extract any number of groups without
+                                re-running the algorithm.</li>
+                            <li>Agglomerative (bottom-up) clustering starts with each point as
+                                its own cluster and merges the closest pair at each step. It is
+                                the most common variant.</li>
+                            <li>The linkage method determines how inter-cluster distance is
+                                measured: single (min), complete (max), average (mean pairwise),
+                                and Ward (minimum variance increase).</li>
+                            <li>Ward's linkage is the best default for most CE datasets because
+                                it produces compact, well-separated clusters similar to K-Means.</li>
+                            <li>The dendrogram height encodes merge dissimilarity. Cut where
+                                you see the largest gap to obtain natural clusters.</li>
+                            <li>Hierarchical clustering is deterministic (no random initialisation)
+                                but scales poorly beyond about 10,000 points.</li>
+                            <li>In civil engineering, hierarchical clustering excels at material
+                                classification, bridge condition grouping, and any task where
+                                multi-level categorisation is valuable.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Looking Ahead</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we explore <strong>DBSCAN</strong> &mdash; a
+                        density-based clustering algorithm that can discover clusters of arbitrary
+                        shape and automatically identify outliers (noise points). Unlike both
+                        K-Means and hierarchical clustering, DBSCAN does not require you to
+                        specify the number of clusters at all.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub2.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.2 K-Means
+        </a>
+        <a href="sub4.html" class="chapter-nav__link next">
+            3.4 DBSCAN <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+
+        /* ==============================================
+           CLUSTER COLOUR PALETTE
+           ============================================== */
+        var CLUSTER_COLORS_DARK  = ['#2dd4bf','#22d3ee','#fbbf24','#ef4444','#a78bfa','#f472b6','#34d399','#fb923c'];
+        var CLUSTER_COLORS_LIGHT = ['#059669','#0284c7','#d97706','#dc2626','#7c3aed','#db2777','#16a34a','#ea580c'];
+
+        function clusterColors() {
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return dark ? CLUSTER_COLORS_DARK : CLUSTER_COLORS_LIGHT;
+        }
+
+        /* ==============================================
+           HERO CANVAS ANIMATION
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            var nodes = [];
+            for (var i = 0; i < 60; i++) {
+                nodes.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    r: 2 + Math.random() * 3
+                });
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                /* draw connections for nearby nodes (tree-like) */
+                ctx.strokeStyle = c.DIM;
+                ctx.lineWidth = 1;
+                for (var i = 0; i < nodes.length; i++) {
+                    for (var j = i + 1; j < nodes.length; j++) {
+                        var dx = nodes[i].x - nodes[j].x;
+                        var dy = nodes[i].y - nodes[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 90) {
+                            ctx.globalAlpha = 1 - dist / 90;
+                            ctx.beginPath();
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                /* draw nodes */
+                for (var k = 0; k < nodes.length; k++) {
+                    var n = nodes[k];
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+                    ctx.fillStyle = c.TEAL;
+                    ctx.globalAlpha = 0.6;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    n.x += n.vx;
+                    n.y += n.vy;
+                    if (n.x < 0 || n.x > W) n.vx *= -1;
+                    if (n.y < 0 || n.y > H) n.vy *= -1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function () {
+                info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+            });
+        })();
+
+        /* ==============================================
+           DISTANCE HELPERS
+           ============================================== */
+        function euclidean(a, b) {
+            var dx = a.x - b.x, dy = a.y - b.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        /* ==============================================
+           AGGLOMERATIVE CLUSTERING ENGINE
+           ============================================== */
+        function agglomerative(points, linkageType) {
+            var n = points.length;
+            if (n === 0) return [];
+
+            /* Each cluster starts as a singleton */
+            var clusters = [];
+            for (var i = 0; i < n; i++) {
+                clusters.push({
+                    id: i,
+                    points: [i],
+                    center: { x: points[i].x, y: points[i].y }
+                });
+            }
+
+            var merges = []; /* { a, b, dist, newId } */
+            var nextId = n;
+
+            /* Compute initial distance matrix (upper triangle) */
+            var distMap = {};
+            function dKey(a, b) { return a < b ? a + ',' + b : b + ',' + a; }
+
+            function clusterDist(cA, cB) {
+                var pA = cA.points, pB = cB.points;
+                if (linkageType === 'single') {
+                    var minD = Infinity;
+                    for (var i = 0; i < pA.length; i++)
+                        for (var j = 0; j < pB.length; j++) {
+                            var d = euclidean(points[pA[i]], points[pB[j]]);
+                            if (d < minD) minD = d;
+                        }
+                    return minD;
+                } else if (linkageType === 'complete') {
+                    var maxD = 0;
+                    for (var i2 = 0; i2 < pA.length; i2++)
+                        for (var j2 = 0; j2 < pB.length; j2++) {
+                            var d2 = euclidean(points[pA[i2]], points[pB[j2]]);
+                            if (d2 > maxD) maxD = d2;
+                        }
+                    return maxD;
+                } else if (linkageType === 'average') {
+                    var sum = 0, count = 0;
+                    for (var i3 = 0; i3 < pA.length; i3++)
+                        for (var j3 = 0; j3 < pB.length; j3++) {
+                            sum += euclidean(points[pA[i3]], points[pB[j3]]);
+                            count++;
+                        }
+                    return sum / count;
+                } else { /* ward */
+                    var nA = pA.length, nB = pB.length;
+                    var cx = (cA.center.x * nA + cB.center.x * nB) / (nA + nB);
+                    var cy = (cA.center.y * nA + cB.center.y * nB) / (nA + nB);
+                    /* Ward distance = increase in total SSE */
+                    var sseA = 0, sseB = 0, sseMerged = 0;
+                    for (var ia = 0; ia < nA; ia++) {
+                        var dxa = points[pA[ia]].x - cA.center.x;
+                        var dya = points[pA[ia]].y - cA.center.y;
+                        sseA += dxa * dxa + dya * dya;
+                        var dxm = points[pA[ia]].x - cx;
+                        var dym = points[pA[ia]].y - cy;
+                        sseMerged += dxm * dxm + dym * dym;
+                    }
+                    for (var ib = 0; ib < nB; ib++) {
+                        var dxb = points[pB[ib]].x - cB.center.x;
+                        var dyb = points[pB[ib]].y - cB.center.y;
+                        sseB += dxb * dxb + dyb * dyb;
+                        var dxm2 = points[pB[ib]].x - cx;
+                        var dym2 = points[pB[ib]].y - cy;
+                        sseMerged += dxm2 * dxm2 + dym2 * dym2;
+                    }
+                    return sseMerged - sseA - sseB;
+                }
+            }
+
+            while (clusters.length > 1) {
+                /* find closest pair */
+                var bestI = -1, bestJ = -1, bestDist = Infinity;
+                for (var ci = 0; ci < clusters.length; ci++) {
+                    for (var cj = ci + 1; cj < clusters.length; cj++) {
+                        var d = clusterDist(clusters[ci], clusters[cj]);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            bestI = ci;
+                            bestJ = cj;
+                        }
+                    }
+                }
+
+                var cA = clusters[bestI], cB = clusters[bestJ];
+                var mergedPoints = cA.points.concat(cB.points);
+                var mx = 0, my = 0;
+                for (var mp = 0; mp < mergedPoints.length; mp++) {
+                    mx += points[mergedPoints[mp]].x;
+                    my += points[mergedPoints[mp]].y;
+                }
+                mx /= mergedPoints.length;
+                my /= mergedPoints.length;
+
+                var newCluster = {
+                    id: nextId++,
+                    points: mergedPoints,
+                    center: { x: mx, y: my }
+                };
+
+                merges.push({
+                    a: cA.id,
+                    b: cB.id,
+                    dist: bestDist,
+                    newId: newCluster.id,
+                    pointsA: cA.points.slice(),
+                    pointsB: cB.points.slice(),
+                    allPoints: mergedPoints.slice()
+                });
+
+                /* remove old, add new */
+                clusters.splice(bestJ, 1);
+                clusters.splice(bestI, 1);
+                clusters.push(newCluster);
+            }
+
+            return merges;
+        }
+
+        /* ==============================================
+           CUT DENDROGRAM AT K CLUSTERS
+           ============================================== */
+        function cutAtK(merges, n, K) {
+            if (K >= n) {
+                var labels = [];
+                for (var i = 0; i < n; i++) labels.push(i);
+                return labels;
+            }
+            /* apply first (n - K) merges */
+            var parent = {};
+            for (var i2 = 0; i2 < n; i2++) parent[i2] = i2;
+            function find(x) { while (parent[x] !== x) x = parent[x]; return x; }
+            var mergesNeeded = n - K;
+            for (var m = 0; m < mergesNeeded && m < merges.length; m++) {
+                var merge = merges[m];
+                parent[merge.a] = merge.newId;
+                parent[merge.b] = merge.newId;
+                parent[merge.newId] = merge.newId;
+            }
+            /* assign labels */
+            var rootSet = {};
+            var rootList = [];
+            var labels2 = [];
+            for (var j = 0; j < n; j++) {
+                var r = find(j);
+                if (!(r in rootSet)) {
+                    rootSet[r] = rootList.length;
+                    rootList.push(r);
+                }
+                labels2.push(rootSet[r]);
+            }
+            return labels2;
+        }
+
+        /* ==============================================
+           DEMO 1: DENDROGRAM BUILDER
+           ============================================== */
+        (function initDendroDemo() {
+            var scatterCanvas = document.getElementById('dendro-scatter');
+            var treeCanvas = document.getElementById('dendro-tree');
+            if (!scatterCanvas || !treeCanvas) return;
+
+            var sInfo, tInfo, sCtx, tCtx, sW, sH, tW, tH;
+            var points = [];
+            var merges = [];
+            var currentStep = 0;
+            var autoRunning = false;
+            var autoTimer = null;
+
+            function resizeCanvases() {
+                sInfo = initCanvas(scatterCanvas);
+                sCtx = sInfo.ctx; sW = sInfo.w; sH = sInfo.h;
+                tInfo = initCanvas(treeCanvas);
+                tCtx = tInfo.ctx; tW = tInfo.w; tH = tInfo.h;
+                drawAll();
+            }
+
+            function drawAll() {
+                drawScatter();
+                drawDendrogram();
+            }
+
+            function drawScatter() {
+                var c = getColors();
+                sCtx.clearRect(0, 0, sW, sH);
+                sCtx.fillStyle = c.BG;
+                sCtx.fillRect(0, 0, sW, sH);
+
+                /* draw grid */
+                sCtx.strokeStyle = c.GRID;
+                sCtx.lineWidth = 1;
+                for (var gx = 0; gx < sW; gx += 40) {
+                    sCtx.beginPath(); sCtx.moveTo(gx, 0); sCtx.lineTo(gx, sH); sCtx.stroke();
+                }
+                for (var gy = 0; gy < sH; gy += 40) {
+                    sCtx.beginPath(); sCtx.moveTo(0, gy); sCtx.lineTo(sW, gy); sCtx.stroke();
+                }
+
+                if (points.length === 0) {
+                    sCtx.fillStyle = c.MUTED;
+                    sCtx.font = '14px Inter, sans-serif';
+                    sCtx.textAlign = 'center';
+                    sCtx.fillText('Click here to add points', sW / 2, sH / 2);
+                    return;
+                }
+
+                /* draw merge connections up to currentStep */
+                var colors = clusterColors();
+                for (var m = 0; m < currentStep && m < merges.length; m++) {
+                    var merge = merges[m];
+                    /* draw line between centroids of merged groups */
+                    var cxA = 0, cyA = 0, cxB = 0, cyB = 0;
+                    for (var ia = 0; ia < merge.pointsA.length; ia++) {
+                        cxA += points[merge.pointsA[ia]].x;
+                        cyA += points[merge.pointsA[ia]].y;
+                    }
+                    cxA /= merge.pointsA.length; cyA /= merge.pointsA.length;
+                    for (var ib = 0; ib < merge.pointsB.length; ib++) {
+                        cxB += points[merge.pointsB[ib]].x;
+                        cyB += points[merge.pointsB[ib]].y;
+                    }
+                    cxB /= merge.pointsB.length; cyB /= merge.pointsB.length;
+                    sCtx.strokeStyle = c.DIM;
+                    sCtx.lineWidth = 1;
+                    sCtx.setLineDash([4, 4]);
+                    sCtx.beginPath();
+                    sCtx.moveTo(cxA, cyA);
+                    sCtx.lineTo(cxB, cyB);
+                    sCtx.stroke();
+                    sCtx.setLineDash([]);
+                }
+
+                /* assign current cluster labels */
+                var labels = cutAtK(merges.slice(0, currentStep), points.length, points.length - currentStep);
+
+                /* draw points */
+                for (var i = 0; i < points.length; i++) {
+                    var col = colors[labels[i] % colors.length];
+                    sCtx.beginPath();
+                    sCtx.arc(points[i].x, points[i].y, 6, 0, Math.PI * 2);
+                    sCtx.fillStyle = col;
+                    sCtx.fill();
+                    sCtx.strokeStyle = c.BG;
+                    sCtx.lineWidth = 2;
+                    sCtx.stroke();
+
+                    /* label */
+                    sCtx.fillStyle = c.WHITE;
+                    sCtx.font = '9px JetBrains Mono, monospace';
+                    sCtx.textAlign = 'center';
+                    sCtx.fillText(i.toString(), points[i].x, points[i].y - 10);
+                }
+            }
+
+            function drawDendrogram() {
+                var c = getColors();
+                tCtx.clearRect(0, 0, tW, tH);
+                tCtx.fillStyle = c.BG;
+                tCtx.fillRect(0, 0, tW, tH);
+
+                if (points.length < 2 || merges.length === 0) {
+                    tCtx.fillStyle = c.MUTED;
+                    tCtx.font = '14px Inter, sans-serif';
+                    tCtx.textAlign = 'center';
+                    tCtx.fillText('Dendrogram appears here', tW / 2, tH / 2);
+                    return;
+                }
+
+                var pad = { left: 30, right: 15, top: 25, bottom: 40 };
+                var n = points.length;
+                var visibleMerges = merges.slice(0, currentStep);
+                var maxDist = 0;
+                for (var vm = 0; vm < visibleMerges.length; vm++) {
+                    if (visibleMerges[vm].dist > maxDist) maxDist = visibleMerges[vm].dist;
+                }
+                if (maxDist === 0) maxDist = 1;
+                /* add 10% headroom */
+                maxDist *= 1.1;
+
+                /* compute leaf order via merge sequence */
+                var order = [];
+                var nodePos = {};
+                /* build a tree structure */
+                var children = {};
+                for (var m = 0; m < visibleMerges.length; m++) {
+                    children[visibleMerges[m].newId] = [visibleMerges[m].a, visibleMerges[m].b];
+                }
+
+                /* find the active cluster ids after currentStep merges */
+                function getLeaves(nodeId) {
+                    if (nodeId < n) return [nodeId];
+                    if (children[nodeId]) {
+                        return getLeaves(children[nodeId][0]).concat(getLeaves(children[nodeId][1]));
+                    }
+                    return [nodeId]; /* shouldn't happen */
+                }
+
+                /* order: DFS of the merge tree for all visible merges */
+                var visited = {};
+                function dfs(id) {
+                    if (visited[id]) return;
+                    visited[id] = true;
+                    if (id < n) { order.push(id); return; }
+                    if (children[id]) {
+                        dfs(children[id][0]);
+                        dfs(children[id][1]);
+                    }
+                }
+
+                /* start DFS from top merge node or from all active roots */
+                if (visibleMerges.length > 0) {
+                    /* find root(s) */
+                    var allIds = {};
+                    var childIds = {};
+                    for (var m2 = 0; m2 < visibleMerges.length; m2++) {
+                        allIds[visibleMerges[m2].newId] = true;
+                        childIds[visibleMerges[m2].a] = true;
+                        childIds[visibleMerges[m2].b] = true;
+                    }
+                    var roots = [];
+                    for (var aid in allIds) {
+                        if (!childIds[aid]) roots.push(parseInt(aid));
+                    }
+                    /* also include unmerged singletons */
+                    var merged = {};
+                    for (var m3 = 0; m3 < visibleMerges.length; m3++) {
+                        var pts = visibleMerges[m3].allPoints;
+                        for (var p = 0; p < pts.length; p++) merged[pts[p]] = true;
+                    }
+                    for (var s = 0; s < n; s++) {
+                        if (!merged[s]) roots.push(s);
+                    }
+
+                    for (var ri = 0; ri < roots.length; ri++) dfs(roots[ri]);
+                    /* catch any missed */
+                    for (var s2 = 0; s2 < n; s2++) {
+                        if (!visited[s2]) order.push(s2);
+                    }
+                } else {
+                    for (var s3 = 0; s3 < n; s3++) order.push(s3);
+                }
+
+                /* assign x positions to leaves */
+                var leafW = (tW - pad.left - pad.right) / n;
+                for (var li = 0; li < order.length; li++) {
+                    nodePos[order[li]] = pad.left + (li + 0.5) * leafW;
+                }
+
+                /* draw leaf labels */
+                tCtx.fillStyle = c.MUTED;
+                tCtx.font = '9px JetBrains Mono, monospace';
+                tCtx.textAlign = 'center';
+                for (var ll = 0; ll < order.length; ll++) {
+                    tCtx.fillText(order[ll].toString(), nodePos[order[ll]], tH - pad.bottom + 14);
+                }
+
+                /* y scale: distance -> pixel */
+                var plotH = tH - pad.top - pad.bottom;
+                function distToY(d) { return tH - pad.bottom - (d / maxDist) * plotH; }
+
+                /* draw y-axis */
+                tCtx.strokeStyle = c.STROKE;
+                tCtx.lineWidth = 1;
+                tCtx.beginPath();
+                tCtx.moveTo(pad.left - 5, pad.top);
+                tCtx.lineTo(pad.left - 5, tH - pad.bottom);
+                tCtx.stroke();
+
+                /* y-axis ticks */
+                tCtx.fillStyle = c.MUTED;
+                tCtx.font = '8px JetBrains Mono, monospace';
+                tCtx.textAlign = 'right';
+                var tickCount = 4;
+                for (var ti = 0; ti <= tickCount; ti++) {
+                    var tv = (maxDist / tickCount) * ti;
+                    var ty = distToY(tv);
+                    tCtx.fillText(tv.toFixed(1), pad.left - 10, ty + 3);
+                    tCtx.strokeStyle = c.GRID;
+                    tCtx.beginPath();
+                    tCtx.moveTo(pad.left - 5, ty);
+                    tCtx.lineTo(tW - pad.right, ty);
+                    tCtx.stroke();
+                }
+
+                /* draw merges */
+                var colors = clusterColors();
+                for (var dm = 0; dm < visibleMerges.length; dm++) {
+                    var merge = visibleMerges[dm];
+                    var xA = nodePos[merge.a];
+                    var xB = nodePos[merge.b];
+                    var yMerge = distToY(merge.dist);
+                    var yA = (merge.a < n) ? tH - pad.bottom : distToY(getMergeDist(merge.a));
+                    var yB = (merge.b < n) ? tH - pad.bottom : distToY(getMergeDist(merge.b));
+
+                    /* color by current step highlight */
+                    var isLatest = (dm === currentStep - 1);
+                    tCtx.strokeStyle = isLatest ? colors[0] : c.STROKE;
+                    tCtx.lineWidth = isLatest ? 2.5 : 1.5;
+
+                    /* U-shape: left vertical, horizontal bar, right vertical */
+                    tCtx.beginPath();
+                    tCtx.moveTo(xA, yA);
+                    tCtx.lineTo(xA, yMerge);
+                    tCtx.lineTo(xB, yMerge);
+                    tCtx.lineTo(xB, yB);
+                    tCtx.stroke();
+
+                    /* store position of merged node */
+                    nodePos[merge.newId] = (xA + xB) / 2;
+                }
+            }
+
+            function getMergeDist(nodeId) {
+                for (var m = 0; m < merges.length; m++) {
+                    if (merges[m].newId === nodeId) return merges[m].dist;
+                }
+                return 0;
+            }
+
+            function runClustering() {
+                var linkage = document.getElementById('dendro-linkage').value;
+                merges = agglomerative(points, linkage);
+                currentStep = 0;
+            }
+
+            /* Click to add points */
+            scatterCanvas.addEventListener('click', function (e) {
+                if (autoRunning) return;
+                var rect = scatterCanvas.getBoundingClientRect();
+                var x = e.clientX - rect.left;
+                var y = e.clientY - rect.top;
+                points.push({ x: x, y: y });
+                runClustering();
+                drawAll();
+                document.getElementById('dendro-info').textContent =
+                    points.length + ' points placed. Click "Step" to merge or "Auto Run" to animate.';
+            });
+
+            document.getElementById('dendro-step').addEventListener('click', function () {
+                if (points.length < 2) {
+                    document.getElementById('dendro-info').textContent = 'Add at least 2 points first.';
+                    return;
+                }
+                if (currentStep >= merges.length) {
+                    document.getElementById('dendro-info').textContent = 'All merges complete! Reset to start again.';
+                    return;
+                }
+                currentStep++;
+                drawAll();
+                var remaining = points.length - currentStep;
+                document.getElementById('dendro-info').textContent =
+                    'Merge ' + currentStep + '/' + merges.length +
+                    ' (distance: ' + merges[currentStep - 1].dist.toFixed(2) +
+                    '). Clusters remaining: ' + remaining + '.';
+            });
+
+            document.getElementById('dendro-run').addEventListener('click', function () {
+                if (points.length < 2) {
+                    document.getElementById('dendro-info').textContent = 'Add at least 2 points first.';
+                    return;
+                }
+                if (autoRunning) {
+                    clearInterval(autoTimer);
+                    autoRunning = false;
+                    document.getElementById('dendro-run').innerHTML = '<i class="fa-solid fa-play"></i> Auto Run';
+                    return;
+                }
+                autoRunning = true;
+                document.getElementById('dendro-run').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                autoTimer = setInterval(function () {
+                    if (currentStep >= merges.length) {
+                        clearInterval(autoTimer);
+                        autoRunning = false;
+                        document.getElementById('dendro-run').innerHTML = '<i class="fa-solid fa-play"></i> Auto Run';
+                        document.getElementById('dendro-info').textContent = 'All merges complete!';
+                        return;
+                    }
+                    currentStep++;
+                    drawAll();
+                    document.getElementById('dendro-info').textContent =
+                        'Merge ' + currentStep + '/' + merges.length +
+                        ' (distance: ' + merges[currentStep - 1].dist.toFixed(2) + ')';
+                }, 600);
+            });
+
+            document.getElementById('dendro-reset').addEventListener('click', function () {
+                clearInterval(autoTimer);
+                autoRunning = false;
+                points = [];
+                merges = [];
+                currentStep = 0;
+                document.getElementById('dendro-run').innerHTML = '<i class="fa-solid fa-play"></i> Auto Run';
+                drawAll();
+                document.getElementById('dendro-info').textContent =
+                    'Reset. Click the left canvas to add points, or use "Random 15".';
+            });
+
+            document.getElementById('dendro-random').addEventListener('click', function () {
+                clearInterval(autoTimer);
+                autoRunning = false;
+                document.getElementById('dendro-run').innerHTML = '<i class="fa-solid fa-play"></i> Auto Run';
+                points = [];
+                var margin = 30;
+                /* 3 cluster centers */
+                var centers = [
+                    { x: margin + Math.random() * (sW * 0.25), y: margin + Math.random() * (sH * 0.5) },
+                    { x: sW * 0.4 + Math.random() * (sW * 0.25), y: margin + Math.random() * (sH * 0.6) },
+                    { x: sW * 0.65 + Math.random() * (sW * 0.2), y: sH * 0.3 + Math.random() * (sH * 0.4) }
+                ];
+                for (var ci = 0; ci < centers.length; ci++) {
+                    var nPts = 5;
+                    for (var pi = 0; pi < nPts; pi++) {
+                        points.push({
+                            x: centers[ci].x + (Math.random() - 0.5) * sW * 0.18,
+                            y: centers[ci].y + (Math.random() - 0.5) * sH * 0.25
+                        });
+                    }
+                }
+                currentStep = 0;
+                runClustering();
+                drawAll();
+                document.getElementById('dendro-info').textContent =
+                    '15 random points in 3 groups. Click "Step" or "Auto Run".';
+            });
+
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
+            var obs1 = new MutationObserver(function () { resizeCanvases(); });
+            obs1.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2: LINKAGE COMPARISON
+           ============================================== */
+        (function initLinkageDemo() {
+            var canvasIds = ['link-single', 'link-complete', 'link-average', 'link-ward'];
+            var canvases = canvasIds.map(function (id) { return document.getElementById(id); });
+            if (!canvases[0]) return;
+
+            var infos = [], ctxs = [], ws = [], hs = [];
+            var linkPoints = [];
+            var linkResults = {}; /* linkageType -> merges */
+
+            function resizeAll() {
+                for (var i = 0; i < canvases.length; i++) {
+                    infos[i] = initCanvas(canvases[i]);
+                    ctxs[i] = infos[i].ctx;
+                    ws[i] = infos[i].w;
+                    hs[i] = infos[i].h;
+                }
+                drawAllLinkage();
+            }
+
+            function drawAllLinkage() {
+                var linkTypes = ['single', 'complete', 'average', 'ward'];
+                for (var i = 0; i < linkTypes.length; i++) {
+                    drawLinkageDendrogram(ctxs[i], ws[i], hs[i], linkTypes[i]);
+                }
+            }
+
+            function drawLinkageDendrogram(ctx, w, h, linkType) {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = c.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                if (linkPoints.length < 2 || !linkResults[linkType]) {
+                    ctx.fillStyle = c.MUTED;
+                    ctx.font = '13px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Generate data first', w / 2, h / 2);
+                    return;
+                }
+
+                var mergeData = linkResults[linkType];
+                var n = linkPoints.length;
+                var K = parseInt(document.getElementById('link-k').value) || 3;
+                var labels = cutAtK(mergeData, n, K);
+                var colors = clusterColors();
+
+                var pad = { left: 25, right: 10, top: 15, bottom: 30 };
+                var maxDist = 0;
+                for (var vm = 0; vm < mergeData.length; vm++) {
+                    if (mergeData[vm].dist > maxDist) maxDist = mergeData[vm].dist;
+                }
+                if (maxDist === 0) maxDist = 1;
+                maxDist *= 1.1;
+
+                /* leaf order */
+                var order = [];
+                var nodePos = {};
+                var children = {};
+                for (var m = 0; m < mergeData.length; m++) {
+                    children[mergeData[m].newId] = [mergeData[m].a, mergeData[m].b];
+                }
+
+                var visited = {};
+                function dfs(id) {
+                    if (visited[id]) return;
+                    visited[id] = true;
+                    if (id < n) { order.push(id); return; }
+                    if (children[id]) {
+                        dfs(children[id][0]);
+                        dfs(children[id][1]);
+                    }
+                }
+                /* find roots */
+                var allIds2 = {};
+                var childIds2 = {};
+                for (var m4 = 0; m4 < mergeData.length; m4++) {
+                    allIds2[mergeData[m4].newId] = true;
+                    childIds2[mergeData[m4].a] = true;
+                    childIds2[mergeData[m4].b] = true;
+                }
+                var roots2 = [];
+                for (var aid2 in allIds2) {
+                    if (!childIds2[aid2]) roots2.push(parseInt(aid2));
+                }
+                for (var ri2 = 0; ri2 < roots2.length; ri2++) dfs(roots2[ri2]);
+                for (var s4 = 0; s4 < n; s4++) {
+                    if (!visited[s4]) order.push(s4);
+                }
+
+                var leafW = (w - pad.left - pad.right) / n;
+                for (var li2 = 0; li2 < order.length; li2++) {
+                    nodePos[order[li2]] = pad.left + (li2 + 0.5) * leafW;
+                }
+
+                /* leaf labels colored by cluster */
+                ctx.font = '7px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                for (var ll2 = 0; ll2 < order.length; ll2++) {
+                    ctx.fillStyle = colors[labels[order[ll2]] % colors.length];
+                    ctx.fillText(order[ll2].toString(), nodePos[order[ll2]], h - pad.bottom + 12);
+                }
+
+                var plotH2 = h - pad.top - pad.bottom;
+                function distToY2(d) { return h - pad.bottom - (d / maxDist) * plotH2; }
+
+                /* find cut distance threshold for K clusters */
+                var cutDist = 0;
+                if (K < n && mergeData.length >= n - K) {
+                    cutDist = mergeData[n - K].dist;
+                    /* draw cut line */
+                    ctx.strokeStyle = c.RED || '#ef4444';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([6, 4]);
+                    var cutY = distToY2(cutDist * 0.999);
+                    ctx.beginPath();
+                    ctx.moveTo(pad.left, cutY);
+                    ctx.lineTo(w - pad.right, cutY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                /* draw merges */
+                function getMergeDist2(nodeId) {
+                    for (var m5 = 0; m5 < mergeData.length; m5++) {
+                        if (mergeData[m5].newId === nodeId) return mergeData[m5].dist;
+                    }
+                    return 0;
+                }
+
+                for (var dm2 = 0; dm2 < mergeData.length; dm2++) {
+                    var merge2 = mergeData[dm2];
+                    var xA2 = nodePos[merge2.a];
+                    var xB2 = nodePos[merge2.b];
+                    var yMerge2 = distToY2(merge2.dist);
+                    var yA2 = (merge2.a < n) ? h - pad.bottom : distToY2(getMergeDist2(merge2.a));
+                    var yB2 = (merge2.b < n) ? h - pad.bottom : distToY2(getMergeDist2(merge2.b));
+
+                    var aboveCut = (cutDist > 0 && merge2.dist >= cutDist);
+                    ctx.strokeStyle = aboveCut ? c.DIM : c.TEAL;
+                    ctx.lineWidth = aboveCut ? 1 : 1.5;
+
+                    ctx.beginPath();
+                    ctx.moveTo(xA2, yA2);
+                    ctx.lineTo(xA2, yMerge2);
+                    ctx.lineTo(xB2, yMerge2);
+                    ctx.lineTo(xB2, yB2);
+                    ctx.stroke();
+
+                    nodePos[merge2.newId] = (xA2 + xB2) / 2;
+                }
+            }
+
+            function generateLinkData() {
+                linkPoints = [];
+                var K_true = parseInt(document.getElementById('link-k').value) || 3;
+                var N = parseInt(document.getElementById('link-n').value) || 20;
+                var cW = ws[0] || 300, cH = hs[0] || 200;
+                var margin = 30;
+                var centers = [];
+                for (var k = 0; k < K_true; k++) {
+                    centers.push({
+                        x: margin + Math.random() * (cW - 2 * margin),
+                        y: margin + Math.random() * (cH - 2 * margin)
+                    });
+                }
+                var perCluster = Math.floor(N / K_true);
+                for (var ki = 0; ki < K_true; ki++) {
+                    var count = (ki === K_true - 1) ? N - linkPoints.length : perCluster;
+                    for (var pi = 0; pi < count; pi++) {
+                        linkPoints.push({
+                            x: centers[ki].x + (Math.random() - 0.5) * cW * 0.22,
+                            y: centers[ki].y + (Math.random() - 0.5) * cH * 0.35
+                        });
+                    }
+                }
+                linkResults = {};
+                document.getElementById('link-info').textContent =
+                    'Generated ' + linkPoints.length + ' points. Click "Cluster" to compare linkage methods.';
+                drawAllLinkage();
+            }
+
+            function runAllLinkage() {
+                if (linkPoints.length < 2) {
+                    document.getElementById('link-info').textContent = 'Generate data first!';
+                    return;
+                }
+                var types = ['single', 'complete', 'average', 'ward'];
+                for (var t = 0; t < types.length; t++) {
+                    linkResults[types[t]] = agglomerative(linkPoints, types[t]);
+                }
+                var K2 = parseInt(document.getElementById('link-k').value) || 3;
+                document.getElementById('link-info').textContent =
+                    'Clustered with all 4 linkage methods (K=' + K2 + '). Red dashed line shows the cut height. Compare how the dendrograms differ.';
+                drawAllLinkage();
+            }
+
+            document.getElementById('link-generate').addEventListener('click', generateLinkData);
+            document.getElementById('link-cluster').addEventListener('click', runAllLinkage);
+            document.getElementById('link-reset').addEventListener('click', function () {
+                linkPoints = [];
+                linkResults = {};
+                drawAllLinkage();
+                document.getElementById('link-info').textContent =
+                    'Reset. Generate new data and cluster again.';
+            });
+            document.getElementById('link-k').addEventListener('change', function () {
+                if (Object.keys(linkResults).length > 0) {
+                    drawAllLinkage();
+                    document.getElementById('link-info').textContent =
+                        'Cut updated to K=' + this.value + '. Red dashed line shows new cut height.';
+                }
+            });
+
+            resizeAll();
+            window.addEventListener('resize', resizeAll);
+            var obs2 = new MutationObserver(function () { resizeAll(); });
+            obs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           SCROLL-TRIGGERED REVEAL ANIMATION
+           ============================================== */
+        (function initRevealAnimations() {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { observer.observe(el); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

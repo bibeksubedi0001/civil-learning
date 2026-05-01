@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 04 — CNNs | CE Guide to AI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="chapter-page">
+
+    <nav id="main-nav">
+        <div class="nav-brand">
+            <a href="index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-helmet-safety"></i><span>CE × AI</span>
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="chapter1.html" class="nav-link"><i class="fa-solid fa-code-branch"></i> Ch 01</a>
+            <a href="chapter2.html" class="nav-link"><i class="fa-solid fa-wave-square"></i> Ch 02</a>
+            <a href="chapter3.html" class="nav-link"><i class="fa-solid fa-map-location-dot"></i> Ch 03</a>
+            <a href="chapter4.html" class="nav-link active"><i class="fa-solid fa-satellite"></i> Ch 04</a>
+            <a href="chapter5.html" class="nav-link"><i class="fa-solid fa-brain"></i> Ch 05</a>
+        </div>
+        <div class="nav-progress"><div class="nav-progress-bar" id="scroll-progress"></div></div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="chapter-hero" id="ch-hero">
+        <canvas id="hero-bg-canvas"></canvas>
+        <div class="chapter-hero-content">
+            <div class="chapter-number-large">04</div>
+            <div class="ch-tag"><i class="fa-solid fa-satellite"></i> The Surveyor's Eye</div>
+            <h1>Convolutional Neural Networks <span class="gradient-text">—</span> Remote Sensing Vision</h1>
+            <p class="ch-lead">
+                📡 A surveyor scans terrain through a theodolite, systematically sweeping across the landscape 
+                and noting features. A CNN does the same with images — sliding small "filters" across pixels, 
+                detecting edges, textures, and shapes layer by layer, until it can identify cracks in concrete, 
+                classify land cover, or detect structural damage from drone footage.
+            </p>
+            <div class="ch-stats">
+                <div class="ch-stat"><i class="fa-solid fa-bookmark"></i> <strong>10</strong> Sections</div>
+                <div class="ch-stat"><i class="fa-solid fa-hand-pointer"></i> <strong>5</strong> Interactive Demos</div>
+                <div class="ch-stat"><i class="fa-solid fa-clock"></i> ~<strong>28</strong> min read</div>
+                <div class="ch-stat"><i class="fa-solid fa-brain"></i> <strong>3</strong> Knowledge Checks</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOC -->
+    <div class="chapter-toc" id="ch-toc">
+        <div class="toc-inner">
+            <span class="toc-label"><i class="fa-solid fa-list"></i> Sections</span>
+            <a href="#neurons" class="toc-link">Neurons</a>
+            <a href="#perceptron" class="toc-link">Perceptron</a>
+            <a href="#why-cnn" class="toc-link">Why CNNs?</a>
+            <a href="#convolution" class="toc-link">Convolution</a>
+            <a href="#architecture" class="toc-link">Architecture</a>
+            <a href="#pooling" class="toc-link">Pooling</a>
+            <a href="#famous" class="toc-link">Famous CNNs</a>
+            <a href="#civil-apps" class="toc-link">CE Applications</a>
+            <a href="#code-peek" class="toc-link">Code Peek</a>
+            <a href="#quiz" class="toc-link">Quiz</a>
+        </div>
+    </div>
+
+    <!-- SECTION 1: NEURONS & ACTIVATION -->
+    <div id="neurons" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-circle-nodes"></i> Foundations</div>
+        <h2>The Artificial Neuron <span class="gradient-text">🧠</span></h2>
+        <p>
+            Every neural network — including CNNs — is built from <strong>artificial neurons</strong>. Each 
+            neuron takes multiple inputs, multiplies each by a <strong>weight</strong>, adds a <strong>bias</strong>, 
+            and passes the result through an <strong>activation function</strong>.
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">⚖️</div>
+            <div>
+                <h4>CE Analogy: The Structural Load Calculator</h4>
+                <p>
+                    Think of a neuron as an engineer evaluating whether a beam will fail. Inputs are 
+                    <strong>load</strong>, <strong>span</strong>, <strong>cross-section</strong>, 
+                    <strong>material strength</strong>. Each input has a different importance (weight). 
+                    The engineer sums the weighted factors, applies judgment (activation), and outputs 
+                    a decision: safe or unsafe.
+                </p>
+            </div>
+        </div>
+
+        <h3>Activation Functions — Adding Nonlinearity</h3>
+        <p>
+            Without activation functions, a neural network is just linear algebra — it can only draw straight 
+            lines. Activation functions introduce <strong>nonlinearity</strong>, allowing networks to model 
+            curves, boundaries, and complex patterns.
+        </p>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-stairs"></i></div>
+                <span class="card-tag">Classic</span>
+                <h4>Sigmoid</h4>
+                <p>σ(x) = 1/(1+e⁻ˣ). Squashes output to [0,1]. Used in binary classification. Problem: gradients vanish for large values.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-angle-up"></i></div>
+                <span class="card-tag">Most Popular</span>
+                <h4>ReLU</h4>
+                <p>f(x) = max(0, x). Dead simple, computationally fast. Default choice for hidden layers. Can "die" if inputs are always negative.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-wave-square"></i></div>
+                <span class="card-tag">Smooth</span>
+                <h4>Tanh</h4>
+                <p>Output range [-1, 1]. Zero-centered, which helps gradient flow. Often used in RNN cells and normalization layers.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-chart-bar"></i></div>
+                <span class="card-tag">Output Layer</span>
+                <h4>Softmax</h4>
+                <p>Converts a vector of numbers into probabilities that sum to 1. Used in the final layer for multi-class classification.</p>
+            </div>
+        </div>
+
+        <!-- Activation Function Demo -->
+        <div class="demo-panel" id="activation-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Activation Functions — Interactive Visualizer</span>
+                <span class="demo-tag">Select a function to see its shape</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:280px;">
+                    <canvas id="activation-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <label><i class="fa-solid fa-function"></i> Function</label>
+                    <select id="activation-select" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-family:var(--font-mono);font-size:0.85rem;">
+                        <option value="relu">ReLU</option>
+                        <option value="sigmoid">Sigmoid</option>
+                        <option value="tanh">Tanh</option>
+                        <option value="leaky">Leaky ReLU</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: PERCEPTRON TO DEEP -->
+    <div id="perceptron" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-layer-group"></i> Architecture</div>
+        <h2>From Perceptron to Deep Networks <span class="gradient-text">🏗️</span></h2>
+        <p>
+            A single neuron (perceptron) can only separate data with a straight line. Stack neurons in layers 
+            and you get a <strong>deep neural network</strong> that can learn incredibly complex patterns.
+        </p>
+
+        <div class="process-steps">
+            <div class="process-step">
+                <div class="step-marker">1</div>
+                <h4>Single Perceptron (1958)</h4>
+                <p>One neuron. Can learn AND, OR gates. Cannot learn XOR. Like a single traffic signal — limited decisions.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">2</div>
+                <h4>Multi-Layer Perceptron (1986)</h4>
+                <p>Multiple layers of neurons. Can learn XOR and more complex boundaries. Like a team of engineers reviewing different aspects of a project.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">3</div>
+                <h4>Deep Neural Networks (2010s)</h4>
+                <p>Many layers (10-100+). Each layer learns progressively more abstract features. Like a hierarchical review process from junior to senior to partner.</p>
+            </div>
+        </div>
+
+        <div class="tip-box info">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+                <strong>Why "deep"?</strong> A network with more than 2 hidden layers is considered "deep." 
+                Depth allows the network to build hierarchical representations — early layers detect simple 
+                patterns (edges), middle layers combine them (shapes), and deep layers recognize complex 
+                objects (buildings, cracks).
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: WHY CNNs -->
+    <div id="why-cnn" class="ch-section">
+        <div class="section-badge blue"><i class="fa-solid fa-image"></i> Motivation</div>
+        <h2>Why CNNs for Images? <span class="gradient-text">📸</span></h2>
+        <p>
+            A regular neural network treats every pixel independently. For a 256×256 color image, that's 
+            <strong>196,608 inputs</strong>, each connected to every neuron in the first hidden layer. This 
+            is hugely wasteful because:
+        </p>
+
+        <div class="cards-grid">
+            <div class="info-card">
+                <div class="card-icon teal"><i class="fa-solid fa-grid-2-plus"></i></div>
+                <h4>Spatial Structure Matters</h4>
+                <p>Adjacent pixels are related. A crack is a pattern of dark pixels in a line. Fully-connected networks ignore this spatial relationship.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-arrows-to-dot"></i></div>
+                <h4>Features are Local</h4>
+                <p>An edge is defined by a small patch of pixels, not the entire image. We need a way to detect local patterns regardless of where they appear.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-arrows-left-right"></i></div>
+                <h4>Translation Invariance</h4>
+                <p>A crack in the top-left looks the same as a crack in the bottom-right. The detector should work regardless of position.</p>
+            </div>
+        </div>
+
+        <div class="analogy-block">
+            <div class="analogy-icon">🔍</div>
+            <div>
+                <h4>CE Analogy: The Site Inspector's Magnifying Glass</h4>
+                <p>
+                    A site inspector doesn't look at the entire building simultaneously. They use a 
+                    <strong>magnifying glass</strong>, scanning small patches systematically — left to right, 
+                    top to bottom. They look for the <strong>same patterns</strong> (cracks, rust, spalling) 
+                    everywhere. That's exactly what a CNN's convolutional filter does: a small window that 
+                    slides across the image, detecting the same features everywhere.
+                </p>
+            </div>
+        </div>
+
+        <!-- Quiz 1 -->
+        <div class="quiz-block" id="quiz-1">
+            <h4><i class="fa-solid fa-circle-question"></i> Knowledge Check #1</h4>
+            <div class="quiz-question">
+                Why do CNNs use small sliding filters instead of connecting every pixel to every neuron?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">A</span>
+                    <span>Because GPUs can only process small matrices</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">B</span>
+                    <span>Image features are local and should be detected regardless of position</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-1')">
+                    <span class="opt-letter">C</span>
+                    <span>To make the training faster without improving results</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-1-correct">
+                <i class="fa-solid fa-check-circle"></i> Correct! CNNs exploit spatial locality and translation 
+                invariance — features like edges and textures are local patterns that should be detected 
+                everywhere in the image using shared weights.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-1-wrong">
+                <i class="fa-solid fa-times-circle"></i> The key insight is that image features (edges, textures, 
+                shapes) are <em>local</em> and appear at <em>any position</em>. Shared sliding filters exploit 
+                both properties efficiently.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: CONVOLUTION OPERATION -->
+    <div id="convolution" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-border-all"></i> Core Operation</div>
+        <h2>The Convolution Operation <span class="gradient-text">🔲</span></h2>
+        <p>
+            The <strong>convolution</strong> is the fundamental operation in a CNN. A small matrix called a 
+            <strong>kernel</strong> (or filter) slides across the input image. At each position, it computes 
+            an element-wise multiplication and sums the result — producing one number in the output 
+            <strong>feature map</strong>.
+        </p>
+
+        <div class="process-steps">
+            <div class="process-step">
+                <div class="step-marker">1</div>
+                <h4>Place the Kernel on a Patch</h4>
+                <p>A 3×3 kernel covers a 3×3 patch of the input image. Think of placing a template over a small area.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">2</div>
+                <h4>Element-wise Multiply</h4>
+                <p>Each kernel value multiplies the corresponding pixel value. 9 multiplications for a 3×3 kernel.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">3</div>
+                <h4>Sum the Products</h4>
+                <p>Add all 9 products to get one number. This is the output pixel in the feature map.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-marker">4</div>
+                <h4>Slide and Repeat</h4>
+                <p>Move the kernel one pixel to the right (stride=1) and repeat. Continue row by row until the entire image is covered.</p>
+            </div>
+        </div>
+
+        <!-- Convolution Interactive Demo -->
+        <div class="demo-panel" id="conv-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-border-all"></i>
+                <span>Convolution Explorer — See Kernels in Action</span>
+                <span class="demo-tag">Hover over the input to see the kernel slide</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:380px;">
+                    <canvas id="conv-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <label><i class="fa-solid fa-filter"></i> Kernel</label>
+                    <select id="kernel-select" style="background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-family:var(--font-mono);font-size:0.85rem;">
+                        <option value="edge-h">Horizontal Edge</option>
+                        <option value="edge-v">Vertical Edge</option>
+                        <option value="sharpen">Sharpen</option>
+                        <option value="blur">Blur (Average)</option>
+                        <option value="emboss">Emboss</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <h3>What Different Kernels Detect</h3>
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-arrows-left-right"></i></div>
+                <h4>Horizontal Edges</h4>
+                <p>Kernel: [[-1,-1,-1],[0,0,0],[1,1,1]]. Detects transitions from dark to light vertically — like the boundary between a beam and the sky.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-arrows-up-down"></i></div>
+                <h4>Vertical Edges</h4>
+                <p>Kernel: [[-1,0,1],[-1,0,1],[-1,0,1]]. Detects left-right transitions — column edges, wall boundaries.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-diamond"></i></div>
+                <h4>Corner / Texture</h4>
+                <p>More complex kernels detect corners, textures, and gradients. Learned automatically during training.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 5: CNN ARCHITECTURE -->
+    <div id="architecture" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-layer-group"></i> Architecture</div>
+        <h2>CNN Architecture — Layer by Layer <span class="gradient-text">🏛️</span></h2>
+        <p>
+            A complete CNN stacks multiple types of layers to progressively extract higher-level features 
+            from the raw pixel input.
+        </p>
+
+        <div class="analogy-block teal">
+            <div class="analogy-icon">🏗️</div>
+            <div>
+                <h4>CE Analogy: Hierarchical Site Inspection</h4>
+                <p>
+                    <strong>Layer 1 (Conv):</strong> Inspector looks at individual pixels → detects edges and color gradients.<br>
+                    <strong>Layer 2 (Conv):</strong> Combines edges → recognizes shapes (circles, rectangles).<br>
+                    <strong>Layer 3 (Conv):</strong> Combines shapes → identifies objects (window, door, crack).<br>
+                    <strong>Final (Dense):</strong> Combines objects → classifies the building condition (safe/damaged/critical).<br>
+                    Each layer builds on the previous, just like how an inspection report aggregates findings.
+                </p>
+            </div>
+        </div>
+
+        <!-- Architecture Demo -->
+        <div class="demo-panel" id="arch-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>CNN Architecture Visualizer</span>
+                <span class="demo-tag">Hover over layers to see details</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:320px;">
+                    <canvas id="arch-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <h3>Key Parameters</h3>
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr><th>Parameter</th><th>Meaning</th><th>CE Analogy</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Kernel Size</strong></td><td>Size of the sliding filter (3×3, 5×5)</td><td>Size of the inspector's magnifying glass</td></tr>
+                    <tr><td><strong>Stride</strong></td><td>How many pixels the kernel moves each step</td><td>Step size between inspection points</td></tr>
+                    <tr><td><strong>Padding</strong></td><td>Adding zeros around the border to preserve size</td><td>Adding buffer area around the inspection zone</td></tr>
+                    <tr><td><strong>Filters</strong></td><td>Number of different kernels per layer (32, 64, 128)</td><td>Number of different defect types the inspector checks for</td></tr>
+                    <tr><td><strong>Depth</strong></td><td>Number of conv layers stacked</td><td>Levels of the review hierarchy (junior → senior)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECTION 6: POOLING -->
+    <div id="pooling" class="ch-section">
+        <div class="section-badge blue"><i class="fa-solid fa-compress"></i> Operation</div>
+        <h2>Pooling — Downsizing Feature Maps <span class="gradient-text">📐</span></h2>
+        <p>
+            After convolution, <strong>pooling layers</strong> reduce the spatial dimensions. The most common 
+            is <strong>Max Pooling</strong>: take a 2×2 window, keep only the maximum value, discard the rest. 
+            This halves width and height.
+        </p>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-arrow-up"></i></div>
+                <h4>Max Pooling</h4>
+                <p>Keep the strongest activation in each region. "Is there an edge somewhere in this 2×2 area?" — if yes, the max value preserves it.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-chart-bar"></i></div>
+                <h4>Average Pooling</h4>
+                <p>Take the average of values in the window. Smoother but may lose sharp features. Used in some architectures at the final layer.</p>
+            </div>
+        </div>
+
+        <div class="analogy-block">
+            <div class="analogy-icon">📊</div>
+            <div>
+                <h4>CE Analogy: Survey Resolution Reduction</h4>
+                <p>
+                    You have a 1m×1m grid survey of a construction site (1000×1000 points). For preliminary 
+                    analysis, you downsample to 2m×2m by taking the maximum elevation in each 2×2 block. 
+                    You lose fine detail but preserve the important features (hills, depressions) while 
+                    making computation 4× faster. That's exactly what max pooling does to feature maps.
+                </p>
+            </div>
+        </div>
+
+        <!-- Pooling Demo -->
+        <div class="demo-panel" id="pool-demo">
+            <div class="demo-header">
+                <i class="fa-solid fa-compress"></i>
+                <span>Max Pooling — See the Reduction</span>
+                <span class="demo-tag">6×6 → 3×3 via 2×2 max pooling</span>
+            </div>
+            <div class="demo-body">
+                <div class="demo-canvas-wrap" style="min-height:260px;">
+                    <canvas id="pool-canvas"></canvas>
+                </div>
+                <div class="demo-controls">
+                    <button id="pool-new" class="predict-button" style="max-width:180px;">
+                        <i class="fa-solid fa-rotate-left"></i> New Random Grid
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz 2 -->
+        <div class="quiz-block" id="quiz-2">
+            <h4><i class="fa-solid fa-circle-question"></i> Knowledge Check #2</h4>
+            <div class="quiz-question">
+                What is the primary purpose of pooling layers in a CNN?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">A</span>
+                    <span>To add more features to the image</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">B</span>
+                    <span>To detect edges in the input image</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-2')">
+                    <span class="opt-letter">C</span>
+                    <span>To reduce spatial dimensions while preserving important features</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-2-correct">
+                <i class="fa-solid fa-check-circle"></i> Correct! Pooling downsamples feature maps, reducing 
+                computation and providing some translation invariance while keeping the strongest activations.
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-2-wrong">
+                <i class="fa-solid fa-times-circle"></i> Pooling doesn't detect features (that's convolution) 
+                or add information. It <em>reduces</em> spatial dimensions while preserving the most important 
+                activations.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 7: FAMOUS CNN ARCHITECTURES -->
+    <div id="famous" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-trophy"></i> History</div>
+        <h2>Famous CNN Architectures <span class="gradient-text">🏆</span></h2>
+        <p>
+            The evolution of CNN architectures is a story of going deeper, wider, and smarter. Each breakthrough 
+            pushed the boundaries of what machines can see.
+        </p>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-seedling"></i></div>
+                <span class="card-tag">1998</span>
+                <h4>LeNet-5</h4>
+                <p>Yann LeCun's pioneer. 5 layers, designed for handwritten digit recognition. Proved CNNs work. Like the first theodolite — crude but revolutionary.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-bolt"></i></div>
+                <span class="card-tag">2012</span>
+                <h4>AlexNet</h4>
+                <p>8 layers, GPU-trained. Won ImageNet by a landslide, igniting the deep learning revolution. Used ReLU activation and dropout. The "aha" moment.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-layer-group"></i></div>
+                <span class="card-tag">2014</span>
+                <h4>VGGNet</h4>
+                <p>16-19 layers of uniform 3×3 convolutions. Showed that depth matters. Simple but very effective. Still widely used as a feature extractor.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-network-wired"></i></div>
+                <span class="card-tag">2014</span>
+                <h4>GoogLeNet / Inception</h4>
+                <p>22 layers with "inception modules" — parallel convolutions at different scales. More efficient than VGG. 12× fewer parameters.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon red"><i class="fa-solid fa-arrow-turn-down"></i></div>
+                <span class="card-tag">2015</span>
+                <h4>ResNet</h4>
+                <p>152 layers with "skip connections" (residual learning). Solved the vanishing gradient problem. Enabled truly deep networks. Won ImageNet 2015.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-eye"></i></div>
+                <span class="card-tag">2020+</span>
+                <h4>EfficientNet / Vision Transformers</h4>
+                <p>Modern architectures balance width, depth, and resolution. Vision Transformers (ViT) apply the Transformer architecture to images, rivaling CNNs.</p>
+            </div>
+        </div>
+
+        <div class="tip-box success">
+            <i class="fa-solid fa-lightbulb"></i>
+            <div>
+                <strong>ResNet's Key Innovation:</strong> Skip connections let gradients flow directly through 
+                the network, bypassing layers. This is like an express elevator in a skyscraper — instead of 
+                climbing every floor (layer), information can skip ahead, preventing it from degrading.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 8: CIVIL ENGINEERING APPLICATIONS -->
+    <div id="civil-apps" class="ch-section">
+        <div class="section-badge"><i class="fa-solid fa-helmet-safety"></i> Applications</div>
+        <h2>CNNs in Civil Engineering <span class="gradient-text">🏗️</span></h2>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <span class="card-tag">Most Common</span>
+                <h4>Crack Detection</h4>
+                <p>CNNs analyze drone/camera images of concrete surfaces, automatically detecting and classifying cracks by severity. Replaces manual visual inspection.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-satellite"></i></div>
+                <span class="card-tag">Remote Sensing</span>
+                <h4>Land Cover Classification</h4>
+                <p>Classify satellite imagery pixels into urban, forest, water, agriculture classes. U-Net architecture is popular for semantic segmentation of terrain.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon amber"><i class="fa-solid fa-bridge"></i></div>
+                <span class="card-tag">Structural</span>
+                <h4>Damage Assessment</h4>
+                <p>Post-earthquake/disaster: CNNs classify building damage from aerial imagery as none/minor/major/destroyed. Speeds up response by days.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon green"><i class="fa-solid fa-road"></i></div>
+                <span class="card-tag">Transportation</span>
+                <h4>Pavement Condition</h4>
+                <p>Vehicle-mounted cameras feed images to CNNs that detect potholes, rutting, raveling, and alligator cracking automatically.</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon red"><i class="fa-solid fa-hard-hat"></i></div>
+                <span class="card-tag">Safety</span>
+                <h4>PPE Compliance</h4>
+                <p>Real-time detection of workers without helmets, vests, or safety gear on construction sites using object detection CNNs (YOLO, SSD).</p>
+            </div>
+            <div class="info-card">
+                <div class="card-icon blue"><i class="fa-solid fa-mountain"></i></div>
+                <span class="card-tag">Geotechnical</span>
+                <h4>Soil Classification from Images</h4>
+                <p>Classify soil type from borehole images or thin-section microscopy. CNN learns texture patterns that correlate with engineering properties.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 9: CODE PEEK -->
+    <div id="code-peek" class="ch-section">
+        <div class="section-badge red"><i class="fa-solid fa-code"></i> Code Peek</div>
+        <h2>Building a CNN in Code <span class="gradient-text">👀</span></h2>
+
+        <h3>Crack Detection CNN (PyTorch)</h3>
+        <div class="code-peek">
+            <div class="code-peek-header">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <span>crack_detector.py</span>
+            </div>
+            <pre><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+
+<span class="keyword">class</span> <span class="type">CrackDetector</span>(nn.Module):
+    <span class="keyword">def</span> <span class="function">__init__</span>(<span class="param">self</span>):
+        <span class="function">super</span>().__init__()
+
+        <span class="comment"># Layer 1: 3 input channels (RGB) → 32 feature maps</span>
+        <span class="comment"># 3×3 kernel slides across the image detecting edges</span>
+        self.conv1 = nn.Conv2d(<span class="number">3</span>, <span class="number">32</span>, kernel_size=<span class="number">3</span>, padding=<span class="number">1</span>)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(<span class="number">2</span>)  <span class="comment"># 224×224 → 112×112</span>
+
+        <span class="comment"># Layer 2: 32 → 64 feature maps (detects shapes)</span>
+        self.conv2 = nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, kernel_size=<span class="number">3</span>, padding=<span class="number">1</span>)
+        self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool2d(<span class="number">2</span>)  <span class="comment"># 112×112 → 56×56</span>
+
+        <span class="comment"># Layer 3: 64 → 128 feature maps (detects crack patterns)</span>
+        self.conv3 = nn.Conv2d(<span class="number">64</span>, <span class="number">128</span>, kernel_size=<span class="number">3</span>, padding=<span class="number">1</span>)
+        self.relu3 = nn.ReLU()
+        self.pool3 = nn.MaxPool2d(<span class="number">2</span>)  <span class="comment"># 56×56 → 28×28</span>
+
+        <span class="comment"># Flatten and classify</span>
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(<span class="number">128</span> * <span class="number">28</span> * <span class="number">28</span>, <span class="number">256</span>)
+        self.fc2 = nn.Linear(<span class="number">256</span>, <span class="number">2</span>)  <span class="comment"># 2 classes: crack / no crack</span>
+
+    <span class="keyword">def</span> <span class="function">forward</span>(<span class="param">self</span>, <span class="param">x</span>):
+        x = self.pool1(self.relu1(self.conv1(x)))  <span class="comment"># edges</span>
+        x = self.pool2(self.relu2(self.conv2(x)))  <span class="comment"># shapes</span>
+        x = self.pool3(self.relu3(self.conv3(x)))  <span class="comment"># patterns</span>
+        x = self.flatten(x)
+        x = nn.ReLU()(self.fc1(x))
+        <span class="keyword">return</span> self.fc2(x)  <span class="comment"># [crack_score, no_crack_score]</span></pre>
+            <div class="code-explanation">
+                <i class="fa-solid fa-info-circle"></i>
+                Notice the pattern: <strong>Conv → ReLU → Pool</strong> repeated 3 times, then 
+                <strong>Flatten → Dense → Output</strong>. This is the classic CNN architecture. 
+                Each conv layer doubles the number of filters (32→64→128) while pooling halves 
+                the spatial dimensions (224→112→56→28).
+            </div>
+        </div>
+
+        <h3>Using a Pre-trained Model (Transfer Learning)</h3>
+        <div class="code-peek">
+            <div class="code-peek-header">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <span>transfer_learning.py</span>
+            </div>
+            <pre><span class="keyword">import</span> torchvision.models <span class="keyword">as</span> models
+
+<span class="comment"># Load ResNet-50 pre-trained on ImageNet (14M images, 1000 classes)</span>
+<span class="type">model</span> = models.resnet50(pretrained=<span class="keyword">True</span>)
+
+<span class="comment"># Freeze all layers — don't retrain what's already learned</span>
+<span class="keyword">for</span> param <span class="keyword">in</span> model.parameters():
+    param.requires_grad = <span class="keyword">False</span>
+
+<span class="comment"># Replace only the final layer for our 4-class problem:</span>
+<span class="comment"># [no_damage, minor_crack, major_crack, spalling]</span>
+model.fc = nn.Linear(<span class="number">2048</span>, <span class="number">4</span>)
+
+<span class="comment"># Now train on just 500 labeled concrete images</span>
+<span class="comment"># The pre-trained layers already know edges, shapes, textures!</span>
+<span class="comment"># We only teach the final layer to map those features to our classes</span></pre>
+            <div class="code-explanation">
+                <i class="fa-solid fa-info-circle"></i>
+                <strong>Transfer Learning</strong> is incredibly powerful in civil engineering because 
+                we often have <em>small datasets</em>. Instead of training a CNN from scratch (needs 
+                millions of images), we reuse a model trained on ImageNet and only fine-tune the last 
+                layer. The early layers already know how to detect edges and textures — that knowledge 
+                transfers to crack detection, damage assessment, etc.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 10: FINAL QUIZ -->
+    <div id="quiz" class="ch-section">
+        <div class="section-badge warm"><i class="fa-solid fa-trophy"></i> Assessment</div>
+        <h2>Chapter Summary & Final Quiz <span class="gradient-text">🎯</span></h2>
+
+        <div class="cards-grid">
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Convolution</h4>
+                <p>Small kernels slide across images detecting local features (edges, textures). Shared weights enable translation invariance.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Hierarchical Features</h4>
+                <p>Early layers → edges. Middle layers → shapes. Deep layers → objects. Each layer builds on the previous.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>Key Architectures</h4>
+                <p>LeNet → AlexNet → VGG → ResNet. Skip connections solved deep training. Transfer learning enables small-dataset applications.</p>
+            </div>
+            <div class="info-card accent">
+                <div class="card-icon teal"><i class="fa-solid fa-check"></i></div>
+                <h4>CE Applications</h4>
+                <p>Crack detection, damage assessment, land cover classification, PPE compliance, pavement monitoring — all powered by CNNs.</p>
+            </div>
+        </div>
+
+        <div class="quiz-block" id="quiz-3">
+            <h4><i class="fa-solid fa-trophy"></i> Final Challenge</h4>
+            <div class="quiz-question">
+                You need to build a CNN to detect pavement cracks from camera images, but you only have 200 
+                labeled images. What's the best approach?
+            </div>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">A</span>
+                    <span>Train a 50-layer CNN from scratch on the 200 images</span>
+                </div>
+                <div class="quiz-option" data-correct="true" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">B</span>
+                    <span>Use transfer learning: load a pre-trained ResNet and fine-tune the last layer</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">C</span>
+                    <span>Use K-Means clustering on the pixel values</span>
+                </div>
+                <div class="quiz-option" onclick="checkQuiz(this, 'quiz-3')">
+                    <span class="opt-letter">D</span>
+                    <span>Apply a fixed Sobel edge detection filter without any ML</span>
+                </div>
+            </div>
+            <div class="quiz-feedback correct-feedback" id="quiz-3-correct">
+                <i class="fa-solid fa-check-circle"></i> <strong>Excellent!</strong> Transfer learning is the 
+                standard approach when you have limited data. A pre-trained ResNet already understands edges, 
+                textures, and shapes from millions of images. You just teach the final layer to map those 
+                features to "crack" vs "no crack."
+            </div>
+            <div class="quiz-feedback wrong-feedback" id="quiz-3-wrong">
+                <i class="fa-solid fa-times-circle"></i> Training from scratch with only 200 images would 
+                massively overfit. K-Means is unsupervised and pixel-level, not image-level. Sobel is a 
+                fixed filter, not learned. <strong>Transfer learning</strong> leverages pre-trained knowledge 
+                and works great with small datasets.
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAPTER NAV -->
+    <div class="chapter-nav-footer">
+        <a href="chapter3.html" class="ch-nav-link">
+            <span class="ch-nav-label"><i class="fa-solid fa-arrow-left"></i> Previous</span>
+            <span class="ch-nav-title">Ch 03 — Unsupervised Learning</span>
+            <span class="ch-nav-desc">The Mapper: GIS Spatial Analysis</span>
+        </a>
+        <a href="chapter5.html" class="ch-nav-link next">
+            <span class="ch-nav-label">Next Chapter <i class="fa-solid fa-arrow-right"></i></span>
+            <span class="ch-nav-title">Ch 05 — LLMs</span>
+            <span class="ch-nav-desc">The Scriptwriter: Language Understanding</span>
+        </a>
+    </div>
+
+    <footer class="footer-section">
+        <div class="footer-bottom">
+            <span>&copy; 2026 The Civil Engineer's Guide to AI — Chapter 04: CNNs</span>
+        </div>
+    </footer>
+
+    <a href="index.html" class="back-home" title="Back to Home"><i class="fa-solid fa-house"></i></a>
+    <script src="js/chapter4.js"></script>
+</body>
+</html>

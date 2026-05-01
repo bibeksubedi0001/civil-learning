@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.9 Visualizing CNN Internals | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore CNN interpretability techniques including feature map visualization, filter visualization, Grad-CAM, saliency maps, occlusion sensitivity, and t-SNE for civil engineering applications. Understand what a crack detector sees and build trust in AI for structural assessment.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+
+    <style>
+        /* ---- page-specific styles ---- */
+
+        /* Feature map explorer */
+        .fmap-canvas-wrapper{position:relative;width:100%;margin:24px 0}
+        .fmap-canvas{display:block;width:100%;min-height:500px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg);cursor:pointer;touch-action:none}
+        .fmap-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .fmap-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .fmap-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+        .fmap-controls button.active{background:var(--accent-primary);color:var(--text-inverse);border-color:var(--accent-primary)}
+        .fmap-controls label{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+        .fmap-readout{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .fmap-readout .metric-box{background:var(--bg-tertiary);border:1px solid var(--border-subtle);padding:10px 18px;border-radius:10px;text-align:center;min-width:110px}
+        .fmap-readout .metric-box .metric-label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:4px;font-weight:600}
+        .fmap-readout .metric-box .metric-value{display:block;font-size:1.35rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-primary)}
+
+        /* Grad-CAM simulator */
+        .gradcam-canvas-wrapper{position:relative;width:100%;margin:24px 0}
+        .gradcam-canvas{display:block;width:100%;min-height:500px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg);cursor:pointer;touch-action:none}
+        .gradcam-controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .gradcam-controls button{background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-primary);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+        .gradcam-controls button:hover{border-color:var(--accent-primary);color:var(--accent-primary)}
+        .gradcam-controls button.active{background:var(--accent-primary);color:var(--text-inverse);border-color:var(--accent-primary)}
+        .gradcam-controls label{font-size:.85rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+        .gradcam-controls input[type="range"]{width:120px;accent-color:var(--accent-primary)}
+        .gradcam-controls .range-value{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-primary);min-width:32px}
+        .gradcam-readout{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;align-items:center}
+        .gradcam-readout .metric-box{background:var(--bg-tertiary);border:1px solid var(--border-subtle);padding:10px 18px;border-radius:10px;text-align:center;min-width:110px}
+        .gradcam-readout .metric-box .metric-label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:4px;font-weight:600}
+        .gradcam-readout .metric-box .metric-value{display:block;font-size:1.35rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-primary)}
+
+        /* Technique comparison table */
+        .viz-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.88rem}
+        .viz-table th{text-align:left;padding:10px 14px;background:var(--bg-tertiary);color:var(--accent-primary);font-weight:600;border-bottom:2px solid var(--border-active)}
+        .viz-table td{padding:10px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-secondary)}
+        .viz-table tr:hover td{background:var(--table-row-hover)}
+        .viz-table .highlight-cell{color:var(--accent-primary);font-weight:600}
+
+        /* Technique badges */
+        .tech-badge{display:inline-block;padding:2px 10px;border-radius:50px;font-size:.72rem;font-weight:600;letter-spacing:.5px}
+        .tech-badge--fmap{background:rgba(0,212,170,.12);color:var(--accent-primary)}
+        .tech-badge--gradcam{background:rgba(239,68,68,.12);color:var(--accent-danger)}
+        .tech-badge--saliency{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+        .tech-badge--occlusion{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .tech-badge--tsne{background:rgba(34,197,94,.12);color:var(--accent-success)}
+        .tech-badge--filter{background:rgba(168,85,247,.12);color:#a855f7}
+
+        /* Formula block */
+        .formula-block{background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-radius:12px;padding:20px 24px;margin:18px 0;text-align:center}
+        .formula-block .formula{font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:var(--accent-primary);margin:10px 0}
+        .formula-block .formula-label{font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+
+        /* Step list */
+        .step-list{list-style:none;padding:0;margin:20px 0;counter-reset:step}
+        .step-list li{counter-increment:step;position:relative;padding:14px 14px 14px 58px;margin-bottom:12px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;font-size:.9rem;color:var(--text-secondary);line-height:1.7}
+        .step-list li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--gradient-main);color:var(--text-inverse);font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+
+        /* CE application cards */
+        .ce-app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:20px 0}
+        .ce-app-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;transition:transform .25s,border-color .25s}
+        .ce-app-card:hover{transform:translateY(-3px);border-color:var(--accent-primary)}
+        .ce-app-card .ce-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:12px}
+        .ce-app-card .ce-icon--crack{background:rgba(239,68,68,.12);color:var(--accent-danger)}
+        .ce-app-card .ce-icon--bridge{background:rgba(14,165,233,.12);color:var(--accent-secondary)}
+        .ce-app-card .ce-icon--trust{background:rgba(0,212,170,.12);color:var(--accent-primary)}
+        .ce-app-card .ce-icon--safety{background:rgba(245,158,11,.12);color:var(--accent-warm)}
+        .ce-app-card h4{margin:0 0 6px;font-size:.95rem;color:var(--text-primary)}
+        .ce-app-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.6;margin:0}
+
+        /* Code block */
+        .code-block{background:var(--bg-code);border:1px solid var(--border-subtle);border-radius:10px;padding:18px 22px;margin:16px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;color:var(--text-secondary)}
+        .code-block .kw{color:var(--accent-secondary)}
+        .code-block .fn{color:var(--accent-primary)}
+        .code-block .cm{color:var(--text-muted);font-style:italic}
+        .code-block .st{color:var(--accent-warm)}
+        .code-block .num{color:var(--accent-danger)}
+
+        /* t-SNE mini diagram */
+        .tsne-diagram{display:block;width:100%;min-height:280px;border-radius:12px;border:1px solid var(--border-subtle);background:var(--canvas-bg)}
+
+        /* Heatmap color legend */
+        .heatmap-legend{display:flex;align-items:center;gap:8px;margin:14px 0;font-size:.82rem;color:var(--text-secondary)}
+        .heatmap-legend .gradient-bar{width:180px;height:14px;border-radius:4px;background:linear-gradient(90deg,#000080,#0000ff,#00ffff,#00ff00,#ffff00,#ff7f00,#ff0000);border:1px solid var(--border-subtle)}
+
+        @keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.9
+            </div>
+            <h1 class="chapter-hero__title">Visualizing CNN Internals</h1>
+            <p class="chapter-hero__subtitle">
+                Opening the black box &mdash; understanding <em>what</em> a
+                convolutional network learns, <em>where</em> it focuses attention,
+                and <em>why</em> it makes certain predictions, using feature maps,
+                Grad-CAM, saliency maps, and dimensionality reduction to build
+                trust in AI-driven structural assessment.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 50 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY INTERPRETABILITY MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-interpretability-matters">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Why Interpretability Matters</h2>
+                        <p>
+                            A CNN can classify a concrete crack with 98% accuracy &mdash;
+                            but <em>how</em> do you know it is actually looking at the crack
+                            and not at some artifact in the background? In civil engineering,
+                            where decisions affect public safety, a black-box prediction is
+                            not enough. Engineers need to understand <strong>what the model
+                            sees</strong>, <strong>where it focuses</strong>, and
+                            <strong>whether its reasoning aligns with physical reality</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Throughout Chapters 4.1 through 4.8 you built a strong understanding
+                    of how CNNs process images: convolution layers extract features,
+                    pooling layers compress spatial information, and fully connected
+                    layers map those features to class predictions. But all of that
+                    learning happens inside millions of floating-point numbers whose
+                    individual values are nearly impossible for humans to interpret
+                    directly. This sub-chapter gives you the tools to <strong>peer inside
+                    the network</strong> and translate its internal representations into
+                    visual explanations you can understand and communicate to
+                    stakeholders.
+                </p>
+
+                <h3>The Stakes in Safety-Critical Applications</h3>
+
+                <p>
+                    Imagine deploying an AI system to inspect a highway bridge after an
+                    earthquake. The system reports that a column is &ldquo;undamaged.&rdquo;
+                    Would you trust that prediction if you cannot verify what the model
+                    examined? In safety-critical civil engineering domains, interpretability
+                    is not a luxury &mdash; it is a professional obligation. Regulatory
+                    bodies, insurance companies, and the public all demand explanations.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-hard-hat"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h4>CE Analogy: Structural Inspection Reports</h4>
+                        <p>
+                            When a structural engineer inspects a building, they do not
+                            simply stamp &ldquo;safe&rdquo; or &ldquo;unsafe.&rdquo; They
+                            provide a detailed report: which members were inspected, what
+                            defects were found, where cracks appeared, and how they assessed
+                            severity. CNN visualization is the AI equivalent of that
+                            inspection report &mdash; it documents <em>what</em> the model
+                            examined and <em>why</em> it reached its conclusion.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Four Pillars of CNN Interpretability</h3>
+
+                <p>
+                    Broadly, CNN visualization techniques answer four questions:
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>What features has the network learned?</strong> &mdash;
+                        Feature map visualization and filter visualization reveal the
+                        patterns (edges, textures, high-level shapes) each layer has
+                        learned to detect.
+                    </li>
+                    <li>
+                        <strong>Where is the network looking?</strong> &mdash;
+                        Grad-CAM and saliency maps produce spatial heatmaps that
+                        highlight the regions of the input image most responsible for
+                        the network&rsquo;s prediction.
+                    </li>
+                    <li>
+                        <strong>Which input regions are critical?</strong> &mdash;
+                        Occlusion sensitivity tests how the prediction changes when
+                        different parts of the image are hidden, revealing which areas
+                        the model depends on most.
+                    </li>
+                    <li>
+                        <strong>How does the model organize knowledge?</strong> &mdash;
+                        t-SNE and UMAP projections of deep feature vectors show how the
+                        model clusters different classes in its internal representation
+                        space, revealing whether it has truly learned meaningful
+                        distinctions.
+                    </li>
+                </ol>
+
+                <div class="ce-app-grid">
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--crack">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <h4>Crack Detector Validation</h4>
+                        <p>
+                            Verify that the model focuses on the crack pattern itself,
+                            not on camera artifacts, shadows, or dataset-specific
+                            backgrounds.
+                        </p>
+                    </div>
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--bridge">
+                            <i class="fa-solid fa-bridge"></i>
+                        </div>
+                        <h4>Bridge Inspection Trust</h4>
+                        <p>
+                            Show inspectors exactly which regions of a pier or deck
+                            triggered a damage classification, enabling informed
+                            follow-up inspections.
+                        </p>
+                    </div>
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--trust">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h4>Regulatory Compliance</h4>
+                        <p>
+                            Provide visual evidence that the AI system is making
+                            decisions based on structurally relevant features, meeting
+                            explainability requirements.
+                        </p>
+                    </div>
+                    <div class="ce-app-card">
+                        <div class="ce-icon ce-icon--safety">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h4>Failure Mode Detection</h4>
+                        <p>
+                            Identify when a model is relying on spurious correlations
+                            (e.g., watermarks, timestamps) rather than genuine
+                            structural features.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: FEATURE MAP VISUALIZATION
+             ========================================== -->
+        <section class="ch-section" id="feature-map-visualization">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Feature Map Visualization</h2>
+                        <p>
+                            The most direct way to understand a CNN is to look at the
+                            <strong>activations</strong> (feature maps) produced by each
+                            layer when a specific image is fed through the network. Each
+                            feature map is a 2D grid showing how strongly a particular
+                            learned pattern is detected at every spatial location.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Recall from Sub-chapter 4.3 that a convolutional layer with
+                    <code>K</code> filters produces <code>K</code> feature maps.
+                    A layer with 64 filters produces 64 feature maps, each one
+                    responding to a different pattern. In the early layers of a CNN,
+                    these feature maps typically correspond to simple patterns:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Layer 1 (edge detectors):</strong> horizontal edges,
+                        vertical edges, diagonal edges, colour gradients. These are
+                        universal &mdash; almost every CNN learns similar patterns.
+                    </li>
+                    <li>
+                        <strong>Layer 2&ndash;3 (texture detectors):</strong> corners,
+                        textures, repeated patterns, surface roughness. In a civil
+                        engineering context, these might respond to concrete texture,
+                        asphalt grain, or steel surface patterns.
+                    </li>
+                    <li>
+                        <strong>Deeper layers (semantic detectors):</strong> high-level
+                        structural features such as crack patterns, spalling regions,
+                        rebar exposure, bolt configurations, or specific damage
+                        morphologies.
+                    </li>
+                </ul>
+
+                <h3>Extracting Feature Maps in Practice</h3>
+
+                <p>
+                    In frameworks like PyTorch, extracting feature maps is straightforward.
+                    You register a <strong>forward hook</strong> on the layer of interest
+                    and capture its output tensor:
+                </p>
+
+                <div class="code-block">
+<span class="cm"># Extract feature maps from a specific layer</span>
+<span class="kw">import</span> torch
+<span class="kw">from</span> torchvision <span class="kw">import</span> models
+
+model = models.<span class="fn">resnet18</span>(pretrained=<span class="kw">True</span>)
+model.<span class="fn">eval</span>()
+
+activations = {}
+
+<span class="kw">def</span> <span class="fn">hook_fn</span>(module, input, output):
+    activations[<span class="st">'layer'</span>] = output.<span class="fn">detach</span>()
+
+<span class="cm"># Register hook on first conv block</span>
+model.layer1[<span class="num">0</span>].conv1.<span class="fn">register_forward_hook</span>(hook_fn)
+
+<span class="cm"># Forward pass with input image</span>
+output = <span class="fn">model</span>(image_tensor)
+
+<span class="cm"># activations['layer'] now contains the feature maps</span>
+<span class="cm"># Shape: [1, 64, 56, 56] for 64 feature maps of size 56x56</span>
+                </div>
+
+                <p>
+                    Each of the 64 feature maps is a 56 &times; 56 grid of values.
+                    Higher values (brighter pixels when visualized) indicate regions
+                    where the learned pattern was strongly detected. By examining
+                    multiple feature maps, you build a picture of <em>all</em> the
+                    patterns the network detects at that depth.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h4>CE Analogy: NDT Scanning Layers</h4>
+                        <p>
+                            Think of feature maps as layers of a non-destructive testing
+                            (NDT) scan. A ground-penetrating radar scan at different
+                            depths reveals different features: the surface layer shows
+                            surface cracks, the middle layer reveals rebar positions, and
+                            the deepest layer shows voids. Similarly, a CNN&rsquo;s layers
+                            reveal progressively deeper features of the image.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: FILTER VISUALIZATION
+             ========================================== -->
+        <section class="ch-section" id="filter-visualization">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-grip"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Filter Visualization</h2>
+                        <p>
+                            While feature maps show <em>where</em> a filter activates
+                            for a given input, <strong>filter visualization</strong>
+                            reveals <em>what pattern</em> each filter is looking for,
+                            independent of any specific input image. This technique
+                            generates a synthetic image that maximally activates a
+                            chosen filter.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The idea is elegantly simple: start with a random noise image and
+                    iteratively adjust its pixels via gradient ascent to maximize the
+                    activation of a target filter. After many iterations, the resulting
+                    image shows the &ldquo;ideal pattern&rdquo; that the filter is
+                    tuned to detect.
+                </p>
+
+                <h3>Gradient Ascent for Filter Visualization</h3>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Initialize</strong> a random image
+                        <code>x</code> (uniform noise or Gaussian noise).
+                    </li>
+                    <li>
+                        <strong>Forward pass:</strong> feed <code>x</code> through the
+                        network up to the target layer, extract the activation of the
+                        target filter <code>k</code>.
+                    </li>
+                    <li>
+                        <strong>Compute objective:</strong> define the loss as the mean
+                        activation of filter <code>k</code>:
+                    </li>
+                    <li>
+                        <strong>Backpropagate</strong> the gradient of the loss with
+                        respect to the input image pixels.
+                    </li>
+                    <li>
+                        <strong>Update the image:</strong> adjust the pixel values in
+                        the direction that <em>increases</em> the filter activation
+                        (gradient <em>ascent</em>, not descent).
+                    </li>
+                    <li>
+                        <strong>Repeat</strong> for 50&ndash;200 iterations, optionally
+                        applying regularization (Gaussian blur, L2 decay) to produce
+                        cleaner images.
+                    </li>
+                </ol>
+
+                <div class="formula-block">
+                    <div class="formula-label">Filter Activation Objective</div>
+                    <div class="formula">
+                        L(x) = (1 / H &middot; W) &middot; &sum;<sub>i,j</sub> A<sub>k</sub>(x)<sub>i,j</sub>
+                    </div>
+                    <div class="formula-label" style="margin-top:12px">Gradient Ascent Update</div>
+                    <div class="formula">
+                        x &larr; x + &eta; &middot; (&part;L / &part;x)
+                    </div>
+                </div>
+
+                <p>
+                    The results are striking. Early-layer filters produce simple edge
+                    and colour patterns, while deeper filters generate complex textures
+                    and object parts. For a crack detection CNN, deep filters might
+                    produce synthetic images that look like branching crack patterns or
+                    spalling textures &mdash; confirming that the network has learned
+                    structurally relevant features.
+                </p>
+
+                <h3>What to Look For</h3>
+
+                <p>
+                    When reviewing filter visualizations of a civil engineering model,
+                    watch for these patterns:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Structural features:</strong> Filters that produce
+                        line-like patterns (cracks), circular patterns (bolt heads,
+                        rivets), or textured surfaces (concrete, asphalt) confirm that
+                        the model has learned domain-relevant representations.
+                    </li>
+                    <li>
+                        <strong>Noise or blobs:</strong> If many deep filters produce
+                        random-looking noise, the model may be under-trained or the
+                        dataset may lack diversity.
+                    </li>
+                    <li>
+                        <strong>Duplicate patterns:</strong> Multiple filters learning
+                        nearly identical patterns suggest redundancy; the model could
+                        be pruned without losing accuracy.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: GRAD-CAM
+             ========================================== -->
+        <section class="ch-section" id="grad-cam">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Grad-CAM: Gradient-weighted Class Activation Mapping</h2>
+                        <p>
+                            <strong>Grad-CAM</strong> is arguably the most widely used CNN
+                            visualization technique. It produces a coarse heatmap
+                            highlighting the regions of the input image that were most
+                            important for the network&rsquo;s prediction of a specific
+                            class. Unlike feature maps, Grad-CAM is <em>class-specific</em>
+                            &mdash; it tells you where the network looked to predict
+                            &ldquo;crack&rdquo; versus &ldquo;no crack.&rdquo;
+                        </p>
+                    </div>
+                </div>
+
+                <h3>How Grad-CAM Works</h3>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Forward pass:</strong> Feed the image through the CNN and
+                        obtain the class score <code>y<sup>c</sup></code> for the target
+                        class <code>c</code> (before softmax).
+                    </li>
+                    <li>
+                        <strong>Backpropagate:</strong> Compute the gradient of the class
+                        score with respect to the feature maps
+                        <code>A<sup>k</sup></code> of the last convolutional layer.
+                    </li>
+                    <li>
+                        <strong>Global average pooling of gradients:</strong> For each
+                        feature map <code>k</code>, compute the importance weight
+                        <code>&alpha;<sub>k</sub><sup>c</sup></code> by averaging the
+                        gradients spatially.
+                    </li>
+                    <li>
+                        <strong>Weighted combination:</strong> Compute a weighted sum of
+                        the feature maps using the importance weights, then apply ReLU
+                        to keep only positive contributions.
+                    </li>
+                    <li>
+                        <strong>Upsample and overlay:</strong> Resize the resulting
+                        heatmap to the input image dimensions and overlay it as a
+                        colour-coded transparency.
+                    </li>
+                </ol>
+
+                <div class="formula-block">
+                    <div class="formula-label">Importance Weights</div>
+                    <div class="formula">
+                        &alpha;<sub>k</sub><sup>c</sup> = (1 / Z) &middot; &sum;<sub>i</sub> &sum;<sub>j</sub> (&part;y<sup>c</sup> / &part;A<sub>ij</sub><sup>k</sup>)
+                    </div>
+                    <div class="formula-label" style="margin-top:12px">Grad-CAM Heatmap</div>
+                    <div class="formula">
+                        L<sub>Grad-CAM</sub><sup>c</sup> = ReLU(&sum;<sub>k</sub> &alpha;<sub>k</sub><sup>c</sup> &middot; A<sup>k</sup>)
+                    </div>
+                </div>
+
+                <p>
+                    The <code>ReLU</code> in the final step ensures we only consider
+                    features that have a <em>positive</em> influence on the class of
+                    interest. Regions that activate negatively (i.e., evidence
+                    <em>against</em> the class) are zeroed out, producing a clean
+                    heatmap that highlights only the supportive evidence.
+                </p>
+
+                <h3>Grad-CAM in Civil Engineering Context</h3>
+
+                <p>
+                    For a crack detection model, a well-trained Grad-CAM heatmap should
+                    light up precisely along the crack path. If the heatmap highlights
+                    the background, image borders, or irrelevant objects (a ruler placed
+                    for scale, a timestamp overlay), this signals a <strong>dataset
+                    bias</strong> that must be corrected before deployment. Common
+                    failure modes include:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Border artifacts:</strong> The model learned to associate
+                        certain border patterns with specific classes because the
+                        training images were cropped inconsistently.
+                    </li>
+                    <li>
+                        <strong>Scale markers:</strong> If all &ldquo;damaged&rdquo;
+                        images contain a measurement ruler and all
+                        &ldquo;undamaged&rdquo; images do not, the model may learn to
+                        detect rulers rather than damage.
+                    </li>
+                    <li>
+                        <strong>Lighting correlations:</strong> Indoor versus outdoor
+                        lighting can become a spurious feature if the dataset is not
+                        balanced across lighting conditions.
+                    </li>
+                </ul>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h4>CE Analogy: Thermal Imaging</h4>
+                        <p>
+                            Grad-CAM is like thermal imaging for structural inspection.
+                            Just as an infrared camera reveals heat concentrations that
+                            indicate moisture intrusion or delamination, Grad-CAM reveals
+                            &ldquo;activation concentrations&rdquo; that show where the
+                            network detects evidence of the target condition. Both
+                            techniques overlay an invisible signal onto the visible
+                            structure, making the invisible visible.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: SALIENCY MAPS
+             ========================================== -->
+        <section class="ch-section" id="saliency-maps">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wave-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Saliency Maps</h2>
+                        <p>
+                            A <strong>saliency map</strong> computes the gradient of the
+                            output class score with respect to every input pixel. Pixels
+                            with large gradient magnitudes are pixels where a small change
+                            would significantly affect the prediction &mdash; making them
+                            &ldquo;salient&rdquo; to the network&rsquo;s decision.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Unlike Grad-CAM, which operates at the resolution of the last
+                    convolutional layer (e.g., 7 &times; 7), saliency maps have
+                    <strong>pixel-level resolution</strong> matching the input image.
+                    This makes them useful for fine-grained analysis, though they tend
+                    to be noisier than Grad-CAM heatmaps.
+                </p>
+
+                <div class="formula-block">
+                    <div class="formula-label">Saliency Computation</div>
+                    <div class="formula">
+                        S(x) = | &part;y<sup>c</sup> / &part;x |
+                    </div>
+                    <div class="formula-label" style="margin-top:10px">
+                        Where y<sup>c</sup> is the class score and x is the input image
+                    </div>
+                </div>
+
+                <p>
+                    For RGB images, the gradient has three channels (one per colour).
+                    The standard approach is to take the maximum absolute gradient
+                    across channels at each pixel, producing a single-channel saliency
+                    map. High-saliency pixels are typically found along object
+                    boundaries and at distinctive features.
+                </p>
+
+                <h3>Variants and Improvements</h3>
+
+                <ul>
+                    <li>
+                        <strong>SmoothGrad:</strong> Averages saliency maps over multiple
+                        copies of the input with small Gaussian noise added, reducing
+                        visual noise and producing cleaner maps.
+                    </li>
+                    <li>
+                        <strong>Integrated Gradients:</strong> Accumulates gradients along
+                        a path from a baseline (e.g., black image) to the actual input,
+                        providing a more theoretically grounded attribution.
+                    </li>
+                    <li>
+                        <strong>Guided Backpropagation:</strong> Modifies the backward
+                        pass to only propagate positive gradients through ReLU layers,
+                        producing sharper, more visually interpretable results.
+                    </li>
+                </ul>
+
+                <p>
+                    In a structural damage assessment context, saliency maps can reveal
+                    whether the model is sensitive to fine details like hairline cracks
+                    or surface texture changes. However, their pixel-level noise means
+                    they are best used in combination with Grad-CAM: use Grad-CAM for
+                    the &ldquo;where&rdquo; and saliency maps for the &ldquo;what
+                    exactly at that location.&rdquo;
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: OCCLUSION SENSITIVITY
+             ========================================== -->
+        <section class="ch-section" id="occlusion-sensitivity">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Occlusion Sensitivity</h2>
+                        <p>
+                            Occlusion sensitivity is the most intuitive visualization
+                            technique: systematically cover different parts of the image
+                            with a grey patch and observe how the prediction confidence
+                            changes. Regions where occlusion causes the biggest drop in
+                            confidence are the most important for the prediction.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The algorithm is straightforward:
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Define a patch</strong> (e.g., 32 &times; 32 pixels
+                        filled with the mean pixel value or grey).
+                    </li>
+                    <li>
+                        <strong>Slide the patch</strong> across the image in a grid
+                        pattern with a chosen stride.
+                    </li>
+                    <li>
+                        <strong>At each position</strong>, run the occluded image
+                        through the network and record the class probability.
+                    </li>
+                    <li>
+                        <strong>Create a heatmap</strong> where each location stores
+                        the probability drop compared to the un-occluded prediction.
+                    </li>
+                </ol>
+
+                <p>
+                    The result is a spatial map showing how &ldquo;sensitive&rdquo; the
+                    model is to each region. Dark spots (large probability drops) are
+                    critical regions. For a crack detection CNN, you would expect the
+                    crack region to appear as a strong sensitivity hotspot.
+                </p>
+
+                <h3>Trade-offs</h3>
+
+                <table class="viz-table">
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Advantage</th>
+                            <th>Disadvantage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="highlight-cell">Interpretability</td>
+                            <td>Extremely intuitive; no gradient computation needed</td>
+                            <td>Coarse resolution determined by patch size</td>
+                        </tr>
+                        <tr>
+                            <td class="highlight-cell">Computation</td>
+                            <td>Model-agnostic; works with any classifier</td>
+                            <td>Very slow; requires N forward passes per image</td>
+                        </tr>
+                        <tr>
+                            <td class="highlight-cell">Fidelity</td>
+                            <td>Directly measures prediction change</td>
+                            <td>Grey patch may introduce out-of-distribution artifacts</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    Despite its computational cost, occlusion sensitivity remains
+                    popular in civil engineering applications because it requires no
+                    access to model gradients &mdash; making it applicable to any model,
+                    including proprietary APIs where only predictions are available.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: t-SNE OF CNN FEATURES
+             ========================================== -->
+        <section class="ch-section" id="tsne-cnn-features">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>t-SNE of CNN Features</h2>
+                        <p>
+                            <strong>t-SNE</strong> (t-distributed Stochastic Neighbor
+                            Embedding) is a dimensionality reduction technique that
+                            projects high-dimensional feature vectors into 2D for
+                            visualization. Applied to CNN features, it reveals how the
+                            network organizes different classes in its internal
+                            representation space.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The procedure is straightforward: extract the feature vector from a
+                    late layer (typically the layer just before the classification head)
+                    for many images, then apply t-SNE to project these high-dimensional
+                    vectors (e.g., 512-D or 2048-D) into 2D. Each point in the resulting
+                    scatter plot represents one image, coloured by its class label.
+                </p>
+
+                <h3>What to Look For</h3>
+
+                <ul>
+                    <li>
+                        <strong>Well-separated clusters:</strong> If different classes
+                        form distinct, tight clusters, the network has learned good
+                        discriminative features. For a crack severity model, you would
+                        expect &ldquo;minor,&rdquo; &ldquo;moderate,&rdquo; and
+                        &ldquo;severe&rdquo; classes to form separate groups.
+                    </li>
+                    <li>
+                        <strong>Overlapping clusters:</strong> Classes that overlap
+                        extensively are difficult for the model to distinguish. This
+                        might indicate that the classes are visually similar or that the
+                        model needs more training data.
+                    </li>
+                    <li>
+                        <strong>Outliers:</strong> Points that sit far from their
+                        class&rsquo;s cluster may be mislabelled samples, unusual
+                        images, or edge cases that deserve attention.
+                    </li>
+                    <li>
+                        <strong>Semantic gradients:</strong> Sometimes clusters are
+                        arranged in a meaningful order &mdash; for instance, crack
+                        severity classes might form a gradient from minor to severe.
+                    </li>
+                </ul>
+
+                <div class="code-block">
+<span class="cm"># Extract features and apply t-SNE</span>
+<span class="kw">from</span> sklearn.manifold <span class="kw">import</span> TSNE
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># features: [N, 512] array of CNN feature vectors</span>
+<span class="cm"># labels: [N] array of class indices</span>
+
+tsne = <span class="fn">TSNE</span>(n_components=<span class="num">2</span>, perplexity=<span class="num">30</span>, random_state=<span class="num">42</span>)
+embeddings = tsne.<span class="fn">fit_transform</span>(features)
+
+<span class="cm"># Plot with matplotlib</span>
+<span class="kw">for</span> cls <span class="kw">in</span> <span class="fn">range</span>(num_classes):
+    mask = labels == cls
+    plt.<span class="fn">scatter</span>(embeddings[mask, <span class="num">0</span>], embeddings[mask, <span class="num">1</span>],
+               label=class_names[cls], alpha=<span class="num">0.6</span>, s=<span class="num">15</span>)
+                </div>
+
+                <h3>t-SNE Caveats</h3>
+
+                <p>
+                    While t-SNE produces visually compelling plots, several caveats
+                    apply:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>Distances between clusters</strong> are not meaningful.
+                        t-SNE preserves local structure (nearby points stay nearby) but
+                        does not preserve global distances. Two clusters far apart in
+                        the plot may not be far apart in the original feature space.
+                    </li>
+                    <li>
+                        <strong>Perplexity matters.</strong> The perplexity hyperparameter
+                        (typically 5&ndash;50) strongly affects the visualization.
+                        Always try multiple values before drawing conclusions.
+                    </li>
+                    <li>
+                        <strong>Non-deterministic.</strong> Different random seeds
+                        produce different layouts. Focus on whether clusters exist, not
+                        on their exact arrangement.
+                    </li>
+                </ul>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div class="analogy-block__content">
+                        <h4>CE Analogy: Material Classification</h4>
+                        <p>
+                            Think of t-SNE like plotting test results for construction
+                            materials. If you measure compressive strength and elastic
+                            modulus for hundreds of concrete, steel, and timber samples,
+                            you can plot them in 2D and see natural clusters. t-SNE does
+                            the same thing, but for 512-dimensional CNN feature vectors
+                            that encode visual properties of structural images.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: TECHNIQUE COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="technique-comparison">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-columns"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Technique Comparison</h2>
+                        <p>
+                            Each visualization technique has distinct strengths. The table
+                            below summarizes when to use each method in a civil engineering
+                            workflow.
+                        </p>
+                    </div>
+                </div>
+
+                <table class="viz-table">
+                    <thead>
+                        <tr>
+                            <th>Technique</th>
+                            <th>Resolution</th>
+                            <th>Class-specific?</th>
+                            <th>Speed</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="tech-badge tech-badge--fmap">Feature Maps</span></td>
+                            <td>Layer-dependent</td>
+                            <td>No</td>
+                            <td class="highlight-cell">Fast</td>
+                            <td>Understanding learned representations</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tech-badge tech-badge--filter">Filter Viz</span></td>
+                            <td>Input resolution</td>
+                            <td>No</td>
+                            <td>Moderate</td>
+                            <td>Inspecting individual filter patterns</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tech-badge tech-badge--gradcam">Grad-CAM</span></td>
+                            <td>Coarse (7x7 typical)</td>
+                            <td class="highlight-cell">Yes</td>
+                            <td class="highlight-cell">Fast</td>
+                            <td>Localizing class-relevant regions</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tech-badge tech-badge--saliency">Saliency</span></td>
+                            <td class="highlight-cell">Pixel-level</td>
+                            <td class="highlight-cell">Yes</td>
+                            <td class="highlight-cell">Fast</td>
+                            <td>Fine-grained pixel attribution</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tech-badge tech-badge--occlusion">Occlusion</span></td>
+                            <td>Patch-dependent</td>
+                            <td class="highlight-cell">Yes</td>
+                            <td>Slow</td>
+                            <td>Model-agnostic importance testing</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tech-badge tech-badge--tsne">t-SNE</span></td>
+                            <td>N/A (global view)</td>
+                            <td>N/A</td>
+                            <td>Moderate</td>
+                            <td>Dataset-level class separation</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    In practice, engineers use a combination of techniques. A typical
+                    validation workflow might look like:
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>t-SNE first:</strong> Verify that the model separates
+                        classes well in feature space.
+                    </li>
+                    <li>
+                        <strong>Grad-CAM on misclassifications:</strong> Examine where
+                        the model was looking when it made errors.
+                    </li>
+                    <li>
+                        <strong>Saliency maps on edge cases:</strong> Understand
+                        pixel-level sensitivity for borderline predictions.
+                    </li>
+                    <li>
+                        <strong>Feature maps for debugging:</strong> Check whether
+                        early-layer features are sensible or corrupted.
+                    </li>
+                </ol>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DEMO 1: FEATURE MAP EXPLORER
+             ========================================== -->
+        <section class="ch-section" id="demo-feature-map-explorer">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-microscope"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Demo: Feature Map Explorer</h2>
+                        <p>
+                            Explore how a simulated concrete crack image is decomposed by
+                            different layers of a CNN. Toggle between layers to see edge
+                            maps, texture maps, and high-level feature maps. Each feature
+                            map is a different &ldquo;lens&rdquo; through which the
+                            network examines the same input.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel">
+                    <div class="fmap-canvas-wrapper">
+                        <canvas id="fmap-canvas" class="fmap-canvas" aria-label="Feature map explorer showing a simulated concrete image and its feature maps at different CNN layers"></canvas>
+                    </div>
+
+                    <div class="fmap-controls">
+                        <button class="active" data-layer="input"><i class="fa-solid fa-image"></i> Input</button>
+                        <button data-layer="conv1"><i class="fa-solid fa-border-all"></i> Conv 1 (Edges)</button>
+                        <button data-layer="conv2"><i class="fa-solid fa-braille"></i> Conv 2 (Textures)</button>
+                        <button data-layer="conv3"><i class="fa-solid fa-shapes"></i> Conv 3 (High-Level)</button>
+                    </div>
+
+                    <div class="fmap-readout">
+                        <div class="metric-box">
+                            <span class="metric-label">Layer</span>
+                            <span class="metric-value" id="fmap-layer-name">Input</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Feature Maps</span>
+                            <span class="metric-value" id="fmap-count">3 (RGB)</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Spatial Size</span>
+                            <span class="metric-value" id="fmap-size">224x224</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Showing</span>
+                            <span class="metric-value" id="fmap-showing">All</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p>
+                    Notice how the early convolutional layer responds to edges and
+                    boundaries in the concrete surface. The second layer detects
+                    textures &mdash; the rough grain of concrete versus the smooth
+                    area around the crack. The deepest layer responds to higher-order
+                    patterns: the crack itself as a connected, elongated feature
+                    rather than just individual edges.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             DEMO 2: GRAD-CAM SIMULATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-grad-cam-simulator">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-temperature-high"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Demo: Grad-CAM Simulator</h2>
+                        <p>
+                            See how Grad-CAM produces a heatmap overlay on structural
+                            images. Select different target classes to see where the
+                            network focuses when looking for cracks versus intact
+                            surfaces. Adjust the heatmap opacity to compare with the
+                            original image.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-panel">
+                    <div class="gradcam-canvas-wrapper">
+                        <canvas id="gradcam-canvas" class="gradcam-canvas" aria-label="Grad-CAM simulator showing a heatmap overlay on a structural image"></canvas>
+                    </div>
+
+                    <div class="gradcam-controls">
+                        <button class="active" data-class="crack"><i class="fa-solid fa-bolt-lightning"></i> Class: Crack</button>
+                        <button data-class="spalling"><i class="fa-solid fa-circle-dot"></i> Class: Spalling</button>
+                        <button data-class="intact"><i class="fa-solid fa-check-circle"></i> Class: Intact</button>
+                        <label>
+                            <span>Opacity</span>
+                            <input type="range" id="gradcam-opacity" min="0" max="100" value="60">
+                            <span class="range-value" id="gradcam-opacity-value">60%</span>
+                        </label>
+                    </div>
+
+                    <div class="heatmap-legend">
+                        <span>Low importance</span>
+                        <div class="gradient-bar"></div>
+                        <span>High importance</span>
+                    </div>
+
+                    <div class="gradcam-readout">
+                        <div class="metric-box">
+                            <span class="metric-label">Target Class</span>
+                            <span class="metric-value" id="gradcam-class">Crack</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Confidence</span>
+                            <span class="metric-value" id="gradcam-conf">94.2%</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Focus Area</span>
+                            <span class="metric-value" id="gradcam-area">12.8%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p>
+                    When &ldquo;Crack&rdquo; is selected, observe how the heatmap
+                    concentrates along the diagonal crack line. Switch to
+                    &ldquo;Intact&rdquo; and notice how the attention shifts to the
+                    smooth, undamaged concrete regions. This class-specific behaviour
+                    is what makes Grad-CAM so powerful for validation &mdash; it
+                    confirms the model is making decisions based on the right features.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION: CE CASE STUDY PREVIEW
+             ========================================== -->
+        <section class="ch-section" id="ce-interpretability-workflow">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>CE Workflow: Validating a Crack Detector</h2>
+                        <p>
+                            Putting it all together, here is how a civil engineer might
+                            use visualization techniques to validate a crack detection
+                            model before deploying it for bridge inspection.
+                        </p>
+                    </div>
+                </div>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Feature map check:</strong> Verify that early layers
+                        detect edges and textures consistent with concrete surfaces,
+                        not camera noise or JPEG compression artifacts.
+                    </li>
+                    <li>
+                        <strong>Filter visualization:</strong> Confirm that at least
+                        some deep filters produce crack-like patterns when
+                        maximally activated, indicating the model has learned
+                        crack-specific representations.
+                    </li>
+                    <li>
+                        <strong>Grad-CAM validation:</strong> For a representative
+                        set of correctly classified images, verify that the heatmap
+                        aligns with the actual crack location. Flag any images where
+                        the heatmap highlights irrelevant regions.
+                    </li>
+                    <li>
+                        <strong>Grad-CAM on misclassifications:</strong> For false
+                        positives and false negatives, examine where the model was
+                        looking. This often reveals dataset quality issues
+                        (mislabelled samples, ambiguous images).
+                    </li>
+                    <li>
+                        <strong>t-SNE overview:</strong> Plot features for the entire
+                        validation set. Verify that &ldquo;cracked&rdquo; and
+                        &ldquo;intact&rdquo; clusters are well-separated. Investigate
+                        samples that fall in the overlap zone.
+                    </li>
+                    <li>
+                        <strong>Document findings:</strong> Include visualization
+                        results in the model validation report alongside standard
+                        metrics (accuracy, precision, recall). This transparency
+                        builds trust with stakeholders.
+                    </li>
+                </ol>
+
+                <p>
+                    This systematic approach transforms an opaque prediction model
+                    into a transparent tool whose reasoning can be inspected,
+                    challenged, and improved. In the next sub-chapter, we will apply
+                    these concepts to a complete crack detection case study.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             QUIZ SECTION
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Knowledge Check</h2>
+                        <p>
+                            Test your understanding of CNN visualization techniques
+                            and their application in civil engineering.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h4 class="quiz-block__question">
+                        <i class="fa-solid fa-question-circle"></i>
+                        Q1: What does Grad-CAM highlight in its heatmap?
+                    </h4>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            All regions that the convolutional filters activate on
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <i class="fa-solid fa-circle"></i>
+                            Regions most important for the network's prediction of a specific class
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            Pixels where the image has the highest intensity values
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            Regions where the image has the most edges
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h4 class="quiz-block__question">
+                        <i class="fa-solid fa-question-circle"></i>
+                        Q2: A crack detection model's Grad-CAM heatmap consistently highlights the image border rather than the crack. What does this indicate?
+                    </h4>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            The model is highly accurate and has learned robust features
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            Grad-CAM is not suitable for crack detection
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <i class="fa-solid fa-circle"></i>
+                            The model has learned a spurious correlation (dataset bias) and relies on border artifacts
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            The image resolution is too low for proper visualization
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h4 class="quiz-block__question">
+                        <i class="fa-solid fa-question-circle"></i>
+                        Q3: Which visualization technique has pixel-level resolution but tends to be noisy?
+                    </h4>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            Grad-CAM
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            t-SNE
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <i class="fa-solid fa-circle"></i>
+                            Saliency maps
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            Occlusion sensitivity
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h4 class="quiz-block__question">
+                        <i class="fa-solid fa-question-circle"></i>
+                        Q4: In a t-SNE plot of CNN features, overlapping clusters for "minor crack" and "moderate crack" suggest that:
+                    </h4>
+                    <div class="quiz-block__options">
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            The t-SNE perplexity is too high
+                        </button>
+                        <button class="quiz-option" data-correct="true">
+                            <i class="fa-solid fa-circle"></i>
+                            The model struggles to distinguish between these classes in feature space
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            The model has perfectly learned the boundary between classes
+                        </button>
+                        <button class="quiz-option" data-correct="false">
+                            <i class="fa-solid fa-circle"></i>
+                            The training data has too many samples of each class
+                        </button>
+                    </div>
+                    <div class="quiz-block__feedback"></div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub8.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">4.8 Semantic Segmentation</div>
+        </a>
+        <a href="sub10.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">4.10 CE Case Study: Crack Detection</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <script>
+    (() => {
+        'use strict';
+
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+        const dpr = window.devicePixelRatio || 1;
+
+        /* ================================================================
+           UTILITY: DPI-AWARE CANVAS INIT
+           ================================================================ */
+        function initCanvas(canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx, w, h };
+        }
+
+        function isDark() {
+            return document.documentElement.getAttribute('data-theme') !== 'light';
+        }
+
+        function themeColor(dark, light) {
+            return isDark() ? dark : light;
+        }
+
+        /* ================================================================
+           HERO CANVAS — Floating neural network nodes
+           ================================================================ */
+        (function heroCanvas() {
+            const canvas = $('#hero-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            const nodes = [];
+            const nodeCount = 60;
+            for (let i = 0; i < nodeCount; i++) {
+                nodes.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    r: Math.random() * 2 + 1,
+                    opacity: Math.random() * 0.5 + 0.2
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                const lineColor = isDark() ? 'rgba(0,212,170,' : 'rgba(14,165,233,';
+                const dotColor = isDark() ? '#00d4aa' : '#0ea5e9';
+
+                for (let i = 0; i < nodeCount; i++) {
+                    const a = nodes[i];
+                    a.x += a.vx; a.y += a.vy;
+                    if (a.x < 0 || a.x > w) a.vx *= -1;
+                    if (a.y < 0 || a.y > h) a.vy *= -1;
+
+                    for (let j = i + 1; j < nodeCount; j++) {
+                        const b = nodes[j];
+                        const dx = a.x - b.x, dy = a.y - b.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = lineColor + (0.15 * (1 - dist / 120)).toFixed(3) + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(a.x, a.y);
+                            ctx.lineTo(b.x, b.y);
+                            ctx.stroke();
+                        }
+                    }
+
+                    ctx.beginPath();
+                    ctx.fillStyle = dotColor;
+                    ctx.globalAlpha = a.opacity;
+                    ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+            });
+        })();
+
+        /* ================================================================
+           DEMO 1: FEATURE MAP EXPLORER
+           ================================================================ */
+        (function featureMapExplorer() {
+            const canvas = $('#fmap-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            let currentLayer = 'input';
+
+            /* Seed-based pseudo-random for reproducibility */
+            function seededRandom(seed) {
+                let s = seed;
+                return function() {
+                    s = (s * 16807 + 0) % 2147483647;
+                    return (s - 1) / 2147483646;
+                };
+            }
+
+            /* Generate a simulated concrete surface with a crack */
+            function generateConcreteImage(rng, cellW, cellH) {
+                const data = [];
+                /* Base concrete texture */
+                for (let y = 0; y < cellH; y++) {
+                    for (let x = 0; x < cellW; x++) {
+                        const base = 0.55 + rng() * 0.15;
+                        /* Crack line: a noisy diagonal */
+                        const crackCenterX = cellW * 0.3 + (y / cellH) * cellW * 0.4;
+                        const crackWidth = 3 + Math.sin(y * 0.1) * 2;
+                        const distToCrack = Math.abs(x - crackCenterX);
+                        const crackIntensity = distToCrack < crackWidth ? (1 - distToCrack / crackWidth) * 0.6 : 0;
+                        /* Add some spalling near the crack */
+                        const spallDist = Math.sqrt((x - cellW * 0.55) ** 2 + (y - cellH * 0.35) ** 2);
+                        const spallIntensity = spallDist < cellW * 0.08 ? (1 - spallDist / (cellW * 0.08)) * 0.3 : 0;
+                        const val = Math.max(0, Math.min(1, base - crackIntensity - spallIntensity + (rng() - 0.5) * 0.08));
+                        data.push(val);
+                    }
+                }
+                return data;
+            }
+
+            /* Generate edge feature maps */
+            function generateEdgeMap(concreteData, cellW, cellH, kernelType, rng) {
+                const result = [];
+                for (let y = 0; y < cellH; y++) {
+                    for (let x = 0; x < cellW; x++) {
+                        let val = 0;
+                        const idx = y * cellW + x;
+                        if (x > 0 && x < cellW - 1 && y > 0 && y < cellH - 1) {
+                            if (kernelType === 0) { /* Horizontal edges */
+                                val = Math.abs(concreteData[(y - 1) * cellW + x] - concreteData[(y + 1) * cellW + x]);
+                            } else if (kernelType === 1) { /* Vertical edges */
+                                val = Math.abs(concreteData[y * cellW + x - 1] - concreteData[y * cellW + x + 1]);
+                            } else if (kernelType === 2) { /* Diagonal edges */
+                                val = Math.abs(concreteData[(y - 1) * cellW + x - 1] - concreteData[(y + 1) * cellW + x + 1]);
+                            } else { /* Anti-diagonal */
+                                val = Math.abs(concreteData[(y - 1) * cellW + x + 1] - concreteData[(y + 1) * cellW + x - 1]);
+                            }
+                        }
+                        result.push(Math.min(1, val * 4 + rng() * 0.05));
+                    }
+                }
+                return result;
+            }
+
+            /* Generate texture maps (blurred + local variance) */
+            function generateTextureMap(concreteData, cellW, cellH, type, rng) {
+                const result = [];
+                const radius = 3;
+                for (let y = 0; y < cellH; y++) {
+                    for (let x = 0; x < cellW; x++) {
+                        let sum = 0, sumSq = 0, count = 0;
+                        for (let dy = -radius; dy <= radius; dy++) {
+                            for (let dx = -radius; dx <= radius; dx++) {
+                                const ny = y + dy, nx = x + dx;
+                                if (ny >= 0 && ny < cellH && nx >= 0 && nx < cellW) {
+                                    const v = concreteData[ny * cellW + nx];
+                                    sum += v; sumSq += v * v; count++;
+                                }
+                            }
+                        }
+                        const mean = sum / count;
+                        const variance = sumSq / count - mean * mean;
+                        if (type === 0) result.push(Math.min(1, variance * 30 + rng() * 0.05));
+                        else if (type === 1) result.push(mean);
+                        else result.push(Math.min(1, Math.abs(concreteData[y * cellW + x] - mean) * 5 + rng() * 0.03));
+                    }
+                }
+                return result;
+            }
+
+            /* Generate high-level feature maps */
+            function generateHighLevelMap(concreteData, cellW, cellH, type, rng) {
+                const result = [];
+                for (let y = 0; y < cellH; y++) {
+                    for (let x = 0; x < cellW; x++) {
+                        let val = 0;
+                        if (type === 0) {
+                            /* Crack detector: strong response along the crack */
+                            const crackCenterX = cellW * 0.3 + (y / cellH) * cellW * 0.4;
+                            const dist = Math.abs(x - crackCenterX);
+                            val = dist < 8 ? (1 - dist / 8) * 0.9 : 0;
+                        } else if (type === 1) {
+                            /* Spalling detector */
+                            const spallDist = Math.sqrt((x - cellW * 0.55) ** 2 + (y - cellH * 0.35) ** 2);
+                            val = spallDist < cellW * 0.12 ? (1 - spallDist / (cellW * 0.12)) * 0.85 : 0;
+                        } else {
+                            /* Surface roughness */
+                            const radius = 5;
+                            let localVar = 0, count = 0;
+                            for (let dy = -radius; dy <= radius; dy++) {
+                                for (let dx = -radius; dx <= radius; dx++) {
+                                    const ny = y + dy, nx = x + dx;
+                                    if (ny >= 0 && ny < cellH && nx >= 0 && nx < cellW) {
+                                        const diff = concreteData[ny * cellW + nx] - concreteData[y * cellW + x];
+                                        localVar += diff * diff; count++;
+                                    }
+                                }
+                            }
+                            val = Math.min(1, (localVar / count) * 40);
+                        }
+                        result.push(Math.min(1, val + rng() * 0.03));
+                    }
+                }
+                return result;
+            }
+
+            /* Render a single feature map cell */
+            function renderCell(ctx, data, cellW, cellH, ox, oy, renderW, renderH, colormap) {
+                const imgData = ctx.createImageData(cellW, cellH);
+                for (let i = 0; i < data.length; i++) {
+                    const v = data[i];
+                    const [r, g, b] = colormap(v);
+                    imgData.data[i * 4] = r;
+                    imgData.data[i * 4 + 1] = g;
+                    imgData.data[i * 4 + 2] = b;
+                    imgData.data[i * 4 + 3] = 255;
+                }
+                /* Draw to offscreen canvas then scale */
+                const off = document.createElement('canvas');
+                off.width = cellW; off.height = cellH;
+                off.getContext('2d').putImageData(imgData, 0, 0);
+                ctx.drawImage(off, ox, oy, renderW, renderH);
+            }
+
+            /* Colormaps */
+            function grayscaleMap(v) {
+                const c = Math.floor(v * 255);
+                return [c, c, c];
+            }
+
+            function viridisMap(v) {
+                const r = Math.floor(Math.min(255, Math.max(0, (v < 0.5 ? v * 2 * 60 : 60 + (v - 0.5) * 2 * 195))));
+                const g = Math.floor(Math.min(255, Math.max(0, (v < 0.5 ? 20 + v * 2 * 180 : 200 + (v - 0.5) * 2 * 55))));
+                const b = Math.floor(Math.min(255, Math.max(0, (v < 0.5 ? 80 + v * 2 * 100 : 180 - (v - 0.5) * 2 * 140))));
+                return [r, g, b];
+            }
+
+            function infernoMap(v) {
+                const r = Math.floor(Math.min(255, v * 300));
+                const g = Math.floor(Math.min(255, Math.max(0, (v - 0.3) * 350)));
+                const b = Math.floor(Math.min(255, Math.max(0, v < 0.5 ? v * 2 * 180 : 180 - (v - 0.5) * 2 * 180)));
+                return [r, g, b];
+            }
+
+            const rng = seededRandom(42);
+            const cellRes = 64;
+            const concreteData = generateConcreteImage(rng, cellRes, cellRes);
+
+            const layers = {
+                input: {
+                    label: 'Input', count: '3 (RGB)', size: '224x224',
+                    maps: [concreteData, concreteData, concreteData],
+                    titles: ['Red Channel', 'Green Channel', 'Blue Channel'],
+                    colormap: grayscaleMap
+                },
+                conv1: {
+                    label: 'Conv 1', count: '64', size: '112x112',
+                    maps: [0, 1, 2, 3].map(k => generateEdgeMap(concreteData, cellRes, cellRes, k, seededRandom(100 + k))),
+                    titles: ['Horizontal Edges', 'Vertical Edges', 'Diagonal Edges', 'Anti-diagonal'],
+                    colormap: viridisMap
+                },
+                conv2: {
+                    label: 'Conv 2', count: '128', size: '56x56',
+                    maps: [0, 1, 2].map(k => generateTextureMap(concreteData, cellRes, cellRes, k, seededRandom(200 + k))),
+                    titles: ['Local Variance', 'Smoothed', 'Deviation'],
+                    colormap: viridisMap
+                },
+                conv3: {
+                    label: 'Conv 3', count: '256', size: '28x28',
+                    maps: [0, 1, 2].map(k => generateHighLevelMap(concreteData, cellRes, cellRes, k, seededRandom(300 + k))),
+                    titles: ['Crack Response', 'Spalling Response', 'Surface Roughness'],
+                    colormap: infernoMap
+                }
+            };
+
+            function drawFeatureMaps() {
+                ctx.clearRect(0, 0, w, h);
+
+                /* Background */
+                ctx.fillStyle = themeColor('#0a0a0f', '#f8f8fc');
+                ctx.fillRect(0, 0, w, h);
+
+                const layer = layers[currentLayer];
+                const maps = layer.maps;
+                const titles = layer.titles;
+                const numMaps = maps.length;
+
+                /* Layout: grid of feature maps */
+                const padding = 20;
+                const titleHeight = 30;
+                const cols = Math.min(numMaps, 4);
+                const rows = Math.ceil(numMaps / cols);
+                const cellSpacing = 12;
+                const availW = w - padding * 2 - cellSpacing * (cols - 1);
+                const availH = h - padding * 2 - titleHeight * rows - cellSpacing * (rows - 1) - 40;
+                const cellSize = Math.min(availW / cols, availH / rows, 200);
+
+                const totalW = cols * cellSize + (cols - 1) * cellSpacing;
+                const totalH = rows * (cellSize + titleHeight) + (rows - 1) * cellSpacing;
+                const startX = (w - totalW) / 2;
+                const startY = (h - totalH) / 2 + 10;
+
+                /* Title */
+                ctx.fillStyle = themeColor('#00d4aa', '#0ea5e9');
+                ctx.font = '600 16px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(layer.label + ' Feature Maps', w / 2, startY - 12);
+
+                for (let i = 0; i < numMaps; i++) {
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    const ox = startX + col * (cellSize + cellSpacing);
+                    const oy = startY + row * (cellSize + titleHeight + cellSpacing);
+
+                    /* Border */
+                    ctx.strokeStyle = themeColor('rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(ox - 1, oy - 1, cellSize + 2, cellSize + 2);
+
+                    /* Render map */
+                    renderCell(ctx, maps[i], cellRes, cellRes, ox, oy, cellSize, cellSize, layer.colormap);
+
+                    /* Title below */
+                    ctx.fillStyle = themeColor('#9ca3af', '#6b7280');
+                    ctx.font = '500 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(titles[i], ox + cellSize / 2, oy + cellSize + 16);
+                }
+            }
+
+            drawFeatureMaps();
+
+            /* Layer button controls */
+            $$('.fmap-controls button[data-layer]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    $$('.fmap-controls button[data-layer]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentLayer = btn.dataset.layer;
+
+                    const layer = layers[currentLayer];
+                    $('#fmap-layer-name').textContent = layer.label;
+                    $('#fmap-count').textContent = layer.count;
+                    $('#fmap-size').textContent = layer.size;
+                    $('#fmap-showing').textContent = layer.maps.length + ' / ' + layer.count;
+
+                    drawFeatureMaps();
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                drawFeatureMaps();
+            });
+
+            const fmapObs = new MutationObserver(() => { drawFeatureMaps(); });
+            fmapObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           DEMO 2: GRAD-CAM SIMULATOR
+           ================================================================ */
+        (function gradCAMSimulator() {
+            const canvas = $('#gradcam-canvas');
+            if (!canvas) return;
+            let { ctx, w, h } = initCanvas(canvas);
+
+            let targetClass = 'crack';
+            let opacity = 0.6;
+
+            function seededRandom(seed) {
+                let s = seed;
+                return function() {
+                    s = (s * 16807 + 0) % 2147483647;
+                    return (s - 1) / 2147483646;
+                };
+            }
+
+            /* Generate base structure image (concrete wall with crack) */
+            function generateStructureImage(rng, imgW, imgH) {
+                const data = [];
+                for (let y = 0; y < imgH; y++) {
+                    for (let x = 0; x < imgW; x++) {
+                        /* Concrete base */
+                        const base = 0.52 + rng() * 0.12;
+                        /* Main crack: slightly curved diagonal */
+                        const crackX = imgW * 0.25 + (y / imgH) * imgW * 0.5 + Math.sin(y * 0.08) * 6;
+                        const crackDist = Math.abs(x - crackX);
+                        const crackW = 2 + Math.sin(y * 0.15) * 1.5;
+                        const crack = crackDist < crackW ? (1 - crackDist / crackW) * 0.55 : 0;
+                        /* Branch crack */
+                        const branchStart = imgH * 0.4;
+                        const branchEnd = imgH * 0.6;
+                        let branch = 0;
+                        if (y > branchStart && y < branchEnd) {
+                            const t = (y - branchStart) / (branchEnd - branchStart);
+                            const branchX = crackX + t * imgW * 0.2;
+                            const bDist = Math.abs(x - branchX);
+                            branch = bDist < 2 ? (1 - bDist / 2) * 0.4 * (1 - t) : 0;
+                        }
+                        /* Spalling region */
+                        const spallCx = imgW * 0.6, spallCy = imgH * 0.3;
+                        const spallR = Math.sqrt((x - spallCx) ** 2 + (y - spallCy) ** 2);
+                        const spall = spallR < imgW * 0.1 ? (1 - spallR / (imgW * 0.1)) * 0.25 : 0;
+                        /* Surface stains */
+                        const stain = Math.sin(x * 0.05) * Math.cos(y * 0.03) * 0.04;
+
+                        const val = Math.max(0, Math.min(1, base - crack - branch - spall + stain + (rng() - 0.5) * 0.06));
+                        data.push(val);
+                    }
+                }
+                return data;
+            }
+
+            /* Generate Grad-CAM heatmap for a given class */
+            function generateHeatmap(imgW, imgH, targetCls, rng) {
+                const heatmap = [];
+                for (let y = 0; y < imgH; y++) {
+                    for (let x = 0; x < imgW; x++) {
+                        let val = 0;
+                        if (targetCls === 'crack') {
+                            /* Focus on crack path */
+                            const crackX = imgW * 0.25 + (y / imgH) * imgW * 0.5 + Math.sin(y * 0.08) * 6;
+                            const dist = Math.abs(x - crackX);
+                            val = Math.exp(-dist * dist / (imgW * 3)) * 0.95;
+                            /* Branch contribution */
+                            const branchStart = imgH * 0.4;
+                            const branchEnd = imgH * 0.6;
+                            if (y > branchStart && y < branchEnd) {
+                                const t = (y - branchStart) / (branchEnd - branchStart);
+                                const branchX = crackX + t * imgW * 0.2;
+                                const bDist = Math.abs(x - branchX);
+                                val = Math.max(val, Math.exp(-bDist * bDist / (imgW * 2)) * 0.7 * (1 - t));
+                            }
+                        } else if (targetCls === 'spalling') {
+                            /* Focus on spalling region */
+                            const spallCx = imgW * 0.6, spallCy = imgH * 0.3;
+                            const spallR = Math.sqrt((x - spallCx) ** 2 + (y - spallCy) ** 2);
+                            val = Math.exp(-spallR * spallR / (imgW * imgW * 0.02)) * 0.9;
+                            /* Some attention to crack too */
+                            const crackX = imgW * 0.25 + (y / imgH) * imgW * 0.5;
+                            const dist = Math.abs(x - crackX);
+                            val = Math.max(val, Math.exp(-dist * dist / (imgW * 1.5)) * 0.25);
+                        } else {
+                            /* Intact: focus on smooth concrete regions */
+                            const crackX = imgW * 0.25 + (y / imgH) * imgW * 0.5;
+                            const distFromCrack = Math.abs(x - crackX);
+                            const spallCx = imgW * 0.6, spallCy = imgH * 0.3;
+                            const spallR = Math.sqrt((x - spallCx) ** 2 + (y - spallCy) ** 2);
+                            val = Math.min(distFromCrack / (imgW * 0.3), 1) * Math.min(spallR / (imgW * 0.2), 1) * 0.6;
+                        }
+                        heatmap.push(Math.min(1, val + rng() * 0.03));
+                    }
+                }
+                return heatmap;
+            }
+
+            /* Jet colormap for heatmap */
+            function jetColormap(v) {
+                let r, g, b;
+                if (v < 0.125) {
+                    r = 0; g = 0; b = 128 + v * 8 * 127;
+                } else if (v < 0.375) {
+                    r = 0; g = (v - 0.125) * 4 * 255; b = 255;
+                } else if (v < 0.625) {
+                    r = (v - 0.375) * 4 * 255; g = 255; b = 255 - (v - 0.375) * 4 * 255;
+                } else if (v < 0.875) {
+                    r = 255; g = 255 - (v - 0.625) * 4 * 255; b = 0;
+                } else {
+                    r = 255 - (v - 0.875) * 4 * 127; g = 0; b = 0;
+                }
+                return [Math.floor(Math.max(0, Math.min(255, r))),
+                        Math.floor(Math.max(0, Math.min(255, g))),
+                        Math.floor(Math.max(0, Math.min(255, b)))];
+            }
+
+            const imgRes = 80;
+            const baseRng = seededRandom(99);
+            const structureImg = generateStructureImage(baseRng, imgRes, imgRes);
+
+            const heatmaps = {
+                crack: generateHeatmap(imgRes, imgRes, 'crack', seededRandom(200)),
+                spalling: generateHeatmap(imgRes, imgRes, 'spalling', seededRandom(201)),
+                intact: generateHeatmap(imgRes, imgRes, 'intact', seededRandom(202))
+            };
+
+            const classInfo = {
+                crack: { conf: '94.2%', area: '12.8%' },
+                spalling: { conf: '78.6%', area: '8.3%' },
+                intact: { conf: '31.5%', area: '54.1%' }
+            };
+
+            function drawGradCAM() {
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = themeColor('#0a0a0f', '#f8f8fc');
+                ctx.fillRect(0, 0, w, h);
+
+                const heatmap = heatmaps[targetClass];
+                const padding = 30;
+                const imgSize = Math.min(w - padding * 2, h - padding * 2 - 60, 400);
+                const gap = 20;
+
+                /* Two panels: original + overlay */
+                const panelW = (w - padding * 3 - gap) / 2;
+                const renderSize = Math.min(panelW, imgSize);
+
+                const leftX = (w / 2 - gap / 2) - renderSize;
+                const rightX = w / 2 + gap / 2;
+                const topY = (h - renderSize) / 2;
+
+                /* Labels */
+                ctx.fillStyle = themeColor('#00d4aa', '#0ea5e9');
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Original Image', leftX + renderSize / 2, topY - 10);
+                ctx.fillText('Grad-CAM Overlay (' + targetClass.charAt(0).toUpperCase() + targetClass.slice(1) + ')', rightX + renderSize / 2, topY - 10);
+
+                /* Original image */
+                const origOff = document.createElement('canvas');
+                origOff.width = imgRes; origOff.height = imgRes;
+                const origCtx = origOff.getContext('2d');
+                const origImg = origCtx.createImageData(imgRes, imgRes);
+                for (let i = 0; i < structureImg.length; i++) {
+                    const v = Math.floor(structureImg[i] * 255);
+                    origImg.data[i * 4] = v;
+                    origImg.data[i * 4 + 1] = v;
+                    origImg.data[i * 4 + 2] = v;
+                    origImg.data[i * 4 + 3] = 255;
+                }
+                origCtx.putImageData(origImg, 0, 0);
+
+                /* Draw borders */
+                ctx.strokeStyle = themeColor('rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+                ctx.lineWidth = 1;
+                ctx.strokeRect(leftX - 1, topY - 1, renderSize + 2, renderSize + 2);
+                ctx.strokeRect(rightX - 1, topY - 1, renderSize + 2, renderSize + 2);
+
+                ctx.drawImage(origOff, leftX, topY, renderSize, renderSize);
+
+                /* Overlay image */
+                const overlayOff = document.createElement('canvas');
+                overlayOff.width = imgRes; overlayOff.height = imgRes;
+                const overlayCtx = overlayOff.getContext('2d');
+                const overlayImg = overlayCtx.createImageData(imgRes, imgRes);
+                for (let i = 0; i < structureImg.length; i++) {
+                    const base = Math.floor(structureImg[i] * 255);
+                    const [hr, hg, hb] = jetColormap(heatmap[i]);
+                    const a = opacity * heatmap[i];
+                    overlayImg.data[i * 4] = Math.floor(base * (1 - a) + hr * a);
+                    overlayImg.data[i * 4 + 1] = Math.floor(base * (1 - a) + hg * a);
+                    overlayImg.data[i * 4 + 2] = Math.floor(base * (1 - a) + hb * a);
+                    overlayImg.data[i * 4 + 3] = 255;
+                }
+                overlayCtx.putImageData(overlayImg, 0, 0);
+                ctx.drawImage(overlayOff, rightX, topY, renderSize, renderSize);
+            }
+
+            drawGradCAM();
+
+            /* Class buttons */
+            $$('.gradcam-controls button[data-class]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    $$('.gradcam-controls button[data-class]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    targetClass = btn.dataset.class;
+
+                    const info = classInfo[targetClass];
+                    $('#gradcam-class').textContent = targetClass.charAt(0).toUpperCase() + targetClass.slice(1);
+                    $('#gradcam-conf').textContent = info.conf;
+                    $('#gradcam-area').textContent = info.area;
+
+                    drawGradCAM();
+                });
+            });
+
+            /* Opacity slider */
+            const opacitySlider = $('#gradcam-opacity');
+            const opacityValue = $('#gradcam-opacity-value');
+            if (opacitySlider) opacitySlider.addEventListener('input', () => {
+                opacity = parseInt(opacitySlider.value, 10) / 100;
+                opacityValue.textContent = opacitySlider.value + '%';
+                drawGradCAM();
+            });
+
+            window.addEventListener('resize', () => {
+                ({ ctx, w, h } = initCanvas(canvas));
+                drawGradCAM();
+            });
+
+            const gcObs = new MutationObserver(() => { drawGradCAM(); });
+            gcObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ================================================================
+           QUIZ LOGIC
+           ================================================================ */
+        (function quiz() {
+            $$('.quiz-block').forEach(block => {
+                const options = block.querySelectorAll('.quiz-option');
+                const feedback = block.querySelector('.quiz-block__feedback');
+                let answered = false;
+
+                options.forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        if (answered) return;
+                        answered = true;
+                        const correct = opt.getAttribute('data-correct') === 'true';
+                        opt.classList.add(correct ? 'correct' : 'wrong');
+
+                        if (!correct) {
+                            options.forEach(o => {
+                                if (o.getAttribute('data-correct') === 'true') o.classList.add('correct');
+                            });
+                            feedback.innerHTML = '<i class="fa-solid fa-xmark"></i> Incorrect. The correct answer is highlighted above.';
+                            feedback.className = 'quiz-block__feedback show wrong';
+                        } else {
+                            feedback.innerHTML = '<i class="fa-solid fa-check"></i> Correct!';
+                            feedback.className = 'quiz-block__feedback show correct';
+                        }
+
+                        options.forEach(o => { o.style.pointerEvents = 'none'; });
+                    });
+                });
+            });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

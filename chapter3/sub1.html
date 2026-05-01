@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.1 Unsupervised Learning Fundamentals | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore unsupervised learning fundamentals through a civil engineering lens. Understand clustering, dimensionality reduction, anomaly detection, and how machines discover hidden patterns without labelled data.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.1
+            </div>
+            <h1 class="chapter-hero__title">Unsupervised Learning Fundamentals</h1>
+            <p class="chapter-hero__subtitle">
+                Learning without labels &mdash; discover how machines find hidden structure in
+                raw data, much like an engineer surveying an uncharted construction site and
+                identifying natural groupings, anomalies, and patterns without prior knowledge.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>What If Nobody Told You What You Were Looking At?</h2>
+                        <p>
+                            Imagine you are handed thousands of soil samples from a construction site
+                            &mdash; but with no lab test results, no borehole logs, and no geological
+                            survey. All you have are raw measurements: grain size distributions,
+                            moisture content, colour observations, and density readings. No one has
+                            labelled these samples as "clay," "silt," or "sand." Nobody has classified
+                            them at all.
+                        </p>
+                        <p>
+                            Could you still make sense of the data? Could you discover natural groupings,
+                            spot the outliers, and find meaningful structure? That is exactly what
+                            <strong>unsupervised learning</strong> does. It takes unlabelled data and
+                            finds patterns, clusters, and relationships that humans might miss &mdash;
+                            all without a single example of what the "correct answer" looks like.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In the previous chapter, we studied <strong>supervised learning</strong>, where
+                    every data point came neatly paired with a label &mdash; a known correct answer
+                    that guided the algorithm's learning process. Supervised learning is powerful,
+                    but it has a major prerequisite: you need labelled data. In civil engineering
+                    practice, labelled data is often expensive, time-consuming, or simply unavailable.
+                </p>
+                <p>
+                    Unsupervised learning removes that requirement entirely. It operates on raw,
+                    unlabelled data, looking for hidden structure and relationships. This sub-chapter
+                    introduces the fundamentals: what unsupervised learning is, why it matters, what
+                    types exist, and how it maps to the engineering workflows you already know.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have completed Chapter 2 and understand the
+                        fundamentals of supervised learning. We will frequently contrast supervised
+                        and unsupervised approaches, so familiarity with features, labels, training,
+                        and evaluation is essential. No programming knowledge is required yet.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHAT IS UNSUPERVISED LEARNING?
+             ========================================== -->
+        <section class="ch-section" id="what-is-unsupervised">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-eye-slash"></i>
+                    What is Unsupervised Learning?
+                </h2>
+
+                <p>
+                    Unsupervised learning is a branch of machine learning where the algorithm
+                    receives <strong>input data without any labels or target outputs</strong>. There
+                    is no "teacher" providing correct answers. Instead, the algorithm must discover
+                    patterns, structures, and relationships in the data entirely on its own.
+                </p>
+                <p>
+                    Where supervised learning asks, "Given these inputs, what is the correct output?"
+                    unsupervised learning asks a fundamentally different question: "What interesting
+                    structure exists in this data?" It is exploration rather than prediction &mdash;
+                    discovery rather than mapping.
+                </p>
+                <p>
+                    This distinction is crucial. In supervised learning, success is measured by how
+                    closely predictions match known labels. In unsupervised learning, there are no
+                    labels to compare against. Success is measured by the quality, coherence, and
+                    usefulness of the discovered structure &mdash; a far more subjective and nuanced
+                    evaluation.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Core Idea: Data Without Answers</h3>
+                        <p>
+                            In supervised learning, your dataset looks like this: each row has input
+                            features <strong>and</strong> a known output label. The model learns to
+                            connect the two. In unsupervised learning, there is no output column at
+                            all. The dataset is a collection of feature vectors with no accompanying
+                            answers.
+                        </p>
+                        <p>
+                            The model's job is not to predict &mdash; it is to <em>organise</em>,
+                            <em>compress</em>, <em>segment</em>, or <em>detect anomalies</em> within
+                            the data. It transforms raw, unstructured information into something
+                            structured and interpretable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Unsupervised learning is like exploring an unknown construction
+                            site without a map or geological survey.</strong> You arrive at a vast
+                            greenfield site. No borehole logs exist. No prior investigations have
+                            been conducted. All you can do is walk the site, take measurements,
+                            collect samples, and observe.
+                        </p>
+                        <p>
+                            Over time, you begin to notice patterns. Certain areas have similar soil
+                            colour and texture. Drainage flows toward a low-lying zone. Some spots
+                            feel firmer underfoot than others. Without anyone telling you what to
+                            look for, you naturally begin to <strong>cluster</strong> the site into
+                            zones, <strong>detect anomalies</strong> like unexpected soft ground,
+                            and <strong>reduce the complexity</strong> of your observations into a
+                            simplified site model.
+                        </p>
+                        <p>
+                            That is unsupervised learning in action. The data is the terrain. The
+                            algorithm is the explorer. The patterns are the discoveries.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: SUPERVISED VS UNSUPERVISED
+             ========================================== -->
+        <section class="ch-section" id="supervised-vs-unsupervised">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Supervised vs Unsupervised: A Side-by-Side Comparison
+                </h2>
+
+                <p>
+                    Understanding unsupervised learning becomes much clearer when we contrast it
+                    directly with its supervised counterpart. The two paradigms differ in their
+                    inputs, objectives, evaluation methods, and the types of problems they solve.
+                    The table below summarises the key differences.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Head-to-Head Comparison</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:0.95rem;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-active);">
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-primary); font-weight:700;">Aspect</th>
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-secondary); font-weight:700;">Supervised Learning</th>
+                                        <th style="text-align:left; padding:12px 16px; color:var(--accent-warm); font-weight:700;">Unsupervised Learning</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">Input Data</td>
+                                        <td style="padding:10px 16px;">Features + Labels (paired)</td>
+                                        <td style="padding:10px 16px;">Features only (no labels)</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                        <td style="padding:10px 16px; font-weight:600;">Goal</td>
+                                        <td style="padding:10px 16px;">Learn input-to-output mapping</td>
+                                        <td style="padding:10px 16px;">Discover hidden structure</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">Feedback</td>
+                                        <td style="padding:10px 16px;">Explicit &mdash; labels guide learning</td>
+                                        <td style="padding:10px 16px;">None &mdash; algorithm explores alone</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                        <td style="padding:10px 16px; font-weight:600;">Evaluation</td>
+                                        <td style="padding:10px 16px;">Accuracy, RMSE, F1-score</td>
+                                        <td style="padding:10px 16px;">Silhouette score, cohesion, visual inspection</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                                        <td style="padding:10px 16px; font-weight:600;">CE Example</td>
+                                        <td style="padding:10px 16px;">Predict concrete strength from mix</td>
+                                        <td style="padding:10px 16px;">Group soil samples by properties</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-subtle); background:var(--table-row-alt);">
+                                        <td style="padding:10px 16px; font-weight:600;">Data Cost</td>
+                                        <td style="padding:10px 16px;">Expensive (labelling required)</td>
+                                        <td style="padding:10px 16px;">Cheaper (raw data suffices)</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:10px 16px; font-weight:600;">Mindset</td>
+                                        <td style="padding:10px 16px;">Prediction &mdash; "What will happen?"</td>
+                                        <td style="padding:10px 16px;">Discovery &mdash; "What is here?"</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <p>
+                    One of the most important differences is the <strong>mindset shift</strong>
+                    required. Supervised learning is fundamentally about prediction: you train a
+                    model on historical data and use it to forecast outcomes for new data.
+                    Unsupervised learning is fundamentally about discovery: you present the model
+                    with data you do not fully understand and ask it to reveal structure you could
+                    not see on your own.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-compass"></i>
+                        <span>The Two Mindsets</span>
+                    </div>
+                    <p>
+                        <strong>The Prediction Mindset (Supervised):</strong> "I have historical
+                        records of concrete mixes and their tested strengths. Can a model predict
+                        the strength of a new mix before I test it?"
+                    </p>
+                    <p>
+                        <strong>The Discovery Mindset (Unsupervised):</strong> "I have sensor data
+                        from hundreds of bridge monitoring points. I do not know what is normal
+                        behaviour and what is not. Can a model group similar patterns and flag
+                        anything unusual?"
+                    </p>
+                    <p>
+                        Both mindsets are essential for a modern engineer. The key is knowing when
+                        each applies.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: TYPES OF UNSUPERVISED LEARNING
+             ========================================== -->
+        <section class="ch-section" id="types-overview">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Types of Unsupervised Learning
+                </h2>
+
+                <p>
+                    Unsupervised learning is not a single technique but an umbrella term covering
+                    several families of algorithms, each designed to discover a different kind of
+                    structure. The four major types are: <strong>clustering</strong>,
+                    <strong>dimensionality reduction</strong>, <strong>association rule learning</strong>,
+                    and <strong>anomaly detection</strong>. Understanding these categories is the
+                    first step toward choosing the right tool for your engineering problem.
+                </p>
+
+                <!-- Type 1: Clustering -->
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Clustering</h3>
+                        <p>
+                            Clustering algorithms group data points that are similar to each other
+                            while separating those that are different. The algorithm decides what
+                            "similar" means by measuring distances or densities in the feature space.
+                            No one tells the algorithm how many groups there should be or what they
+                            represent &mdash; it discovers groupings organically.
+                        </p>
+                        <p>
+                            <i class="fa-solid fa-hard-hat" style="color:var(--accent-primary);"></i>
+                            <strong>CE Application:</strong> Grouping soil samples from a large site
+                            investigation into natural zones based on measured properties (moisture
+                            content, plasticity index, SPT N-values) without pre-defined soil
+                            classifications. The clusters often correspond to geological strata.
+                        </p>
+                        <p>
+                            <strong>Key Algorithms:</strong> K-Means, DBSCAN, Hierarchical Clustering,
+                            Gaussian Mixture Models.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Type 2: Dimensionality Reduction -->
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Dimensionality Reduction</h3>
+                        <p>
+                            Real-world engineering datasets often have dozens or hundreds of measured
+                            properties. Dimensionality reduction compresses this information into
+                            fewer variables while preserving the most important patterns. It makes
+                            data easier to visualise, faster to process, and less prone to
+                            overfitting when used as input to other models.
+                        </p>
+                        <p>
+                            <i class="fa-solid fa-hard-hat" style="color:var(--accent-primary);"></i>
+                            <strong>CE Application:</strong> Reducing a set of 50 structural health
+                            monitoring sensor readings down to 3-5 principal components that capture
+                            95% of the variation, enabling real-time dashboard visualisation without
+                            losing critical information.
+                        </p>
+                        <p>
+                            <strong>Key Algorithms:</strong> PCA (Principal Component Analysis),
+                            t-SNE, UMAP, Autoencoders.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Type 3: Association Rule Learning -->
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Association Rule Learning</h3>
+                        <p>
+                            Association algorithms discover interesting relationships and co-occurrences
+                            between variables. They answer questions like: "Which conditions tend to
+                            appear together?" and "If condition A is present, how likely is condition
+                            B?" This is the classic "market basket analysis" technique, but it has
+                            engineering applications too.
+                        </p>
+                        <p>
+                            <i class="fa-solid fa-hard-hat" style="color:var(--accent-primary);"></i>
+                            <strong>CE Application:</strong> Analysing construction defect reports to
+                            discover that certain defect types frequently co-occur &mdash; for example,
+                            that rebar corrosion, concrete spalling, and inadequate cover depth tend
+                            to appear together, suggesting a common root cause in formwork placement.
+                        </p>
+                        <p>
+                            <strong>Key Algorithms:</strong> Apriori, FP-Growth, Eclat.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Type 4: Anomaly Detection -->
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Anomaly Detection</h3>
+                        <p>
+                            Anomaly detection identifies data points that do not conform to expected
+                            patterns. Rather than classifying data into pre-defined categories, it
+                            learns what "normal" looks like and flags anything that deviates
+                            significantly. This is invaluable in safety-critical engineering
+                            applications where unexpected behaviour must be caught early.
+                        </p>
+                        <p>
+                            <i class="fa-solid fa-hard-hat" style="color:var(--accent-primary);"></i>
+                            <strong>CE Application:</strong> Monitoring vibration patterns on a bridge
+                            and automatically flagging readings that deviate from the learned baseline
+                            &mdash; potentially indicating structural damage, bearing deterioration,
+                            or foundation settlement before visual inspection reveals it.
+                        </p>
+                        <p>
+                            <strong>Key Algorithms:</strong> Isolation Forest, One-Class SVM,
+                            DBSCAN (as outlier detector), Autoencoders.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: CIVIL ENGINEERING ANALOGY - DEEP DIVE
+             ========================================== -->
+        <section class="ch-section" id="ce-analogies">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    Civil Engineering Analogies: Making It Concrete
+                </h2>
+
+                <p>
+                    Unsupervised learning can feel abstract. To build genuine intuition, let us
+                    ground each concept in civil engineering scenarios you will recognise from
+                    practice. These are not just decorative metaphors &mdash; they map directly
+                    to how unsupervised learning is actually used in the construction and
+                    infrastructure industry today.
+                </p>
+
+                <!-- Analogy 1: Unknown Construction Site -->
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>Analogy: Exploring an Unknown Construction Site</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The Scenario:</strong> You are the first engineer on a large
+                            greenfield site. No prior investigations exist. You take 200 soil samples
+                            across the site, measuring grain size, moisture content, plasticity,
+                            density, colour, and organic content for each sample.
+                        </p>
+                        <p>
+                            <strong>The Supervised Approach (Not Possible Here):</strong> To use
+                            supervised learning, you would need someone to have already classified
+                            each sample &mdash; "this is marine clay," "this is alluvial sand,"
+                            "this is residual laterite." But no one has done that work. There are
+                            no labels.
+                        </p>
+                        <p>
+                            <strong>The Unsupervised Approach:</strong> You feed all 200 samples
+                            (with their measured properties) into a clustering algorithm. It groups
+                            the samples into, say, four distinct clusters based on property similarity.
+                            When you plot the cluster assignments on a site plan, you discover that
+                            the clusters correspond to geological zones &mdash; a clay pocket in the
+                            north-west, a sand lens running through the centre, and a mixed transition
+                            zone along the eastern boundary.
+                        </p>
+                        <p>
+                            The algorithm did not know geology. It did not know what clay or sand
+                            is. It simply found that certain samples were more alike than others
+                            and grouped them accordingly. You, the engineer, provide the domain
+                            knowledge to <em>interpret</em> the clusters.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Analogy 2: Classifying Soil Without Lab Tests -->
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-flask-vial"></i>
+                        <span>Analogy: Classifying Soil Without Lab Tests</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The Scenario:</strong> During an emergency site assessment after
+                            a landslide, you collect dozens of disturbed samples. The lab is
+                            overwhelmed and results will take weeks. But you have field observations:
+                            hand-feel texture, dilatancy, dry strength, and visual appearance.
+                        </p>
+                        <p>
+                            <strong>The Unsupervised Approach:</strong> By encoding your field
+                            observations numerically and running a clustering algorithm, you can
+                            quickly group samples into behaviourally similar categories. These are
+                            not official USCS soil classifications &mdash; there are no lab-confirmed
+                            labels &mdash; but they give you a working zonation model for the
+                            emergency response, which you can refine as lab results become available.
+                        </p>
+                        <p>
+                            This is the power of unsupervised learning: it provides
+                            <strong>actionable groupings when ground truth is unavailable</strong>.
+                            It does not replace the lab; it accelerates decision-making until the
+                            lab results arrive.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Important Caveat</span>
+                    </div>
+                    <p>
+                        Unsupervised learning finds patterns &mdash; it does not guarantee those
+                        patterns are meaningful. A clustering algorithm will always produce clusters,
+                        even if the data has no real structure. The engineer's domain expertise is
+                        essential for validating whether discovered patterns correspond to real
+                        physical phenomena or are merely statistical artefacts.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: DISCOVERY VS PREDICTION MINDSET
+             ========================================== -->
+        <section class="ch-section" id="discovery-mindset">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-binoculars"></i>
+                    The Discovery Mindset vs the Prediction Mindset
+                </h2>
+
+                <p>
+                    Perhaps the most important shift when moving from supervised to unsupervised
+                    learning is not technical &mdash; it is philosophical. The two paradigms ask
+                    fundamentally different questions of the data, and they demand fundamentally
+                    different ways of thinking from the engineer.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Prediction Mindset (Supervised)</h3>
+                        <p>
+                            In supervised learning, you start with a clear question: "Can I predict
+                            Y from X?" You define the target variable before training begins, and
+                            the entire workflow &mdash; data collection, feature engineering, model
+                            selection, evaluation &mdash; revolves around improving that prediction.
+                        </p>
+                        <ul>
+                            <li>The question is specific and pre-defined</li>
+                            <li>Success is objective: accuracy, precision, recall, RMSE</li>
+                            <li>The engineer knows what they are looking for before they start</li>
+                            <li>The model is a tool for answering a known question</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Discovery Mindset (Unsupervised)</h3>
+                        <p>
+                            In unsupervised learning, you start with an open question: "What
+                            patterns exist in this data?" You do not know the answer &mdash; and
+                            you may not even know the right question. The workflow is exploratory:
+                            run the algorithm, inspect the results, ask follow-up questions, iterate.
+                        </p>
+                        <ul>
+                            <li>The question is open-ended and evolves as you explore</li>
+                            <li>Success is subjective: do the patterns make sense?</li>
+                            <li>The engineer discovers what to look for during the process</li>
+                            <li>The model is a tool for generating hypotheses, not answering them</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    This distinction has practical implications. When using unsupervised learning,
+                    you should expect to run multiple experiments, try different algorithms, vary
+                    parameters, and spend significant time interpreting results. There is no single
+                    "right answer" &mdash; only more or less useful representations of the data's
+                    structure.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Analogy: Design vs Investigation</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Supervised learning is like structural design</strong> &mdash;
+                            you have clear inputs (loads, geometry, material properties), a defined
+                            output (member sizes, reinforcement details), and well-established
+                            criteria for success (code compliance, factor of safety).
+                        </p>
+                        <p>
+                            <strong>Unsupervised learning is like forensic investigation</strong>
+                            &mdash; you arrive at a failed structure with no prior information. You
+                            collect evidence, look for patterns, form hypotheses, and gradually
+                            build a theory of what happened. The process is iterative, the answer
+                            is not predetermined, and domain expertise drives interpretation at
+                            every step.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: WHY UNSUPERVISED LEARNING MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-it-matters">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-star"></i>
+                    Why Unsupervised Learning Matters for Engineers
+                </h2>
+
+                <p>
+                    You might wonder: if unsupervised learning has no clear success metric and
+                    requires heavy interpretation, why bother? The answer lies in the reality of
+                    engineering data. Most real-world data is unlabelled, and unsupervised learning
+                    is often the only viable starting point.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Five Reasons Engineers Need Unsupervised Learning</h3>
+                        <ul>
+                            <li>
+                                <strong>1. Labelled data is expensive.</strong> Laboratory testing,
+                                expert annotation, and field validation all cost time and money.
+                                Unsupervised learning works with the raw data you already have.
+                            </li>
+                            <li>
+                                <strong>2. It reveals unknowns.</strong> You cannot predict what you
+                                do not know to look for. Unsupervised learning surfaces patterns
+                                that no one thought to investigate.
+                            </li>
+                            <li>
+                                <strong>3. It powers pre-processing.</strong> Clustering can create
+                                pseudo-labels for downstream supervised models. Dimensionality
+                                reduction can clean and compress noisy sensor data.
+                            </li>
+                            <li>
+                                <strong>4. It enables real-time monitoring.</strong> Anomaly detection
+                                models can run continuously on bridge, dam, and building sensor
+                                data, alerting engineers to deviations without needing labelled
+                                failure examples (which are fortunately rare).
+                            </li>
+                            <li>
+                                <strong>5. It scales.</strong> When you have millions of data points
+                                (IoT sensors, drone imagery, satellite data), manual labelling is
+                                impossible. Unsupervised methods can process the full dataset.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-link"></i>
+                        <span>The Semi-Supervised Bridge</span>
+                    </div>
+                    <p>
+                        In practice, supervised and unsupervised learning are not either-or choices.
+                        A common workflow is: (1) use unsupervised learning to explore and segment
+                        your data, (2) manually label a small subset of representative examples
+                        from each discovered group, (3) train a supervised model on those labels.
+                        This hybrid approach &mdash; called <strong>semi-supervised learning</strong>
+                        &mdash; is extremely practical in engineering contexts where you have lots
+                        of data but limited labelling budget.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: HOW DOES IT WORK? HIGH-LEVEL VIEW
+             ========================================== -->
+        <section class="ch-section" id="how-it-works">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-gears"></i>
+                    How Does It Work? A High-Level View
+                </h2>
+
+                <p>
+                    While each unsupervised learning algorithm has its own internal mechanics (which
+                    we will explore in subsequent sub-chapters), they all share a common high-level
+                    workflow. Understanding this workflow helps you see the process as a coherent
+                    pipeline rather than a collection of isolated techniques.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Collect Raw Data</h3>
+                        <p>
+                            Gather your unlabelled feature data. This could be sensor readings,
+                            material test results, inspection records, survey measurements, or any
+                            other quantifiable observations. The data does not need labels, but it
+                            does need to be numerical (or converted to numerical form).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Pre-Process and Normalise</h3>
+                        <p>
+                            Unsupervised algorithms are often sensitive to feature scales. If one
+                            feature ranges from 0 to 1 and another from 0 to 10,000, the algorithm
+                            may be dominated by the larger feature. Standardisation or normalisation
+                            ensures all features contribute equally to the analysis.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Choose an Algorithm and Run</h3>
+                        <p>
+                            Select the appropriate algorithm based on your goal (clustering,
+                            reduction, anomaly detection) and run it on the pre-processed data.
+                            This step is often iterative &mdash; you may try several algorithms
+                            and parameter settings.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Interpret and Validate</h3>
+                        <p>
+                            Examine the results with engineering judgement. Do the clusters make
+                            physical sense? Do the detected anomalies correspond to known issues?
+                            Does the reduced-dimension representation preserve important variation?
+                            This is where domain expertise is indispensable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Apply and Iterate</h3>
+                        <p>
+                            Use the discovered structure for decision-making: site zonation, anomaly
+                            alerts, data compression, or as inputs to a supervised model. Refine
+                            parameters, add features, or try different algorithms based on the
+                            initial results. Unsupervised learning is inherently iterative.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: INTERACTIVE DEMO 1 - SUPERVISED VS UNSUPERVISED
+             ========================================== -->
+        <section class="ch-section" id="demo-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Supervised vs Unsupervised Comparison
+                </h2>
+
+                <p>
+                    This demonstration shows the same dataset viewed through two different lenses.
+                    On the left, you see the data with its true labels (supervised view) &mdash;
+                    each point is coloured by its known class. On the right, the labels are hidden
+                    (unsupervised view) &mdash; all points appear identical, and you can see how
+                    a clustering algorithm attempts to recover the groups without any label
+                    information.
+                </p>
+                <p>
+                    Use the controls to generate different data configurations and observe how
+                    well the unsupervised algorithm recovers the true structure. Notice that
+                    when clusters are well-separated, the algorithm recovers them almost perfectly.
+                    But when clusters overlap, the task becomes significantly harder.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-comparison">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-columns"></i> Same Data, Different Views</h3>
+                        <p>
+                            Left canvas: data with true labels (supervised). Right canvas: data
+                            without labels, coloured by discovered clusters (unsupervised K-Means).
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <button id="comp-generate" class="demo-btn" title="Generate new data">
+                            <i class="fa-solid fa-shuffle"></i> New Data
+                        </button>
+                        <button id="comp-cluster" class="demo-btn" title="Run K-Means clustering">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Cluster (K-Means)
+                        </button>
+                        <button id="comp-overlap" class="demo-btn" title="Toggle cluster overlap">
+                            <i class="fa-solid fa-circle-half-stroke"></i> More Overlap
+                        </button>
+                        <label style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:0.85rem;">
+                            <i class="fa-solid fa-layer-group"></i> Clusters:
+                            <select id="comp-k" style="background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 8px;">
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:280px;">
+                            <div style="text-align:center;font-size:0.82rem;font-weight:600;color:var(--accent-secondary);margin-bottom:6px;">
+                                <i class="fa-solid fa-tag"></i> Supervised View (True Labels)
+                            </div>
+                            <canvas id="comp-canvas-supervised" style="width:100%;height:360px;border-radius:8px;border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                        <div style="flex:1;min-width:280px;">
+                            <div style="text-align:center;font-size:0.82rem;font-weight:600;color:var(--accent-warm);margin-bottom:6px;">
+                                <i class="fa-solid fa-eye-slash"></i> Unsupervised View (Discovered Clusters)
+                            </div>
+                            <canvas id="comp-canvas-unsupervised" style="width:100%;height:360px;border-radius:8px;border:1px solid var(--border-subtle);"></canvas>
+                        </div>
+                    </div>
+                    <div id="comp-info" style="margin-top:12px;font-size:0.88rem;color:var(--text-secondary);min-height:24px;">
+                        Click "New Data" to generate labelled clusters, then "Cluster (K-Means)" to see how unsupervised learning recovers groups without labels.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 2 - CLUSTERING SANDBOX
+             ========================================== -->
+        <section class="ch-section" id="demo-clustering">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Clustering Sandbox
+                </h2>
+
+                <p>
+                    Now it is your turn to experience unsupervised learning first-hand. Click
+                    anywhere on the canvas below to place data points. There are no labels, no
+                    classes, no colours &mdash; just raw points in 2D space, like soil samples
+                    plotted by two measured properties.
+                </p>
+                <p>
+                    Once you have placed enough points (at least 6), click "Run Clustering" to
+                    watch the K-Means algorithm group your points into clusters. Try placing
+                    obvious groups and see if the algorithm finds them. Then try placing ambiguous,
+                    overlapping points and observe how the algorithm handles uncertainty.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-sandbox">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-crosshairs"></i> Click to Place Points, Then Cluster</h3>
+                        <p>
+                            Place unlabelled data points by clicking on the canvas. The algorithm
+                            has no idea what the "right" groups are &mdash; it discovers them from
+                            the spatial arrangement of your points.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <button id="sandbox-cluster" class="demo-btn" title="Run K-Means clustering">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Run Clustering
+                        </button>
+                        <button id="sandbox-reset" class="demo-btn" title="Clear all points">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button id="sandbox-random" class="demo-btn" title="Add random points">
+                            <i class="fa-solid fa-dice"></i> Add 30 Random
+                        </button>
+                        <label style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:0.85rem;">
+                            <i class="fa-solid fa-layer-group"></i> K:
+                            <select id="sandbox-k" style="background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:4px;padding:4px 8px;">
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </label>
+                    </div>
+                    <canvas id="sandbox-canvas" style="width:100%;height:450px;cursor:crosshair;border-radius:8px;border:1px solid var(--border-subtle);"></canvas>
+                    <div id="sandbox-info" style="margin-top:12px;font-size:0.88rem;color:var(--text-secondary);min-height:24px;">
+                        Click on the canvas to place unlabelled data points. Add at least 6 points, then click "Run Clustering."
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: REAL-WORLD APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="real-world">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building"></i>
+                    Real-World Applications in Civil Engineering
+                </h2>
+
+                <p>
+                    Unsupervised learning is not an academic exercise. It is actively used in civil
+                    engineering research and industry. Here are concrete examples of each type in
+                    action, showing how the abstract concepts we have discussed translate into
+                    practical engineering value.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pavement Condition Segmentation (Clustering)</h3>
+                        <p>
+                            Highway agencies collect pavement condition data across thousands of
+                            kilometres: International Roughness Index (IRI), rut depth, cracking
+                            percentage, and surface friction. Clustering algorithms group road
+                            segments into condition categories &mdash; "good," "fair," "poor" &mdash;
+                            without requiring manual rating of every segment. This enables automated
+                            network-level maintenance prioritisation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Bridge Health Monitoring (Anomaly Detection)</h3>
+                        <p>
+                            Structural health monitoring systems on bridges generate continuous
+                            streams of acceleration, strain, and temperature data. Anomaly detection
+                            algorithms learn normal patterns of bridge response (daily thermal
+                            expansion, traffic-induced vibrations) and flag deviations that could
+                            indicate bearing failure, scour, fatigue cracking, or seismic damage.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensor Data Compression (Dimensionality Reduction)</h3>
+                        <p>
+                            A large dam may have hundreds of sensors measuring pore pressures,
+                            seepage flows, displacements, and temperatures. PCA can compress these
+                            hundreds of time series into a handful of principal components that
+                            capture the dominant patterns of dam behaviour, making it feasible to
+                            visualise and monitor complex multi-sensor systems on a single dashboard.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Construction Safety Analysis (Association Rules)</h3>
+                        <p>
+                            Analysing thousands of construction incident reports using association
+                            rule mining can reveal that certain combinations of conditions &mdash;
+                            wet weather, night shift, scaffolding work, and subcontractor involvement
+                            &mdash; tend to co-occur with serious accidents. These associations
+                            help safety managers allocate resources to the highest-risk scenarios.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: COMMON MISCONCEPTIONS
+             ========================================== -->
+        <section class="ch-section" id="misconceptions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    Common Misconceptions
+                </h2>
+
+                <p>
+                    Before we move to the quiz, let us address some common misconceptions about
+                    unsupervised learning that trip up newcomers. Clearing these up now will save
+                    confusion later.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception: "Unsupervised learning is less useful than supervised"</h3>
+                        <p>
+                            <strong>Reality:</strong> They serve different purposes. Unsupervised
+                            learning is essential for exploration, anomaly detection, and data
+                            preparation. In practice, it is often the first step in a machine
+                            learning pipeline. Roughly 80% of real-world data is unlabelled,
+                            making unsupervised techniques indispensable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception: "The algorithm finds the 'correct' clusters automatically"</h3>
+                        <p>
+                            <strong>Reality:</strong> Clustering algorithms always produce clusters,
+                            even on random data. The number of clusters, their meaning, and their
+                            validity must be assessed by the engineer. Different algorithms and
+                            parameter settings can yield completely different groupings of the same
+                            data.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Misconception: "No labels means no evaluation is possible"</h3>
+                        <p>
+                            <strong>Reality:</strong> While you cannot compute accuracy (there are
+                            no labels to compare against), you can evaluate cluster quality using
+                            internal metrics like the silhouette score, Davies-Bouldin index, and
+                            within-cluster sum of squares. You can also use domain expertise and
+                            visualisation to assess results qualitatively.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Time to check your grasp of unsupervised learning fundamentals. Each question
+                    reinforces a key concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        What is the fundamental difference between supervised and unsupervised
+                        learning?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Supervised learning is faster than unsupervised learning
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Supervised learning uses labelled data; unsupervised learning does not
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Unsupervised learning requires more data than supervised learning
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Supervised learning is only for classification; unsupervised is only for clustering
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! The defining difference is
+                        the presence or absence of labels. Supervised learning trains on input-output
+                        pairs; unsupervised learning works with inputs alone and discovers structure
+                        without any target variable.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The fundamental difference
+                        is <strong>labels</strong>. Supervised learning uses labelled training data
+                        (features paired with known outputs). Unsupervised learning has no labels at
+                        all &mdash; it discovers patterns from the feature data alone.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        A civil engineer has vibration sensor data from a bridge but no records of
+                        when structural problems occurred. Which unsupervised learning technique
+                        would be most appropriate to flag unusual readings?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> Association rule learning
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> Dimensionality reduction
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> Anomaly detection
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> Linear regression
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Anomaly detection is designed
+                        to learn normal patterns and flag deviations. Since there are no labelled
+                        failure events, the engineer cannot use supervised classification. Anomaly
+                        detection works with unlabelled data and identifies points that deviate from
+                        the learned baseline.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite.
+                        <strong>Anomaly detection</strong> is the right choice. It learns what "normal"
+                        bridge vibration looks like from the bulk of the data and flags readings that
+                        deviate significantly. Linear regression is supervised (needs labels), and the
+                        other options serve different purposes.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        Why is domain expertise especially important in unsupervised learning
+                        compared to supervised learning?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> Because unsupervised algorithms are more complex to implement
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Because unsupervised learning requires manual feature engineering
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Because without labels, the engineer must judge whether discovered patterns are meaningful
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> Because unsupervised algorithms cannot run without expert configuration
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! In supervised learning,
+                        labels provide an objective measure of success (accuracy, RMSE). In unsupervised
+                        learning, there are no labels, so the engineer's domain expertise is the primary
+                        mechanism for validating whether discovered patterns correspond to real physical
+                        phenomena or are mere statistical artefacts.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key reason is that
+                        <strong>unsupervised learning has no objective success metric</strong>. Without
+                        labels, there is no automatic way to know if the algorithm's output is meaningful.
+                        The engineer must use domain knowledge to interpret and validate the results.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        A highway agency wants to reduce 40 pavement condition metrics into a
+                        simpler representation for dashboard visualisation. Which unsupervised
+                        learning technique is most appropriate?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> K-Means clustering
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Dimensionality reduction (e.g., PCA)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Anomaly detection (e.g., Isolation Forest)
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Association rule mining (e.g., Apriori)
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Dimensionality reduction
+                        techniques like PCA compress many correlated features into a smaller set of
+                        uncorrelated components while preserving the maximum amount of variance. This
+                        is exactly what is needed to turn 40 metrics into a manageable dashboard view.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite.
+                        <strong>Dimensionality reduction (PCA)</strong> is designed specifically for
+                        compressing high-dimensional data into fewer dimensions while preserving the
+                        most important patterns. Clustering groups data points, not features. Anomaly
+                        detection flags outliers, and association rules find co-occurrences.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul>
+                            <li>
+                                <strong>Unsupervised learning works without labels.</strong> The
+                                algorithm receives only input features and must discover structure
+                                on its own. No "correct answers" guide the process.
+                            </li>
+                            <li>
+                                <strong>Four major types</strong> cover most use cases: clustering
+                                (grouping similar items), dimensionality reduction (compressing
+                                features), association rules (finding co-occurrences), and anomaly
+                                detection (flagging outliers).
+                            </li>
+                            <li>
+                                <strong>The discovery mindset</strong> is essential. Unlike supervised
+                                learning's prediction focus, unsupervised learning is exploratory.
+                                You discover patterns first, then interpret and apply them.
+                            </li>
+                            <li>
+                                <strong>Domain expertise is critical.</strong> Algorithms find patterns
+                                in any data &mdash; even noise. The engineer must validate whether
+                                discovered structure is physically meaningful.
+                            </li>
+                            <li>
+                                <strong>It is not either-or.</strong> Supervised and unsupervised
+                                learning complement each other. Unsupervised methods often prepare
+                                data for supervised models downstream.
+                            </li>
+                            <li>
+                                <strong>CE applications are abundant:</strong> soil classification,
+                                structural health monitoring, pavement condition assessment, sensor
+                                data compression, and construction safety analysis all benefit from
+                                unsupervised techniques.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In the next sub-chapter, we dive into <strong>K-Means Clustering</strong>
+                        &mdash; the most widely used clustering algorithm and your first hands-on
+                        unsupervised learning tool. You will learn how K-Means works step by step,
+                        implement it interactively, and apply it to civil engineering datasets.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="index.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> Chapter 3 Hub
+        </a>
+        <a href="sub2.html" class="chapter-nav__link next">
+            3.2 K-Means <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED FLOATING PARTICLES
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var particles = [];
+            var numParticles = 90;
+            var animId;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                particles = [];
+                for (var i = 0; i < numParticles; i++) {
+                    particles.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        r: Math.random() * 3 + 1,
+                        group: Math.floor(Math.random() * 3)
+                    });
+                }
+            }
+
+            function draw() {
+                var c = getColors();
+                var groupColors = [c.TEAL, c.CYAN, c.AMBER];
+                ctx.clearRect(0, 0, w, h);
+
+                /* draw grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                var gs = 50;
+                for (var gx = 0; gx < w; gx += gs) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += gs) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                /* draw connection lines between nearby same-group particles */
+                for (var i = 0; i < particles.length; i++) {
+                    for (var j = i + 1; j < particles.length; j++) {
+                        if (particles[i].group !== particles[j].group) continue;
+                        var dx = particles[i].x - particles[j].x;
+                        var dy = particles[i].y - particles[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = groupColors[particles[i].group];
+                            ctx.globalAlpha = 0.08 * (1 - dist / 100);
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+
+                /* draw particles */
+                for (var p = 0; p < particles.length; p++) {
+                    var pt = particles[p];
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+                    ctx.fillStyle = groupColors[pt.group];
+                    ctx.globalAlpha = 0.5;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    /* move */
+                    pt.x += pt.vx;
+                    pt.y += pt.vy;
+                    if (pt.x < 0 || pt.x > w) pt.vx *= -1;
+                    if (pt.y < 0 || pt.y > h) pt.vy *= -1;
+                }
+
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function () {
+                cancelAnimationFrame(animId);
+                resize();
+                draw();
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: SUPERVISED VS UNSUPERVISED COMPARISON
+           ============================================== */
+        (function initComparisonDemo() {
+            var canvasS = document.getElementById('comp-canvas-supervised');
+            var canvasU = document.getElementById('comp-canvas-unsupervised');
+            if (!canvasS || !canvasU) return;
+
+            var ctxS, ctxU, wS, hS, wU, hU;
+            var dataPoints = [];
+            var clusterAssignments = [];
+            var centroids = [];
+            var overlap = 0.3;
+            var numK = 3;
+
+            var CLUSTER_COLORS;
+
+            function updateColors() {
+                var c = getColors();
+                CLUSTER_COLORS = [c.TEAL, c.CYAN, c.AMBER, c.RED, c.GREEN];
+            }
+
+            function resizeCanvases() {
+                var infoS = initCanvas(canvasS);
+                ctxS = infoS.ctx; wS = infoS.w; hS = infoS.h;
+                var infoU = initCanvas(canvasU);
+                ctxU = infoU.ctx; wU = infoU.w; hU = infoU.h;
+                updateColors();
+            }
+
+            function generateData() {
+                numK = parseInt(document.getElementById('comp-k').value) || 3;
+                dataPoints = [];
+                clusterAssignments = [];
+                centroids = [];
+                var margin = 60;
+                var spread = 30 + overlap * 80;
+
+                /* generate cluster centres */
+                var centers = [];
+                for (var k = 0; k < numK; k++) {
+                    centers.push({
+                        x: margin + Math.random() * (wS - 2 * margin),
+                        y: margin + Math.random() * (hS - 2 * margin)
+                    });
+                }
+
+                /* generate points around centres */
+                var pointsPerCluster = Math.floor(60 / numK);
+                for (var ki = 0; ki < numK; ki++) {
+                    for (var pi = 0; pi < pointsPerCluster; pi++) {
+                        var angle = Math.random() * Math.PI * 2;
+                        var radius = Math.random() * spread;
+                        dataPoints.push({
+                            x: centers[ki].x + Math.cos(angle) * radius,
+                            y: centers[ki].y + Math.sin(angle) * radius,
+                            trueLabel: ki
+                        });
+                    }
+                }
+
+                drawSupervised();
+                drawUnsupervised();
+                document.getElementById('comp-info').textContent =
+                    'Generated ' + dataPoints.length + ' points in ' + numK + ' clusters. Click "Cluster (K-Means)" to see unsupervised discovery.';
+            }
+
+            function drawGrid(ctx, w, h) {
+                var c = getColors();
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+            }
+
+            function drawSupervised() {
+                updateColors();
+                ctxS.clearRect(0, 0, wS, hS);
+                drawGrid(ctxS, wS, hS);
+                for (var i = 0; i < dataPoints.length; i++) {
+                    var pt = dataPoints[i];
+                    ctxS.beginPath();
+                    ctxS.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+                    ctxS.fillStyle = CLUSTER_COLORS[pt.trueLabel % CLUSTER_COLORS.length];
+                    ctxS.globalAlpha = 0.85;
+                    ctxS.fill();
+                    ctxS.globalAlpha = 1;
+                    ctxS.strokeStyle = CLUSTER_COLORS[pt.trueLabel % CLUSTER_COLORS.length];
+                    ctxS.lineWidth = 1;
+                    ctxS.stroke();
+                }
+            }
+
+            function drawUnsupervised() {
+                updateColors();
+                ctxU.clearRect(0, 0, wU, hU);
+                drawGrid(ctxU, wU, hU);
+                var c = getColors();
+                for (var i = 0; i < dataPoints.length; i++) {
+                    var pt = dataPoints[i];
+                    ctxU.beginPath();
+                    ctxU.arc(pt.x * (wU / wS), pt.y * (hU / hS), 5, 0, Math.PI * 2);
+                    if (clusterAssignments.length > 0) {
+                        ctxU.fillStyle = CLUSTER_COLORS[clusterAssignments[i] % CLUSTER_COLORS.length];
+                        ctxU.globalAlpha = 0.85;
+                    } else {
+                        ctxU.fillStyle = c.MUTED;
+                        ctxU.globalAlpha = 0.5;
+                    }
+                    ctxU.fill();
+                    ctxU.globalAlpha = 1;
+                    if (clusterAssignments.length > 0) {
+                        ctxU.strokeStyle = CLUSTER_COLORS[clusterAssignments[i] % CLUSTER_COLORS.length];
+                    } else {
+                        ctxU.strokeStyle = c.STROKE;
+                    }
+                    ctxU.lineWidth = 1;
+                    ctxU.stroke();
+                }
+
+                /* draw centroids */
+                if (centroids.length > 0) {
+                    for (var ci = 0; ci < centroids.length; ci++) {
+                        var cx = centroids[ci].x * (wU / wS);
+                        var cy = centroids[ci].y * (hU / hS);
+                        ctxU.beginPath();
+                        ctxU.arc(cx, cy, 10, 0, Math.PI * 2);
+                        ctxU.fillStyle = CLUSTER_COLORS[ci % CLUSTER_COLORS.length];
+                        ctxU.globalAlpha = 0.3;
+                        ctxU.fill();
+                        ctxU.globalAlpha = 1;
+                        ctxU.strokeStyle = CLUSTER_COLORS[ci % CLUSTER_COLORS.length];
+                        ctxU.lineWidth = 2.5;
+                        ctxU.stroke();
+
+                        /* cross */
+                        ctxU.beginPath();
+                        ctxU.moveTo(cx - 6, cy); ctxU.lineTo(cx + 6, cy);
+                        ctxU.moveTo(cx, cy - 6); ctxU.lineTo(cx, cy + 6);
+                        ctxU.strokeStyle = CLUSTER_COLORS[ci % CLUSTER_COLORS.length];
+                        ctxU.lineWidth = 2;
+                        ctxU.stroke();
+                    }
+                }
+            }
+
+            function runKMeans() {
+                if (dataPoints.length === 0) {
+                    generateData();
+                }
+                numK = parseInt(document.getElementById('comp-k').value) || 3;
+
+                /* initialise centroids randomly from data */
+                var shuffled = dataPoints.slice().sort(function () { return Math.random() - 0.5; });
+                centroids = [];
+                for (var ci = 0; ci < numK; ci++) {
+                    centroids.push({ x: shuffled[ci].x, y: shuffled[ci].y });
+                }
+
+                /* iterate K-Means */
+                for (var iter = 0; iter < 30; iter++) {
+                    /* assign points */
+                    clusterAssignments = [];
+                    for (var i = 0; i < dataPoints.length; i++) {
+                        var minD = Infinity, minK = 0;
+                        for (var k = 0; k < numK; k++) {
+                            var dx = dataPoints[i].x - centroids[k].x;
+                            var dy = dataPoints[i].y - centroids[k].y;
+                            var d = dx * dx + dy * dy;
+                            if (d < minD) { minD = d; minK = k; }
+                        }
+                        clusterAssignments.push(minK);
+                    }
+
+                    /* update centroids */
+                    var sums = [], counts = [];
+                    for (var k2 = 0; k2 < numK; k2++) {
+                        sums.push({ x: 0, y: 0 });
+                        counts.push(0);
+                    }
+                    for (var j = 0; j < dataPoints.length; j++) {
+                        var cl = clusterAssignments[j];
+                        sums[cl].x += dataPoints[j].x;
+                        sums[cl].y += dataPoints[j].y;
+                        counts[cl]++;
+                    }
+                    for (var k3 = 0; k3 < numK; k3++) {
+                        if (counts[k3] > 0) {
+                            centroids[k3].x = sums[k3].x / counts[k3];
+                            centroids[k3].y = sums[k3].y / counts[k3];
+                        }
+                    }
+                }
+
+                drawUnsupervised();
+
+                /* count correct */
+                var info = document.getElementById('comp-info');
+                info.textContent = 'K-Means found ' + numK + ' clusters. Compare the colour assignments between supervised (true) and unsupervised (discovered) views.';
+            }
+
+            /* events */
+            document.getElementById('comp-generate').addEventListener('click', function () {
+                generateData();
+            });
+            document.getElementById('comp-cluster').addEventListener('click', function () {
+                runKMeans();
+            });
+            document.getElementById('comp-overlap').addEventListener('click', function () {
+                overlap = Math.min(overlap + 0.15, 1.0);
+                if (overlap >= 1.0) overlap = 0.1;
+                generateData();
+                document.getElementById('comp-info').textContent =
+                    'Overlap level: ' + Math.round(overlap * 100) + '%. More overlap makes clustering harder.';
+            });
+            document.getElementById('comp-k').addEventListener('change', function () {
+                generateData();
+            });
+
+            /* theme change redraws */
+            var themeObs = new MutationObserver(function () {
+                resizeCanvases();
+                drawSupervised();
+                drawUnsupervised();
+            });
+            themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            resizeCanvases();
+            generateData();
+
+            window.addEventListener('resize', function () {
+                resizeCanvases();
+                drawSupervised();
+                drawUnsupervised();
+            });
+        })();
+
+        /* ==============================================
+           DEMO 2: CLUSTERING SANDBOX
+           ============================================== */
+        (function initSandboxDemo() {
+            var canvas = document.getElementById('sandbox-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var points = [];
+            var assignments = [];
+            var centroids = [];
+            var CLUSTER_COLORS;
+
+            function updateColors() {
+                var c = getColors();
+                CLUSTER_COLORS = [c.TEAL, c.CYAN, c.AMBER, c.RED, c.GREEN];
+            }
+
+            function resizeCanvas() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                updateColors();
+            }
+
+            function drawGrid() {
+                var c = getColors();
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+            }
+
+            function draw() {
+                updateColors();
+                ctx.clearRect(0, 0, w, h);
+                drawGrid();
+                var c = getColors();
+
+                /* draw points */
+                for (var i = 0; i < points.length; i++) {
+                    ctx.beginPath();
+                    ctx.arc(points[i].x, points[i].y, 5, 0, Math.PI * 2);
+                    if (assignments.length > 0) {
+                        ctx.fillStyle = CLUSTER_COLORS[assignments[i] % CLUSTER_COLORS.length];
+                        ctx.globalAlpha = 0.85;
+                    } else {
+                        ctx.fillStyle = c.TEXT;
+                        ctx.globalAlpha = 0.6;
+                    }
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    if (assignments.length > 0) {
+                        ctx.strokeStyle = CLUSTER_COLORS[assignments[i] % CLUSTER_COLORS.length];
+                    } else {
+                        ctx.strokeStyle = c.STROKE;
+                    }
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                /* draw centroids */
+                for (var ci = 0; ci < centroids.length; ci++) {
+                    ctx.beginPath();
+                    ctx.arc(centroids[ci].x, centroids[ci].y, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = CLUSTER_COLORS[ci % CLUSTER_COLORS.length];
+                    ctx.globalAlpha = 0.25;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = CLUSTER_COLORS[ci % CLUSTER_COLORS.length];
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+
+                    /* cross marker */
+                    ctx.beginPath();
+                    ctx.moveTo(centroids[ci].x - 7, centroids[ci].y);
+                    ctx.lineTo(centroids[ci].x + 7, centroids[ci].y);
+                    ctx.moveTo(centroids[ci].x, centroids[ci].y - 7);
+                    ctx.lineTo(centroids[ci].x, centroids[ci].y + 7);
+                    ctx.strokeStyle = CLUSTER_COLORS[ci % CLUSTER_COLORS.length];
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                /* point count */
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '12px Inter, sans-serif';
+                ctx.fillText('Points: ' + points.length, 12, 20);
+            }
+
+            function getCanvasCoords(e) {
+                var rect = canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+
+            /* click to add point */
+            canvas.addEventListener('click', function (e) {
+                var pos = getCanvasCoords(e);
+                points.push({ x: pos.x, y: pos.y });
+                assignments = [];
+                centroids = [];
+                draw();
+                document.getElementById('sandbox-info').textContent =
+                    points.length + ' point(s) placed. ' +
+                    (points.length < 6 ? 'Add at least ' + (6 - points.length) + ' more.' : 'Ready to cluster!');
+            });
+
+            /* run clustering */
+            document.getElementById('sandbox-cluster').addEventListener('click', function () {
+                if (points.length < 6) {
+                    document.getElementById('sandbox-info').textContent =
+                        'Need at least 6 points. Currently have ' + points.length + '.';
+                    return;
+                }
+
+                var K = parseInt(document.getElementById('sandbox-k').value) || 3;
+                if (K > points.length) K = points.length;
+
+                /* init centroids from random points */
+                var shuffled = points.slice().sort(function () { return Math.random() - 0.5; });
+                centroids = [];
+                for (var ci = 0; ci < K; ci++) {
+                    centroids.push({ x: shuffled[ci].x, y: shuffled[ci].y });
+                }
+
+                /* iterate */
+                for (var iter = 0; iter < 40; iter++) {
+                    assignments = [];
+                    for (var i = 0; i < points.length; i++) {
+                        var minD = Infinity, minK = 0;
+                        for (var k = 0; k < K; k++) {
+                            var dx = points[i].x - centroids[k].x;
+                            var dy = points[i].y - centroids[k].y;
+                            var d = dx * dx + dy * dy;
+                            if (d < minD) { minD = d; minK = k; }
+                        }
+                        assignments.push(minK);
+                    }
+
+                    var sums = [], counts = [];
+                    for (var k2 = 0; k2 < K; k2++) {
+                        sums.push({ x: 0, y: 0 });
+                        counts.push(0);
+                    }
+                    for (var j = 0; j < points.length; j++) {
+                        var cl = assignments[j];
+                        sums[cl].x += points[j].x;
+                        sums[cl].y += points[j].y;
+                        counts[cl]++;
+                    }
+                    for (var k3 = 0; k3 < K; k3++) {
+                        if (counts[k3] > 0) {
+                            centroids[k3].x = sums[k3].x / counts[k3];
+                            centroids[k3].y = sums[k3].y / counts[k3];
+                        }
+                    }
+                }
+
+                draw();
+                document.getElementById('sandbox-info').textContent =
+                    'K-Means grouped ' + points.length + ' points into ' + K + ' clusters. Cross markers show cluster centroids.';
+            });
+
+            /* reset */
+            document.getElementById('sandbox-reset').addEventListener('click', function () {
+                points = [];
+                assignments = [];
+                centroids = [];
+                draw();
+                document.getElementById('sandbox-info').textContent =
+                    'Canvas cleared. Click to place new points.';
+            });
+
+            /* add random */
+            document.getElementById('sandbox-random').addEventListener('click', function () {
+                var margin = 40;
+                for (var i = 0; i < 30; i++) {
+                    points.push({
+                        x: margin + Math.random() * (w - 2 * margin),
+                        y: margin + Math.random() * (h - 2 * margin)
+                    });
+                }
+                assignments = [];
+                centroids = [];
+                draw();
+                document.getElementById('sandbox-info').textContent =
+                    points.length + ' points total. Ready to cluster!';
+            });
+
+            /* theme change */
+            var themeObs = new MutationObserver(function () {
+                resizeCanvas();
+                draw();
+            });
+            themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            resizeCanvas();
+            draw();
+
+            window.addEventListener('resize', function () {
+                resizeCanvas();
+                draw();
+            });
+        })();
+
+        /* ==============================================
+           SCROLL-TRIGGERED REVEAL ANIMATION
+           ============================================== */
+        (function initRevealAnimations() {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { observer.observe(el); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

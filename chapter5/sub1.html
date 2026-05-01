@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.1 Sequence Models &amp; RNNs | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Understand sequence models and recurrent neural networks through a civil engineering lens. Explore RNNs, LSTMs, GRUs, and bidirectional architectures for sensor time series and specification text processing.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-wave-square"></i> Chapter 5 &mdash; Sub-chapter 5.1
+            </div>
+            <h1 class="chapter-hero__title">Sequence Models &amp; RNNs</h1>
+            <p class="chapter-hero__subtitle">
+                From the rhythmic pulse of a strain gauge on a suspension cable to the scrolling
+                lines of a structural specification document &mdash; data that arrives in order
+                demands models that remember what came before.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>When Order Is Everything</h2>
+                        <p>
+                            Imagine a network of strain gauges installed along the main cables of a
+                            suspension bridge. Every second, each sensor records a numerical reading
+                            &mdash; the tension in that cable at that instant. A single reading tells
+                            you very little. But weeks of readings, taken in sequence, reveal the
+                            bridge breathing under traffic, flexing through temperature cycles, and
+                            &mdash; crucially &mdash; any slow, creeping anomaly that precedes
+                            structural distress.
+                        </p>
+                        <p>
+                            The <em>order</em> of those readings is just as important as their
+                            values. Shuffle the time series randomly and you destroy the story
+                            entirely. This is the fundamental insight behind
+                            <strong>sequence models</strong>: some data only makes sense when its
+                            ordering is preserved.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    In previous chapters, we explored models that treat each input independently
+                    &mdash; a single image, a single row of tabular data. But much of the data
+                    civil engineers work with is inherently <strong>sequential</strong>: sensor
+                    time series, construction schedules, loading histories, text in project
+                    specifications, and even the step-by-step progression of a finite element
+                    analysis converging to a solution.
+                </p>
+                <p>
+                    This sub-chapter introduces <strong>Recurrent Neural Networks (RNNs)</strong>
+                    &mdash; the foundational architecture for processing sequential data. We will
+                    build up from the intuition of why order matters, through the mechanics of
+                    how RNNs maintain memory via hidden states, to the critical problem of
+                    vanishing gradients and the elegant solutions provided by
+                    <strong>LSTM</strong> and <strong>GRU</strong> cells.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with basic neural network concepts
+                        from Chapters 2 and 3 &mdash; neurons, layers, weights, activation
+                        functions, and backpropagation. No prior knowledge of sequence models
+                        is required. We build everything from first principles.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: SEQUENTIAL DATA — WHY ORDER MATTERS
+             ========================================== -->
+        <section class="ch-section" id="sequential-data">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-timeline"></i>
+                    Sequential Data: Why Order Matters
+                </h2>
+
+                <p>
+                    Before diving into the architecture of RNNs, let us first understand what
+                    makes sequential data fundamentally different from the data we have worked
+                    with so far. In tabular data (e.g., concrete mix design parameters), each
+                    row is independent &mdash; row 5 does not depend on row 4. In images, pixels
+                    are spatially arranged but there is no inherent ordering from first pixel to
+                    last. Sequential data, however, has a strict temporal or positional ordering
+                    where context flows from earlier elements to later ones.
+                </p>
+
+                <h3>Types of Sequential Data in Civil Engineering</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Time Series Data</h3>
+                        <p>
+                            Time series data is the most common form of sequential data in
+                            structural and geotechnical engineering. Examples include:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Strain gauge readings</strong> &mdash; continuous tension/compression measurements on structural members</li>
+                            <li><strong>Accelerometer data</strong> &mdash; vibration recordings from bridges, buildings, or equipment during seismic events</li>
+                            <li><strong>Settlement monitoring</strong> &mdash; ground surface elevation changes over weeks or months</li>
+                            <li><strong>Traffic load patterns</strong> &mdash; vehicle counts and weights crossing a bridge over time</li>
+                            <li><strong>Temperature profiles</strong> &mdash; thermal expansion/contraction cycles in long-span structures</li>
+                            <li><strong>Groundwater level fluctuations</strong> &mdash; piezometric data recorded at regular intervals</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Text &amp; Document Data</h3>
+                        <p>
+                            Text is sequential by nature &mdash; words in a sentence derive meaning
+                            from their position and from the words that precede them. Civil
+                            engineering generates enormous volumes of text:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Project specifications</strong> &mdash; clauses that reference earlier definitions</li>
+                            <li><strong>Inspection reports</strong> &mdash; narrative descriptions of defects and observations</li>
+                            <li><strong>Building codes &amp; standards</strong> &mdash; hierarchically structured regulatory text</li>
+                            <li><strong>Construction logs</strong> &mdash; daily entries recording activities and incidents</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>The Shuffling Thought Experiment</h3>
+
+                <p>
+                    Here is a powerful test for whether data is truly sequential: <strong>would
+                    shuffling it destroy information?</strong>
+                </p>
+                <p>
+                    Take a table of concrete cylinder test results (compressive strength, age,
+                    mix proportions). Shuffle the rows randomly. You lose nothing &mdash; each
+                    row stands alone. Now take a week of accelerometer readings from a bridge
+                    pier during an earthquake. Shuffle the time steps randomly. The earthquake
+                    signal is destroyed. The gradual build-up, the peak ground acceleration, the
+                    decay &mdash; all gone. That destruction proves the data is sequential.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Sequential data is like a construction schedule.</strong>
+                            A Gantt chart shows tasks in a specific order &mdash; you cannot pour
+                            concrete before formwork is erected, and you cannot strip formwork
+                            before concrete cures. Each task depends on what came before. Shuffling
+                            the task order produces a nonsensical schedule.
+                        </p>
+                        <p>
+                            Similarly, a model processing sequential data must respect the order of
+                            inputs. A strain reading at time step 100 can only be properly
+                            interpreted in the context of the 99 readings that preceded it.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why Standard Neural Networks Fail at Sequences</h3>
+
+                <p>
+                    A standard feedforward neural network receives a fixed-size input vector and
+                    produces a fixed-size output. It has no mechanism for "remembering" previous
+                    inputs. If you fed it time step 1, then time step 2, then time step 3 of a
+                    sensor signal, it would process each step independently &mdash; as if the
+                    previous steps never existed. There is no internal state that carries
+                    information forward through the sequence.
+                </p>
+                <p>
+                    You might think of a workaround: concatenate all time steps into one giant
+                    input vector. But this approach has severe limitations. First, it requires a
+                    fixed sequence length &mdash; you cannot handle a 100-step sequence and a
+                    5,000-step sequence with the same network. Second, the parameter count
+                    explodes with sequence length. Third, the network has no structural bias
+                    toward recognising temporal patterns &mdash; it must learn from scratch that
+                    adjacent time steps are related.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Key Insight</span>
+                    </div>
+                    <p>
+                        We need an architecture that can process inputs <strong>one at a
+                        time</strong>, in order, while maintaining an internal <strong>memory
+                        </strong> (hidden state) that accumulates information from all previous
+                        steps. This is exactly what a Recurrent Neural Network provides.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: RNN ARCHITECTURE — THE HIDDEN STATE
+             ========================================== -->
+        <section class="ch-section" id="rnn-architecture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-spin"></i>
+                    RNN Architecture: The Hidden State
+                </h2>
+
+                <p>
+                    A Recurrent Neural Network introduces a deceptively simple idea: give the
+                    network a <strong>hidden state</strong> &mdash; a vector of numbers that
+                    persists between time steps and gets updated at each step. This hidden
+                    state serves as the network's memory, carrying forward a compressed
+                    summary of everything it has seen so far.
+                </p>
+
+                <h3>The Core Equations</h3>
+
+                <p>
+                    At each time step <em>t</em>, the RNN receives two inputs: the current
+                    data point <strong>x<sub>t</sub></strong> (e.g., the current sensor
+                    reading) and the previous hidden state
+                    <strong>h<sub>t&minus;1</sub></strong> (the memory from all prior steps).
+                    It produces a new hidden state <strong>h<sub>t</sub></strong> and
+                    optionally an output <strong>y<sub>t</sub></strong>:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>RNN Update Rule</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; line-height:2; margin:12px 0;">
+                            h<sub>t</sub> = tanh( W<sub>hh</sub> &middot; h<sub>t&minus;1</sub> + W<sub>xh</sub> &middot; x<sub>t</sub> + b<sub>h</sub> )<br>
+                            y<sub>t</sub> = W<sub>hy</sub> &middot; h<sub>t</sub> + b<sub>y</sub>
+                        </p>
+                        <p>
+                            <strong>W<sub>hh</sub></strong> = hidden-to-hidden weight matrix
+                            (how past memory influences current memory)<br>
+                            <strong>W<sub>xh</sub></strong> = input-to-hidden weight matrix
+                            (how current input contributes to memory)<br>
+                            <strong>W<sub>hy</sub></strong> = hidden-to-output weight matrix
+                            (how memory translates to predictions)<br>
+                            <strong>tanh</strong> = activation function squashing values to
+                            [&minus;1, +1]
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The crucial detail is that <strong>the same weight matrices are shared
+                    across all time steps</strong>. The network applies the same transformation
+                    at step 1, step 50, and step 1,000. This weight sharing is what allows
+                    RNNs to handle sequences of arbitrary length with a fixed number of
+                    parameters.
+                </p>
+
+                <h3>Unrolling Through Time</h3>
+
+                <p>
+                    To visualise how an RNN processes a sequence, we "unroll" it through time.
+                    Instead of thinking of a single recurrent cell with a loop, we draw the
+                    same cell repeated once for each time step, with connections showing how
+                    the hidden state flows from one step to the next.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The hidden state is like a running engineering logbook.</strong>
+                            Imagine a site engineer who walks through a construction site every
+                            morning. They carry a notebook (the hidden state) that contains a
+                            summary of everything they have observed on previous days. At each new
+                            station (time step), they look at the current conditions (the input),
+                            update their notebook with new observations, and write a brief report
+                            (the output). The notebook is never reset &mdash; it accumulates
+                            context continuously.
+                        </p>
+                        <p>
+                            The engineer uses the <em>same skills</em> (shared weights) at every
+                            station. They do not need a different brain for station 1 versus station
+                            50 &mdash; just the accumulated context in their notebook changes.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Hidden State Dimensions</h3>
+
+                <p>
+                    The size of the hidden state vector is a hyperparameter you choose. A hidden
+                    state of size 64 means the network compresses all past information into a
+                    vector of 64 numbers. Larger hidden states can store more information but
+                    require more computation and data to train effectively. For civil engineering
+                    sensor data with relatively simple temporal patterns, hidden sizes of 32 to
+                    128 are often sufficient. For complex text processing, larger states (256+)
+                    may be needed.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Practical Note</span>
+                    </div>
+                    <p>
+                        In structural health monitoring, a typical sensor produces readings at
+                        100&ndash;1000 Hz. An RNN processing this data would update its hidden
+                        state at each time step, building up a representation of the structural
+                        response over time. After processing the full sequence, the final hidden
+                        state contains a compressed summary of the entire event &mdash; which can
+                        be fed to a classifier to detect anomalies or categorise events.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: DEMO 1 — RNN UNROLLING VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-rnn-unrolling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: RNN Unrolling Visualiser
+                </h2>
+
+                <p>
+                    The demo below shows how a recurrent neural network processes a sequence
+                    step by step. Watch the hidden state vector evolve as each new input
+                    arrives. The connections between time steps illustrate the flow of memory
+                    through the network. Click <strong>Step</strong> to advance one time step,
+                    or <strong>Play</strong> to animate the full sequence automatically.
+                </p>
+
+                <div class="demo-panel" id="rnn-unrolling-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-arrows-spin"></i>
+                        <span>RNN Unrolling Visualiser &mdash; Hidden State Flow Through Time</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+                        <button id="rnn-step-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-forward-step"></i> Step
+                        </button>
+                        <button id="rnn-play-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                        <button id="rnn-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <select id="rnn-seq-length" style="padding:8px 14px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; font-size:0.9rem; cursor:pointer;">
+                            <option value="5">5 Steps</option>
+                            <option value="8" selected>8 Steps</option>
+                            <option value="12">12 Steps</option>
+                        </select>
+                    </div>
+                    <canvas id="rnn-unrolling-canvas" style="width:100%; height:420px; border-radius:8px;"></canvas>
+                    <p id="rnn-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-secondary); min-height:20px;">
+                        Press Step or Play to begin. The hidden state vector h<sub>t</sub> carries memory forward through each time step.
+                    </p>
+                </div>
+
+                <p>
+                    Notice how the hidden state gradually changes colour and magnitude as it
+                    absorbs each new input. Early in the sequence, the hidden state is mostly
+                    determined by the first few inputs. As more inputs arrive, the hidden state
+                    becomes a blend of all past information &mdash; though, as we will see
+                    shortly, earlier inputs tend to fade from memory in a basic RNN.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE VANISHING GRADIENT PROBLEM
+             ========================================== -->
+        <section class="ch-section" id="vanishing-gradient">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    The Vanishing Gradient Problem
+                </h2>
+
+                <p>
+                    The basic RNN has a fatal flaw. During training, the network learns by
+                    backpropagation through time (BPTT) &mdash; tracing the error signal
+                    backwards through each time step. At each step, the gradient is multiplied
+                    by the weight matrix <strong>W<sub>hh</sub></strong> and passed through the
+                    derivative of the tanh activation. When these multiplied factors are
+                    consistently less than 1.0 (which they usually are), the gradient
+                    <strong>shrinks exponentially</strong> as it travels back through time.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Exponential Decay of Gradients</h3>
+                        <p>
+                            If the gradient shrinks by a factor of 0.9 at each time step, after 10
+                            steps it is 0.9<sup>10</sup> = 0.35 of its original value. After 50
+                            steps: 0.9<sup>50</sup> = 0.005. After 100 steps:
+                            0.9<sup>100</sup> &asymp; 0.00003. The gradient has essentially
+                            vanished &mdash; the network can no longer learn from events that
+                            happened 100 steps ago.
+                        </p>
+                        <p>
+                            Conversely, if the factor is greater than 1.0, gradients
+                            <strong>explode</strong> exponentially, causing numerical instability.
+                            Gradient clipping can mitigate exploding gradients, but vanishing
+                            gradients require a fundamentally different architecture.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Vanishing gradients are like signal attenuation in a long
+                            pipeline.</strong> Imagine pumping water through a very long pipeline
+                            with minor leaks at every joint. At the start, pressure is strong. But
+                            after passing through hundreds of joints, the accumulated losses reduce
+                            the pressure to almost nothing &mdash; the signal at the end is too
+                            weak to be useful.
+                        </p>
+                        <p>
+                            Similarly, the error signal in a basic RNN leaks away at every time
+                            step. After 50&ndash;100 steps, the gradient is too faint to update
+                            the weights meaningfully, so the network cannot learn long-range
+                            dependencies &mdash; like the relationship between a foundation load
+                            event and a settlement measurement recorded weeks later.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Practical Impact</h3>
+
+                <p>
+                    The vanishing gradient problem means that basic RNNs can only learn
+                    <strong>short-range dependencies</strong> &mdash; patterns spanning roughly
+                    5&ndash;20 time steps. For many civil engineering applications, this is
+                    insufficient. Structural health monitoring data may require correlating
+                    events separated by hundreds or thousands of time steps. A specification
+                    document may have a defined term in paragraph 1 that is referenced in
+                    paragraph 50. We need architectures that can maintain memory over much
+                    longer spans.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: LSTM — LONG SHORT-TERM MEMORY
+             ========================================== -->
+        <section class="ch-section" id="lstm">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-lock"></i>
+                    LSTM: Long Short-Term Memory
+                </h2>
+
+                <p>
+                    The <strong>Long Short-Term Memory (LSTM)</strong> cell, introduced by
+                    Hochreiter and Schmidhuber in 1997, elegantly solves the vanishing gradient
+                    problem by introducing a separate <strong>cell state</strong> &mdash; a
+                    highway of information that runs through the entire sequence with minimal
+                    interference. Information is added to or removed from this cell state
+                    through carefully regulated structures called <strong>gates</strong>.
+                </p>
+
+                <h3>The Three Gates</h3>
+
+                <p>
+                    An LSTM cell contains three gates, each implemented as a sigmoid layer
+                    (outputting values between 0 and 1) that controls how much information
+                    flows through:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-door-open"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>1. Forget Gate (f<sub>t</sub>)</h3>
+                        <p>
+                            Decides what information to <strong>discard</strong> from the cell
+                            state. It looks at the previous hidden state h<sub>t&minus;1</sub>
+                            and the current input x<sub>t</sub>, and outputs a value between 0
+                            (completely forget) and 1 (completely keep) for each element of the
+                            cell state.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            f<sub>t</sub> = &sigma;( W<sub>f</sub> &middot; [h<sub>t&minus;1</sub>, x<sub>t</sub>] + b<sub>f</sub> )
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-plus-circle"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>2. Input Gate (i<sub>t</sub>)</h3>
+                        <p>
+                            Decides what new information to <strong>store</strong> in the cell
+                            state. This involves two parts: a sigmoid layer decides which values
+                            to update, and a tanh layer creates a vector of candidate values that
+                            could be added.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            i<sub>t</sub> = &sigma;( W<sub>i</sub> &middot; [h<sub>t&minus;1</sub>, x<sub>t</sub>] + b<sub>i</sub> )<br>
+                            C&#771;<sub>t</sub> = tanh( W<sub>C</sub> &middot; [h<sub>t&minus;1</sub>, x<sub>t</sub>] + b<sub>C</sub> )
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>3. Output Gate (o<sub>t</sub>)</h3>
+                        <p>
+                            Decides what parts of the cell state to <strong>output</strong> as the
+                            hidden state. The cell state is passed through tanh (squashing to
+                            [&minus;1, +1]) and multiplied by the output gate's sigmoid to select
+                            which information to expose.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            o<sub>t</sub> = &sigma;( W<sub>o</sub> &middot; [h<sub>t&minus;1</sub>, x<sub>t</sub>] + b<sub>o</sub> )<br>
+                            h<sub>t</sub> = o<sub>t</sub> &odot; tanh( C<sub>t</sub> )
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Cell State Update</h3>
+
+                <p>
+                    The cell state update is the heart of the LSTM. The old cell state is
+                    multiplied element-wise by the forget gate (removing information the gate
+                    decided to discard), then the new candidate values (scaled by the input
+                    gate) are added:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Cell State Update Equation</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; line-height:2;">
+                            C<sub>t</sub> = f<sub>t</sub> &odot; C<sub>t&minus;1</sub> + i<sub>t</sub> &odot; C&#771;<sub>t</sub>
+                        </p>
+                        <p>
+                            The <strong>&odot;</strong> symbol denotes element-wise
+                            multiplication. This additive update is the key to preventing
+                            vanishing gradients &mdash; gradients can flow backwards through
+                            the cell state without being repeatedly multiplied by weight matrices.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>An LSTM is like a well-managed project filing system.</strong>
+                            The cell state is the filing cabinet &mdash; a permanent record of
+                            important project information. The forget gate is the archivist who
+                            periodically removes outdated documents. The input gate is the project
+                            manager who decides which new reports deserve to be filed. The output
+                            gate is the secretary who pulls out only the relevant documents when
+                            someone needs a briefing.
+                        </p>
+                        <p>
+                            Without this structured system (i.e., with a basic RNN), everything
+                            goes into a single notebook that gets overwritten each day &mdash;
+                            critical early-project decisions are lost by the time they are needed.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why LSTMs Solve Vanishing Gradients</h3>
+
+                <p>
+                    The additive cell state update (C<sub>t</sub> = f<sub>t</sub> &odot;
+                    C<sub>t&minus;1</sub> + ...) creates a gradient highway. During
+                    backpropagation, the gradient flowing through the cell state is multiplied
+                    only by the forget gate values, not by weight matrices. If the forget gate
+                    is close to 1.0 (keeping most information), gradients flow nearly unchanged
+                    across hundreds of time steps. This allows LSTMs to learn dependencies
+                    spanning 100+ steps &mdash; a dramatic improvement over basic RNNs.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Engineering Application</span>
+                    </div>
+                    <p>
+                        In structural health monitoring, an LSTM can learn that a spike in
+                        temperature 200 time steps ago is correlated with a current change in
+                        strain readings &mdash; capturing thermal expansion effects that a basic
+                        RNN would miss entirely. This makes LSTMs the go-to architecture for
+                        bridge monitoring, dam safety, and long-term settlement prediction.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: GRU — GATED RECURRENT UNIT
+             ========================================== -->
+        <section class="ch-section" id="gru">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compress"></i>
+                    GRU: Gated Recurrent Unit
+                </h2>
+
+                <p>
+                    The <strong>Gated Recurrent Unit (GRU)</strong>, proposed by Cho et al. in
+                    2014, is a streamlined alternative to the LSTM. It achieves comparable
+                    performance on many tasks while using fewer parameters and being faster to
+                    train. The GRU merges the cell state and hidden state into a single state
+                    vector and uses only two gates instead of three.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code-merge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>GRU Gates</h3>
+                        <p><strong>Reset Gate (r<sub>t</sub>):</strong> Controls how much of the
+                        previous hidden state to forget when computing the candidate hidden state.
+                        When r<sub>t</sub> is close to 0, the network can "reset" its memory and
+                        act as if the sequence is starting fresh.</p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0;">
+                            r<sub>t</sub> = &sigma;( W<sub>r</sub> &middot; [h<sub>t&minus;1</sub>, x<sub>t</sub>] + b<sub>r</sub> )
+                        </p>
+                        <p><strong>Update Gate (z<sub>t</sub>):</strong> Controls the balance
+                        between keeping the old hidden state and adopting the new candidate. It
+                        effectively combines the forget and input gates of an LSTM into a single
+                        mechanism.</p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0;">
+                            z<sub>t</sub> = &sigma;( W<sub>z</sub> &middot; [h<sub>t&minus;1</sub>, x<sub>t</sub>] + b<sub>z</sub> )
+                        </p>
+                        <p><strong>Hidden State Update:</strong></p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0;">
+                            h&#771;<sub>t</sub> = tanh( W &middot; [r<sub>t</sub> &odot; h<sub>t&minus;1</sub>, x<sub>t</sub>] + b )<br>
+                            h<sub>t</sub> = (1 &minus; z<sub>t</sub>) &odot; h<sub>t&minus;1</sub> + z<sub>t</sub> &odot; h&#771;<sub>t</sub>
+                        </p>
+                    </div>
+                </div>
+
+                <h3>LSTM vs GRU: When to Use Which?</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparison</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Parameters:</strong> GRU has ~25% fewer parameters than LSTM (2 gates vs 3 gates + separate cell state)</li>
+                            <li><strong>Training speed:</strong> GRU trains faster due to fewer computations per step</li>
+                            <li><strong>Long-range memory:</strong> LSTM generally performs better on very long sequences (500+ steps)</li>
+                            <li><strong>Small datasets:</strong> GRU often generalises better with limited training data due to fewer parameters</li>
+                            <li><strong>Rule of thumb:</strong> Try GRU first; switch to LSTM if performance on long sequences is insufficient</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Practical Guidance</span>
+                    </div>
+                    <p>
+                        For many civil engineering sensor datasets &mdash; where sequences are
+                        moderate in length (50&ndash;500 steps) and training data may be limited
+                        &mdash; GRUs are often the pragmatic choice. They provide gate-based
+                        memory control with lower computational cost and fewer hyperparameters
+                        to tune.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: BIDIRECTIONAL RNNs
+             ========================================== -->
+        <section class="ch-section" id="bidirectional">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                    Bidirectional RNNs
+                </h2>
+
+                <p>
+                    A standard RNN processes a sequence from left to right &mdash; from the
+                    first time step to the last. But in many tasks, the context that follows a
+                    given position is just as important as the context that precedes it. A
+                    <strong>Bidirectional RNN</strong> runs two independent RNNs (or LSTM/GRU
+                    cells) in parallel: one processing the sequence forward and one processing
+                    it backward. At each time step, the outputs of both directions are
+                    concatenated, giving the network access to both past and future context.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-right-left"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How It Works</h3>
+                        <p>
+                            The forward RNN computes hidden states
+                            h<sub>1</sub><sup>&rarr;</sup>,
+                            h<sub>2</sub><sup>&rarr;</sup>, ...,
+                            h<sub>T</sub><sup>&rarr;</sup> from left to right. The backward RNN
+                            computes hidden states
+                            h<sub>T</sub><sup>&larr;</sup>,
+                            h<sub>T&minus;1</sub><sup>&larr;</sup>, ...,
+                            h<sub>1</sub><sup>&larr;</sup> from right to left. At each step
+                            <em>t</em>, the combined hidden state is the concatenation:
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0;">
+                            h<sub>t</sub> = [ h<sub>t</sub><sup>&rarr;</sup> ; h<sub>t</sub><sup>&larr;</sup> ]
+                        </p>
+                        <p>
+                            This doubles the hidden state dimension but provides strictly more
+                            information at each time step.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>When to Use Bidirectional Models</h3>
+
+                <p>
+                    Bidirectional RNNs are ideal when the <strong>entire sequence is available
+                    before processing begins</strong>. This is the case for:
+                </p>
+                <ul style="margin:12px 0; padding-left:24px; line-height:1.9;">
+                    <li><strong>Text classification</strong> &mdash; classifying a full inspection report into categories</li>
+                    <li><strong>Named entity recognition</strong> &mdash; extracting material names, standards references, and measurements from specification text</li>
+                    <li><strong>Post-hoc sensor analysis</strong> &mdash; analysing a complete earthquake recording after the event</li>
+                </ul>
+
+                <p>
+                    They are <strong>not suitable</strong> for real-time prediction tasks where
+                    you must make a decision at each time step before future data arrives
+                    &mdash; such as real-time structural alarm systems.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>A bidirectional RNN is like reading a specification document
+                            twice.</strong> First you read it front-to-back to understand the
+                            narrative flow. Then you read it back-to-front, starting from the
+                            conclusions and working back to see how the requirements were derived.
+                            Combining both readings gives you a much richer understanding of each
+                            clause than either reading alone.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    Civil Engineering Applications
+                </h2>
+
+                <p>
+                    Sequence models have found numerous applications across civil engineering
+                    disciplines. Let us examine the most impactful use cases in detail.
+                </p>
+
+                <h3>Structural Health Monitoring (SHM)</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sensor Time Series Analysis</h3>
+                        <p>
+                            Modern structures are instrumented with networks of sensors: strain
+                            gauges, accelerometers, displacement transducers, temperature probes,
+                            and tiltmeters. Each sensor produces a continuous time series. LSTM
+                            and GRU networks can be trained to:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Anomaly detection</strong> &mdash; identify unusual patterns that may indicate damage or degradation</li>
+                            <li><strong>Event classification</strong> &mdash; distinguish between traffic loading, wind events, seismic excitation, and thermal effects</li>
+                            <li><strong>Remaining useful life prediction</strong> &mdash; forecast when a component will need maintenance based on degradation trends</li>
+                            <li><strong>Missing data imputation</strong> &mdash; fill gaps in sensor recordings using learned temporal patterns</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Text Processing for Specifications</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>NLP in Construction Documents</h3>
+                        <p>
+                            Construction projects generate vast volumes of text &mdash;
+                            specifications, contracts, RFIs, submittals, daily logs. Sequence
+                            models can automate tedious text analysis tasks:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Clause classification</strong> &mdash; automatically categorise specification clauses by topic (safety, materials, workmanship)</li>
+                            <li><strong>Conflict detection</strong> &mdash; identify contradictory requirements across documents</li>
+                            <li><strong>Information extraction</strong> &mdash; pull structured data (material strengths, tolerances, standards references) from unstructured text</li>
+                            <li><strong>Sentiment analysis of daily logs</strong> &mdash; detect early warning signs of disputes or safety concerns</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Construction Activity Sequence Prediction</h3>
+
+                <p>
+                    The temporal sequence of construction activities can be modelled with RNNs
+                    to predict delays, optimise schedules, and identify productivity patterns.
+                    Given a sequence of completed activities with their durations, an LSTM can
+                    predict the expected duration of upcoming activities and flag sequences that
+                    are trending toward delay.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DEMO 2 — LSTM GATE ANIMATOR
+             ========================================== -->
+        <section class="ch-section" id="demo-lstm-gates">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: LSTM Gate Animator
+                </h2>
+
+                <p>
+                    This demo visualises the inner workings of an LSTM cell at a single time
+                    step. Watch how the <strong>forget gate</strong> selectively erases
+                    information from the cell state, the <strong>input gate</strong> writes
+                    new information, and the <strong>output gate</strong> controls what the
+                    cell exposes as its hidden state. Use the sliders to adjust the input
+                    values and observe how the gates respond.
+                </p>
+
+                <div class="demo-panel" id="lstm-gate-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>LSTM Gate Animator &mdash; Cell State &amp; Gate Operations</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">
+                            Input x<sub>t</sub>:
+                            <input type="range" id="lstm-input-slider" min="-1" max="1" step="0.1" value="0.5"
+                                   style="width:120px; vertical-align:middle; margin-left:6px; accent-color:var(--accent-primary);">
+                            <span id="lstm-input-val" style="font-family:'JetBrains Mono',monospace; min-width:40px; display:inline-block;">0.5</span>
+                        </label>
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">
+                            h<sub>t-1</sub>:
+                            <input type="range" id="lstm-hidden-slider" min="-1" max="1" step="0.1" value="0.3"
+                                   style="width:120px; vertical-align:middle; margin-left:6px; accent-color:var(--accent-primary);">
+                            <span id="lstm-hidden-val" style="font-family:'JetBrains Mono',monospace; min-width:40px; display:inline-block;">0.3</span>
+                        </label>
+                        <button id="lstm-animate-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-play"></i> Animate
+                        </button>
+                        <button id="lstm-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="lstm-gate-canvas" style="width:100%; height:460px; border-radius:8px;"></canvas>
+                    <p id="lstm-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-secondary); min-height:20px;">
+                        Adjust sliders and click Animate to see the gate operations. Bars show gate activations; the pipeline shows cell state flow.
+                    </p>
+                </div>
+
+                <p>
+                    Observe how increasing the input x<sub>t</sub> tends to raise the input gate
+                    activation (more new information enters the cell state), while the forget
+                    gate independently decides how much of the old cell state to retain. The
+                    output gate then filters what portion of the updated cell state becomes the
+                    new hidden state h<sub>t</sub>.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: SUMMARY & KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    Summary &amp; Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What We Covered</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Sequential data</strong> &mdash; data where order matters: time series, text, activity sequences. Shuffling destroys information.</li>
+                            <li><strong>RNN architecture</strong> &mdash; a neural network with a hidden state that carries memory forward through time steps, using shared weights.</li>
+                            <li><strong>Vanishing gradients</strong> &mdash; basic RNNs lose the ability to learn long-range dependencies because gradients decay exponentially during backpropagation through time.</li>
+                            <li><strong>LSTM</strong> &mdash; solves vanishing gradients with a cell state highway and three gates (forget, input, output) that control information flow.</li>
+                            <li><strong>GRU</strong> &mdash; a simpler alternative with two gates (reset, update) that achieves comparable performance with fewer parameters.</li>
+                            <li><strong>Bidirectional RNNs</strong> &mdash; process sequences in both directions for richer context when the full sequence is available.</li>
+                            <li><strong>CE applications</strong> &mdash; structural health monitoring, sensor anomaly detection, text processing for specifications, and construction schedule prediction.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Answer the following questions to check your grasp of the key concepts from
+                    this sub-chapter.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the primary function of the hidden state in a basic RNN?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To store the network's weight matrices
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To carry a compressed summary of all previous time steps forward through the sequence
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To normalise the input data at each time step
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To compute the loss function during training
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The hidden state is a vector that persists
+                        between time steps, acting as the network's memory. It accumulates a
+                        compressed representation of all inputs processed so far.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The hidden state serves as a memory vector
+                        that carries information from previous time steps forward. Weights are
+                        separate parameters, and loss computation is external to the hidden state.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        The vanishing gradient problem in basic RNNs means that:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The network produces zero output for long sequences
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The hidden state vector becomes all zeros
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Error signals decay exponentially during backpropagation, preventing learning of long-range dependencies
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> The learning rate decreases automatically over time
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> During backpropagation through time, gradients
+                        are multiplied at each step by the weight matrix and activation
+                        derivatives. When these factors are less than 1, the gradient shrinks
+                        exponentially, making it impossible to learn from events far in the past.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The vanishing gradient problem is specifically
+                        about the error signal (gradient) decaying exponentially during
+                        backpropagation through many time steps, preventing the network from
+                        learning long-range temporal dependencies.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        Which LSTM gate decides what old information to discard from the cell state?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Input gate
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Output gate
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Forget gate
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Reset gate
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The forget gate (f<sub>t</sub>) produces values
+                        between 0 and 1 for each element of the cell state. A value near 0 means
+                        "forget this information," while a value near 1 means "keep it." This
+                        allows the LSTM to selectively discard irrelevant past information.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The forget gate is responsible for deciding
+                        what to discard. The input gate controls what new information to add, and
+                        the output gate controls what to expose as the hidden state. The reset
+                        gate is a GRU concept, not LSTM.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A bidirectional RNN is most appropriate when:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> You need to make real-time predictions as each new data point arrives
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> The entire sequence is available before processing, and both past and future context are useful
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> You have very short sequences of fewer than 5 time steps
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> You want to reduce the total number of model parameters
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Bidirectional RNNs require the full sequence
+                        upfront because the backward pass reads from the end. They excel at
+                        tasks like text classification or post-hoc sensor analysis where both
+                        preceding and following context improve understanding.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Bidirectional RNNs need the entire sequence
+                        available before processing starts (since one direction reads backwards).
+                        They are not suitable for real-time prediction and actually double the
+                        parameters, not reduce them.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="index.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> Chapter 5 Hub
+        </a>
+        <a href="sub2.html" class="chapter-nav__link next">
+            5.2 Attention Mechanism <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+        var lerp = Utils.lerp || function(a,b,t){ return a+(b-a)*t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED FLOWING WAVEFORMS
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var waves = [];
+            var time = 0;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                waves = [];
+                for (var i = 0; i < 6; i++) {
+                    waves.push({
+                        amp: rand(20, 60),
+                        freq: rand(0.003, 0.012),
+                        phase: rand(0, Math.PI * 2),
+                        speed: rand(0.008, 0.025),
+                        y: h * (0.25 + i * 0.1),
+                        color: i % 2 === 0 ? 'rgba(45,212,191,' : 'rgba(34,211,238,'
+                    });
+                }
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Draw grid
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < w; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+                }
+                for (var gy = 0; gy < h; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+                }
+
+                // Draw waves
+                for (var i = 0; i < waves.length; i++) {
+                    var wv = waves[i];
+                    ctx.beginPath();
+                    ctx.strokeStyle = wv.color + (0.15 + i * 0.03).toFixed(2) + ')';
+                    ctx.lineWidth = 2;
+                    for (var x = 0; x < w; x += 2) {
+                        var y = wv.y + Math.sin(x * wv.freq + wv.phase + time * wv.speed) * wv.amp;
+                        y += Math.sin(x * wv.freq * 2.3 + time * wv.speed * 0.7) * wv.amp * 0.3;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+
+                // Flowing dots along waves
+                for (var j = 0; j < waves.length; j++) {
+                    var wv2 = waves[j];
+                    var dotX = ((time * 40 * wv2.speed + j * 120) % (w + 40)) - 20;
+                    var dotY = wv2.y + Math.sin(dotX * wv2.freq + wv2.phase + time * wv2.speed) * wv2.amp;
+                    dotY += Math.sin(dotX * wv2.freq * 2.3 + time * wv2.speed * 0.7) * wv2.amp * 0.3;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = j % 2 === 0 ? C.TEAL : C.CYAN;
+                    ctx.fill();
+                }
+
+                time++;
+                requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+        })();
+
+        /* ==============================================
+           DEMO 1: RNN UNROLLING VISUALISER
+           ============================================== */
+        (function initRNNUnrolling() {
+            var canvas = document.getElementById('rnn-unrolling-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var seqLen = 8;
+            var currentStep = -1;
+            var isPlaying = false;
+            var playTimer = null;
+            var hiddenStates = [];
+            var inputValues = [];
+            var animProgress = 1;
+            var animTarget = -1;
+
+            function generateData() {
+                inputValues = [];
+                hiddenStates = [0];
+                for (var i = 0; i < seqLen; i++) {
+                    inputValues.push(rand(-1, 1));
+                }
+                for (var j = 0; j < seqLen; j++) {
+                    var prev = hiddenStates[j];
+                    var inp = inputValues[j];
+                    var next = Math.tanh(0.7 * prev + 0.5 * inp);
+                    hiddenStates.push(next);
+                }
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var margin = 50;
+                var cellW = Math.min(80, (w - margin * 2) / (seqLen + 0.5));
+                var gap = (w - margin * 2 - cellW * seqLen) / Math.max(1, seqLen - 1);
+                var cellH = 60;
+                var centerY = h * 0.5;
+                var inputY = centerY + 90;
+                var outputY = centerY - 90;
+
+                // Title labels
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = C.MUTED;
+                ctx.textAlign = 'left';
+                ctx.fillText('Inputs (x)', margin, inputY + 35);
+                ctx.fillText('Hidden states (h)', margin, outputY - 25);
+
+                for (var i = 0; i < seqLen; i++) {
+                    var x = margin + i * (cellW + gap);
+                    var active = i <= currentStep;
+                    var isCurrent = i === currentStep;
+                    var alpha = active ? 1 : 0.25;
+
+                    // Connection arrow from previous cell
+                    if (i > 0) {
+                        var prevX = margin + (i - 1) * (cellW + gap) + cellW;
+                        ctx.beginPath();
+                        ctx.moveTo(prevX, centerY);
+                        ctx.lineTo(x, centerY);
+                        ctx.strokeStyle = active ? C.TEAL : C.DIM;
+                        ctx.lineWidth = active ? 2.5 : 1;
+                        ctx.stroke();
+                        // Arrowhead
+                        if (active) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, centerY);
+                            ctx.lineTo(x - 8, centerY - 5);
+                            ctx.lineTo(x - 8, centerY + 5);
+                            ctx.closePath();
+                            ctx.fillStyle = C.TEAL;
+                            ctx.fill();
+                        }
+                    }
+
+                    // RNN cell box
+                    ctx.fillStyle = isCurrent ? 'rgba(45,212,191,0.15)' : (active ? 'rgba(45,212,191,0.06)' : C.NODE);
+                    ctx.strokeStyle = isCurrent ? C.TEAL : (active ? C.STROKE : C.DIM);
+                    ctx.lineWidth = isCurrent ? 2 : 1;
+                    ctx.beginPath();
+                    ctx.roundRect(x, centerY - cellH / 2, cellW, cellH, 8);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Cell label
+                    ctx.font = '500 12px "JetBrains Mono", monospace';
+                    ctx.fillStyle = active ? C.WHITE : C.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('tanh', x + cellW / 2, centerY + 4);
+
+                    // Input arrow (bottom)
+                    ctx.beginPath();
+                    ctx.moveTo(x + cellW / 2, inputY - 15);
+                    ctx.lineTo(x + cellW / 2, centerY + cellH / 2);
+                    ctx.strokeStyle = active ? C.CYAN : C.DIM;
+                    ctx.lineWidth = active ? 2 : 1;
+                    ctx.stroke();
+                    if (active) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + cellW / 2, centerY + cellH / 2);
+                        ctx.lineTo(x + cellW / 2 - 4, centerY + cellH / 2 + 7);
+                        ctx.lineTo(x + cellW / 2 + 4, centerY + cellH / 2 + 7);
+                        ctx.closePath();
+                        ctx.fillStyle = C.CYAN;
+                        ctx.fill();
+                    }
+
+                    // Input value label
+                    ctx.font = '500 11px "JetBrains Mono", monospace';
+                    ctx.fillStyle = active ? C.CYAN : C.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('x' + (i + 1), x + cellW / 2, inputY - 2);
+                    if (active) {
+                        ctx.font = '400 10px "JetBrains Mono", monospace';
+                        ctx.fillStyle = C.TEXT;
+                        ctx.fillText(inputValues[i].toFixed(2), x + cellW / 2, inputY + 14);
+                    }
+
+                    // Output arrow (top)
+                    ctx.beginPath();
+                    ctx.moveTo(x + cellW / 2, centerY - cellH / 2);
+                    ctx.lineTo(x + cellW / 2, outputY + 18);
+                    ctx.strokeStyle = active ? C.AMBER : C.DIM;
+                    ctx.lineWidth = active ? 2 : 1;
+                    ctx.stroke();
+
+                    // Hidden state value (top)
+                    if (active) {
+                        var hVal = hiddenStates[i + 1];
+                        var hColor = hVal >= 0 ? C.TEAL : C.RED;
+                        var barW = Math.abs(hVal) * (cellW * 0.8);
+
+                        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                        ctx.beginPath();
+                        ctx.roundRect(x + 4, outputY - 4, cellW - 8, 16, 4);
+                        ctx.fill();
+
+                        ctx.fillStyle = hColor;
+                        ctx.globalAlpha = 0.6;
+                        ctx.beginPath();
+                        ctx.roundRect(x + 4, outputY - 4, barW, 16, 4);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+
+                        ctx.font = '500 10px "JetBrains Mono", monospace';
+                        ctx.fillStyle = C.WHITE;
+                        ctx.fillText('h' + (i + 1) + '=' + hVal.toFixed(2), x + cellW / 2, outputY + 7);
+                    }
+
+                    // Time step label
+                    ctx.font = '400 10px Inter, sans-serif';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('t=' + (i + 1), x + cellW / 2, centerY + cellH / 2 + 65);
+                }
+
+                // Initial hidden state label
+                if (seqLen > 0) {
+                    var x0 = margin;
+                    ctx.font = '400 10px "JetBrains Mono", monospace';
+                    ctx.fillStyle = C.MUTED;
+                    ctx.textAlign = 'right';
+                    ctx.fillText('h0=0', x0 - 12, centerY + 4);
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            function step() {
+                if (currentStep < seqLen - 1) {
+                    currentStep++;
+                    updateInfo();
+                } else {
+                    stopPlay();
+                }
+            }
+
+            function startPlay() {
+                if (isPlaying) { stopPlay(); return; }
+                isPlaying = true;
+                var btn = document.getElementById('rnn-play-btn');
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                playTimer = setInterval(function () {
+                    step();
+                    if (currentStep >= seqLen - 1) stopPlay();
+                }, 700);
+            }
+
+            function stopPlay() {
+                isPlaying = false;
+                clearInterval(playTimer);
+                var btn = document.getElementById('rnn-play-btn');
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i> Play';
+            }
+
+            function resetDemo() {
+                stopPlay();
+                currentStep = -1;
+                seqLen = parseInt(document.getElementById('rnn-seq-length').value) || 8;
+                generateData();
+                updateInfo();
+            }
+
+            function updateInfo() {
+                var info = document.getElementById('rnn-info');
+                if (!info) return;
+                if (currentStep < 0) {
+                    info.innerHTML = 'Press Step or Play to begin. The hidden state vector h<sub>t</sub> carries memory forward through each time step.';
+                } else {
+                    info.innerHTML = 'Step ' + (currentStep + 1) + '/' + seqLen +
+                        ' | Input x<sub>' + (currentStep + 1) + '</sub> = ' + inputValues[currentStep].toFixed(3) +
+                        ' | Hidden h<sub>' + (currentStep + 1) + '</sub> = ' + hiddenStates[currentStep + 1].toFixed(3);
+                }
+            }
+
+            generateData();
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+
+            document.getElementById('rnn-step-btn').addEventListener('click', step);
+            document.getElementById('rnn-play-btn').addEventListener('click', startPlay);
+            document.getElementById('rnn-reset-btn').addEventListener('click', resetDemo);
+            document.getElementById('rnn-seq-length').addEventListener('change', resetDemo);
+        })();
+
+        /* ==============================================
+           DEMO 2: LSTM GATE ANIMATOR
+           ============================================== */
+        (function initLSTMGates() {
+            var canvas = document.getElementById('lstm-gate-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var inputVal = 0.5;
+            var hiddenVal = 0.3;
+            var cellState = 0.4;
+            var animating = false;
+            var animFrame = 0;
+            var animDuration = 120;
+
+            // Gate computation (simplified, illustrative)
+            function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+            function computeGates() {
+                var combined = inputVal * 0.6 + hiddenVal * 0.4;
+                var forgetG = sigmoid(combined * 1.5 + 0.5);
+                var inputG = sigmoid(combined * 1.2 - 0.2);
+                var candidate = Math.tanh(combined * 0.8);
+                var outputG = sigmoid(combined * 1.0 + 0.3);
+                var newCell = forgetG * cellState + inputG * candidate;
+                var newHidden = outputG * Math.tanh(newCell);
+                return {
+                    forget: forgetG,
+                    input: inputG,
+                    candidate: candidate,
+                    output: outputG,
+                    newCell: newCell,
+                    newHidden: newHidden
+                };
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var gates = computeGates();
+                var progress = animating ? Math.min(animFrame / animDuration, 1) : 1;
+                var eased = progress < 1 ? (1 - Math.pow(1 - progress, 3)) : 1;
+
+                var centerX = w / 2;
+                var centerY = h / 2;
+                var boxW = Math.min(300, w * 0.4);
+                var boxH = 200;
+                var boxX = centerX - boxW / 2;
+                var boxY = centerY - boxH / 2;
+
+                // LSTM cell outline
+                ctx.strokeStyle = C.STROKE;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.roundRect(boxX - 20, boxY - 20, boxW + 40, boxH + 40, 16);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = C.MUTED;
+                ctx.textAlign = 'center';
+                ctx.fillText('LSTM Cell', centerX, boxY - 30);
+
+                // Cell state pipeline (horizontal bar across top of box)
+                var pipeY = boxY + 20;
+                var pipeH = 24;
+                // Old cell state (left)
+                ctx.fillStyle = C.DIM;
+                ctx.beginPath();
+                ctx.roundRect(boxX, pipeY, boxW, pipeH, 6);
+                ctx.fill();
+
+                // Cell state bar (animated)
+                var cellBarW = Math.abs(gates.newCell * eased) * boxW * 0.45;
+                var csColor = gates.newCell >= 0 ? C.TEAL : C.RED;
+                ctx.fillStyle = csColor;
+                ctx.globalAlpha = 0.5 * eased;
+                ctx.beginPath();
+                ctx.roundRect(boxX + 4, pipeY + 3, cellBarW, pipeH - 6, 4);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                ctx.font = '500 11px "JetBrains Mono", monospace';
+                ctx.fillStyle = C.WHITE;
+                ctx.textAlign = 'center';
+                ctx.fillText('Cell State: ' + (gates.newCell * eased).toFixed(3), centerX, pipeY + pipeH / 2 + 4);
+
+                // Gate labels and bars
+                var gateData = [
+                    { name: 'Forget', val: gates.forget, color: C.RED,   icon: 'fa-door-open' },
+                    { name: 'Input',  val: gates.input,  color: C.GREEN, icon: 'fa-plus-circle' },
+                    { name: 'Output', val: gates.output, color: C.AMBER, icon: 'fa-right-from-bracket' }
+                ];
+
+                var gateY = pipeY + pipeH + 30;
+                var gateW = Math.min(80, (boxW - 40) / 3);
+                var gateGap = (boxW - gateW * 3) / 4;
+
+                for (var g = 0; g < 3; g++) {
+                    var gd = gateData[g];
+                    var gx = boxX + gateGap + g * (gateW + gateGap);
+                    var barMaxH = 80;
+                    var barH = gd.val * eased * barMaxH;
+
+                    // Gate label
+                    ctx.font = '600 11px Inter, sans-serif';
+                    ctx.fillStyle = C.TEXT;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(gd.name, gx + gateW / 2, gateY);
+
+                    // Bar background
+                    ctx.fillStyle = C.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(gx + 10, gateY + 10, gateW - 20, barMaxH, 4);
+                    ctx.fill();
+
+                    // Bar fill (grows from bottom)
+                    ctx.fillStyle = gd.color;
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.roundRect(gx + 10, gateY + 10 + (barMaxH - barH), gateW - 20, barH, 4);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // Value label
+                    ctx.font = '500 10px "JetBrains Mono", monospace';
+                    ctx.fillStyle = C.WHITE;
+                    ctx.fillText(( gd.val * eased).toFixed(2), gx + gateW / 2, gateY + barMaxH + 25);
+                }
+
+                // Input labels (left side)
+                var labelX = boxX - 60;
+                ctx.font = '500 12px "JetBrains Mono", monospace';
+                ctx.textAlign = 'right';
+
+                ctx.fillStyle = C.CYAN;
+                ctx.fillText('x_t = ' + inputVal.toFixed(1), labelX, centerY - 10);
+
+                ctx.fillStyle = C.AMBER;
+                ctx.fillText('h_t-1 = ' + hiddenVal.toFixed(1), labelX, centerY + 15);
+
+                // Input arrows
+                ctx.strokeStyle = C.CYAN;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(labelX + 8, centerY - 14);
+                ctx.lineTo(boxX - 20, centerY - 14);
+                ctx.stroke();
+
+                ctx.strokeStyle = C.AMBER;
+                ctx.beginPath();
+                ctx.moveTo(labelX + 8, centerY + 12);
+                ctx.lineTo(boxX - 20, centerY + 12);
+                ctx.stroke();
+
+                // Output label (right side)
+                var outX = boxX + boxW + 60;
+                ctx.font = '500 12px "JetBrains Mono", monospace';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = C.TEAL;
+                ctx.fillText('h_t = ' + (gates.newHidden * eased).toFixed(3), outX - 4, centerY + 4);
+
+                ctx.strokeStyle = C.TEAL;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(boxX + boxW + 20, centerY);
+                ctx.lineTo(outX - 10, centerY);
+                ctx.stroke();
+
+                if (animating) {
+                    animFrame++;
+                    if (animFrame >= animDuration) {
+                        animating = false;
+                        cellState = gates.newCell;
+                    }
+                    requestAnimationFrame(draw);
+                } else {
+                    requestAnimationFrame(draw);
+                }
+            }
+
+            function animate() {
+                animFrame = 0;
+                animating = true;
+            }
+
+            function resetLSTM() {
+                cellState = 0.4;
+                inputVal = 0.5;
+                hiddenVal = 0.3;
+                animating = false;
+                animFrame = 0;
+                var inpSlider = document.getElementById('lstm-input-slider');
+                var hidSlider = document.getElementById('lstm-hidden-slider');
+                if (inpSlider) inpSlider.value = '0.5';
+                if (hidSlider) hidSlider.value = '0.3';
+                updateSliderLabels();
+                updateLSTMInfo();
+            }
+
+            function updateSliderLabels() {
+                var iv = document.getElementById('lstm-input-val');
+                var hv = document.getElementById('lstm-hidden-val');
+                if (iv) iv.textContent = inputVal.toFixed(1);
+                if (hv) hv.textContent = hiddenVal.toFixed(1);
+            }
+
+            function updateLSTMInfo() {
+                var info = document.getElementById('lstm-info');
+                if (!info) return;
+                var gates = computeGates();
+                info.textContent = 'Forget: ' + gates.forget.toFixed(3) +
+                    ' | Input: ' + gates.input.toFixed(3) +
+                    ' | Output: ' + gates.output.toFixed(3) +
+                    ' | Cell: ' + cellState.toFixed(3) +
+                    ' -> ' + gates.newCell.toFixed(3);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+
+            document.getElementById('lstm-input-slider').addEventListener('input', function () {
+                inputVal = parseFloat(this.value);
+                updateSliderLabels();
+                updateLSTMInfo();
+            });
+
+            document.getElementById('lstm-hidden-slider').addEventListener('input', function () {
+                hiddenVal = parseFloat(this.value);
+                updateSliderLabels();
+                updateLSTMInfo();
+            });
+
+            document.getElementById('lstm-animate-btn').addEventListener('click', animate);
+            document.getElementById('lstm-reset-btn').addEventListener('click', resetLSTM);
+        })();
+
+        /* ==============================================
+           INTERSECTION OBSERVER FOR ANIMATIONS
+           ============================================== */
+        (function initObserver() {
+            var obs = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) e.target.classList.add('visible');
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { obs.observe(el); });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

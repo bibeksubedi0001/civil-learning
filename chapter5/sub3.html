@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.3 Transformer Architecture | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Master the Transformer architecture through a civil engineering lens. Explore multi-head attention, positional encoding, encoder-decoder stacks, residual connections, and layer normalization with interactive demos.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-microchip"></i> Chapter 5 &mdash; Sub-chapter 5.3
+            </div>
+            <h1 class="chapter-hero__title">Transformer Architecture</h1>
+            <p class="chapter-hero__subtitle">
+                In 2017 a single paper declared "Attention Is All You Need" and dismantled
+                the dominance of recurrence. The Transformer processes entire sequences in
+                parallel, stacks self-attention into deep towers, and powers every modern
+                large language model &mdash; from GPT to BERT and beyond.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE PAPER THAT CHANGED EVERYTHING
+             ========================================== -->
+        <section class="ch-section" id="attention-is-all-you-need">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scroll"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>"Attention Is All You Need" (2017)</h2>
+                        <p>
+                            In June 2017 Vaswani et al. published a paper at Google Brain that
+                            would reshape the entire field of deep learning. The title was
+                            deliberately provocative: <em>Attention Is All You Need</em>. The
+                            core claim was that a model built <strong>entirely from attention
+                            mechanisms</strong> &mdash; with no recurrence and no convolutions
+                            &mdash; could outperform every existing sequence-to-sequence
+                            architecture on machine translation benchmarks.
+                        </p>
+                        <p>
+                            They were right. The architecture they introduced, the
+                            <strong>Transformer</strong>, not only matched the best RNN and
+                            CNN-based translation systems but surpassed them while training
+                            significantly faster. Within two years, the Transformer became the
+                            foundation of BERT, GPT, T5, and virtually every breakthrough in
+                            natural language processing. Today it has expanded into computer
+                            vision, protein folding, weather forecasting, and &mdash;
+                            increasingly &mdash; civil engineering applications.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The key innovations were not individual components but their
+                    <strong>composition</strong>. Self-attention (which we explored in
+                    Sub-chapter 5.2) was already known. Residual connections and layer
+                    normalisation had been used in deep CNNs. The breakthrough was assembling
+                    these pieces into a coherent, elegant architecture that eliminated the
+                    sequential bottleneck of RNNs entirely.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you understand the attention mechanism from
+                        Sub-chapter 5.2: Query, Key, and Value vectors, scaled dot-product
+                        attention, and self-attention. We build directly on those foundations
+                        to construct the full Transformer.
+                    </p>
+                </div>
+
+                <h3>Why the Transformer Matters for Civil Engineers</h3>
+
+                <p>
+                    The Transformer is relevant to civil engineering not because you will build
+                    one from scratch, but because it is the engine inside the AI tools you
+                    will increasingly use: automated specification analysis, generative design
+                    assistants, sensor anomaly detection systems, and natural-language interfaces
+                    to BIM models. Understanding the architecture lets you evaluate these
+                    tools critically &mdash; knowing their strengths, limitations, and failure
+                    modes.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE DESIGN REVIEW COMMITTEE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Design Review Committee Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The Transformer is a multi-disciplinary design review
+                            committee.</strong> Imagine a major infrastructure project &mdash;
+                            a cable-stayed bridge &mdash; undergoing its final design review.
+                            The review committee has eight specialist engineers (the
+                            <em>attention heads</em>), each focusing on a different aspect:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:1.9;">
+                            <li><strong>Head 1 (Structural):</strong> focuses on load paths, member forces, and connection details</li>
+                            <li><strong>Head 2 (Geotechnical):</strong> focuses on foundation bearing capacity and settlement</li>
+                            <li><strong>Head 3 (Hydraulic):</strong> focuses on scour depth and flood levels</li>
+                            <li><strong>Head 4 (Seismic):</strong> focuses on dynamic response and ductility</li>
+                            <li><strong>Head 5 (Durability):</strong> focuses on concrete cover, coatings, and corrosion protection</li>
+                            <li><strong>Head 6 (Construction):</strong> focuses on build sequence, crane access, and temporary works</li>
+                            <li><strong>Head 7 (Cost):</strong> focuses on material quantities, labour hours, and budget</li>
+                            <li><strong>Head 8 (Compliance):</strong> focuses on code references, design standards, and regulatory requirements</li>
+                        </ul>
+                        <p>
+                            Each head reads the <em>same</em> set of design documents (the input
+                            sequence) but attends to different sections. After the review, their
+                            individual findings are concatenated into a combined report and passed
+                            through a synthesis step (the linear projection) that merges all
+                            perspectives into a unified assessment.
+                        </p>
+                        <p>
+                            This happens <strong>six times</strong> (the encoder layers). At each
+                            round, the committee refines its understanding, building on the
+                            combined insights from the previous round. Early rounds catch obvious
+                            issues; later rounds identify subtle interactions between disciplines
+                            &mdash; like how the geotechnical settlement affects the structural
+                            load distribution which in turn affects the seismic response.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This analogy maps onto every major component of the Transformer:
+                    multi-head attention is the committee of specialists, the feed-forward
+                    layers are where each specialist processes their findings independently,
+                    residual connections ensure that original information is never lost, and
+                    layer normalisation keeps the review process stable across rounds.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: MULTI-HEAD ATTENTION
+             ========================================== -->
+        <section class="ch-section" id="multi-head-attention">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Multi-Head Attention
+                </h2>
+
+                <p>
+                    In Sub-chapter 5.2 we learned that a single attention head computes
+                    Query, Key, and Value projections and produces a weighted combination of
+                    Values. A <strong>single head</strong>, however, can only focus on one
+                    type of relationship at a time. Multi-head attention runs
+                    <strong>h parallel attention heads</strong>, each with its own learned
+                    Q, K, V projection matrices, so the model can simultaneously attend to
+                    information from different representation subspaces.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Multi-Head Attention Formula</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; line-height:2.2; margin:12px 0;">
+                            MultiHead(Q, K, V) = Concat(head<sub>1</sub>, ..., head<sub>h</sub>) &middot; W<sup>O</sup><br>
+                            where head<sub>i</sub> = Attention(Q &middot; W<sub>i</sub><sup>Q</sup>, K &middot; W<sub>i</sub><sup>K</sup>, V &middot; W<sub>i</sub><sup>V</sup>)
+                        </p>
+                        <p>
+                            Each head operates on a <strong>subspace</strong> of the full
+                            model dimension. If d<sub>model</sub> = 512 and h = 8 heads, each
+                            head works with d<sub>k</sub> = d<sub>v</sub> = 512/8 = 64
+                            dimensions. The total computation cost is similar to a single head
+                            with full dimensionality, but the model gains the ability to attend
+                            to multiple relationships simultaneously.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>What Different Heads Learn</h3>
+
+                <p>
+                    Research has shown that different attention heads in trained Transformers
+                    specialise in recognising different types of relationships:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Observed Head Specialisations</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li><strong>Positional heads:</strong> attend to adjacent tokens (local context)</li>
+                            <li><strong>Syntactic heads:</strong> attend to grammatically related words (subject-verb pairs)</li>
+                            <li><strong>Semantic heads:</strong> attend to contextually related words regardless of distance</li>
+                            <li><strong>Rare-token heads:</strong> disproportionately attend to unusual or important tokens</li>
+                        </ul>
+                        <p>
+                            No one programs these specialisations. They emerge naturally during
+                            training as the model discovers that different types of attention
+                            patterns are useful for the task.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Original Configuration</span>
+                    </div>
+                    <p>
+                        The original Transformer used d<sub>model</sub> = 512 with h = 8
+                        attention heads. Modern large language models scale both parameters
+                        dramatically: GPT-3 uses d<sub>model</sub> = 12288 with 96 heads.
+                        The principle, however, remains identical.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: POSITIONAL ENCODING
+             ========================================== -->
+        <section class="ch-section" id="positional-encoding">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-map-pin"></i>
+                    Positional Encoding: Why Position Matters
+                </h2>
+
+                <p>
+                    There is a critical problem with self-attention: it is
+                    <strong>permutation-invariant</strong>. If you shuffle the order of input
+                    tokens, the attention mechanism produces the same output (just shuffled
+                    the same way). Self-attention has no built-in notion of position or order
+                    &mdash; every token is treated as if it exists in a position-less set.
+                </p>
+
+                <p>
+                    This is a serious limitation. In an RNN, position is implicit: the hidden
+                    state at step 5 has been shaped by steps 1 through 4. But the Transformer
+                    processes all positions in parallel with no recurrence, so it has no idea
+                    whether a token appears at position 1 or position 100 unless we
+                    explicitly tell it.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Positional encoding is like chainage markers on a highway
+                            alignment.</strong> A set of horizontal curve parameters (radius,
+                            deflection angle, superelevation) is meaningless without knowing
+                            <em>where</em> along the route each curve occurs. Chainage markers
+                            (Km 0+000, Km 1+250, etc.) provide absolute position. Without them,
+                            you have a bag of curves with no spatial order &mdash; you could not
+                            reconstruct the road alignment.
+                        </p>
+                        <p>
+                            Similarly, positional encodings stamp each token with a unique
+                            position signature so the Transformer knows that "beam" at position
+                            3 is different from "beam" at position 47, even though the word
+                            embedding is the same.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Sinusoidal Positional Encoding</h3>
+
+                <p>
+                    The original Transformer uses <strong>sinusoidal functions</strong> to
+                    generate positional encodings. For each position <em>pos</em> and each
+                    dimension <em>i</em> of the encoding vector:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wave-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sinusoidal Encoding Formulae</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; line-height:2.2; margin:12px 0;">
+                            PE(pos, 2i) &nbsp;&nbsp;&nbsp;= sin(pos / 10000<sup>2i/d<sub>model</sub></sup>)<br>
+                            PE(pos, 2i+1) = cos(pos / 10000<sup>2i/d<sub>model</sub></sup>)
+                        </p>
+                        <p>
+                            Even dimensions use sine; odd dimensions use cosine. The wavelength
+                            increases geometrically from 2&pi; (for i = 0) to 10000 &middot;
+                            2&pi; (for i = d<sub>model</sub>/2). This creates a unique pattern
+                            for every position.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why Sinusoids?</h3>
+
+                <p>
+                    The choice of sinusoidal functions is not arbitrary. The authors chose
+                    them for two key properties:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Unique Encoding for Every Position</h3>
+                        <p>
+                            The combination of sine and cosine waves at different frequencies
+                            produces a unique vector for every position. No two positions share
+                            the same encoding, so the model can always distinguish between them.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Relative Positions Through Linear Transformations</h3>
+                        <p>
+                            For any fixed offset <em>k</em>, PE(pos + k) can be expressed as a
+                            linear function of PE(pos). This means the model can learn to attend
+                            to relative positions (e.g., "two tokens to the left") without
+                            needing a separate mechanism. The sinusoidal structure encodes
+                            relative distance naturally.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Adding Encodings to Embeddings</h3>
+
+                <p>
+                    The positional encoding vector has the same dimension d<sub>model</sub>
+                    as the word embedding. It is <strong>added</strong> element-wise to the
+                    input embedding, not concatenated. This means the model receives a single
+                    vector per token that combines both <em>what</em> the token is (the
+                    embedding) and <em>where</em> it appears (the positional encoding).
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Learned vs. Fixed Encodings</span>
+                    </div>
+                    <p>
+                        The original paper found that learned positional embeddings performed
+                        nearly identically to sinusoidal encodings. Modern models like BERT
+                        use learned positional embeddings, while others use more advanced
+                        schemes like Rotary Position Embedding (RoPE). The sinusoidal approach
+                        remains important conceptually because it generalises to unseen
+                        sequence lengths without retraining.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: THE ENCODER STACK
+             ========================================== -->
+        <section class="ch-section" id="encoder-stack">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bars-stacked"></i>
+                    The Encoder Stack
+                </h2>
+
+                <p>
+                    The encoder's job is to process the input sequence and produce a rich,
+                    contextualised representation of every token. It does this by stacking
+                    <strong>N identical layers</strong> (N = 6 in the original paper). Each
+                    layer contains two sub-layers:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-to-circle"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sub-layer 1: Multi-Head Self-Attention</h3>
+                        <p>
+                            Every token attends to every other token in the input sequence
+                            (including itself). This is the self-attention mechanism from
+                            Sub-chapter 5.2, extended to multiple heads. After this sub-layer,
+                            each token's representation has been enriched with contextual
+                            information from the entire sequence.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sub-layer 2: Position-wise Feed-Forward Network</h3>
+                        <p>
+                            After attention has mixed information across positions, each
+                            position passes through a two-layer feed-forward network
+                            <strong>independently</strong>. The same feed-forward network is
+                            applied to every position, but there is no information exchange
+                            between positions in this sub-layer.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-top:8px;">
+                            FFN(x) = max(0, x &middot; W<sub>1</sub> + b<sub>1</sub>) &middot; W<sub>2</sub> + b<sub>2</sub>
+                        </p>
+                        <p>
+                            The inner dimension d<sub>ff</sub> is typically 4 &times;
+                            d<sub>model</sub> (2048 for d<sub>model</sub> = 512). The ReLU
+                            activation introduces non-linearity, allowing the model to learn
+                            complex transformations of the attended representations.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Residual Connections</h3>
+
+                <p>
+                    Each sub-layer is wrapped in a <strong>residual connection</strong>
+                    (also called a skip connection). The output of each sub-layer is:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-right-left"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Residual Connection Formula</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; line-height:2;">
+                            output = LayerNorm(x + SubLayer(x))
+                        </p>
+                        <p>
+                            The input <em>x</em> is added directly to the sub-layer's output
+                            before normalisation. This means the sub-layer only needs to learn
+                            the <strong>residual</strong> &mdash; the difference between the
+                            desired output and the input &mdash; rather than the full
+                            transformation. This makes deep networks dramatically easier to
+                            train.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Residual connections are like redline markups on design
+                            drawings.</strong> When a reviewer marks up a structural drawing,
+                            they do not redraw the entire sheet. They add annotations, circles,
+                            and corrections <em>on top of</em> the original drawing. The
+                            original information is fully preserved (the base drawing), and
+                            the markup adds incremental changes (the residual). If a reviewer
+                            adds nothing useful, the original drawing passes through unchanged
+                            &mdash; no information is lost.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Layer Normalisation</h3>
+
+                <p>
+                    <strong>Layer normalisation</strong> standardises the activations across
+                    the feature dimension at each position. For a vector
+                    x = [x<sub>1</sub>, x<sub>2</sub>, ..., x<sub>d</sub>], it computes the
+                    mean and variance across all d dimensions, then normalises:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Layer Normalisation</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; line-height:2.2; margin:8px 0;">
+                            LayerNorm(x) = &gamma; &middot; (x &minus; &mu;) / &radic;(&sigma;<sup>2</sup> + &epsilon;) + &beta;
+                        </p>
+                        <p>
+                            &mu; and &sigma;<sup>2</sup> are the mean and variance of x.
+                            &gamma; (scale) and &beta; (shift) are learned parameters. &epsilon;
+                            is a small constant for numerical stability. This keeps activations
+                            in a well-behaved range throughout the deep network, preventing
+                            training instability.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Stacking Depth</span>
+                    </div>
+                    <p>
+                        The original Transformer stacks 6 encoder layers. Each layer refines
+                        the representations further. Early layers capture local syntactic
+                        patterns; deeper layers capture increasingly abstract, long-range
+                        semantic relationships. The residual connections ensure that gradients
+                        can flow through all 6 layers without vanishing.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: THE DECODER STACK
+             ========================================== -->
+        <section class="ch-section" id="decoder-stack">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    The Decoder Stack
+                </h2>
+
+                <p>
+                    The decoder generates the output sequence one token at a time (during
+                    inference). Like the encoder, it consists of N = 6 identical layers,
+                    but each decoder layer has <strong>three</strong> sub-layers instead of
+                    two:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mask"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sub-layer 1: Masked Multi-Head Self-Attention</h3>
+                        <p>
+                            The decoder self-attention is <strong>masked</strong> so that
+                            position <em>i</em> can only attend to positions &le; <em>i</em>.
+                            This prevents the decoder from "cheating" by looking at future
+                            tokens during training. The mask sets attention scores for future
+                            positions to &minus;&infin; before the softmax, ensuring they
+                            receive zero weight.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sub-layer 2: Cross-Attention (Encoder-Decoder Attention)</h3>
+                        <p>
+                            This is where the decoder "reads" the encoder's output. The
+                            <strong>Queries</strong> come from the decoder (what information
+                            does the decoder currently need?), while the <strong>Keys</strong>
+                            and <strong>Values</strong> come from the encoder's final output
+                            (what information is available in the input?). This allows each
+                            decoder position to attend to all positions in the input sequence.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sub-layer 3: Position-wise Feed-Forward Network</h3>
+                        <p>
+                            Identical in structure to the encoder's feed-forward network. Each
+                            position is processed independently through a two-layer network
+                            with a ReLU activation.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    As in the encoder, every sub-layer is wrapped with a residual connection
+                    and layer normalisation: output = LayerNorm(x + SubLayer(x)).
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Cross-attention is like the construction team consulting the
+                            design documents.</strong> The encoder has produced a fully reviewed
+                            set of design documents (the encoder output). The decoder is the
+                            construction team, generating the build sequence one step at a time.
+                            At each construction step, the team consults the design documents
+                            (cross-attention) to determine what to build next. They can look at
+                            any part of the design &mdash; foundations, superstructure, finishes
+                            &mdash; but they can only see what they have already built (masked
+                            self-attention prevents looking at future steps).
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Final Output Layer</h3>
+
+                <p>
+                    After the stack of N decoder layers, the output passes through a
+                    <strong>linear layer</strong> followed by a <strong>softmax</strong> to
+                    produce a probability distribution over the vocabulary. The token with the
+                    highest probability is selected as the output for that position. This
+                    process repeats autoregressively &mdash; each predicted token is fed back
+                    as input for the next position.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Encoder-Only vs. Decoder-Only</span>
+                    </div>
+                    <p>
+                        The original Transformer uses both encoder and decoder. However, many
+                        modern models use only one half: <strong>BERT</strong> uses only the
+                        encoder (for understanding tasks), while <strong>GPT</strong> uses
+                        only the decoder (for generation tasks). We will explore these
+                        variants in Sub-chapters 5.4 and 5.5.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: THE FULL ARCHITECTURE DIAGRAM
+             ========================================== -->
+        <section class="ch-section" id="full-architecture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sitemap"></i>
+                    The Full Architecture
+                </h2>
+
+                <p>
+                    Bringing all the components together, the Transformer architecture
+                    follows this data flow:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-down-long"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Encoder Side</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Input Embedding:</strong> convert tokens to d<sub>model</sub>-dimensional vectors</li>
+                            <li><strong>Positional Encoding:</strong> add sinusoidal position signals</li>
+                            <li><strong>&times;N Encoder Layers:</strong> each containing:
+                                <ul style="padding-left:20px; margin-top:4px;">
+                                    <li>Multi-Head Self-Attention + Add &amp; Norm</li>
+                                    <li>Feed-Forward Network + Add &amp; Norm</li>
+                                </ul>
+                            </li>
+                            <li><strong>Output:</strong> contextualised representations for all input positions</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-up-long"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Decoder Side</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Output Embedding:</strong> convert previously generated tokens to vectors</li>
+                            <li><strong>Positional Encoding:</strong> add sinusoidal position signals</li>
+                            <li><strong>&times;N Decoder Layers:</strong> each containing:
+                                <ul style="padding-left:20px; margin-top:4px;">
+                                    <li>Masked Multi-Head Self-Attention + Add &amp; Norm</li>
+                                    <li>Multi-Head Cross-Attention (Q from decoder, K/V from encoder) + Add &amp; Norm</li>
+                                    <li>Feed-Forward Network + Add &amp; Norm</li>
+                                </ul>
+                            </li>
+                            <li><strong>Linear + Softmax:</strong> produce next-token probability distribution</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h3>Parameter Counts</h3>
+
+                <p>
+                    The original Transformer base model had approximately 65 million
+                    parameters. Most parameters reside in the embedding layers and the
+                    feed-forward networks (which have the large inner dimension d<sub>ff</sub>
+                    = 2048). The attention mechanisms themselves are relatively parameter-
+                    efficient &mdash; their power comes from the dynamic computation of
+                    attention weights, not from static parameters.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Model Variants</span>
+                    </div>
+                    <p>
+                        The paper presented two configurations: <strong>Base</strong>
+                        (d<sub>model</sub>=512, N=6, h=8, d<sub>ff</sub>=2048, 65M params)
+                        and <strong>Big</strong> (d<sub>model</sub>=1024, N=6, h=16,
+                        d<sub>ff</sub>=4096, 213M params). The Big model achieved the best
+                        translation results. Modern models have scaled to hundreds of billions
+                        of parameters using the same fundamental architecture.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 1 — TRANSFORMER ARCHITECTURE DIAGRAM
+             ========================================== -->
+        <section class="ch-section" id="demo-architecture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Transformer Architecture Diagram
+                </h2>
+
+                <p>
+                    The interactive diagram below shows the full encoder-decoder Transformer
+                    architecture. <strong>Click on any block</strong> to see a detailed
+                    description of that component. Use the layer slider to expand or collapse
+                    the stack and observe how data flows through the architecture.
+                </p>
+
+                <div class="demo-panel" id="architecture-diagram-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-sitemap"></i>
+                        <span>Transformer Architecture &mdash; Click any block for details</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">
+                            Encoder/Decoder Layers (N):
+                        </label>
+                        <input type="range" id="arch-layers-slider" min="1" max="6" value="3" style="width:140px; cursor:pointer;">
+                        <span id="arch-layers-label" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); min-width:20px;">3</span>
+                        <button id="arch-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; margin-left:auto;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset View
+                        </button>
+                    </div>
+                    <canvas id="arch-canvas" style="width:100%; height:560px; border-radius:8px; cursor:pointer;"></canvas>
+                    <p id="arch-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Click on any block in the diagram to learn about that component. Hover for highlights.
+                    </p>
+                </div>
+
+                <p>
+                    Notice the symmetry between the encoder and decoder stacks. Both use
+                    self-attention and feed-forward layers with residual connections. The
+                    decoder adds masked self-attention and cross-attention as additional
+                    sub-layers. Data flows bottom-to-top through both stacks, with the
+                    encoder's output feeding into every decoder layer's cross-attention.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: RESIDUAL CONNECTIONS & LAYER NORM DEEP DIVE
+             ========================================== -->
+        <section class="ch-section" id="residual-layernorm">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-link"></i>
+                    Residual Connections &amp; Layer Normalisation
+                </h2>
+
+                <p>
+                    These two techniques are not glamorous, but they are
+                    <strong>essential</strong>. Without them, stacking 6 (or 96) layers of
+                    attention and feed-forward networks would be practically impossible to
+                    train. Let us understand why.
+                </p>
+
+                <h3>The Vanishing Gradient Problem in Deep Networks</h3>
+
+                <p>
+                    As a network grows deeper, gradients during backpropagation must travel
+                    through more and more layers. At each layer, the gradient is multiplied
+                    by the layer's Jacobian matrix. If these multiplications consistently
+                    shrink the gradient (eigenvalues &lt; 1), the gradient effectively vanishes
+                    by the time it reaches the early layers &mdash; those layers stop learning.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-right-left"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How Residual Connections Help</h3>
+                        <p>
+                            With the residual formulation y = x + F(x), the gradient of the
+                            loss with respect to x includes a direct path:
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0;">
+                            dL/dx = dL/dy &middot; (1 + dF/dx)
+                        </p>
+                        <p>
+                            The "1" in the expression ensures that the gradient is at least as
+                            large as dL/dy, regardless of what dF/dx is. This creates a
+                            <strong>gradient highway</strong> through the network &mdash;
+                            gradients can flow from the loss all the way to the first layer
+                            without attenuation.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Why Layer Normalisation Instead of Batch Normalisation?</h3>
+
+                <p>
+                    Batch normalisation, which normalises across the batch dimension, was the
+                    standard for CNNs. But for sequence models, batch normalisation has a
+                    critical flaw: sequences in a batch may have different lengths, making the
+                    batch statistics unreliable for positions near the end of shorter
+                    sequences. Layer normalisation sidesteps this entirely by normalising
+                    across the feature dimension within each individual example.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pre-Norm vs. Post-Norm</h3>
+                        <p>
+                            The original Transformer applies layer norm <em>after</em> the
+                            residual addition (Post-Norm): LayerNorm(x + SubLayer(x)). Many
+                            modern implementations apply it <em>before</em> the sub-layer
+                            (Pre-Norm): x + SubLayer(LayerNorm(x)). Pre-Norm tends to be more
+                            stable for very deep models and often allows larger learning rates.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: POSITIONAL ENCODING VISUALISER DEMO
+             ========================================== -->
+        <section class="ch-section" id="demo-positional-encoding">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: Positional Encoding Visualiser
+                </h2>
+
+                <p>
+                    The visualiser below plots the sinusoidal positional encoding values for
+                    different positions and dimensions. Each row is a position in the
+                    sequence; each column is a dimension of the encoding vector. Observe how
+                    low-frequency dimensions change slowly across positions (capturing
+                    coarse position information) while high-frequency dimensions oscillate
+                    rapidly (capturing fine position distinctions).
+                </p>
+
+                <div class="demo-panel" id="positional-encoding-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-wave-square"></i>
+                        <span>Sinusoidal Positional Encoding &mdash; Heatmap &amp; Waveforms</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">
+                            Positions:
+                        </label>
+                        <input type="range" id="pe-positions-slider" min="8" max="128" value="50" style="width:120px; cursor:pointer;">
+                        <span id="pe-positions-label" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); min-width:30px;">50</span>
+                        <label style="font-size:0.85rem; color:var(--text-secondary); margin-left:12px;">
+                            d<sub>model</sub>:
+                        </label>
+                        <input type="range" id="pe-dims-slider" min="16" max="128" step="16" value="64" style="width:120px; cursor:pointer;">
+                        <span id="pe-dims-label" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); min-width:30px;">64</span>
+                        <button id="pe-toggle-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; margin-left:auto;">
+                            <i class="fa-solid fa-chart-line"></i> Toggle Waveform View
+                        </button>
+                    </div>
+                    <canvas id="pe-canvas" style="width:100%; height:460px; border-radius:8px;"></canvas>
+                    <p id="pe-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:20px;">
+                        Hover to see exact PE values. Low dimensions = low frequency (slow variation). High dimensions = high frequency (rapid variation).
+                    </p>
+                </div>
+
+                <p>
+                    Key observations from the visualiser: the leftmost columns (lowest
+                    dimensions) create broad bands of colour that change gradually &mdash;
+                    these encode coarse position (beginning, middle, end of sequence). The
+                    rightmost columns oscillate rapidly, distinguishing between adjacent
+                    positions. Together they form a unique "fingerprint" for every position.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Binary Analogy</span>
+                    </div>
+                    <p>
+                        The sinusoidal encoding is reminiscent of binary number representations.
+                        In binary, the least significant bit alternates every number (0, 1, 0,
+                        1, ...), the next bit every two numbers (0, 0, 1, 1, ...), and so on.
+                        Similarly, the lowest PE dimensions oscillate rapidly while higher
+                        dimensions oscillate more slowly. The encoding acts like a continuous,
+                        smooth version of binary counting.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: PUTTING IT ALL TOGETHER
+             ========================================== -->
+        <section class="ch-section" id="putting-together">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    Putting It All Together
+                </h2>
+
+                <p>
+                    Let us trace a complete forward pass through the Transformer to solidify
+                    the architecture. We will follow a translation task: English to French.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: Encode the Input</h3>
+                        <p>
+                            The English sentence "The bridge design is adequate" is tokenised
+                            into tokens: ["The", "bridge", "design", "is", "adequate"]. Each
+                            token is converted to a 512-dimensional embedding vector. Positional
+                            encodings are added, giving each token a unique position signature.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Pass Through Encoder Stack</h3>
+                        <p>
+                            The 5 &times; 512 matrix passes through 6 encoder layers. In each
+                            layer, multi-head self-attention allows "bridge" to attend to
+                            "design" and "adequate" (learning that "adequate" modifies the
+                            "design" of the "bridge"). The feed-forward network then processes
+                            each enriched representation. After 6 layers, each token's vector
+                            captures rich contextual information about the entire sentence.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Decoder Generates Output Autoregressively</h3>
+                        <p>
+                            The decoder begins with a start token. It uses masked self-attention
+                            (can only see previous outputs), cross-attention (reads the encoder
+                            output to find relevant source words), and the feed-forward network
+                            to predict the first French token: "Le". Then "Le" is fed back, and
+                            the decoder predicts "pont". This continues: "Le pont est adequat"
+                            until an end token is generated.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 4: Output Probability Distribution</h3>
+                        <p>
+                            At each decoder step, the final layer produces a vector that is
+                            projected to vocabulary size (e.g., 37,000 tokens) and passed
+                            through softmax. The model might output: P("Le") = 0.92,
+                            P("Un") = 0.04, P("La") = 0.03, etc. The highest-probability
+                            token is selected (or sampled from the distribution for more
+                            diverse outputs).
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: TRAINING THE TRANSFORMER
+             ========================================== -->
+        <section class="ch-section" id="training">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-dumbbell"></i>
+                    Training the Transformer
+                </h2>
+
+                <p>
+                    The original Transformer was trained on machine translation using a
+                    specific set of techniques that have since become standard practice for
+                    large models.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Learning Rate Schedule</h3>
+                        <p>
+                            The paper introduced a custom learning rate schedule with a
+                            <strong>warmup</strong> phase. The learning rate increases linearly
+                            for the first <em>warmup_steps</em> (4000 steps), then decreases
+                            proportionally to the inverse square root of the step number.
+                            This prevents early training instability while allowing aggressive
+                            learning in later stages.
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin-top:8px;">
+                            lr = d<sub>model</sub><sup>&minus;0.5</sup> &middot; min(step<sup>&minus;0.5</sup>, step &middot; warmup<sup>&minus;1.5</sup>)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Regularisation: Dropout and Label Smoothing</h3>
+                        <p>
+                            <strong>Dropout</strong> (rate 0.1) is applied after each sub-layer,
+                            to the attention weights, and to the positional encodings. This
+                            prevents overfitting by randomly zeroing activations during training.
+                            <strong>Label smoothing</strong> (&epsilon; = 0.1) replaces the
+                            hard 0/1 target distribution with a smoothed version, preventing
+                            the model from becoming overconfident in its predictions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Training Speed</span>
+                    </div>
+                    <p>
+                        The original Transformer base model was trained on 8 NVIDIA P100 GPUs
+                        for 3.5 days (approximately 100,000 steps). The Big model took 3.5
+                        days on 8 GPUs. This was dramatically faster than comparable RNN-based
+                        models because the Transformer's attention computation is fully
+                        parallelisable &mdash; no sequential dependency between time steps.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="key-takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>The Transformer eliminates recurrence</strong> &mdash;
+                                it processes all positions in parallel using self-attention,
+                                dramatically increasing training speed on modern hardware.
+                            </li>
+                            <li>
+                                <strong>Multi-head attention</strong> runs h parallel attention
+                                heads, each learning to focus on different types of relationships
+                                (syntactic, semantic, positional, etc.).
+                            </li>
+                            <li>
+                                <strong>Positional encoding</strong> injects position information
+                                via sinusoidal functions, since self-attention is inherently
+                                position-agnostic.
+                            </li>
+                            <li>
+                                <strong>Encoder</strong> = N layers of [Self-Attention + FFN],
+                                each with residual connections and layer normalisation.
+                            </li>
+                            <li>
+                                <strong>Decoder</strong> = N layers of [Masked Self-Attention +
+                                Cross-Attention + FFN], each with residual connections and
+                                layer normalisation.
+                            </li>
+                            <li>
+                                <strong>Cross-attention</strong> connects the decoder to the
+                                encoder, allowing the output generator to consult the input
+                                representations at every layer.
+                            </li>
+                            <li>
+                                <strong>Residual connections</strong> create gradient highways;
+                                <strong>layer normalisation</strong> keeps activations stable.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>What Comes Next</span>
+                    </div>
+                    <p>
+                        In Sub-chapter 5.4, we will explore <strong>BERT</strong> (Bidirectional
+                        Encoder Representations from Transformers) &mdash; an encoder-only
+                        Transformer that learns rich language representations through masked
+                        language modelling and next-sentence prediction. BERT revolutionised
+                        transfer learning in NLP and has direct applications in document
+                        analysis and specification parsing for civil engineering.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="knowledge-check">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of the Transformer architecture with these four
+                    questions. Select the best answer for each.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        Why does the Transformer need positional encoding?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To reduce the computational cost of self-attention from O(n<sup>2</sup>) to O(n)
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> Because self-attention is permutation-invariant and has no inherent notion of token order
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To initialise the weight matrices with position-dependent values
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> To replace the embedding layer and save parameters
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Self-attention computes the same output
+                        regardless of input ordering. Positional encoding explicitly injects
+                        position information so the model can distinguish between tokens at
+                        different positions.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The core issue is that self-attention treats
+                        input as an unordered set. Without positional encoding, "The beam
+                        supports the slab" and "The slab supports the beam" would produce
+                        identical representations.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In the decoder, what is the purpose of <em>masking</em> in the
+                        self-attention layer?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To reduce memory usage by ignoring padding tokens
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To focus attention on the encoder output rather than decoder tokens
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To prevent each position from attending to subsequent (future) positions, preserving the autoregressive property
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To apply dropout to specific attention heads for regularisation
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The decoder must generate tokens one at a
+                        time. During training, masking ensures position <em>i</em> can only
+                        attend to positions &le; <em>i</em>, preventing information leakage
+                        from future tokens.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Masking preserves the autoregressive
+                        property: each position can only see itself and previous positions.
+                        Future positions are set to &minus;&infin; before softmax so they
+                        receive zero attention weight.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In the cross-attention layer of the decoder, where do the Queries,
+                        Keys, and Values come from?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> All three (Q, K, V) come from the encoder output
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> All three (Q, K, V) come from the decoder's previous sub-layer
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Queries come from the decoder; Keys and Values come from the encoder output
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Keys come from the decoder; Queries and Values come from the encoder output
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Cross-attention allows the decoder to
+                        "ask questions" (Queries from decoder) about the input sequence
+                        (Keys and Values from encoder). This is how the decoder accesses
+                        the encoded input representation.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> In cross-attention, the decoder provides
+                        the Queries (what it needs to know), while the encoder provides
+                        Keys and Values (what information is available in the source input).
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the primary purpose of residual connections in the
+                        Transformer architecture?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> To share parameters between the encoder and decoder stacks
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> To replace the positional encoding with learned position signals
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> To increase the model's vocabulary size
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> To create gradient highways that allow gradients to flow through deep layers without vanishing
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Residual connections add the input directly
+                        to the sub-layer output (y = x + F(x)), ensuring the gradient always
+                        has a direct path back through the network. This is essential for
+                        training deep stacks of 6+ layers.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Residual connections solve the vanishing
+                        gradient problem. By adding the input directly to the output
+                        (y = x + F(x)), they guarantee that gradients can flow through the
+                        network unattenuated, enabling the training of very deep models.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub2.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 5.2 Attention
+        </a>
+        <a href="sub4.html" class="chapter-nav__link next">
+            5.4 BERT <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa', PINK:'#f472b6', ORANGE:'#fb923c',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a + (b - a) * t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random() * (b - a) + a; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED TRANSFORMER BLOCKS
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var t = 0;
+
+            var blocks = [];
+            var numBlocks = 24;
+            for (var i = 0; i < numBlocks; i++) {
+                blocks.push({
+                    x: rand(w * 0.05, w * 0.95),
+                    y: rand(h * 0.05, h * 0.95),
+                    w: rand(16, 40),
+                    h: rand(12, 28),
+                    vx: rand(-0.2, 0.2),
+                    vy: rand(-0.15, 0.15),
+                    phase: rand(0, Math.PI * 2),
+                    color: ['#2dd4bf','#22d3ee','#a78bfa','#fbbf24','#f472b6'][Math.floor(rand(0,5))]
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                t += 0.006;
+
+                for (var i = 0; i < blocks.length; i++) {
+                    var b = blocks[i];
+                    b.x += b.vx; b.y += b.vy;
+                    if (b.x < 0 || b.x > w - b.w) b.vx *= -1;
+                    if (b.y < 0 || b.y > h - b.h) b.vy *= -1;
+                    b.x = clamp(b.x, 0, w - b.w);
+                    b.y = clamp(b.y, 0, h - b.h);
+                }
+
+                /* Draw connections between nearby blocks */
+                for (var i = 0; i < blocks.length; i++) {
+                    for (var j = i + 1; j < blocks.length; j++) {
+                        var a = blocks[i], bb = blocks[j];
+                        var dx = (a.x + a.w/2) - (bb.x + bb.w/2);
+                        var dy = (a.y + a.h/2) - (bb.y + bb.h/2);
+                        var dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 140) {
+                            var alpha = (1 - dist / 140) * 0.12;
+                            ctx.strokeStyle = '#2dd4bf';
+                            ctx.globalAlpha = alpha;
+                            ctx.lineWidth = 0.6;
+                            ctx.beginPath();
+                            ctx.moveTo(a.x + a.w/2, a.y + a.h/2);
+                            ctx.lineTo(bb.x + bb.w/2, bb.y + bb.h/2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1;
+
+                /* Draw blocks */
+                for (var i = 0; i < blocks.length; i++) {
+                    var b = blocks[i];
+                    var glow = 0.15 + 0.15 * Math.sin(t * 2.5 + b.phase);
+                    ctx.fillStyle = b.color;
+                    ctx.globalAlpha = glow;
+                    ctx.fillRect(b.x, b.y, b.w, b.h);
+                    ctx.globalAlpha = glow + 0.1;
+                    ctx.strokeStyle = b.color;
+                    ctx.lineWidth = 0.8;
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+                }
+                ctx.globalAlpha = 1;
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function () {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1 — TRANSFORMER ARCHITECTURE DIAGRAM
+           ============================================== */
+        (function architectureDemo() {
+            var canvas = document.getElementById('arch-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var slider = document.getElementById('arch-layers-slider');
+            var layerLabel = document.getElementById('arch-layers-label');
+            var resetBtn = document.getElementById('arch-reset-btn');
+            var infoEl = document.getElementById('arch-info');
+            var numLayers = 3;
+            var hoveredBlock = null;
+            var mouseX = -1, mouseY = -1;
+
+            var componentDescriptions = {
+                'Input Embedding': 'Converts input tokens (words) into dense d_model-dimensional vectors. Each token is mapped to a learned embedding vector that captures semantic meaning.',
+                'Positional Encoding': 'Adds sinusoidal position signals to the embeddings so the model can distinguish token order. Uses sin/cos functions at different frequencies for each dimension.',
+                'Multi-Head Self-Attention': 'Runs h parallel attention heads, each computing Q, K, V projections on a subspace. Allows the model to attend to multiple types of relationships simultaneously.',
+                'Add & Norm': 'Applies a residual connection (adds the sub-layer input to its output) followed by layer normalisation. Stabilises training and enables gradient flow through deep stacks.',
+                'Feed-Forward Network': 'A two-layer MLP applied independently to each position: FFN(x) = max(0, xW1+b1)W2+b2. The inner dimension is typically 4x d_model.',
+                'Output Embedding': 'Converts previously generated output tokens into d_model-dimensional vectors, identical in structure to the input embedding.',
+                'Masked Self-Attention': 'Self-attention with a causal mask: position i can only attend to positions <= i. Prevents the decoder from seeing future tokens during generation.',
+                'Cross-Attention': 'Queries come from the decoder; Keys and Values come from the encoder output. This is how the decoder reads and consults the encoded input representation.',
+                'Linear + Softmax': 'Projects the decoder output to vocabulary size and applies softmax to produce a probability distribution over the next token.'
+            };
+
+            function buildBlocks(N) {
+                var blocks = [];
+                var encX = w * 0.22;
+                var decX = w * 0.68;
+                var blockW = w * 0.22;
+                var blockH = 22;
+                var gap = 4;
+                var layerH = (blockH + gap) * 3 + 12;
+                var totalEncH = N * layerH;
+                var totalDecH = N * ((blockH + gap) * 4 + 12);
+                var maxStackH = Math.max(totalEncH, totalDecH);
+                var startY = h - 80;
+
+                /* Encoder side */
+                blocks.push({ x: encX - blockW/2, y: startY, w: blockW, h: blockH, label: 'Input Embedding', color: '#fbbf24', side: 'enc' });
+                blocks.push({ x: encX - blockW/2, y: startY - blockH - gap, w: blockW, h: blockH, label: 'Positional Encoding', color: '#fb923c', side: 'enc' });
+
+                var encBaseY = startY - (blockH + gap) * 2 - 16;
+                for (var layer = 0; layer < N; layer++) {
+                    var ly = encBaseY - layer * layerH;
+                    blocks.push({ x: encX - blockW/2, y: ly, w: blockW, h: blockH, label: 'Multi-Head Self-Attention', color: '#2dd4bf', side: 'enc', layer: layer + 1 });
+                    blocks.push({ x: encX - blockW/2, y: ly - blockH - gap, w: blockW, h: blockH, label: 'Add & Norm', color: '#6366f1', side: 'enc', layer: layer + 1 });
+                    blocks.push({ x: encX - blockW/2, y: ly - (blockH + gap) * 2, w: blockW, h: blockH, label: 'Feed-Forward Network', color: '#22c55e', side: 'enc', layer: layer + 1 });
+                    if (layer < N - 1 || true) {
+                        blocks.push({ x: encX - blockW/2, y: ly - (blockH + gap) * 3, w: blockW, h: blockH, label: 'Add & Norm', color: '#6366f1', side: 'enc', layer: layer + 1 });
+                    }
+                }
+
+                /* Decoder side */
+                blocks.push({ x: decX - blockW/2, y: startY, w: blockW, h: blockH, label: 'Output Embedding', color: '#fbbf24', side: 'dec' });
+                blocks.push({ x: decX - blockW/2, y: startY - blockH - gap, w: blockW, h: blockH, label: 'Positional Encoding', color: '#fb923c', side: 'dec' });
+
+                var decBaseY = startY - (blockH + gap) * 2 - 16;
+                var decLayerH = (blockH + gap) * 5 + 12;
+                for (var layer = 0; layer < N; layer++) {
+                    var ly = decBaseY - layer * decLayerH;
+                    blocks.push({ x: decX - blockW/2, y: ly, w: blockW, h: blockH, label: 'Masked Self-Attention', color: '#f472b6', side: 'dec', layer: layer + 1 });
+                    blocks.push({ x: decX - blockW/2, y: ly - blockH - gap, w: blockW, h: blockH, label: 'Add & Norm', color: '#6366f1', side: 'dec', layer: layer + 1 });
+                    blocks.push({ x: decX - blockW/2, y: ly - (blockH + gap) * 2, w: blockW, h: blockH, label: 'Cross-Attention', color: '#22d3ee', side: 'dec', layer: layer + 1 });
+                    blocks.push({ x: decX - blockW/2, y: ly - (blockH + gap) * 3, w: blockW, h: blockH, label: 'Add & Norm', color: '#6366f1', side: 'dec', layer: layer + 1 });
+                    blocks.push({ x: decX - blockW/2, y: ly - (blockH + gap) * 4, w: blockW, h: blockH, label: 'Feed-Forward Network', color: '#22c55e', side: 'dec', layer: layer + 1 });
+                    blocks.push({ x: decX - blockW/2, y: ly - (blockH + gap) * 5, w: blockW, h: blockH, label: 'Add & Norm', color: '#6366f1', side: 'dec', layer: layer + 1 });
+                }
+
+                /* Final linear + softmax at top of decoder */
+                var topDecY = decBaseY - N * decLayerH - 10;
+                blocks.push({ x: decX - blockW/2, y: topDecY, w: blockW, h: blockH, label: 'Linear + Softmax', color: '#a78bfa', side: 'dec' });
+
+                return blocks;
+            }
+
+            var currentBlocks = buildBlocks(numLayers);
+
+            function drawArch() {
+                var C = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Background labels */
+                ctx.font = '600 14px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = C.MUTED;
+                ctx.fillText('ENCODER', w * 0.22, 20);
+                ctx.fillText('DECODER', w * 0.68, 20);
+
+                /* Draw connecting arrows between blocks */
+                for (var i = 0; i < currentBlocks.length - 1; i++) {
+                    var a = currentBlocks[i];
+                    var b = currentBlocks[i + 1];
+                    if (a.side === b.side && Math.abs(a.y - b.y) < 120) {
+                        ctx.strokeStyle = C.STROKE;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x + a.w / 2, a.y);
+                        ctx.lineTo(b.x + b.w / 2, b.y + b.h);
+                        ctx.stroke();
+                    }
+                }
+
+                /* Draw cross-attention arrows from encoder to decoder */
+                var encTopBlocks = currentBlocks.filter(function(b){ return b.side === 'enc' && b.label === 'Add & Norm'; });
+                var crossBlocks = currentBlocks.filter(function(b){ return b.label === 'Cross-Attention'; });
+                if (encTopBlocks.length > 0 && crossBlocks.length > 0) {
+                    var encTop = encTopBlocks[encTopBlocks.length - 1];
+                    for (var ci = 0; ci < crossBlocks.length; ci++) {
+                        ctx.strokeStyle = '#22d3ee';
+                        ctx.globalAlpha = 0.25;
+                        ctx.lineWidth = 1.2;
+                        ctx.setLineDash([4, 4]);
+                        ctx.beginPath();
+                        ctx.moveTo(encTop.x + encTop.w, encTop.y + encTop.h / 2);
+                        ctx.lineTo(crossBlocks[ci].x, crossBlocks[ci].y + crossBlocks[ci].h / 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Draw blocks */
+                for (var i = 0; i < currentBlocks.length; i++) {
+                    var b = currentBlocks[i];
+                    var isHovered = hoveredBlock === i;
+                    ctx.fillStyle = b.color;
+                    ctx.globalAlpha = isHovered ? 0.9 : 0.55;
+                    ctx.beginPath();
+                    var r = 4;
+                    ctx.moveTo(b.x + r, b.y);
+                    ctx.lineTo(b.x + b.w - r, b.y);
+                    ctx.quadraticCurveTo(b.x + b.w, b.y, b.x + b.w, b.y + r);
+                    ctx.lineTo(b.x + b.w, b.y + b.h - r);
+                    ctx.quadraticCurveTo(b.x + b.w, b.y + b.h, b.x + b.w - r, b.y + b.h);
+                    ctx.lineTo(b.x + r, b.y + b.h);
+                    ctx.quadraticCurveTo(b.x, b.y + b.h, b.x, b.y + b.h - r);
+                    ctx.lineTo(b.x, b.y + r);
+                    ctx.quadraticCurveTo(b.x, b.y, b.x + r, b.y);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    if (isHovered) {
+                        ctx.strokeStyle = b.color;
+                        ctx.globalAlpha = 1;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+
+                    ctx.globalAlpha = 1;
+                    ctx.fillStyle = C.BG;
+                    ctx.font = '500 ' + Math.max(9, Math.min(11, b.w / 14)) + 'px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+                }
+
+                /* N x label */
+                ctx.font = '600 12px JetBrains Mono, monospace';
+                ctx.fillStyle = C.MUTED;
+                ctx.textAlign = 'left';
+                ctx.fillText('x' + numLayers, w * 0.35, h * 0.45);
+                ctx.textAlign = 'right';
+                ctx.fillText('x' + numLayers, w * 0.57, h * 0.45);
+            }
+
+            drawArch();
+
+            slider.addEventListener('input', function() {
+                numLayers = parseInt(this.value);
+                layerLabel.textContent = numLayers;
+                currentBlocks = buildBlocks(numLayers);
+                hoveredBlock = null;
+                drawArch();
+            });
+
+            resetBtn.addEventListener('click', function() {
+                slider.value = 3;
+                numLayers = 3;
+                layerLabel.textContent = '3';
+                currentBlocks = buildBlocks(3);
+                hoveredBlock = null;
+                infoEl.textContent = 'Click on any block in the diagram to learn about that component. Hover for highlights.';
+                drawArch();
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+                hoveredBlock = null;
+                for (var i = 0; i < currentBlocks.length; i++) {
+                    var b = currentBlocks[i];
+                    if (mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h) {
+                        hoveredBlock = i;
+                        break;
+                    }
+                }
+                canvas.style.cursor = hoveredBlock !== null ? 'pointer' : 'default';
+                drawArch();
+            });
+
+            canvas.addEventListener('click', function() {
+                if (hoveredBlock !== null) {
+                    var b = currentBlocks[hoveredBlock];
+                    var descKey = b.label;
+                    var desc = componentDescriptions[descKey] || 'Component: ' + descKey;
+                    var layerInfo = b.layer ? ' (Layer ' + b.layer + ')' : '';
+                    infoEl.textContent = b.label + layerInfo + ': ' + desc;
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                hoveredBlock = null;
+                canvas.style.cursor = 'default';
+                drawArch();
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                currentBlocks = buildBlocks(numLayers);
+                drawArch();
+            });
+
+            /* Redraw on theme change */
+            var observer = new MutationObserver(function() { drawArch(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2 — POSITIONAL ENCODING VISUALISER
+           ============================================== */
+        (function peDemo() {
+            var canvas = document.getElementById('pe-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var posSlider = document.getElementById('pe-positions-slider');
+            var posLabel = document.getElementById('pe-positions-label');
+            var dimSlider = document.getElementById('pe-dims-slider');
+            var dimLabel = document.getElementById('pe-dims-label');
+            var toggleBtn = document.getElementById('pe-toggle-btn');
+            var infoEl = document.getElementById('pe-info');
+            var showWaveform = false;
+            var mouseX = -1, mouseY = -1;
+
+            function computePE(numPos, dModel) {
+                var pe = [];
+                for (var pos = 0; pos < numPos; pos++) {
+                    var row = [];
+                    for (var i = 0; i < dModel; i++) {
+                        var dimIdx = Math.floor(i / 2);
+                        var freq = 1.0 / Math.pow(10000, (2 * dimIdx) / dModel);
+                        if (i % 2 === 0) {
+                            row.push(Math.sin(pos * freq));
+                        } else {
+                            row.push(Math.cos(pos * freq));
+                        }
+                    }
+                    pe.push(row);
+                }
+                return pe;
+            }
+
+            function drawHeatmap() {
+                var C = getColors();
+                var numPos = parseInt(posSlider.value);
+                var dModel = parseInt(dimSlider.value);
+                var pe = computePE(numPos, dModel);
+
+                ctx.clearRect(0, 0, w, h);
+
+                var padL = 60, padR = 20, padT = 30, padB = 40;
+                var plotW = w - padL - padR;
+                var plotH = h - padT - padB;
+                var cellW = plotW / dModel;
+                var cellH = plotH / numPos;
+
+                /* Draw heatmap cells */
+                for (var pos = 0; pos < numPos; pos++) {
+                    for (var dim = 0; dim < dModel; dim++) {
+                        var val = pe[pos][dim]; /* Range: -1 to 1 */
+                        var norm = (val + 1) / 2; /* 0 to 1 */
+                        var r, g, b;
+                        if (norm < 0.5) {
+                            /* Dark blue to white */
+                            var t2 = norm * 2;
+                            r = Math.floor(lerp(10, 50, t2));
+                            g = Math.floor(lerp(20, 120, t2));
+                            b = Math.floor(lerp(80, 200, t2));
+                        } else {
+                            /* White to teal */
+                            var t2 = (norm - 0.5) * 2;
+                            r = Math.floor(lerp(50, 45, t2));
+                            g = Math.floor(lerp(120, 212, t2));
+                            b = Math.floor(lerp(200, 191, t2));
+                        }
+                        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+                        ctx.fillRect(padL + dim * cellW, padT + pos * cellH, Math.ceil(cellW), Math.ceil(cellH));
+                    }
+                }
+
+                /* Axis labels */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Dimension (i)', padL + plotW / 2, h - 6);
+                ctx.save();
+                ctx.translate(14, padT + plotH / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Position (pos)', 0, 0);
+                ctx.restore();
+
+                /* Tick labels */
+                ctx.font = '400 9px JetBrains Mono, monospace';
+                ctx.textAlign = 'right';
+                var posStep = Math.max(1, Math.floor(numPos / 8));
+                for (var p = 0; p < numPos; p += posStep) {
+                    ctx.fillText(p, padL - 5, padT + p * cellH + cellH / 2 + 3);
+                }
+                ctx.textAlign = 'center';
+                var dimStep = Math.max(1, Math.floor(dModel / 8));
+                for (var d = 0; d < dModel; d += dimStep) {
+                    ctx.fillText(d, padL + d * cellW + cellW / 2, padT + plotH + 14);
+                }
+
+                /* Hover info */
+                if (mouseX >= padL && mouseX <= padL + plotW && mouseY >= padT && mouseY <= padT + plotH) {
+                    var hDim = Math.floor((mouseX - padL) / cellW);
+                    var hPos = Math.floor((mouseY - padT) / cellH);
+                    hDim = clamp(hDim, 0, dModel - 1);
+                    hPos = clamp(hPos, 0, numPos - 1);
+                    var val = pe[hPos][hDim];
+                    infoEl.textContent = 'Position ' + hPos + ', Dimension ' + hDim + ' (' + (hDim % 2 === 0 ? 'sin' : 'cos') + '): PE = ' + val.toFixed(4);
+
+                    /* Highlight cross-hair */
+                    ctx.strokeStyle = C.WHITE;
+                    ctx.globalAlpha = 0.3;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(padL, padT + hPos * cellH + cellH / 2);
+                    ctx.lineTo(padL + plotW, padT + hPos * cellH + cellH / 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(padL + hDim * cellW + cellW / 2, padT);
+                    ctx.lineTo(padL + hDim * cellW + cellW / 2, padT + plotH);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            function drawWaveform() {
+                var C = getColors();
+                var numPos = parseInt(posSlider.value);
+                var dModel = parseInt(dimSlider.value);
+                var pe = computePE(numPos, dModel);
+
+                ctx.clearRect(0, 0, w, h);
+
+                var padL = 60, padR = 20, padT = 30, padB = 40;
+                var plotW = w - padL - padR;
+                var plotH = h - padT - padB;
+
+                /* Draw a few selected dimension waveforms */
+                var dims = [];
+                var numWaves = Math.min(6, dModel);
+                for (var d = 0; d < numWaves; d++) {
+                    dims.push(Math.floor(d * dModel / numWaves));
+                }
+
+                var colors = ['#2dd4bf', '#22d3ee', '#a78bfa', '#fbbf24', '#f472b6', '#22c55e'];
+
+                /* Grid */
+                ctx.strokeStyle = C.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gy = 0; gy <= 4; gy++) {
+                    var yy = padT + gy * plotH / 4;
+                    ctx.beginPath();
+                    ctx.moveTo(padL, yy);
+                    ctx.lineTo(padL + plotW, yy);
+                    ctx.stroke();
+                }
+
+                /* Zero line */
+                ctx.strokeStyle = C.STROKE;
+                ctx.lineWidth = 1;
+                var zeroY = padT + plotH / 2;
+                ctx.beginPath();
+                ctx.moveTo(padL, zeroY);
+                ctx.lineTo(padL + plotW, zeroY);
+                ctx.stroke();
+
+                /* Draw waveforms */
+                for (var di = 0; di < dims.length; di++) {
+                    var dim = dims[di];
+                    ctx.strokeStyle = colors[di % colors.length];
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.85;
+                    ctx.beginPath();
+                    for (var pos = 0; pos < numPos; pos++) {
+                        var x = padL + (pos / (numPos - 1)) * plotW;
+                        var y = zeroY - pe[pos][dim] * (plotH / 2 - 10);
+                        if (pos === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+
+                /* Legend */
+                ctx.font = '500 10px JetBrains Mono, monospace';
+                for (var di = 0; di < dims.length; di++) {
+                    var lx = padL + 10;
+                    var ly = padT + 14 + di * 16;
+                    ctx.fillStyle = colors[di % colors.length];
+                    ctx.fillRect(lx, ly - 6, 14, 3);
+                    ctx.fillText('dim ' + dims[di], lx + 20, ly);
+                }
+
+                /* Axis labels */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '500 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Position', padL + plotW / 2, h - 6);
+                ctx.save();
+                ctx.translate(14, padT + plotH / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('PE Value', 0, 0);
+                ctx.restore();
+
+                /* Y-axis ticks */
+                ctx.font = '400 9px JetBrains Mono, monospace';
+                ctx.textAlign = 'right';
+                ctx.fillStyle = C.MUTED;
+                ctx.fillText('+1.0', padL - 5, padT + 4);
+                ctx.fillText(' 0.0', padL - 5, zeroY + 3);
+                ctx.fillText('-1.0', padL - 5, padT + plotH + 4);
+            }
+
+            function render() {
+                if (showWaveform) drawWaveform();
+                else drawHeatmap();
+            }
+
+            render();
+
+            posSlider.addEventListener('input', function() {
+                posLabel.textContent = this.value;
+                render();
+            });
+
+            dimSlider.addEventListener('input', function() {
+                dimLabel.textContent = this.value;
+                render();
+            });
+
+            toggleBtn.addEventListener('click', function() {
+                showWaveform = !showWaveform;
+                toggleBtn.innerHTML = showWaveform
+                    ? '<i class="fa-solid fa-table-cells"></i> Toggle Heatmap View'
+                    : '<i class="fa-solid fa-chart-line"></i> Toggle Waveform View';
+                infoEl.textContent = showWaveform
+                    ? 'Waveform view: each line is one dimension of the PE vector plotted across positions. Low dims = slow oscillation, high dims = fast oscillation.'
+                    : 'Hover to see exact PE values. Low dimensions = low frequency (slow variation). High dimensions = high frequency (rapid variation).';
+                render();
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+                if (!showWaveform) render();
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                mouseX = -1; mouseY = -1;
+                if (!showWaveform) {
+                    infoEl.textContent = 'Hover to see exact PE values. Low dimensions = low frequency (slow variation). High dimensions = high frequency (rapid variation).';
+                    render();
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var observer = new MutationObserver(function() { render(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

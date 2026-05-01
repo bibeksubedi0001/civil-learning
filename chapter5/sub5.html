@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.5 GPT &amp; Decoder Models | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Explore GPT and decoder-only Transformer models through a civil engineering lens. Learn autoregressive generation, causal masking, temperature sampling, top-k/top-p, GPT evolution from GPT-1 to GPT-4, in-context learning, and few-shot prompting with interactive demos.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 5</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-microchip"></i> Chapter 5 &mdash; Sub-chapter 5.5
+            </div>
+            <h1 class="chapter-hero__title">GPT &amp; Decoder Models</h1>
+            <p class="chapter-hero__subtitle">
+                In 2018, OpenAI introduced GPT &mdash; the Generative Pre-trained
+                Transformer &mdash; and demonstrated that a simple idea could reshape
+                the field: train a large decoder-only Transformer to predict
+                <strong>the next token</strong>, and out comes a model that can write,
+                reason, and code. From GPT-1's modest 117 million parameters to
+                GPT-4's rumoured trillions, the decoder-only paradigm has become
+                the backbone of modern generative AI.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: WHY GPT MATTERS
+             ========================================== -->
+        <section class="ch-section" id="why-gpt-matters">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scroll"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>The Decoder Revolution</h2>
+                        <p>
+                            While BERT (Sub-chapter 5.4) demonstrated the power of the
+                            Transformer <strong>encoder</strong> for understanding tasks,
+                            OpenAI pursued the opposite strategy: use only the
+                            <strong>decoder</strong> stack, train it to predict the next
+                            word, and scale it up. The result was GPT &mdash; a model
+                            family that did not just understand language but could
+                            <strong>generate</strong> it fluently.
+                        </p>
+                        <p>
+                            The key insight: if a model can reliably predict the next token
+                            in any sequence, it must have implicitly learned grammar,
+                            facts, reasoning patterns, and even rudimentary coding skills.
+                            Next-token prediction, far from being a trivial task, turned
+                            out to be a remarkably powerful training objective.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    GPT models are the engines behind ChatGPT, GitHub Copilot, and
+                    countless other tools that civil engineers increasingly encounter.
+                    Understanding how they work &mdash; their strengths, their failure
+                    modes, and the mathematics behind their outputs &mdash; is essential
+                    for any engineer who wants to use these tools responsibly and
+                    effectively.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes familiarity with the Transformer
+                        architecture from Sub-chapter 5.3 (self-attention, feed-forward
+                        layers, positional encoding) and BERT from Sub-chapter 5.4. GPT
+                        uses the Transformer <strong>decoder</strong> stack &mdash; the
+                        half that BERT discarded.
+                    </p>
+                </div>
+
+                <h3>Why GPT Matters for Civil Engineers</h3>
+
+                <p>
+                    GPT-class models are already being deployed in construction and
+                    engineering contexts. They can draft inspection reports, summarise
+                    lengthy specifications, generate Python scripts for structural
+                    analysis, translate between design codes, and answer technical
+                    questions about standards. Understanding the autoregressive generation
+                    process helps you anticipate when these tools will be reliable and
+                    when they may confidently produce incorrect information &mdash;
+                    a critical distinction for safety-sensitive engineering work.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE CE ANALOGY
+             ========================================== -->
+        <section class="ch-section" id="ce-analogy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    The Autocomplete Drafter Analogy
+                </h2>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>GPT is like an extraordinarily well-read junior
+                            engineer who has memorised every engineering document ever
+                            written &mdash; but can only write one word at a
+                            time.</strong> When you give this engineer the beginning of a
+                            sentence ("The reinforced concrete beam shall have a minimum
+                            cover of"), they draw on their vast reading to predict the most
+                            likely next word ("40"), then continue from there ("mm"), and
+                            so on until the document is complete.
+                        </p>
+                        <p>
+                            This engineer never looks ahead. They have not read the rest of
+                            the sentence they are writing &mdash; they can only see what
+                            has been written so far. This is the <strong>causal</strong>
+                            (left-to-right) nature of GPT. Compare this to the BERT
+                            inspector from Sub-chapter 5.4, who reads entire documents
+                            bidirectionally but cannot write new text.
+                        </p>
+                        <p>
+                            The <strong>temperature</strong> setting controls how creative
+                            or conservative this drafter is. At low temperature, they write
+                            exactly what a standard specification would say. At high
+                            temperature, they might suggest unusual but sometimes
+                            innovative phrasing &mdash; or occasionally produce nonsense.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This analogy captures the essential trade-off in decoder models:
+                    they are powerful generators but inherently <strong>unidirectional</strong>.
+                    Every token is produced based solely on the tokens that came before
+                    it, never on tokens that will come after.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: DECODER-ONLY ARCHITECTURE
+             ========================================== -->
+        <section class="ch-section" id="decoder-only">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    The Decoder-Only Architecture
+                </h2>
+
+                <p>
+                    In the original Transformer (Sub-chapter 5.3), the decoder receives
+                    information from the encoder via cross-attention. GPT simplifies this
+                    drastically: it <strong>removes the encoder entirely</strong> and uses
+                    only the decoder stack. Without an encoder, there is no cross-attention
+                    &mdash; the model relies solely on <strong>masked self-attention</strong>
+                    (also called causal self-attention) and feed-forward layers.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bars-stacked"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>GPT Architecture Summary</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>GPT-1:</strong> 12 decoder layers, 768 hidden dimensions, 12 attention heads, 117M parameters</li>
+                            <li><strong>GPT-2:</strong> 48 decoder layers, 1600 hidden dimensions, 25 attention heads, 1.5B parameters</li>
+                            <li><strong>GPT-3:</strong> 96 decoder layers, 12288 hidden dimensions, 96 attention heads, 175B parameters</li>
+                            <li><strong>GPT-4:</strong> Architectural details not publicly disclosed; estimated &gt;1 trillion parameters (rumoured MoE)</li>
+                            <li><strong>Core mechanism:</strong> Causal (masked) self-attention &mdash; each token attends only to itself and preceding tokens</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    The simplicity of the decoder-only design is part of its genius.
+                    There is only one type of attention block, one type of layer, and one
+                    training objective. This uniformity makes scaling straightforward:
+                    add more layers, add more data, add more compute.
+                </p>
+
+                <h3>Encoder vs. Decoder: The Key Difference</h3>
+
+                <p>
+                    The fundamental difference between BERT (encoder) and GPT (decoder) is
+                    the <strong>attention mask</strong>. In BERT, every token can attend to
+                    every other token &mdash; a fully visible attention matrix. In GPT,
+                    attention is <strong>causal</strong>: token <em>i</em> can only attend
+                    to tokens 0 through <em>i</em>. Future tokens are masked out, which is
+                    precisely what enables autoregressive generation.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Causal masking is like a construction schedule where
+                            each activity can only depend on activities that have already
+                            been completed.</strong> When pouring the second-floor slab,
+                            you can reference the as-built conditions of the first floor
+                            and the foundation &mdash; but you cannot reference the
+                            third-floor framing that has not happened yet. Each step in
+                            the sequence is informed only by the past, never the future.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: AUTOREGRESSIVE GENERATION
+             ========================================== -->
+        <section class="ch-section" id="autoregressive">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-forward-step"></i>
+                    Autoregressive Generation
+                </h2>
+
+                <p>
+                    GPT generates text one token at a time. Given a sequence of tokens
+                    [t<sub>1</sub>, t<sub>2</sub>, &hellip;, t<sub>n</sub>], the model
+                    predicts the probability distribution over the entire vocabulary for
+                    the next token t<sub>n+1</sub>. A token is sampled from this
+                    distribution, appended to the sequence, and the process repeats.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Autoregressive Formula</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:12px 0; line-height:1.8;">
+                            P(text) = P(t<sub>1</sub>) &times; P(t<sub>2</sub>|t<sub>1</sub>) &times; P(t<sub>3</sub>|t<sub>1</sub>,t<sub>2</sub>) &times; &hellip; &times; P(t<sub>n</sub>|t<sub>1</sub>,&hellip;,t<sub>n-1</sub>)
+                        </p>
+                        <p>
+                            The probability of an entire text sequence is the product of
+                            conditional probabilities. Each token's probability is
+                            conditioned on all previous tokens. This is the
+                            <strong>chain rule of probability</strong> applied to language
+                            modelling.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This process is inherently <strong>sequential</strong>: you cannot
+                    generate token 5 until you have generated tokens 1 through 4, because
+                    token 5's probability depends on all preceding tokens. This is why
+                    GPT generation can feel slow compared to BERT inference, which
+                    processes all tokens in parallel.
+                </p>
+
+                <h3>The Training Objective</h3>
+
+                <p>
+                    During training, GPT is given large corpora of text and learns to
+                    minimise the <strong>cross-entropy loss</strong> of next-token
+                    prediction. For every position in the training data, the model
+                    predicts the next token and is penalised when it assigns low
+                    probability to the correct token. Over billions of tokens, this simple
+                    objective forces the model to learn grammar, facts, reasoning
+                    patterns, and even stylistic conventions.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Training vs. Inference</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Training:</strong> The model sees the entire text at once (with causal masking) and predicts the next token at every position simultaneously. This is highly parallelisable and efficient on GPUs.</li>
+                            <li><strong>Inference (generation):</strong> The model must generate one token at a time, feed it back in, and generate the next. This sequential process is the bottleneck in generation speed.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: CAUSAL MASKING
+             ========================================== -->
+        <section class="ch-section" id="causal-masking">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mask"></i>
+                    Causal Masking in Detail
+                </h2>
+
+                <p>
+                    Causal masking is the mechanism that makes autoregressive generation
+                    possible during training. The attention matrix is multiplied by a
+                    <strong>lower-triangular mask</strong>: for each query position
+                    <em>i</em>, the attention weights for all key positions <em>j &gt; i</em>
+                    are set to negative infinity before the softmax, effectively zeroing
+                    them out.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Causal Attention Mask</h3>
+                        <p>
+                            For a 5-token sequence, the mask looks like:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:12px 0; color:var(--accent-primary);">
+  t1  t2  t3  t4  t5
+t1 [ 1   0   0   0   0 ]
+t2 [ 1   1   0   0   0 ]
+t3 [ 1   1   1   0   0 ]
+t4 [ 1   1   1   1   0 ]
+t5 [ 1   1   1   1   1 ]</pre>
+                        <p>
+                            A <strong>1</strong> means "can attend"; a <strong>0</strong>
+                            means "cannot attend." Token t3 can attend to t1, t2, and t3,
+                            but not t4 or t5. This ensures each position can only use
+                            information from the past and present, never the future.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    The causal mask is what separates GPT from BERT at a fundamental
+                    level. BERT uses a fully visible mask (all 1s), allowing bidirectional
+                    attention. GPT uses a lower-triangular mask, enforcing
+                    unidirectional (left-to-right) attention. This single difference
+                    determines whether a model is suited for <strong>understanding</strong>
+                    (BERT) or <strong>generation</strong> (GPT).
+                </p>
+
+                <h3>Why Not Bidirectional Generation?</h3>
+
+                <p>
+                    You might wonder: why not let the model see the full context when
+                    generating? The answer is logical consistency. If token 5 could attend
+                    to token 8 during generation, token 8 would need to have already been
+                    generated &mdash; but token 8 depends on token 5. This creates a
+                    circular dependency. Causal masking breaks this cycle by enforcing a
+                    strict left-to-right order.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: TEMPERATURE & SAMPLING
+             ========================================== -->
+        <section class="ch-section" id="sampling">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-temperature-half"></i>
+                    Temperature &amp; Sampling Strategies
+                </h2>
+
+                <p>
+                    Once the model produces a probability distribution over the
+                    vocabulary, we must decide <em>how</em> to select the next token.
+                    This decision dramatically affects the quality and creativity of the
+                    generated text.
+                </p>
+
+                <h3>Temperature</h3>
+
+                <p>
+                    The raw output of the model (logits) is divided by a
+                    <strong>temperature</strong> parameter <em>T</em> before applying
+                    softmax:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Temperature Scaling</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:12px 0;">
+                            P(token<sub>i</sub>) = exp(logit<sub>i</sub> / T) / &Sigma; exp(logit<sub>j</sub> / T)
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>T &rarr; 0:</strong> The distribution becomes a spike on the highest-probability token (greedy / deterministic). Like a specification writer who always uses the most conventional phrasing.</li>
+                            <li><strong>T = 1.0:</strong> The original distribution is used as-is. Balanced creativity.</li>
+                            <li><strong>T &gt; 1.0:</strong> The distribution is flattened, giving low-probability tokens more chance. Like an experimental architect exploring unusual design options.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Top-k Sampling</h3>
+
+                <p>
+                    Instead of sampling from the entire vocabulary (which may include
+                    nonsensical tokens with tiny probabilities), <strong>top-k
+                    sampling</strong> restricts the selection to the <em>k</em>
+                    highest-probability tokens. The probabilities of these <em>k</em>
+                    tokens are renormalised, and the remaining vocabulary is discarded.
+                </p>
+
+                <h3>Top-p (Nucleus) Sampling</h3>
+
+                <p>
+                    <strong>Top-p sampling</strong> (also called nucleus sampling) is more
+                    adaptive. Instead of fixing the number of candidate tokens, it selects
+                    the smallest set of tokens whose cumulative probability exceeds a
+                    threshold <em>p</em>. When the model is confident, this set is small;
+                    when it is uncertain, the set is larger.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Practical Sampling Settings</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Deterministic tasks</strong> (specification writing, code generation): T = 0.0&ndash;0.3, or greedy decoding</li>
+                            <li><strong>Balanced tasks</strong> (report drafting, Q&amp;A): T = 0.5&ndash;0.8, top-p = 0.9</li>
+                            <li><strong>Creative tasks</strong> (brainstorming, alternative designs): T = 0.9&ndash;1.2, top-k = 50</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Temperature is like the factor of safety in
+                            structural design.</strong> A low factor of safety (low
+                            temperature) produces the most efficient, predictable design
+                            &mdash; but leaves no room for variation. A high factor of
+                            safety (high temperature) introduces more margin and
+                            variability &mdash; useful for uncertain conditions, but
+                            potentially wasteful. The engineer must choose the right level
+                            based on the context and consequences of failure.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: GPT EVOLUTION
+             ========================================== -->
+        <section class="ch-section" id="gpt-evolution">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-timeline"></i>
+                    GPT Evolution: From GPT-1 to GPT-4
+                </h2>
+
+                <p>
+                    The GPT family demonstrates a remarkable trajectory: the
+                    <strong>same fundamental architecture</strong> (decoder-only
+                    Transformer with causal masking), scaled up by orders of magnitude
+                    in parameters, data, and compute. Each generation unlocked emergent
+                    capabilities that were absent in the previous one.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>GPT-1 (June 2018) &mdash; Proof of Concept</h3>
+                        <p>
+                            OpenAI's original GPT had <strong>117 million
+                            parameters</strong> and was trained on the BookCorpus dataset
+                            (about 7,000 unpublished books). It demonstrated that
+                            unsupervised pre-training on a language modelling objective,
+                            followed by supervised fine-tuning, could achieve strong
+                            performance on a range of NLP tasks.
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>12 decoder layers, 768 hidden dimensions</li>
+                            <li>Trained on ~5 GB of text</li>
+                            <li>Required fine-tuning for each downstream task</li>
+                            <li>Key contribution: validated the "pre-train + fine-tune" paradigm for decoders</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>GPT-2 (February 2019) &mdash; Zero-Shot Capability</h3>
+                        <p>
+                            GPT-2 scaled to <strong>1.5 billion parameters</strong> and
+                            was trained on WebText, a dataset of 8 million web pages curated
+                            by following outbound links from Reddit posts with at least 3
+                            karma. The key discovery: at sufficient scale, the model could
+                            perform tasks <strong>without any fine-tuning</strong>
+                            (zero-shot), simply by conditioning on a natural language prompt.
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>48 decoder layers, 1600 hidden dimensions</li>
+                            <li>Trained on ~40 GB of text</li>
+                            <li>OpenAI initially withheld the full model, citing misuse concerns</li>
+                            <li>Key contribution: demonstrated emergent zero-shot task performance</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>GPT-3 (June 2020) &mdash; Few-Shot Learning</h3>
+                        <p>
+                            GPT-3 was a landmark: <strong>175 billion parameters</strong>,
+                            trained on a filtered version of Common Crawl plus books and
+                            Wikipedia. Its defining capability was <strong>few-shot
+                            learning</strong>: by providing just a few examples in the
+                            prompt, the model could perform new tasks without any gradient
+                            updates.
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>96 decoder layers, 12288 hidden dimensions</li>
+                            <li>Trained on ~570 GB of filtered text</li>
+                            <li>Cost approximately $4.6 million to train (estimated)</li>
+                            <li>API-only access &mdash; model weights not publicly released</li>
+                            <li>Key contribution: in-context learning without weight updates</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>GPT-4 (March 2023) &mdash; Multimodal Reasoning</h3>
+                        <p>
+                            GPT-4 is OpenAI's most capable model, accepting both text
+                            and image inputs. While architectural details remain
+                            unpublished, it demonstrated dramatic improvements in
+                            reasoning, factuality, and safety. It passed the bar exam in
+                            the 90th percentile and scored in the top percentiles on
+                            numerous professional and academic exams.
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>Architecture not disclosed; rumoured Mixture-of-Experts (MoE)</li>
+                            <li>Multimodal: accepts text + image inputs</li>
+                            <li>128k token context window (extended version)</li>
+                            <li>Trained with RLHF (Reinforcement Learning from Human Feedback)</li>
+                            <li>Key contribution: human-level performance on professional benchmarks</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: IN-CONTEXT LEARNING
+             ========================================== -->
+        <section class="ch-section" id="in-context-learning">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    In-Context Learning &amp; Few-Shot Prompting
+                </h2>
+
+                <p>
+                    One of the most surprising properties of large GPT models is
+                    <strong>in-context learning</strong>: the ability to learn a new task
+                    at inference time simply from examples provided in the prompt, without
+                    any gradient updates or fine-tuning. The model's weights remain frozen;
+                    the "learning" happens entirely through the attention mechanism
+                    operating over the prompt.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Prompting Paradigms</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Zero-shot:</strong> No examples. Just a task description. "Classify this construction deficiency report as structural, architectural, or MEP."</li>
+                            <li><strong>One-shot:</strong> One example. "Classify this report. Example: 'Cracking in basement wall' &rarr; Structural. Now classify: 'HVAC duct disconnected'"</li>
+                            <li><strong>Few-shot:</strong> Several examples (typically 3&ndash;10). The model identifies the pattern and applies it to new inputs.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In-context learning is remarkable because it means a single model can
+                    perform thousands of different tasks depending on the prompt. For civil
+                    engineers, this means you do not need to train a separate model for
+                    each task &mdash; you need to learn how to write effective prompts.
+                </p>
+
+                <h3>How Does In-Context Learning Work?</h3>
+
+                <p>
+                    The mechanism is still debated in the research community, but the
+                    leading hypothesis is that during pre-training, the model learns to
+                    <strong>identify and replicate patterns</strong> in its context window.
+                    When you provide examples of "input &rarr; output" pairs in the prompt,
+                    the model's attention heads effectively implement a pattern-matching
+                    algorithm that generalises to the new input.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CE Example: Few-Shot Classification</h3>
+                        <p>
+                            A few-shot prompt for classifying construction daily log entries:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8; margin:12px 0; color:var(--accent-primary);">
+Entry: "Poured 45 m3 of C30 concrete for Level 2 slab"
+Category: Concrete Works
+
+Entry: "Installed 200 m of 16mm rebar in grid lines A-D"
+Category: Reinforcement
+
+Entry: "Rain delay from 10:00 to 14:00, site flooded"
+Category: Weather Delay
+
+Entry: "Completed formwork for columns C1-C12"
+Category:</pre>
+                        <p>
+                            The model would predict <strong>"Formwork"</strong> by
+                            recognising the pattern from the preceding examples.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: CE APPLICATIONS
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building"></i>
+                    Civil Engineering Applications
+                </h2>
+
+                <p>
+                    GPT-class models are finding practical applications across the
+                    construction and civil engineering industries. Here are three major
+                    use cases where decoder models excel:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>1. Generating Inspection Report Drafts</h3>
+                        <p>
+                            Site inspectors can use GPT models to draft inspection reports
+                            from field notes and photographs. The model generates
+                            structured, professional prose from bullet points:
+                        </p>
+                        <p style="margin:12px 0; padding:12px; background:var(--bg-tertiary); border-radius:8px; border-left:3px solid var(--accent-primary);">
+                            <strong>Input:</strong> "L2 slab pour, C30 concrete, 45 m3,
+                            slump 120mm, weather clear, 2 cube samples taken, rebar
+                            checked OK, formwork alignment within tolerance"<br><br>
+                            <strong>GPT output:</strong> "The Level 2 floor slab concrete
+                            pour was completed on [date]. A total of 45 cubic metres of
+                            C30 grade concrete was placed. The measured slump was 120 mm,
+                            which is within the specified range. Two concrete cube samples
+                            were collected for compressive strength testing at 7 and 28
+                            days. Reinforcement placement was inspected and found to comply
+                            with the structural drawings. Formwork alignment was verified
+                            and found to be within the specified tolerances. Weather
+                            conditions during the pour were clear and dry."
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>2. Code Generation for Analysis Scripts</h3>
+                        <p>
+                            Engineers can describe a structural analysis task in natural
+                            language and receive working Python code. GPT models excel at
+                            translating engineering requirements into code for libraries
+                            like NumPy, SciPy, and OpenSeesPy.
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.8; margin:12px 0; color:var(--accent-secondary);">
+# Prompt: "Calculate the moment of inertia of a
+# rectangular beam cross-section with width b
+# and depth d, and find the maximum bending
+# stress for a simply supported beam with
+# uniformly distributed load w over span L."
+
+import numpy as np
+
+def beam_analysis(b, d, w, L):
+    I = (b * d**3) / 12          # moment of inertia
+    M_max = (w * L**2) / 8      # max bending moment
+    y_max = d / 2                # distance to extreme fibre
+    sigma_max = (M_max * y_max) / I  # max bending stress
+    return I, M_max, sigma_max</pre>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>3. Specification Summarisation</h3>
+                        <p>
+                            Construction specifications can span hundreds of pages. GPT
+                            models can summarise key requirements, extract critical
+                            parameters, and create comparison tables across different
+                            specification sections or editions.
+                        </p>
+                        <p>
+                            A prompt like "Summarise the concrete requirements from Section
+                            03 30 00 of this specification, focusing on strength grades,
+                            admixtures, and curing requirements" can produce a concise,
+                            structured summary that would take a human engineer 30 minutes
+                            to compile manually.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Critical Warning</span>
+                    </div>
+                    <p>
+                        GPT models can generate plausible but <strong>factually
+                        incorrect</strong> information (hallucinations). In civil
+                        engineering, this is especially dangerous: an incorrect load
+                        value, a wrong code reference, or a fabricated design formula
+                        could have safety-critical consequences. <strong>Always verify
+                        GPT-generated content against authoritative sources</strong>
+                        before using it in engineering practice.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: TOKENIZATION (BPE)
+             ========================================== -->
+        <section class="ch-section" id="tokenization">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scissors"></i>
+                    Byte-Pair Encoding (BPE) Tokenization
+                </h2>
+
+                <p>
+                    While BERT uses WordPiece tokenization (Sub-chapter 5.4), GPT models
+                    use <strong>Byte-Pair Encoding (BPE)</strong>. The principle is
+                    similar &mdash; decompose text into subword tokens &mdash; but the
+                    algorithm differs.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How BPE Works</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li>Start with individual characters as the initial vocabulary</li>
+                            <li>Count all adjacent character pairs in the training corpus</li>
+                            <li>Merge the most frequent pair into a single new token</li>
+                            <li>Repeat until the desired vocabulary size is reached</li>
+                        </ol>
+                        <p style="margin-top:12px;">
+                            GPT-2 uses a vocabulary of <strong>50,257 tokens</strong>.
+                            GPT-3 and GPT-4 use variations of BPE with similar vocabulary
+                            sizes. Common words become single tokens; rare words are split
+                            into subword pieces.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Engineering Term Tokenization</h3>
+                        <p>
+                            Understanding how BPE tokenizes engineering terms explains
+                            some model behaviours:
+                        </p>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>"concrete"</strong> &rarr; single token (very common word)</li>
+                            <li><strong>"prestressed"</strong> &rarr; <code>prest</code> + <code>ressed</code> (moderately common)</li>
+                            <li><strong>"geotechnical"</strong> &rarr; <code>ge</code> + <code>ot</code> + <code>echn</code> + <code>ical</code> (domain-specific)</li>
+                            <li><strong>"28-day f'c"</strong> &rarr; <code>28</code> + <code>-</code> + <code>day</code> + <code> f</code> + <code>'</code> + <code>c</code> (mixed notation)</li>
+                        </ul>
+                        <p>
+                            Rare engineering terms consume more tokens, which means they
+                            use more of the context window and may be less well-represented
+                            in the model's internal representations.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: DEMO 1 — NEXT-TOKEN PREDICTOR
+             ========================================== -->
+        <section class="ch-section" id="demo-next-token">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 1: Next-Token Predictor
+                </h2>
+
+                <p>
+                    This interactive demo simulates the autoregressive generation process.
+                    Select a civil engineering prompt and watch as the model completes it
+                    token by token. The probability bars show the model's confidence for
+                    each predicted token and its top alternatives.
+                </p>
+
+                <div class="demo-panel" id="next-token-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-forward-step"></i>
+                        <span>Next-Token Predictor &mdash; Watch GPT generate one token at a time</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Prompt:</label>
+                        <select id="ntp-prompt-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer; max-width:420px;">
+                            <option value="0">The maximum allowable deflection for a simply supported beam is</option>
+                            <option value="1">When inspecting a reinforced concrete column, the engineer should check</option>
+                            <option value="2">The compressive strength of concrete at 28 days shall not be less than</option>
+                            <option value="3">Before commencing excavation works, the contractor must ensure that</option>
+                        </select>
+                        <button id="ntp-generate-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                            <i class="fa-solid fa-play"></i> Generate
+                        </button>
+                        <button id="ntp-reset-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--border-active); background:var(--bg-tertiary); color:var(--text-primary); border-radius:6px; cursor:pointer; font-size:0.85rem;">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="ntp-canvas" style="width:100%; height:420px; border-radius:8px;"></canvas>
+                    <p id="ntp-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Select a prompt and press "Generate" to watch the model predict one token at a time. Probability bars show the top candidates at each step.
+                    </p>
+                </div>
+
+                <p>
+                    Notice how early tokens often have high confidence (the prompt
+                    strongly constrains the likely continuations), while later tokens may
+                    show more competition between alternatives. This is a fundamental
+                    property of autoregressive generation: uncertainty tends to
+                    accumulate over longer sequences.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: DEMO 2 — TEMPERATURE SLIDER
+             ========================================== -->
+        <section class="ch-section" id="demo-temperature">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Demo 2: Temperature Effects
+                </h2>
+
+                <p>
+                    This demo shows how the temperature parameter affects token selection.
+                    The same prompt is completed at different temperatures, illustrating
+                    the spectrum from deterministic (greedy) to creative (high temperature)
+                    generation.
+                </p>
+
+                <div class="demo-panel" id="temp-demo-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-temperature-half"></i>
+                        <span>Temperature Effects &mdash; Deterministic vs. Creative Output</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+                        <label style="font-size:0.85rem; color:var(--text-secondary);">Temperature:</label>
+                        <input type="range" id="temp-slider" min="0" max="20" value="2" step="1" style="width:180px; accent-color:var(--accent-primary);">
+                        <span id="temp-value" style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--accent-primary); min-width:40px;">0.2</span>
+                        <label style="font-size:0.85rem; color:var(--text-secondary); margin-left:12px;">Prompt:</label>
+                        <select id="temp-prompt-select" style="padding:8px 14px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-active); border-radius:6px; font-size:0.85rem; cursor:pointer; max-width:320px;">
+                            <option value="0">The structural engineer recommended</option>
+                            <option value="1">The site inspection revealed that</option>
+                            <option value="2">According to the design code, the minimum</option>
+                        </select>
+                        <button id="temp-generate-btn" class="demo-btn" style="padding:8px 18px; border:1px solid var(--accent-primary); background:rgba(0,212,170,0.1); color:var(--accent-primary); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                            <i class="fa-solid fa-play"></i> Generate
+                        </button>
+                    </div>
+                    <canvas id="temp-canvas" style="width:100%; height:420px; border-radius:8px;"></canvas>
+                    <p id="temp-info" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:40px;">
+                        Adjust the temperature slider and press "Generate" to see how temperature affects the probability distribution and selected tokens.
+                    </p>
+                </div>
+
+                <p>
+                    At temperature 0 (or very close to it), the model always picks the
+                    single most likely token &mdash; the output is entirely deterministic
+                    and reproducible. As temperature increases, the model begins to explore
+                    less likely but still plausible alternatives. Above temperature 1.0,
+                    the distribution is flattened beyond its natural shape, and outputs
+                    become increasingly random and potentially incoherent.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: RLHF & ALIGNMENT
+             ========================================== -->
+        <section class="ch-section" id="rlhf">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compass"></i>
+                    RLHF &amp; Alignment
+                </h2>
+
+                <p>
+                    Raw GPT models trained solely on next-token prediction are powerful
+                    but difficult to control. They may produce toxic content, refuse to
+                    follow instructions, or generate plausible-sounding misinformation.
+                    <strong>Reinforcement Learning from Human Feedback (RLHF)</strong> is
+                    the technique used to align GPT models with human intentions.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The RLHF Pipeline</h3>
+                        <ol style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Supervised Fine-Tuning (SFT):</strong> Fine-tune the base model on high-quality instruction-response pairs written by humans</li>
+                            <li><strong>Reward Model Training:</strong> Train a separate model to predict human preferences. Human labellers rank multiple model outputs for the same prompt; the reward model learns to assign higher scores to preferred outputs</li>
+                            <li><strong>PPO Optimisation:</strong> Use Proximal Policy Optimisation to fine-tune the SFT model to maximise the reward model's scores, while staying close to the original model (KL penalty)</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    RLHF is what transforms a base GPT model (which simply predicts the
+                    next likely token) into a helpful assistant (which follows
+                    instructions, refuses harmful requests, and admits uncertainty).
+                    ChatGPT, for example, is GPT-3.5/GPT-4 with RLHF applied.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>RLHF is like the professional mentorship process for a
+                            graduate engineer.</strong> The graduate (base GPT) has learned
+                            from textbooks (pre-training) and has strong technical
+                            knowledge. But they need guidance on professional judgement:
+                            when to be conservative, how to communicate with clients, and
+                            when to say "I don't know." The senior engineer (human
+                            feedback) reviews their work, ranks different approaches, and
+                            the graduate learns to produce outputs that meet professional
+                            standards.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: LIMITATIONS & HALLUCINATIONS
+             ========================================== -->
+        <section class="ch-section" id="limitations">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Limitations &amp; Hallucinations
+                </h2>
+
+                <p>
+                    Understanding GPT's limitations is arguably more important for
+                    engineers than understanding its capabilities. A model that sounds
+                    authoritative but is sometimes wrong is more dangerous than a model
+                    that is obviously limited.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ghost"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Limitations</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Hallucinations:</strong> GPT can generate factually incorrect statements with high confidence. It may cite non-existent code sections, invent material properties, or produce incorrect calculations</li>
+                            <li><strong>No real-time knowledge:</strong> The model's knowledge is frozen at its training cutoff date. It cannot access current project data, live sensor readings, or recent code updates</li>
+                            <li><strong>Limited reasoning:</strong> Despite impressive performance on benchmarks, GPT struggles with multi-step mathematical reasoning, especially for novel problem types not well-represented in training data</li>
+                            <li><strong>Context window limits:</strong> Even GPT-4's 128k token window cannot hold an entire set of construction drawings and specifications</li>
+                            <li><strong>No physical understanding:</strong> The model has no grounding in physics. It cannot truly reason about structural behaviour, material properties, or spatial relationships</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Mitigation Strategies for Engineers</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Always verify:</strong> Cross-check GPT outputs against design codes, textbooks, and hand calculations</li>
+                            <li><strong>Use low temperature:</strong> For factual engineering tasks, use T = 0 to minimise creative (and potentially incorrect) outputs</li>
+                            <li><strong>Provide context:</strong> Include relevant code sections, material data, and constraints in the prompt</li>
+                            <li><strong>Chain-of-thought:</strong> Ask the model to show its reasoning step by step, making errors easier to spot</li>
+                            <li><strong>Human-in-the-loop:</strong> Treat GPT as a drafting assistant, not a decision-maker. A qualified engineer must review and approve all outputs</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of GPT and decoder models with these four
+                    questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What is the fundamental training objective of GPT models?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Masked language modelling (predicting randomly masked tokens)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz1" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Next-token prediction (autoregressive language modelling)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Next sentence prediction (determining if two sentences are adjacent)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz1" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Contrastive learning (distinguishing similar from dissimilar texts)</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: B.</strong> GPT models are trained on
+                            next-token prediction (autoregressive language modelling). Given
+                            a sequence of tokens, the model learns to predict the next token
+                            by minimising cross-entropy loss. This simple objective, applied
+                            at massive scale, produces models capable of generating coherent,
+                            contextually appropriate text.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What does the causal (masked) self-attention mechanism in GPT
+                            ensure?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Each token can attend to all other tokens in both directions</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>15% of tokens are randomly masked during training</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz2" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Each token can only attend to itself and preceding tokens</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz2" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Attention is computed only between adjacent tokens</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> Causal self-attention uses a
+                            lower-triangular mask so that each token at position <em>i</em>
+                            can only attend to tokens at positions 0 through <em>i</em>.
+                            Future tokens (positions <em>i+1</em> and beyond) are masked
+                            out. This prevents information leakage from the future and
+                            enables autoregressive generation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            When using a GPT model to draft an engineering specification,
+                            which temperature setting would produce the most deterministic
+                            and conservative output?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz3" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Temperature close to 0 (greedy decoding)</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Temperature = 1.0</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Temperature = 1.5</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz3" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Temperature = 2.0</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: A.</strong> A temperature close to 0
+                            produces greedy decoding, where the model always selects the
+                            highest-probability token. This results in the most
+                            deterministic, predictable, and conservative output &mdash;
+                            ideal for engineering specifications where precision and
+                            adherence to standard phrasing are critical. Higher temperatures
+                            introduce randomness that is undesirable in safety-critical
+                            documents.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <div class="quiz-block__body">
+                        <p class="quiz-block__question">
+                            What is "in-context learning" (also called few-shot learning)
+                            in GPT models?
+                        </p>
+                        <div class="quiz-block__options">
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="a">
+                                <span class="quiz-option__marker">A</span>
+                                <span>Fine-tuning the model on a small labelled dataset for a specific task</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="b">
+                                <span class="quiz-option__marker">B</span>
+                                <span>Training the model from scratch on domain-specific data</span>
+                            </label>
+                            <label class="quiz-option" data-correct="true">
+                                <input type="radio" name="quiz4" value="c">
+                                <span class="quiz-option__marker">C</span>
+                                <span>Performing a new task by providing examples in the prompt, without updating model weights</span>
+                            </label>
+                            <label class="quiz-option" data-correct="false">
+                                <input type="radio" name="quiz4" value="d">
+                                <span class="quiz-option__marker">D</span>
+                                <span>Reducing the model's context window to focus on relevant information</span>
+                            </label>
+                        </div>
+                        <div class="quiz-block__feedback" style="display:none;">
+                            <p><strong>Correct: C.</strong> In-context learning allows a
+                            GPT model to perform new tasks by providing a few examples
+                            (demonstrations) directly in the prompt. The model's weights
+                            are not updated; instead, the attention mechanism identifies
+                            the pattern from the examples and applies it to the new input.
+                            This was a key discovery of GPT-3 and enables a single model
+                            to handle thousands of different tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2.2;">
+                            <li><strong>Decoder-only architecture:</strong> GPT uses only the Transformer decoder with causal (masked) self-attention, discarding the encoder entirely</li>
+                            <li><strong>Autoregressive generation:</strong> Text is generated one token at a time, with each token conditioned on all preceding tokens</li>
+                            <li><strong>Causal masking:</strong> A lower-triangular attention mask prevents each token from attending to future tokens, enabling left-to-right generation</li>
+                            <li><strong>Temperature:</strong> Controls the randomness of generation. Low temperature = deterministic; high temperature = creative but potentially incoherent</li>
+                            <li><strong>Top-k / top-p sampling:</strong> Strategies for restricting the candidate token set to improve output quality</li>
+                            <li><strong>Scaling trajectory:</strong> GPT-1 (117M) &rarr; GPT-2 (1.5B) &rarr; GPT-3 (175B) &rarr; GPT-4 (&gt;1T) demonstrated that scaling unlocks emergent capabilities</li>
+                            <li><strong>In-context learning:</strong> Large GPT models can perform new tasks from examples in the prompt without weight updates</li>
+                            <li><strong>CE applications:</strong> Report drafting, code generation, specification summarisation &mdash; always with human verification</li>
+                            <li><strong>Critical limitation:</strong> Hallucinations make GPT unsuitable as a sole decision-maker in safety-critical engineering</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    In the next sub-chapter, we will explore <strong>Scaling
+                    Laws</strong> &mdash; the mathematical relationships between model
+                    size, dataset size, compute, and performance that explain why making
+                    GPT models bigger continues to make them better, and what limits this
+                    trajectory might eventually hit.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAVIGATION FOOTER ============ -->
+    <footer class="chapter-nav-footer">
+        <a href="sub4.html" class="chapter-nav-footer__link chapter-nav-footer__link--prev">
+            <div class="chapter-nav-footer__direction">
+                <i class="fa-solid fa-arrow-left"></i> Previous
+            </div>
+            <div class="chapter-nav-footer__title">5.4 BERT</div>
+        </a>
+        <a href="index.html" class="chapter-nav-footer__link chapter-nav-footer__link--index">
+            <i class="fa-solid fa-list"></i>
+            <span>All Sub-chapters</span>
+        </a>
+        <a href="sub6.html" class="chapter-nav-footer__link chapter-nav-footer__link--next">
+            <div class="chapter-nav-footer__direction">
+                Next <i class="fa-solid fa-arrow-right"></i>
+            </div>
+            <div class="chapter-nav-footer__title">5.6 Scaling Laws</div>
+        </a>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa', PINK:'#f472b6', ORANGE:'#fb923c',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a + (b - a) * t; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); };
+        var rand = Utils.rand || function(a,b){ return Math.random() * (b - a) + a; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED DECODER TOKENS
+           ============================================== */
+        (function heroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+            var t = 0;
+
+            var tokens = [];
+            var numTokens = 35;
+            for (var i = 0; i < numTokens; i++) {
+                tokens.push({
+                    x: rand(w * 0.05, w * 0.95),
+                    y: rand(h * 0.05, h * 0.95),
+                    r: rand(3, 7),
+                    vx: rand(-0.3, 0.3),
+                    vy: rand(-0.3, 0.3),
+                    hue: rand(160, 200)
+                });
+            }
+
+            function draw() {
+                var C = getColors();
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                /* Draw connections (causal: only to tokens with lower index) */
+                for (var i = 0; i < tokens.length; i++) {
+                    for (var j = 0; j < i; j++) {
+                        var dx = tokens[i].x - tokens[j].x;
+                        var dy = tokens[i].y - tokens[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.strokeStyle = 'rgba(0,212,170,' + (0.15 * (1 - dist / 120)) + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(tokens[j].x, tokens[j].y);
+                            ctx.lineTo(tokens[i].x, tokens[i].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                /* Draw tokens */
+                for (var i = 0; i < tokens.length; i++) {
+                    var tk = tokens[i];
+                    var glow = 0.4 + 0.3 * Math.sin(t * 0.02 + i * 0.5);
+                    ctx.beginPath();
+                    ctx.arc(tk.x, tk.y, tk.r, 0, Math.PI * 2);
+                    ctx.fillStyle = 'hsla(' + tk.hue + ',70%,60%,' + glow + ')';
+                    ctx.fill();
+
+                    /* Update position */
+                    tk.x += tk.vx;
+                    tk.y += tk.vy;
+                    if (tk.x < 0 || tk.x > w) tk.vx *= -1;
+                    if (tk.y < 0 || tk.y > h) tk.vy *= -1;
+                }
+
+                t++;
+                requestAnimationFrame(draw);
+            }
+            draw();
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: NEXT-TOKEN PREDICTOR
+           ============================================== */
+        (function nextTokenDemo() {
+            var canvas = document.getElementById('ntp-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var promptSelect = document.getElementById('ntp-prompt-select');
+            var generateBtn = document.getElementById('ntp-generate-btn');
+            var resetBtn = document.getElementById('ntp-reset-btn');
+            var infoEl = document.getElementById('ntp-info');
+
+            /* Pre-defined generation sequences (simulated) */
+            var prompts = [
+                {
+                    text: 'The maximum allowable deflection for a simply supported beam is',
+                    tokens: [
+                        { chosen: ' span', alts: [{ t: ' span', p: 0.62 }, { t: ' L', p: 0.18 }, { t: ' the', p: 0.09 }, { t: ' limited', p: 0.06 }, { t: ' determined', p: 0.05 }] },
+                        { chosen: ' divided', alts: [{ t: ' divided', p: 0.71 }, { t: '/', p: 0.15 }, { t: ' over', p: 0.08 }, { t: ' length', p: 0.04 }, { t: ' to', p: 0.02 }] },
+                        { chosen: ' by', alts: [{ t: ' by', p: 0.89 }, { t: ' into', p: 0.05 }, { t: ' with', p: 0.03 }, { t: ' over', p: 0.02 }, { t: ' for', p: 0.01 }] },
+                        { chosen: ' 250', alts: [{ t: ' 250', p: 0.45 }, { t: ' 360', p: 0.22 }, { t: ' 240', p: 0.14 }, { t: ' 180', p: 0.11 }, { t: ' 300', p: 0.08 }] },
+                        { chosen: ' for', alts: [{ t: ' for', p: 0.52 }, { t: ' under', p: 0.21 }, { t: ',', p: 0.12 }, { t: ' (', p: 0.09 }, { t: '.', p: 0.06 }] },
+                        { chosen: ' floor', alts: [{ t: ' floor', p: 0.38 }, { t: ' service', p: 0.25 }, { t: ' general', p: 0.15 }, { t: ' dead', p: 0.12 }, { t: ' normal', p: 0.10 }] },
+                        { chosen: ' beams', alts: [{ t: ' beams', p: 0.44 }, { t: ' elements', p: 0.22 }, { t: ' members', p: 0.16 }, { t: ' slabs', p: 0.10 }, { t: ' loads', p: 0.08 }] },
+                        { chosen: '.', alts: [{ t: '.', p: 0.68 }, { t: ' under', p: 0.14 }, { t: ',', p: 0.09 }, { t: ' carrying', p: 0.05 }, { t: ' supporting', p: 0.04 }] }
+                    ]
+                },
+                {
+                    text: 'When inspecting a reinforced concrete column, the engineer should check',
+                    tokens: [
+                        { chosen: ' for', alts: [{ t: ' for', p: 0.55 }, { t: ' the', p: 0.20 }, { t: ' that', p: 0.10 }, { t: ' whether', p: 0.08 }, { t: ' if', p: 0.07 }] },
+                        { chosen: ' cracks', alts: [{ t: ' cracks', p: 0.42 }, { t: ' signs', p: 0.22 }, { t: ' spalling', p: 0.15 }, { t: ' corrosion', p: 0.12 }, { t: ' defects', p: 0.09 }] },
+                        { chosen: ',', alts: [{ t: ',', p: 0.61 }, { t: ' and', p: 0.18 }, { t: '.', p: 0.09 }, { t: ' or', p: 0.07 }, { t: ' in', p: 0.05 }] },
+                        { chosen: ' spalling', alts: [{ t: ' spalling', p: 0.48 }, { t: ' corrosion', p: 0.21 }, { t: ' deflection', p: 0.14 }, { t: ' rust', p: 0.10 }, { t: ' damage', p: 0.07 }] },
+                        { chosen: ',', alts: [{ t: ',', p: 0.72 }, { t: ' and', p: 0.12 }, { t: '.', p: 0.08 }, { t: ' or', p: 0.05 }, { t: ';', p: 0.03 }] },
+                        { chosen: ' and', alts: [{ t: ' and', p: 0.65 }, { t: ' corrosion', p: 0.15 }, { t: ' exposed', p: 0.09 }, { t: ' rebar', p: 0.06 }, { t: ' rust', p: 0.05 }] },
+                        { chosen: ' exposed', alts: [{ t: ' exposed', p: 0.37 }, { t: ' corrosion', p: 0.28 }, { t: ' rebar', p: 0.16 }, { t: ' reinforcement', p: 0.11 }, { t: ' rust', p: 0.08 }] },
+                        { chosen: ' reinforcement', alts: [{ t: ' reinforcement', p: 0.58 }, { t: ' rebar', p: 0.22 }, { t: ' steel', p: 0.10 }, { t: ' bars', p: 0.06 }, { t: ' ties', p: 0.04 }] }
+                    ]
+                },
+                {
+                    text: 'The compressive strength of concrete at 28 days shall not be less than',
+                    tokens: [
+                        { chosen: ' the', alts: [{ t: ' the', p: 0.41 }, { t: ' 30', p: 0.28 }, { t: ' 25', p: 0.14 }, { t: ' 20', p: 0.10 }, { t: ' 40', p: 0.07 }] },
+                        { chosen: ' specified', alts: [{ t: ' specified', p: 0.56 }, { t: ' design', p: 0.20 }, { t: ' characteristic', p: 0.12 }, { t: ' required', p: 0.08 }, { t: ' minimum', p: 0.04 }] },
+                        { chosen: ' characteristic', alts: [{ t: ' characteristic', p: 0.44 }, { t: ' design', p: 0.22 }, { t: ' value', p: 0.16 }, { t: ' strength', p: 0.10 }, { t: ' grade', p: 0.08 }] },
+                        { chosen: ' strength', alts: [{ t: ' strength', p: 0.72 }, { t: ' value', p: 0.12 }, { t: ',', p: 0.08 }, { t: ' of', p: 0.05 }, { t: '.', p: 0.03 }] },
+                        { chosen: ' f', alts: [{ t: ' f', p: 0.38 }, { t: ' (', p: 0.24 }, { t: ',', p: 0.16 }, { t: ' as', p: 0.12 }, { t: '.', p: 0.10 }] },
+                        { chosen: "'", alts: [{ t: "'", p: 0.72 }, { t: 'ck', p: 0.15 }, { t: 'c', p: 0.08 }, { t: '_', p: 0.03 }, { t: '(', p: 0.02 }] },
+                        { chosen: 'c', alts: [{ t: 'c', p: 0.88 }, { t: 'cu', p: 0.06 }, { t: 'k', p: 0.03 }, { t: 'y', p: 0.02 }, { t: 't', p: 0.01 }] },
+                        { chosen: '.', alts: [{ t: '.', p: 0.62 }, { t: ',', p: 0.16 }, { t: ' as', p: 0.10 }, { t: ' specified', p: 0.07 }, { t: ' defined', p: 0.05 }] }
+                    ]
+                },
+                {
+                    text: 'Before commencing excavation works, the contractor must ensure that',
+                    tokens: [
+                        { chosen: ' all', alts: [{ t: ' all', p: 0.40 }, { t: ' the', p: 0.25 }, { t: ' underground', p: 0.15 }, { t: ' proper', p: 0.12 }, { t: ' a', p: 0.08 }] },
+                        { chosen: ' underground', alts: [{ t: ' underground', p: 0.42 }, { t: ' existing', p: 0.22 }, { t: ' utility', p: 0.16 }, { t: ' buried', p: 0.12 }, { t: ' necessary', p: 0.08 }] },
+                        { chosen: ' utilities', alts: [{ t: ' utilities', p: 0.58 }, { t: ' services', p: 0.22 }, { t: ' cables', p: 0.10 }, { t: ' pipes', p: 0.06 }, { t: ' structures', p: 0.04 }] },
+                        { chosen: ' have', alts: [{ t: ' have', p: 0.48 }, { t: ' are', p: 0.28 }, { t: ' and', p: 0.10 }, { t: ' including', p: 0.08 }, { t: ' such', p: 0.06 }] },
+                        { chosen: ' been', alts: [{ t: ' been', p: 0.82 }, { t: ' already', p: 0.08 }, { t: ' all', p: 0.05 }, { t: ' properly', p: 0.03 }, { t: ' fully', p: 0.02 }] },
+                        { chosen: ' identified', alts: [{ t: ' identified', p: 0.45 }, { t: ' located', p: 0.28 }, { t: ' marked', p: 0.14 }, { t: ' mapped', p: 0.08 }, { t: ' surveyed', p: 0.05 }] },
+                        { chosen: ' and', alts: [{ t: ' and', p: 0.72 }, { t: '.', p: 0.12 }, { t: ',', p: 0.08 }, { t: ' or', p: 0.05 }, { t: ' prior', p: 0.03 }] },
+                        { chosen: ' marked', alts: [{ t: ' marked', p: 0.46 }, { t: ' protected', p: 0.24 }, { t: ' located', p: 0.14 }, { t: ' diverted', p: 0.10 }, { t: ' isolated', p: 0.06 }] }
+                    ]
+                }
+            ];
+
+            var currentPrompt = 0;
+            var generatedTokens = [];
+            var currentStep = -1;
+            var animating = false;
+            var animTimer = null;
+
+            function render() {
+                var C = getColors();
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var data = prompts[currentPrompt];
+                var padX = 24;
+                var padY = 24;
+
+                /* Title */
+                ctx.fillStyle = C.TEAL;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Autoregressive Generation', padX, padY);
+
+                /* Prompt text */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = '500 13px Inter, sans-serif';
+                var promptY = padY + 32;
+                var maxTextW = w - padX * 2;
+
+                /* Word-wrap the prompt + generated tokens */
+                var fullText = data.text;
+                for (var g = 0; g < generatedTokens.length; g++) {
+                    fullText += generatedTokens[g];
+                }
+
+                var words = [];
+                var tempWord = '';
+                for (var ci = 0; ci < fullText.length; ci++) {
+                    if (fullText[ci] === ' ' && tempWord.length > 0) {
+                        words.push(tempWord);
+                        tempWord = ' ';
+                    } else {
+                        tempWord += fullText[ci];
+                    }
+                }
+                if (tempWord.length > 0) words.push(tempWord);
+
+                /* Render wrapped text */
+                var lineX = padX;
+                var lineY = promptY;
+                var lineH = 22;
+                var promptCharCount = data.text.length;
+                var charIdx = 0;
+
+                for (var wi = 0; wi < words.length; wi++) {
+                    var wordW = ctx.measureText(words[wi]).width;
+                    if (lineX + wordW > w - padX && lineX > padX) {
+                        lineX = padX;
+                        lineY += lineH;
+                    }
+                    var isGenerated = (charIdx + words[wi].length) > promptCharCount;
+                    ctx.fillStyle = isGenerated ? C.TEAL : C.TEXT;
+                    ctx.font = isGenerated ? '700 13px Inter, sans-serif' : '500 13px Inter, sans-serif';
+                    ctx.fillText(words[wi], lineX, lineY);
+                    lineX += wordW;
+                    charIdx += words[wi].length;
+                }
+
+                /* Blinking cursor */
+                if (generatedTokens.length < data.tokens.length) {
+                    var blink = Math.sin(Date.now() * 0.005) > 0;
+                    if (blink) {
+                        ctx.fillStyle = C.TEAL;
+                        ctx.fillRect(lineX + 2, lineY - 12, 2, 16);
+                    }
+                }
+
+                /* Probability bars for current step */
+                var barSection = lineY + 50;
+
+                if (currentStep >= 0 && currentStep < data.tokens.length) {
+                    var step = data.tokens[currentStep];
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '500 11px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Step ' + (currentStep + 1) + ': Top-5 Token Probabilities', padX, barSection);
+
+                    var barY = barSection + 18;
+                    var barH = 26;
+                    var barGap = 8;
+                    var maxBarW = Math.min(350, w - padX * 2 - 160);
+                    var labelX = padX;
+
+                    for (var a = 0; a < step.alts.length; a++) {
+                        var alt = step.alts[a];
+                        var isChosen = alt.t === step.chosen;
+                        var by = barY + a * (barH + barGap);
+
+                        /* Label */
+                        ctx.fillStyle = isChosen ? C.TEAL : C.TEXT;
+                        ctx.font = (isChosen ? '600' : '400') + ' 12px JetBrains Mono, monospace';
+                        ctx.textAlign = 'right';
+                        var displayToken = alt.t.replace(/^ /, '\u23B5');
+                        ctx.fillText(displayToken, labelX + 100, by + barH / 2 + 4);
+
+                        /* Bar background */
+                        ctx.fillStyle = C.DIM;
+                        ctx.beginPath();
+                        ctx.roundRect(labelX + 110, by, maxBarW, barH, 4);
+                        ctx.fill();
+
+                        /* Bar fill */
+                        ctx.fillStyle = isChosen ? C.TEAL : C.CYAN;
+                        ctx.globalAlpha = isChosen ? 1.0 : 0.5;
+                        ctx.beginPath();
+                        ctx.roundRect(labelX + 110, by, maxBarW * alt.p, barH, 4);
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+
+                        /* Percentage */
+                        ctx.fillStyle = isChosen ? C.TEAL : C.MUTED;
+                        ctx.font = '500 11px JetBrains Mono, monospace';
+                        ctx.textAlign = 'left';
+                        ctx.fillText((alt.p * 100).toFixed(1) + '%', labelX + 110 + maxBarW + 8, by + barH / 2 + 4);
+
+                        /* Chosen indicator */
+                        if (isChosen) {
+                            ctx.strokeStyle = C.TEAL;
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.roundRect(labelX + 110, by, maxBarW, barH, 4);
+                            ctx.stroke();
+                        }
+                    }
+                } else if (currentStep === -1) {
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 12px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Press "Generate" to start autoregressive generation', w / 2, barSection + 40);
+                }
+
+                /* Generation progress */
+                if (generatedTokens.length > 0) {
+                    var progY = h - 30;
+                    var progBarW = Math.min(400, w - 80);
+                    var progBarX = (w - progBarW) / 2;
+
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '500 10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Generation Progress: ' + generatedTokens.length + ' / ' + data.tokens.length + ' tokens', w / 2, progY - 10);
+
+                    ctx.fillStyle = C.DIM;
+                    ctx.beginPath();
+                    ctx.roundRect(progBarX, progY, progBarW, 8, 4);
+                    ctx.fill();
+
+                    ctx.fillStyle = C.TEAL;
+                    ctx.beginPath();
+                    ctx.roundRect(progBarX, progY, progBarW * (generatedTokens.length / data.tokens.length), 8, 4);
+                    ctx.fill();
+                }
+            }
+
+            render();
+
+            promptSelect.addEventListener('change', function() {
+                currentPrompt = parseInt(this.value);
+                generatedTokens = [];
+                currentStep = -1;
+                if (animTimer) { clearTimeout(animTimer); animating = false; }
+                generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Generate';
+                infoEl.textContent = 'Select a prompt and press "Generate" to watch the model predict one token at a time.';
+                render();
+            });
+
+            resetBtn.addEventListener('click', function() {
+                generatedTokens = [];
+                currentStep = -1;
+                if (animTimer) { clearTimeout(animTimer); animating = false; }
+                generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Generate';
+                infoEl.textContent = 'Reset complete. Press "Generate" to start again.';
+                render();
+            });
+
+            generateBtn.addEventListener('click', function() {
+                if (animating) return;
+                var data = prompts[currentPrompt];
+                if (generatedTokens.length >= data.tokens.length) {
+                    generatedTokens = [];
+                    currentStep = -1;
+                }
+                animating = true;
+                generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+
+                function tick() {
+                    currentStep++;
+                    if (currentStep >= data.tokens.length) {
+                        animating = false;
+                        generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Generate';
+                        infoEl.textContent = 'Generation complete! ' + data.tokens.length + ' tokens generated. Press "Reset" to start over.';
+                        return;
+                    }
+                    var step = data.tokens[currentStep];
+                    generatedTokens.push(step.chosen);
+                    infoEl.textContent = 'Step ' + (currentStep + 1) + ': Selected "' + step.chosen.trim() + '" with probability ' + (step.alts[0].p * 100).toFixed(1) + '%.';
+                    render();
+                    animTimer = setTimeout(tick, 650);
+                }
+                animTimer = setTimeout(tick, 300);
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var observer = new MutationObserver(function() { render(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 2: TEMPERATURE EFFECTS
+           ============================================== */
+        (function temperatureDemo() {
+            var canvas = document.getElementById('temp-canvas');
+            if (!canvas) return;
+            var env = initCanvas(canvas);
+            var ctx = env.ctx, w = env.w, h = env.h;
+
+            var tempSlider = document.getElementById('temp-slider');
+            var tempValue = document.getElementById('temp-value');
+            var promptSelect = document.getElementById('temp-prompt-select');
+            var generateBtn = document.getElementById('temp-generate-btn');
+            var infoEl = document.getElementById('temp-info');
+
+            /* Raw logits for each prompt (simulated) */
+            var promptData = [
+                {
+                    text: 'The structural engineer recommended',
+                    logits: [
+                        { tokens: [' increasing', ' using', ' that', ' a', ' additional', ' reducing', ' the', ' steel'], rawLogits: [3.2, 2.8, 2.5, 2.1, 1.8, 1.5, 1.2, 0.8] },
+                        { tokens: [' the', ' additional', ' using', ' steel', ' a', ' concrete', ' more', ' new'], rawLogits: [3.5, 2.6, 2.3, 1.9, 1.7, 1.4, 1.0, 0.6] },
+                        { tokens: [' reinforcement', ' beam', ' column', ' slab', ' section', ' design', ' foundation', ' load'], rawLogits: [3.1, 2.7, 2.4, 2.0, 1.8, 1.5, 1.1, 0.7] },
+                        { tokens: [' size', ' depth', ' capacity', ' to', ' be', ' for', ' spacing', ' ratio'], rawLogits: [2.9, 2.6, 2.3, 2.1, 1.9, 1.5, 1.2, 0.8] },
+                        { tokens: [' be', ' to', ' by', ' from', ' in', ' for', ' as', ' with'], rawLogits: [3.4, 2.5, 2.2, 1.8, 1.6, 1.3, 1.0, 0.6] }
+                    ]
+                },
+                {
+                    text: 'The site inspection revealed that',
+                    logits: [
+                        { tokens: [' the', ' several', ' there', ' some', ' multiple', ' a', ' construction', ' no'], rawLogits: [3.8, 2.9, 2.5, 2.2, 1.8, 1.5, 1.0, 0.7] },
+                        { tokens: [' concrete', ' foundation', ' formwork', ' reinforcement', ' structural', ' existing', ' drainage', ' soil'], rawLogits: [3.0, 2.7, 2.4, 2.1, 1.9, 1.5, 1.1, 0.8] },
+                        { tokens: [' work', ' quality', ' conditions', ' was', ' had', ' alignment', ' surface', ' cover'], rawLogits: [3.2, 2.6, 2.3, 2.0, 1.8, 1.4, 1.1, 0.7] },
+                        { tokens: [' was', ' did', ' met', ' had', ' exceeded', ' fell', ' required', ' needed'], rawLogits: [3.5, 2.4, 2.1, 1.9, 1.6, 1.3, 1.0, 0.6] },
+                        { tokens: [' not', ' below', ' satisfactory', ' acceptable', ' within', ' above', ' adequate', ' poor'], rawLogits: [3.1, 2.8, 2.4, 2.0, 1.7, 1.4, 1.0, 0.7] }
+                    ]
+                },
+                {
+                    text: 'According to the design code, the minimum',
+                    logits: [
+                        { tokens: [' concrete', ' reinforcement', ' cover', ' depth', ' steel', ' clear', ' bar', ' section'], rawLogits: [3.3, 2.9, 2.6, 2.2, 1.9, 1.6, 1.2, 0.8] },
+                        { tokens: [' cover', ' strength', ' depth', ' spacing', ' diameter', ' ratio', ' area', ' thickness'], rawLogits: [3.6, 2.7, 2.4, 2.0, 1.7, 1.4, 1.0, 0.6] },
+                        { tokens: [' to', ' shall', ' for', ' of', ' is', ' required', ' should', ' must'], rawLogits: [3.4, 2.8, 2.5, 2.1, 1.8, 1.5, 1.1, 0.7] },
+                        { tokens: [' reinforcement', ' the', ' exposed', ' main', ' structural', ' all', ' external', ' primary'], rawLogits: [3.0, 2.7, 2.4, 2.1, 1.8, 1.5, 1.1, 0.7] },
+                        { tokens: [' shall', ' is', ' should', ' must', ' will', ' has', ' was', ' needs'], rawLogits: [3.7, 2.5, 2.2, 1.9, 1.5, 1.2, 0.8, 0.5] }
+                    ]
+                }
+            ];
+
+            var currentPromptIdx = 0;
+            var temperature = 0.2;
+            var generatedResults = null;
+
+            function softmax(logits, temp) {
+                var t = Math.max(temp, 0.01);
+                var scaled = logits.map(function(l) { return l / t; });
+                var maxVal = Math.max.apply(null, scaled);
+                var exps = scaled.map(function(s) { return Math.exp(s - maxVal); });
+                var sumExps = exps.reduce(function(a, b) { return a + b; }, 0);
+                return exps.map(function(e) { return e / sumExps; });
+            }
+
+            function sampleFromDist(probs) {
+                var r = Math.random();
+                var cumulative = 0;
+                for (var i = 0; i < probs.length; i++) {
+                    cumulative += probs[i];
+                    if (r <= cumulative) return i;
+                }
+                return probs.length - 1;
+            }
+
+            function generate() {
+                var data = promptData[currentPromptIdx];
+                var results = [];
+                for (var s = 0; s < data.logits.length; s++) {
+                    var step = data.logits[s];
+                    var probs = softmax(step.rawLogits, temperature);
+                    var chosenIdx = (temperature < 0.05) ? 0 : sampleFromDist(probs);
+                    results.push({
+                        tokens: step.tokens,
+                        probs: probs,
+                        chosenIdx: chosenIdx,
+                        chosenToken: step.tokens[chosenIdx]
+                    });
+                }
+                return results;
+            }
+
+            function render() {
+                var C = getColors();
+                ctx.fillStyle = C.BG;
+                ctx.fillRect(0, 0, w, h);
+
+                var data = promptData[currentPromptIdx];
+                var padX = 24;
+                var padY = 24;
+
+                /* Title */
+                ctx.fillStyle = C.AMBER;
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Temperature = ' + temperature.toFixed(1), padX, padY);
+
+                /* Temperature description */
+                ctx.fillStyle = C.MUTED;
+                ctx.font = '400 11px Inter, sans-serif';
+                var desc = temperature < 0.1 ? 'Greedy (deterministic)' :
+                           temperature < 0.4 ? 'Very conservative' :
+                           temperature < 0.7 ? 'Conservative' :
+                           temperature < 1.0 ? 'Balanced' :
+                           temperature < 1.3 ? 'Creative' : 'Very random';
+                ctx.fillText(desc, padX + 150, padY);
+
+                /* Prompt text */
+                ctx.fillStyle = C.TEXT;
+                ctx.font = '500 13px Inter, sans-serif';
+                var promptY = padY + 32;
+                var fullText = data.text;
+
+                if (generatedResults) {
+                    for (var g = 0; g < generatedResults.length; g++) {
+                        fullText += generatedResults[g].chosenToken;
+                    }
+                }
+
+                /* Word-wrap */
+                var words = [];
+                var tw = '';
+                for (var ci = 0; ci < fullText.length; ci++) {
+                    if (fullText[ci] === ' ' && tw.length > 0) {
+                        words.push(tw);
+                        tw = ' ';
+                    } else {
+                        tw += fullText[ci];
+                    }
+                }
+                if (tw.length > 0) words.push(tw);
+
+                var lineX = padX;
+                var lineY = promptY;
+                var lineH = 22;
+                var promptLen = data.text.length;
+                var cIdx = 0;
+
+                for (var wi = 0; wi < words.length; wi++) {
+                    var ww = ctx.measureText(words[wi]).width;
+                    if (lineX + ww > w - padX && lineX > padX) {
+                        lineX = padX;
+                        lineY += lineH;
+                    }
+                    var isGen = (cIdx + words[wi].length) > promptLen;
+                    ctx.fillStyle = isGen ? C.AMBER : C.TEXT;
+                    ctx.font = isGen ? '700 13px Inter, sans-serif' : '500 13px Inter, sans-serif';
+                    ctx.fillText(words[wi], lineX, lineY);
+                    lineX += ww;
+                    cIdx += words[wi].length;
+                }
+
+                /* Probability distributions */
+                if (generatedResults) {
+                    var sectionY = lineY + 50;
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '500 11px Inter, sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Token probability distributions at T = ' + temperature.toFixed(1), padX, sectionY);
+
+                    var stepW = Math.min(160, (w - padX * 2 - 20) / Math.min(generatedResults.length, 5));
+                    var barMaxH = Math.min(140, h - sectionY - 80);
+
+                    for (var s = 0; s < Math.min(generatedResults.length, 5); s++) {
+                        var res = generatedResults[s];
+                        var sx = padX + s * (stepW + 4);
+                        var topY = sectionY + 22;
+
+                        /* Step label */
+                        ctx.fillStyle = C.MUTED;
+                        ctx.font = '500 9px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Step ' + (s + 1), sx + stepW / 2, topY);
+
+                        /* Show top 5 tokens as vertical bars */
+                        var numBars = Math.min(5, res.tokens.length);
+                        var bw = Math.max(8, (stepW - 20) / numBars - 2);
+                        var bGap = 2;
+                        var bStartX = sx + (stepW - numBars * (bw + bGap)) / 2;
+
+                        for (var b = 0; b < numBars; b++) {
+                            var bx = bStartX + b * (bw + bGap);
+                            var prob = res.probs[b];
+                            var barH = prob * barMaxH;
+                            var barBot = topY + 16 + barMaxH;
+                            var isChosen = b === res.chosenIdx;
+
+                            /* Bar */
+                            ctx.fillStyle = isChosen ? C.AMBER : C.DIM;
+                            ctx.globalAlpha = isChosen ? 1.0 : 0.6;
+                            ctx.beginPath();
+                            ctx.roundRect(bx, barBot - barH, bw, barH, 2);
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+
+                            /* Chosen border */
+                            if (isChosen) {
+                                ctx.strokeStyle = C.AMBER;
+                                ctx.lineWidth = 1.5;
+                                ctx.beginPath();
+                                ctx.roundRect(bx, barBot - barH, bw, barH, 2);
+                                ctx.stroke();
+                            }
+
+                            /* Probability label */
+                            if (bw > 14) {
+                                ctx.fillStyle = isChosen ? C.AMBER : C.MUTED;
+                                ctx.font = '500 8px JetBrains Mono, monospace';
+                                ctx.textAlign = 'center';
+                                ctx.fillText((prob * 100).toFixed(0) + '%', bx + bw / 2, barBot - barH - 4);
+                            }
+
+                            /* Token label (rotated) */
+                            ctx.save();
+                            ctx.translate(bx + bw / 2, barBot + 6);
+                            ctx.rotate(Math.PI / 4);
+                            ctx.fillStyle = isChosen ? C.AMBER : C.MUTED;
+                            ctx.font = '400 8px JetBrains Mono, monospace';
+                            ctx.textAlign = 'left';
+                            var tokenLabel = res.tokens[b].trim();
+                            if (tokenLabel.length > 8) tokenLabel = tokenLabel.substring(0, 7) + '..';
+                            ctx.fillText(tokenLabel, 0, 0);
+                            ctx.restore();
+                        }
+                    }
+                } else {
+                    ctx.fillStyle = C.MUTED;
+                    ctx.font = '400 12px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Adjust the temperature slider and press "Generate" to see the effect on token probabilities', w / 2, lineY + 60);
+                }
+            }
+
+            render();
+
+            tempSlider.addEventListener('input', function() {
+                temperature = parseInt(this.value) / 10;
+                tempValue.textContent = temperature.toFixed(1);
+            });
+
+            promptSelect.addEventListener('change', function() {
+                currentPromptIdx = parseInt(this.value);
+                generatedResults = null;
+                render();
+            });
+
+            generateBtn.addEventListener('click', function() {
+                generatedResults = generate();
+                var chosenTokens = generatedResults.map(function(r) { return r.chosenToken; }).join('');
+                infoEl.textContent = 'T = ' + temperature.toFixed(1) + ': Generated "' + chosenTokens.trim() + '". ' +
+                    (temperature < 0.1 ? 'Greedy decoding always picks the highest-probability token.' :
+                     temperature < 0.5 ? 'Low temperature: output is conservative and predictable.' :
+                     temperature < 1.0 ? 'Moderate temperature: some variation while maintaining coherence.' :
+                     'High temperature: distribution is flattened, more random tokens selected.');
+                render();
+            });
+
+            window.addEventListener('resize', function() {
+                env = initCanvas(canvas);
+                ctx = env.ctx; w = env.w; h = env.h;
+                render();
+            });
+
+            var observer = new MutationObserver(function() { render(); });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.4 DBSCAN &amp; Density-Based Methods | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn DBSCAN and density-based clustering for civil engineering. Explore epsilon neighborhoods, core/border/noise classification, geospatial sensor clusters, damage zone detection, and interactive demos comparing DBSCAN with K-Means.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 3</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 3 &mdash; Sub-chapter 3.4
+            </div>
+            <h1 class="chapter-hero__title">DBSCAN &amp; Density-Based Methods</h1>
+            <p class="chapter-hero__subtitle">
+                Discover clusters of arbitrary shape by following the density of data
+                &mdash; learn how DBSCAN finds natural groupings without specifying
+                the number of clusters, handles noise gracefully, and excels at
+                detecting damage zones, sensor clusters, and geospatial anomalies in
+                civil engineering datasets.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 50 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>Finding Patterns in the Noise</h2>
+                        <p>
+                            Imagine you are a structural health monitoring (SHM) engineer
+                            reviewing accelerometer data from a long-span cable-stayed bridge.
+                            Hundreds of sensors record vibration amplitudes during a seismic
+                            event. Most readings cluster into predictable zones &mdash; the
+                            deck, the pylons, the anchorages &mdash; but a handful of rogue
+                            readings are scattered at random. You need an algorithm that can
+                            discover the dense groups of correlated sensors <em>and</em> flag
+                            the anomalous outliers, all without you specifying how many groups
+                            to expect.
+                        </p>
+                        <p>
+                            K-Means would force you to choose K upfront and assign every point
+                            to a cluster, including noise. Hierarchical clustering would still
+                            require you to cut the dendrogram at the right height. What you
+                            really want is an algorithm that says: <em>"Here are the dense
+                            regions, and these scattered points are just noise."</em>
+                        </p>
+                        <p>
+                            That algorithm is <strong>DBSCAN</strong> &mdash; Density-Based
+                            Spatial Clustering of Applications with Noise &mdash; and it is
+                            one of the most influential clustering methods in data science.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    DBSCAN was introduced by Martin Ester, Hans-Peter Kriegel, Joerg Sander,
+                    and Xiaowei Xu in 1996. Unlike partitioning methods (K-Means) or
+                    hierarchical methods, DBSCAN defines clusters as contiguous regions of
+                    high point density separated by regions of low density. This density-based
+                    perspective gives it three remarkable properties:
+                </p>
+                <ol>
+                    <li>
+                        It discovers clusters of <strong>arbitrary shape</strong> &mdash;
+                        crescents, rings, elongated streaks &mdash; not just spherical blobs.
+                    </li>
+                    <li>
+                        It <strong>automatically determines the number of clusters</strong>
+                        from the data.
+                    </li>
+                    <li>
+                        It has a built-in concept of <strong>noise</strong>: points in
+                        low-density regions are labelled as outliers rather than being forced
+                        into the nearest cluster.
+                    </li>
+                </ol>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have completed Sub-chapter 3.1
+                        (unsupervised learning fundamentals), Sub-chapter 3.2 (K-Means), and
+                        Sub-chapter 3.3 (Hierarchical Clustering). You should understand
+                        distance metrics, cluster assignments, and the limitations of K-Means
+                        with non-spherical data. Those limitations motivate the density-based
+                        approach we develop here.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: CORE DEFINITIONS
+             ========================================== -->
+        <section class="ch-section" id="core-definitions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bullseye"></i>
+                    Core Definitions: Epsilon, MinPts, and Point Types
+                </h2>
+
+                <p>
+                    Before we walk through the DBSCAN algorithm, we need three foundational
+                    definitions. Every aspect of DBSCAN flows from these concepts.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-dot"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Epsilon Neighborhood (eps)</h3>
+                        <p>
+                            For any point <strong>p</strong> in the dataset, its
+                            <strong>epsilon neighborhood</strong> (or eps-neighborhood) is the
+                            set of all points within a distance of <em>eps</em> from
+                            <strong>p</strong>, including <strong>p</strong> itself:
+                        </p>
+                        <p style="text-align:center; font-family: var(--font-mono); font-size: 1.05rem; padding: 12px;">
+                            N<sub>eps</sub>(p) = { q &isin; D &nbsp;|&nbsp; dist(p, q) &le; eps }
+                        </p>
+                        <p>
+                            Think of it as drawing a circle (in 2D) or a sphere (in 3D) of
+                            radius <em>eps</em> around point <strong>p</strong> and counting
+                            who falls inside. The distance function is typically Euclidean, but
+                            DBSCAN works with any metric &mdash; Manhattan, Haversine for
+                            geographic coordinates, or even custom engineering metrics.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Minimum Points (minPts)</h3>
+                        <p>
+                            <strong>minPts</strong> is the minimum number of points that must
+                            lie within the eps-neighborhood for a region to be considered
+                            "dense." If a point has at least minPts neighbours (including
+                            itself) within distance eps, the area around it qualifies as a
+                            dense region.
+                        </p>
+                        <p>
+                            A common rule of thumb sets minPts &ge; dimensionality + 1, with
+                            values of 4 or 5 working well for 2D data. Higher minPts values
+                            produce more conservative clusters (fewer small groups survive),
+                            while lower values capture finer-grained structure.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 class="section-subtitle">
+                    <i class="fa-solid fa-tags"></i>
+                    Three Types of Points
+                </h3>
+
+                <p>
+                    Given eps and minPts, every point in the dataset falls into one of three
+                    categories:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon" style="background: rgba(45,212,191,0.15); color: var(--accent-primary);">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Core Point</h3>
+                        <p>
+                            A point <strong>p</strong> is a <strong>core point</strong> if its
+                            eps-neighborhood contains at least minPts points:
+                            |N<sub>eps</sub>(p)| &ge; minPts. Core points are the backbone of
+                            clusters &mdash; they sit in the heart of a dense region. In our
+                            bridge sensor analogy, a core point is a sensor surrounded by many
+                            others in the same structural zone.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon" style="background: rgba(251,191,36,0.15); color: #fbbf24;">
+                        <i class="fa-solid fa-circle-half-stroke"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Border Point</h3>
+                        <p>
+                            A point <strong>p</strong> is a <strong>border point</strong> if
+                            it is not a core point itself, but it lies within the
+                            eps-neighborhood of at least one core point. Border points sit on
+                            the fringe of a dense region &mdash; they have fewer than minPts
+                            neighbours but are close enough to a core to be included in its
+                            cluster. Think of a sensor at the edge of a structural zone: it
+                            correlates with the zone but has fewer immediate neighbours.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon" style="background: rgba(239,68,68,0.15); color: #ef4444;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Noise Point (Outlier)</h3>
+                        <p>
+                            A point that is neither a core point nor a border point is
+                            classified as <strong>noise</strong>. It sits in a low-density
+                            region with no core point nearby. DBSCAN does not assign noise
+                            points to any cluster &mdash; they remain unaffiliated. These are
+                            the rogue sensor readings we mentioned: truly isolated anomalies.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Imagine an urban road network sensor deployment.</strong>
+                            Core points are like major intersections with many traffic sensors
+                            nearby &mdash; they are unambiguously part of a monitored zone.
+                            Border points are sensors on the periphery of a monitored zone:
+                            perhaps a sensor on a feeder road near a major intersection. Noise
+                            points are isolated sensors placed in remote areas with no other
+                            instrumentation nearby &mdash; they may be test installations,
+                            malfunctioning units, or intentionally standalone monitors.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: DENSITY REACHABILITY & CONNECTIVITY
+             ========================================== -->
+        <section class="ch-section" id="density-reachability">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-link"></i>
+                    Density Reachability and Connectivity
+                </h2>
+
+                <p>
+                    Two more definitions complete the theoretical foundation. They explain how
+                    DBSCAN chains individual neighbourhood relationships into full clusters.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-right-long"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Directly Density-Reachable</h3>
+                        <p>
+                            A point <strong>q</strong> is <em>directly density-reachable</em>
+                            from a point <strong>p</strong> if (1) <strong>p</strong> is a core
+                            point and (2) <strong>q</strong> &isin; N<sub>eps</sub>(p). Note
+                            that this relationship is <strong>not symmetric</strong> for border
+                            points: a border point q can be directly density-reachable from
+                            core point p, but p is not necessarily directly density-reachable
+                            from q (since q may not be a core point).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Density-Reachable</h3>
+                        <p>
+                            A point <strong>q</strong> is <em>density-reachable</em> from
+                            <strong>p</strong> if there exists a chain of points
+                            p = p<sub>1</sub>, p<sub>2</sub>, ..., p<sub>n</sub> = q such
+                            that each p<sub>i+1</sub> is directly density-reachable from
+                            p<sub>i</sub>. This chain-based definition is what allows DBSCAN
+                            to discover elongated, non-spherical clusters: the cluster grows
+                            outward from core to core, following the density.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-circle-nodes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Density-Connected</h3>
+                        <p>
+                            Two points <strong>p</strong> and <strong>q</strong> are
+                            <em>density-connected</em> if there exists a point <strong>o</strong>
+                            such that both <strong>p</strong> and <strong>q</strong> are
+                            density-reachable from <strong>o</strong>. This symmetric
+                            relationship is what formally defines a cluster in DBSCAN: a
+                            cluster is a maximal set of density-connected points.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Why Does This Matter?</span>
+                    </div>
+                    <p>
+                        The chain-based density reachability is the key insight that separates
+                        DBSCAN from centroid-based methods. K-Means measures distance from a
+                        single central point; DBSCAN follows the density landscape step by
+                        step. A crescent-shaped cluster of sensor readings is trivially
+                        captured by DBSCAN because the chain of core points follows the curve,
+                        whereas K-Means would split the crescent into two or more fragments.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: THE DBSCAN ALGORITHM
+             ========================================== -->
+        <section class="ch-section" id="algorithm-steps">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ol"></i>
+                    The DBSCAN Algorithm Step by Step
+                </h2>
+
+                <p>
+                    With the definitions in place, the algorithm itself is remarkably
+                    straightforward. DBSCAN makes a single pass through the dataset (plus
+                    neighbourhood lookups) and assigns every point to a cluster or to noise.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-1"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 1: Label All Points as Unvisited</h3>
+                        <p>
+                            Initialise every point in the dataset as <em>unvisited</em>. No
+                            cluster assignments exist yet. The algorithm maintains a cluster
+                            counter C, initially set to 0.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-2"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 2: Pick an Unvisited Point</h3>
+                        <p>
+                            Select any unvisited point <strong>p</strong> and mark it as
+                            visited. The order does not affect the final clustering (though
+                            border points assigned to different clusters may vary with order).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-3"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 3: Compute the Epsilon Neighborhood</h3>
+                        <p>
+                            Find all points within distance eps of <strong>p</strong>:
+                            N<sub>eps</sub>(p). Count how many there are.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-4"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 4: Core or Noise?</h3>
+                        <p>
+                            If |N<sub>eps</sub>(p)| &lt; minPts, label <strong>p</strong> as
+                            <strong>noise</strong> (tentatively &mdash; it may later be
+                            reclaimed as a border point). Go back to Step 2.
+                        </p>
+                        <p>
+                            If |N<sub>eps</sub>(p)| &ge; minPts, <strong>p</strong> is a core
+                            point. Increment C and create a new cluster. Assign <strong>p</strong>
+                            to cluster C. Proceed to Step 5.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-5"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 5: Expand the Cluster</h3>
+                        <p>
+                            Create a seed set S containing all points in N<sub>eps</sub>(p).
+                            For each point <strong>q</strong> in S:
+                        </p>
+                        <ul>
+                            <li>If <strong>q</strong> is unvisited, mark it visited and compute
+                                N<sub>eps</sub>(q). If |N<sub>eps</sub>(q)| &ge; minPts
+                                (i.e., <strong>q</strong> is also a core point), add the points
+                                in N<sub>eps</sub>(q) to S.</li>
+                            <li>If <strong>q</strong> is not yet assigned to any cluster,
+                                assign it to cluster C.</li>
+                        </ul>
+                        <p>
+                            This expansion propagates outward through core points, absorbing
+                            border points along the way. When S is exhausted, the cluster is
+                            complete. Return to Step 2 and pick the next unvisited point.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-6"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Step 6: Repeat Until All Points Are Visited</h3>
+                        <p>
+                            Continue until no unvisited points remain. The result is a set of
+                            clusters (each defined by core + border points) and a set of noise
+                            points that do not belong to any cluster.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>Complexity</span>
+                    </div>
+                    <p>
+                        The naive implementation of DBSCAN has time complexity O(n<sup>2</sup>)
+                        because each neighbourhood query scans all points. With a spatial index
+                        (e.g., a k-d tree or R-tree), neighbourhood queries take O(log n),
+                        bringing total complexity to O(n log n). Memory usage is O(n). This
+                        makes DBSCAN very efficient for large engineering datasets such as
+                        LiDAR point clouds or sensor networks.
+                    </p>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Think of DBSCAN as a site inspector walking through a construction
+                            site full of markers (survey nails, sensor locations, sample
+                            points). The inspector picks up any unvisited marker. If fewer than
+                            minPts markers sit within an eps-metre radius, they flag it as an
+                            isolated anomaly. If enough markers are nearby, the inspector
+                            declares a "zone" and walks outward to every neighbouring marker,
+                            recursively expanding the zone wherever the density criterion is
+                            met. The process stops when the inspector cannot walk any further
+                            without leaving dense territory. The resulting zones may be
+                            irregular polygons, crescents, or linear strips &mdash; DBSCAN
+                            does not care about shape.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: ADVANTAGES OVER K-MEANS
+             ========================================== -->
+        <section class="ch-section" id="advantages">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Advantages Over K-Means
+                </h2>
+
+                <p>
+                    DBSCAN addresses several fundamental limitations of K-Means. Understanding
+                    these advantages helps you choose the right algorithm for your engineering
+                    problem.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Arbitrary Cluster Shapes</h3>
+                        <p>
+                            K-Means produces Voronoi partitions &mdash; convex, roughly
+                            spherical regions around each centroid. Real-world engineering data
+                            often forms non-convex patterns: a ring of sensors around a
+                            building perimeter, an L-shaped damage zone in a slab, or a
+                            meandering line of GPS readings along a riverbank. DBSCAN captures
+                            all of these because it follows density contours rather than
+                            measuring distance from a centre.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Built-in Noise Handling</h3>
+                        <p>
+                            K-Means assigns every point to its nearest centroid, even if the
+                            point is a clear outlier. This distorts cluster centroids and
+                            inflates inertia. DBSCAN explicitly labels low-density points as
+                            noise, keeping clusters pure. In civil engineering, where sensor
+                            faults, recording errors, and genuine anomalies are common, this
+                            is extremely valuable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hashtag"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>No Need to Specify K</h3>
+                        <p>
+                            K-Means requires you to decide the number of clusters before
+                            running the algorithm. Choosing K badly leads to meaningless
+                            results. DBSCAN discovers the number of clusters automatically
+                            from the data. You tune eps and minPts instead &mdash; parameters
+                            that have a more intuitive physical interpretation (neighbourhood
+                            size and minimum density).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Robustness to Initialisation</h3>
+                        <p>
+                            K-Means results depend on the initial centroid placement and can
+                            converge to local optima. DBSCAN is deterministic for core points
+                            and cluster membership (border points at the boundary of two
+                            clusters may vary with processing order, but this is a minor
+                            issue). You get the same clusters every time.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>When K-Means Still Wins</span>
+                    </div>
+                    <p>
+                        DBSCAN is not always the better choice. When clusters are roughly
+                        spherical and similarly sized, K-Means is faster and simpler. DBSCAN
+                        struggles with clusters of <strong>varying densities</strong>: a single
+                        eps value cannot simultaneously capture a tight cluster and a diffuse
+                        one. Extensions like OPTICS and HDBSCAN address this limitation (see
+                        Section 10). Also, DBSCAN requires careful tuning of eps; in
+                        high-dimensional spaces, the concept of a fixed-radius neighbourhood
+                        degrades due to the curse of dimensionality.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: CHOOSING EPS AND MINPTS
+             ========================================== -->
+        <section class="ch-section" id="parameter-selection">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Choosing Eps and MinPts
+                </h2>
+
+                <p>
+                    DBSCAN trades the burden of choosing K for the burden of choosing eps and
+                    minPts. Fortunately, principled methods exist for both.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The k-Distance Plot</h3>
+                        <p>
+                            For each point, compute the distance to its k-th nearest neighbour
+                            (where k = minPts &minus; 1). Sort these distances in ascending
+                            order and plot them. The resulting curve typically shows a
+                            relatively flat region (points inside dense clusters have small
+                            k-distances) followed by a sharp upturn (noise points have large
+                            k-distances). The "elbow" of this curve is a good estimate for eps.
+                        </p>
+                        <p>
+                            This is analogous to the elbow method in K-Means, but instead of
+                            plotting inertia vs K, you plot sorted k-distances vs point index.
+                            The elbow separates dense interior points from sparse outliers.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Rules of Thumb for MinPts</h3>
+                        <p>
+                            The original DBSCAN paper suggests minPts &ge; D + 1 where D is
+                            the number of dimensions. For 2D data, minPts = 4 is a common
+                            starting point. For noisier datasets or higher dimensions, increase
+                            minPts. Larger minPts values produce more robust clusters but may
+                            merge small, legitimate groups into noise.
+                        </p>
+                        <p>
+                            In civil engineering practice, the choice often has physical
+                            meaning. For example, if you are clustering crack locations on a
+                            bridge deck, minPts = 5 means you only consider a damage zone if
+                            at least 5 cracks appear within the eps-radius &mdash; a reasonable
+                            engineering threshold for a "zone of concern."
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            Choosing eps is like choosing the search radius for a geotechnical
+                            site investigation. If you set eps too small (say 1 metre), only
+                            boreholes drilled side by side will cluster together, and most
+                            boreholes will be classified as noise. If eps is too large (say
+                            1 km), the entire site becomes one cluster. The k-distance plot
+                            helps you find the natural neighbourhood scale in your data.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CE APPLICATION 1 - GEOSPATIAL
+             ========================================== -->
+        <section class="ch-section" id="ce-geospatial">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-map-pin"></i>
+                    CE Application: Geospatial Sensor Clusters
+                </h2>
+
+                <p>
+                    One of the most natural applications of DBSCAN in civil engineering is
+                    geospatial clustering. Sensors, survey points, GPS tracks, and inspection
+                    records all have spatial coordinates, and dense groupings often indicate
+                    zones of engineering interest.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Structural Health Monitoring Networks</h3>
+                        <p>
+                            Large infrastructure systems &mdash; bridges, dams, tunnels,
+                            high-rise buildings &mdash; are instrumented with hundreds of
+                            sensors (accelerometers, strain gauges, displacement transducers,
+                            temperature probes). Sensors in the same structural zone tend to
+                            produce correlated readings. DBSCAN can cluster sensors by their
+                            response patterns during a loading event, revealing which sensors
+                            "belong together" functionally, even if their physical placement
+                            is irregular.
+                        </p>
+                        <p>
+                            Noise points in this context are sensors that behave differently
+                            from all others &mdash; potential candidates for malfunction,
+                            localised damage, or unique structural behaviour that warrants
+                            investigation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pavement Distress Mapping</h3>
+                        <p>
+                            Automated pavement inspection vehicles record GPS-tagged distress
+                            data: cracks, potholes, rutting. DBSCAN clusters nearby distresses
+                            into zones of deterioration, helping asset managers prioritise
+                            repairs. Isolated defects (noise) can be deprioritised, while dense
+                            clusters trigger rehabilitation projects.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Environmental Monitoring</h3>
+                        <p>
+                            Water quality sensors in a river network, air quality monitors in
+                            an urban area, or groundwater level gauges across a construction
+                            site: DBSCAN identifies clusters of similar readings, revealing
+                            pollution hotspots, groundwater zones, or areas requiring
+                            dewatering. The Haversine distance metric can be used directly
+                            for geographic coordinates.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: CE APPLICATION 2 - DAMAGE ZONES
+             ========================================== -->
+        <section class="ch-section" id="ce-damage-zones">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building-circle-exclamation"></i>
+                    CE Application: Damage Zone Detection
+                </h2>
+
+                <p>
+                    Detecting and delineating damage zones in structures is a safety-critical
+                    task where DBSCAN's ability to handle irregular shapes and noise shines.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Crack Pattern Analysis</h3>
+                        <p>
+                            After an earthquake or extreme loading event, structural engineers
+                            document crack locations on concrete members. Each crack is a 2D
+                            or 3D coordinate (position on the element surface). DBSCAN clusters
+                            these crack positions into damage zones &mdash; areas where cracks
+                            concentrate. The shape of a damage zone (L-shaped, linear, radial)
+                            carries diagnostic information about the failure mode. K-Means
+                            would impose circular zones, potentially misrepresenting the actual
+                            damage pattern.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Bridge Deck Delamination</h3>
+                        <p>
+                            Ground-penetrating radar (GPR) surveys produce thousands of data
+                            points indicating subsurface conditions. Points flagged as
+                            "delaminated" can be clustered with DBSCAN to identify contiguous
+                            delamination zones. The eps parameter maps directly to the spatial
+                            resolution of the survey, and minPts filters out isolated false
+                            positives from the GPR signal processing.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>LiDAR Point Cloud Segmentation</h3>
+                        <p>
+                            Terrestrial LiDAR scans of structures produce millions of 3D
+                            points. DBSCAN (or its variants) segments these point clouds into
+                            structural components: columns, beams, walls, slabs. With a spatial
+                            index, DBSCAN scales to millions of points efficiently. Points
+                            classified as noise often correspond to scan artefacts, vegetation,
+                            or temporary objects.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Multi-Dimensional DBSCAN</span>
+                    </div>
+                    <p>
+                        In many CE applications, you cluster not just on spatial coordinates
+                        but on combined feature vectors. For example, you might cluster sensor
+                        readings using [x, y, peak_acceleration, dominant_frequency] as the
+                        feature space. The eps parameter then defines a "neighbourhood" in this
+                        multidimensional space. Be sure to normalise or standardise features
+                        so that no single dimension dominates the distance calculation.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: INTERACTIVE DEMO 1 - DBSCAN
+             ========================================== -->
+        <section class="ch-section" id="demo-dbscan">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-flask"></i>
+                    Interactive Demo: DBSCAN Explorer
+                </h2>
+
+                <p>
+                    Click on the canvas below to place data points, then adjust the
+                    <strong>eps</strong> (neighbourhood radius) and <strong>minPts</strong>
+                    (minimum neighbours) sliders. The algorithm runs in real time: core points
+                    are filled circles, border points are half-filled, and noise points are
+                    marked with an X. Cluster colours are assigned automatically.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-dbscan">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-hand-pointer"></i> DBSCAN Explorer</h3>
+                        <p>Click to add points. Adjust sliders to see clusters form.</p>
+                    </div>
+
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                        <div style="flex:1; min-width:200px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Epsilon (eps): <span id="eps-value">40</span>
+                            </label>
+                            <input type="range" id="eps-slider" min="10" max="120" value="40" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width:200px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                MinPts: <span id="minpts-value">4</span>
+                            </label>
+                            <input type="range" id="minpts-slider" min="2" max="15" value="4" style="width:100%;">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end;">
+                            <button id="btn-generate-dbscan" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary);">
+                                <i class="fa-solid fa-random"></i> Generate Sample
+                            </button>
+                            <button id="btn-clear-dbscan" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--text-muted); background:transparent; color:var(--text-muted);">
+                                <i class="fa-solid fa-trash-can"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas-dbscan" style="width:100%; height:420px; border-radius:12px; cursor:crosshair; border:1px solid var(--border-color);"></canvas>
+
+                    <div id="dbscan-stats" style="margin-top:12px; font-size:0.85rem; font-family:var(--font-mono); color:var(--text-muted);">
+                        Points: 0 &nbsp;|&nbsp; Clusters: 0 &nbsp;|&nbsp; Noise: 0
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: INTERACTIVE DEMO 2 - COMPARISON
+             ========================================== -->
+        <section class="ch-section" id="demo-comparison">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Interactive Demo: K-Means vs DBSCAN
+                </h2>
+
+                <p>
+                    This side-by-side comparison shows the same non-spherical dataset
+                    clustered by both K-Means (left) and DBSCAN (right). The dataset contains
+                    two crescent shapes and scattered noise points. Watch how K-Means splits
+                    the crescents while DBSCAN captures them perfectly and labels outliers as
+                    noise.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-comparison">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-columns"></i> K-Means vs DBSCAN on Non-Spherical Data</h3>
+                        <p>Click "Generate" to create new data. Adjust K for K-Means and eps/minPts for DBSCAN.</p>
+                    </div>
+
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                        <div style="flex:1; min-width:140px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                K (for K-Means): <span id="k-value">2</span>
+                            </label>
+                            <input type="range" id="k-slider" min="2" max="6" value="2" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width:140px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                Eps (DBSCAN): <span id="eps2-value">30</span>
+                            </label>
+                            <input type="range" id="eps2-slider" min="10" max="80" value="30" style="width:100%;">
+                        </div>
+                        <div style="flex:1; min-width:140px;">
+                            <label style="font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px;">
+                                MinPts (DBSCAN): <span id="minpts2-value">5</span>
+                            </label>
+                            <input type="range" id="minpts2-slider" min="2" max="15" value="5" style="width:100%;">
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:flex-end;">
+                            <button id="btn-generate-comparison" class="demo-btn" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; border:1px solid var(--accent-primary); background:transparent; color:var(--accent-primary);">
+                                <i class="fa-solid fa-rotate"></i> Generate
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:280px;">
+                            <div style="text-align:center; font-weight:600; margin-bottom:8px; font-size:0.9rem;">K-Means</div>
+                            <canvas id="canvas-kmeans" style="width:100%; height:360px; border-radius:12px; border:1px solid var(--border-color);"></canvas>
+                        </div>
+                        <div style="flex:1; min-width:280px;">
+                            <div style="text-align:center; font-weight:600; margin-bottom:8px; font-size:0.9rem;">DBSCAN</div>
+                            <canvas id="canvas-dbscan2" style="width:100%; height:360px; border-radius:12px; border:1px solid var(--border-color);"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: EXTENSIONS (OPTICS, HDBSCAN)
+             ========================================== -->
+        <section class="ch-section" id="extensions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrow-up-right-dots"></i>
+                    Beyond DBSCAN: OPTICS and HDBSCAN
+                </h2>
+
+                <p>
+                    DBSCAN's main weakness is its reliance on a single global eps value. If
+                    your dataset contains clusters of varying densities, a single eps cannot
+                    capture them all. Two important extensions address this.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-binoculars"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>OPTICS (Ordering Points To Identify Clustering Structure)</h3>
+                        <p>
+                            OPTICS (Ankerst et al., 1999) does not produce a flat clustering
+                            directly. Instead, it computes a reachability plot &mdash; a 1D
+                            ordering of points with associated reachability distances. Valleys
+                            in the reachability plot correspond to clusters, and their depth
+                            reflects cluster density. You can extract clusters at multiple
+                            density levels from a single OPTICS run, effectively getting a
+                            density-based hierarchy.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>HDBSCAN (Hierarchical DBSCAN)</h3>
+                        <p>
+                            HDBSCAN (Campello et al., 2013) extends DBSCAN into a hierarchical
+                            framework. It runs DBSCAN across all possible eps values, builds a
+                            cluster hierarchy, and then extracts the most stable clusters using
+                            a concept of cluster persistence. HDBSCAN eliminates the need to
+                            choose eps entirely (you still set min_cluster_size, analogous to
+                            minPts). It handles varying-density clusters gracefully and is
+                            increasingly popular in engineering applications.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Practical Recommendation</span>
+                    </div>
+                    <p>
+                        For most civil engineering applications, start with DBSCAN and the
+                        k-distance plot to choose eps. If you find that your data has clusters
+                        of very different densities (e.g., a tight cluster of sensors on a
+                        pylon and a diffuse cluster on a long deck span), switch to HDBSCAN.
+                        The Python library <code>hdbscan</code> integrates seamlessly with
+                        scikit-learn.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: PRACTICAL IMPLEMENTATION
+             ========================================== -->
+        <section class="ch-section" id="implementation">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code"></i>
+                    Practical Implementation Notes
+                </h2>
+
+                <p>
+                    When implementing DBSCAN on real engineering data, keep these practical
+                    considerations in mind.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Feature Scaling</h3>
+                        <p>
+                            DBSCAN uses a distance metric, so features must be on comparable
+                            scales. If you cluster on [easting (metres), northing (metres),
+                            temperature (Celsius)], a 1-unit change in temperature is
+                            physically very different from a 1-metre spatial shift. Standardise
+                            or normalise features before running DBSCAN, or use domain
+                            knowledge to weight dimensions appropriately.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Spatial Indexing for Large Datasets</h3>
+                        <p>
+                            For datasets with more than ~10,000 points, use a spatial index.
+                            scikit-learn's DBSCAN implementation supports <code>algorithm='ball_tree'</code>
+                            or <code>algorithm='kd_tree'</code> for efficient neighbourhood
+                            lookups. For very large point clouds (millions of points), consider
+                            chunking the data spatially or using approximate nearest neighbour
+                            libraries.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Evaluating DBSCAN Results</h3>
+                        <p>
+                            The Silhouette Score can evaluate DBSCAN clusters, but it penalises
+                            non-convex shapes. Better metrics include the DBCV (Density-Based
+                            Clustering Validation) index, which is designed for density-based
+                            clusters. In engineering practice, visual inspection and domain
+                            validation (e.g., "do these damage zones make structural sense?")
+                            remain essential.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Test your understanding of DBSCAN and density-based clustering with these
+                    four questions. Each reinforces a core concept from this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        In DBSCAN, a core point is defined as a point that:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Is the centroid of its cluster
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Has at least minPts points within its eps-neighborhood
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Has the highest density in the dataset
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Is the first point processed by the algorithm
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! A core point has at
+                        least minPts points (including itself) within a radius of eps. Core
+                        points form the backbone of DBSCAN clusters and enable the
+                        density-reachability chains that grow clusters outward.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. A core point is
+                        defined by having at least <strong>minPts</strong> points in its
+                        eps-neighbourhood. Unlike K-Means, DBSCAN has no concept of a
+                        centroid. The definition is purely local: enough neighbours within the
+                        radius.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        What is the primary advantage of DBSCAN over K-Means for clustering
+                        crack locations on a concrete slab?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> DBSCAN always runs faster than K-Means
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> DBSCAN produces spherical clusters which are more accurate
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> DBSCAN can discover irregularly shaped damage zones and identify isolated cracks as noise
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> DBSCAN requires fewer parameters than K-Means
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Damage zones on a
+                        concrete slab are rarely circular. They may be L-shaped, linear, or
+                        irregular. DBSCAN follows the density contour of crack locations to
+                        discover the true shape of the damage zone. Isolated cracks are
+                        correctly labelled as noise rather than being forced into a cluster.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. The key advantage
+                        for crack clustering is DBSCAN's ability to find
+                        <strong>arbitrarily shaped</strong> damage zones and label isolated
+                        cracks as noise. K-Means would impose circular zones and assign every
+                        crack to a cluster.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        If you increase the eps parameter while keeping minPts constant,
+                        what generally happens?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> More points become noise
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> The number of clusters always increases
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> Clusters grow larger, previously separate clusters may merge, and fewer points are noise
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The algorithm runs significantly slower
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! A larger eps means
+                        each point's neighbourhood is bigger, so more points qualify as core
+                        points, clusters expand, nearby clusters may merge, and fewer points
+                        remain as noise. At the extreme, a very large eps puts all points
+                        into a single cluster.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. Increasing eps
+                        enlarges every point's neighbourhood, making it easier to meet the
+                        minPts threshold. This causes clusters to <strong>grow and
+                        merge</strong>, reducing the number of clusters and noise points.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        A border point in DBSCAN is a point that:
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Has the most neighbours of any point in its cluster
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Is equidistant from two cluster centroids
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Does not belong to any cluster
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Is not a core point but lies within the eps-neighborhood of a core point
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! A border point does
+                        not have enough neighbours to be a core point (fewer than minPts in
+                        its eps-neighbourhood), but it is close enough to at least one core
+                        point to be included in that core point's cluster. Border points form
+                        the periphery of DBSCAN clusters.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. A border point is
+                        <strong>not a core point</strong> (too few neighbours) but falls
+                        within the eps-neighbourhood of at least one core point, so it is
+                        assigned to that core's cluster. It sits on the cluster's edge.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Summary</h3>
+                        <ul>
+                            <li>
+                                DBSCAN defines clusters as contiguous regions of high point
+                                density, separated by regions of low density.
+                            </li>
+                            <li>
+                                Two parameters control the algorithm: <strong>eps</strong>
+                                (neighbourhood radius) and <strong>minPts</strong> (minimum
+                                density threshold).
+                            </li>
+                            <li>
+                                Points are classified as <strong>core</strong> (dense interior),
+                                <strong>border</strong> (cluster fringe), or <strong>noise</strong>
+                                (low-density outlier).
+                            </li>
+                            <li>
+                                DBSCAN discovers clusters of arbitrary shape, handles noise
+                                natively, and does not require specifying the number of clusters.
+                            </li>
+                            <li>
+                                The k-distance plot is the standard tool for choosing eps.
+                            </li>
+                            <li>
+                                CE applications include geospatial sensor clustering, damage
+                                zone detection, pavement distress mapping, and LiDAR point
+                                cloud segmentation.
+                            </li>
+                            <li>
+                                DBSCAN struggles with varying-density clusters; HDBSCAN
+                                addresses this limitation.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-forward"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Comes Next</h3>
+                        <p>
+                            In Sub-chapter 3.5 (PCA), we shift from clustering to
+                            dimensionality reduction. You will learn how Principal Component
+                            Analysis compresses high-dimensional sensor data into a handful
+                            of informative features &mdash; a technique that often precedes
+                            clustering in real-world engineering pipelines.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub3.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 3.3 Hierarchical Clustering
+        </a>
+        <a href="sub5.html" class="chapter-nav__link next">
+            3.5 PCA <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+
+        /* ============================================
+           CLUSTER COLOUR PALETTE
+           ============================================ */
+        var CLUSTER_COLORS_DARK  = ['#2dd4bf','#22d3ee','#fbbf24','#ef4444','#a78bfa','#f472b6','#34d399','#fb923c'];
+        var CLUSTER_COLORS_LIGHT = ['#059669','#0284c7','#d97706','#dc2626','#7c3aed','#db2777','#16a34a','#ea580c'];
+
+        function clusterColors() {
+            var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return dark ? CLUSTER_COLORS_DARK : CLUSTER_COLORS_LIGHT;
+        }
+
+        /* ============================================
+           HERO CANVAS ANIMATION
+           ============================================ */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+
+            /* Generate clustered points with noise */
+            var points = [];
+            var clusterCenters = [
+                { x: W * 0.25, y: H * 0.4 },
+                { x: W * 0.65, y: H * 0.3 },
+                { x: W * 0.5,  y: H * 0.7 }
+            ];
+            for (var ci = 0; ci < clusterCenters.length; ci++) {
+                for (var j = 0; j < 18; j++) {
+                    points.push({
+                        x: clusterCenters[ci].x + (Math.random() - 0.5) * 100,
+                        y: clusterCenters[ci].y + (Math.random() - 0.5) * 80,
+                        vx: (Math.random() - 0.5) * 0.3,
+                        vy: (Math.random() - 0.5) * 0.3,
+                        r: 2 + Math.random() * 2.5,
+                        cluster: ci
+                    });
+                }
+            }
+            /* Add noise points */
+            for (var ni = 0; ni < 12; ni++) {
+                points.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    r: 1.5 + Math.random() * 1.5,
+                    cluster: -1
+                });
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                var cols = clusterColors();
+
+                /* Draw eps circles around a few core points */
+                for (var i = 0; i < points.length; i++) {
+                    if (points[i].cluster >= 0 && i % 6 === 0) {
+                        ctx.beginPath();
+                        ctx.arc(points[i].x, points[i].y, 35, 0, Math.PI * 2);
+                        ctx.strokeStyle = cols[points[i].cluster % cols.length] + '15';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+
+                /* Draw connections within clusters */
+                ctx.lineWidth = 0.5;
+                for (var i = 0; i < points.length; i++) {
+                    if (points[i].cluster < 0) continue;
+                    for (var j = i + 1; j < points.length; j++) {
+                        if (points[j].cluster !== points[i].cluster) continue;
+                        var dx = points[j].x - points[i].x;
+                        var dy = points[j].y - points[i].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 60) {
+                            ctx.beginPath();
+                            ctx.moveTo(points[i].x, points[i].y);
+                            ctx.lineTo(points[j].x, points[j].y);
+                            ctx.strokeStyle = cols[points[i].cluster % cols.length] + '20';
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                /* Draw points */
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    if (p.cluster >= 0) {
+                        ctx.fillStyle = cols[p.cluster % cols.length] + '90';
+                    } else {
+                        ctx.fillStyle = c.MUTED;
+                    }
+                    ctx.fill();
+                }
+
+                /* Move points */
+                for (var i = 0; i < points.length; i++) {
+                    var p = points[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > W) p.vx *= -1;
+                    if (p.y < 0 || p.y > H) p.vy *= -1;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        /* ============================================
+           DBSCAN ALGORITHM IMPLEMENTATION
+           ============================================ */
+        function dbscan(points, eps, minPts) {
+            var n = points.length;
+            var labels = new Array(n);
+            for (var i = 0; i < n; i++) labels[i] = -1; // -1 = noise
+            var clusterId = 0;
+
+            function regionQuery(idx) {
+                var neighbours = [];
+                var px = points[idx].x, py = points[idx].y;
+                for (var j = 0; j < n; j++) {
+                    var dx = points[j].x - px;
+                    var dy = points[j].y - py;
+                    if (Math.sqrt(dx * dx + dy * dy) <= eps) {
+                        neighbours.push(j);
+                    }
+                }
+                return neighbours;
+            }
+
+            var visited = new Array(n);
+            for (var i = 0; i < n; i++) visited[i] = false;
+
+            for (var i = 0; i < n; i++) {
+                if (visited[i]) continue;
+                visited[i] = true;
+                var neighbours = regionQuery(i);
+
+                if (neighbours.length < minPts) {
+                    labels[i] = -1; // noise (may change later)
+                    continue;
+                }
+
+                // Start new cluster
+                labels[i] = clusterId;
+                var seeds = neighbours.slice();
+                var si = 0;
+                while (si < seeds.length) {
+                    var q = seeds[si];
+                    if (!visited[q]) {
+                        visited[q] = true;
+                        var qNeighbours = regionQuery(q);
+                        if (qNeighbours.length >= minPts) {
+                            for (var k = 0; k < qNeighbours.length; k++) {
+                                if (seeds.indexOf(qNeighbours[k]) === -1) {
+                                    seeds.push(qNeighbours[k]);
+                                }
+                            }
+                        }
+                    }
+                    if (labels[q] === -1) {
+                        labels[q] = clusterId; // border point
+                    } else if (labels[q] === undefined || labels[q] < 0) {
+                        labels[q] = clusterId;
+                    }
+                    si++;
+                }
+                clusterId++;
+            }
+
+            /* Determine point types */
+            var types = new Array(n);
+            for (var i = 0; i < n; i++) {
+                if (labels[i] === -1) {
+                    types[i] = 'noise';
+                } else {
+                    var nb = regionQuery(i);
+                    types[i] = nb.length >= minPts ? 'core' : 'border';
+                }
+            }
+
+            return { labels: labels, types: types, numClusters: clusterId };
+        }
+
+        /* ============================================
+           DEMO 1: INTERACTIVE DBSCAN EXPLORER
+           ============================================ */
+        (function initDbscanDemo() {
+            var canvas = document.getElementById('canvas-dbscan');
+            if (!canvas) return;
+
+            var info = initCanvas(canvas);
+            var ctx = info.ctx, W = info.w, H = info.h;
+            var points = [];
+
+            var epsSlider = document.getElementById('eps-slider');
+            var minptsSlider = document.getElementById('minpts-slider');
+            var epsLabel = document.getElementById('eps-value');
+            var minptsLabel = document.getElementById('minpts-value');
+            var statsEl = document.getElementById('dbscan-stats');
+            var btnGenerate = document.getElementById('btn-generate-dbscan');
+            var btnClear = document.getElementById('btn-clear-dbscan');
+
+            /* Add point on click */
+            canvas.addEventListener('click', function(e) {
+                var rect = canvas.getBoundingClientRect();
+                var x = e.clientX - rect.left;
+                var y = e.clientY - rect.top;
+                points.push({ x: x, y: y });
+                runAndDraw();
+            });
+
+            /* Slider events */
+            epsSlider.addEventListener('input', function() {
+                epsLabel.textContent = this.value;
+                runAndDraw();
+            });
+            minptsSlider.addEventListener('input', function() {
+                minptsLabel.textContent = this.value;
+                runAndDraw();
+            });
+
+            /* Generate sample data */
+            btnGenerate.addEventListener('click', function() {
+                points = [];
+                /* Cluster 1: circular blob */
+                for (var i = 0; i < 25; i++) {
+                    var angle = Math.random() * Math.PI * 2;
+                    var r = Math.random() * 45;
+                    points.push({ x: W * 0.25 + Math.cos(angle) * r, y: H * 0.4 + Math.sin(angle) * r });
+                }
+                /* Cluster 2: elongated */
+                for (var i = 0; i < 30; i++) {
+                    points.push({ x: W * 0.55 + (Math.random() - 0.5) * 150, y: H * 0.3 + (Math.random() - 0.5) * 30 });
+                }
+                /* Cluster 3: arc/crescent */
+                for (var i = 0; i < 25; i++) {
+                    var angle = Math.PI * 0.3 + Math.random() * Math.PI * 0.8;
+                    var r = 60 + (Math.random() - 0.5) * 20;
+                    points.push({ x: W * 0.6 + Math.cos(angle) * r, y: H * 0.7 + Math.sin(angle) * r });
+                }
+                /* Noise */
+                for (var i = 0; i < 12; i++) {
+                    points.push({ x: Math.random() * W, y: Math.random() * H });
+                }
+                runAndDraw();
+            });
+
+            /* Clear */
+            btnClear.addEventListener('click', function() {
+                points = [];
+                runAndDraw();
+            });
+
+            function runAndDraw() {
+                var eps = parseInt(epsSlider.value, 10);
+                var minPts = parseInt(minptsSlider.value, 10);
+
+                var result = { labels: [], types: [], numClusters: 0 };
+                if (points.length > 0) {
+                    result = dbscan(points, eps, minPts);
+                }
+
+                var cols = clusterColors();
+                var c = getColors();
+
+                ctx.clearRect(0, 0, W, H);
+
+                /* Draw grid */
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 0.5;
+                for (var gx = 0; gx < W; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (var gy = 0; gy < H; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                /* Draw eps circles for core points */
+                for (var i = 0; i < points.length; i++) {
+                    if (result.types[i] === 'core') {
+                        ctx.beginPath();
+                        ctx.arc(points[i].x, points[i].y, eps, 0, Math.PI * 2);
+                        var clr = result.labels[i] >= 0 ? cols[result.labels[i] % cols.length] : c.MUTED;
+                        ctx.strokeStyle = clr + '18';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+
+                /* Draw points */
+                for (var i = 0; i < points.length; i++) {
+                    var px = points[i].x, py = points[i].y;
+                    var type = result.types[i] || 'noise';
+                    var label = result.labels[i] !== undefined ? result.labels[i] : -1;
+                    var color = label >= 0 ? cols[label % cols.length] : c.MUTED;
+
+                    if (type === 'core') {
+                        /* Filled circle */
+                        ctx.beginPath();
+                        ctx.arc(px, py, 6, 0, Math.PI * 2);
+                        ctx.fillStyle = color;
+                        ctx.fill();
+                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    } else if (type === 'border') {
+                        /* Half-filled circle */
+                        ctx.beginPath();
+                        ctx.arc(px, py, 5, 0, Math.PI * 2);
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(px, py, 5, 0, Math.PI);
+                        ctx.fillStyle = color;
+                        ctx.fill();
+                    } else {
+                        /* Noise: X mark */
+                        ctx.strokeStyle = c.RED || '#ef4444';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(px - 4, py - 4); ctx.lineTo(px + 4, py + 4);
+                        ctx.moveTo(px + 4, py - 4); ctx.lineTo(px - 4, py + 4);
+                        ctx.stroke();
+                    }
+                }
+
+                /* Stats */
+                var noiseCount = 0;
+                for (var i = 0; i < result.labels.length; i++) {
+                    if (result.labels[i] === -1) noiseCount++;
+                }
+                if (statsEl) {
+                    statsEl.innerHTML = 'Points: ' + points.length +
+                        ' &nbsp;|&nbsp; Clusters: ' + result.numClusters +
+                        ' &nbsp;|&nbsp; Noise: ' + noiseCount;
+                }
+            }
+
+            /* Initial draw */
+            runAndDraw();
+        })();
+
+        /* ============================================
+           K-MEANS ALGORITHM (simple for comparison)
+           ============================================ */
+        function kMeans(points, K, maxIter) {
+            maxIter = maxIter || 50;
+            var n = points.length;
+            if (n === 0 || K <= 0) return { labels: [], centroids: [] };
+
+            /* Initialise centroids via random selection */
+            var centroids = [];
+            var used = {};
+            for (var i = 0; i < K; i++) {
+                var idx;
+                do { idx = Math.floor(Math.random() * n); } while (used[idx]);
+                used[idx] = true;
+                centroids.push({ x: points[idx].x, y: points[idx].y });
+            }
+
+            var labels = new Array(n);
+            for (var iter = 0; iter < maxIter; iter++) {
+                /* Assign */
+                for (var i = 0; i < n; i++) {
+                    var bestDist = Infinity, bestK = 0;
+                    for (var k = 0; k < K; k++) {
+                        var dx = points[i].x - centroids[k].x;
+                        var dy = points[i].y - centroids[k].y;
+                        var d = dx * dx + dy * dy;
+                        if (d < bestDist) { bestDist = d; bestK = k; }
+                    }
+                    labels[i] = bestK;
+                }
+                /* Update centroids */
+                var sums = [];
+                for (var k = 0; k < K; k++) sums.push({ sx: 0, sy: 0, count: 0 });
+                for (var i = 0; i < n; i++) {
+                    sums[labels[i]].sx += points[i].x;
+                    sums[labels[i]].sy += points[i].y;
+                    sums[labels[i]].count++;
+                }
+                for (var k = 0; k < K; k++) {
+                    if (sums[k].count > 0) {
+                        centroids[k].x = sums[k].sx / sums[k].count;
+                        centroids[k].y = sums[k].sy / sums[k].count;
+                    }
+                }
+            }
+            return { labels: labels, centroids: centroids };
+        }
+
+        /* ============================================
+           DEMO 2: K-MEANS vs DBSCAN COMPARISON
+           ============================================ */
+        (function initComparisonDemo() {
+            var canvasKM = document.getElementById('canvas-kmeans');
+            var canvasDB = document.getElementById('canvas-dbscan2');
+            if (!canvasKM || !canvasDB) return;
+
+            var infoKM = initCanvas(canvasKM);
+            var infoDB = initCanvas(canvasDB);
+            var ctxKM = infoKM.ctx, WKM = infoKM.w, HKM = infoKM.h;
+            var ctxDB = infoDB.ctx, WDB = infoDB.w, HDB = infoDB.h;
+
+            var kSlider = document.getElementById('k-slider');
+            var eps2Slider = document.getElementById('eps2-slider');
+            var minpts2Slider = document.getElementById('minpts2-slider');
+            var kLabel = document.getElementById('k-value');
+            var eps2Label = document.getElementById('eps2-value');
+            var minpts2Label = document.getElementById('minpts2-value');
+            var btnGenComp = document.getElementById('btn-generate-comparison');
+
+            var dataPoints = [];
+
+            function generateMoonData() {
+                dataPoints = [];
+                var cx1 = WKM * 0.4, cy1 = HKM * 0.45;
+                var cx2 = WKM * 0.6, cy2 = HKM * 0.55;
+                var R = Math.min(WKM, HKM) * 0.25;
+
+                /* Upper crescent */
+                for (var i = 0; i < 60; i++) {
+                    var angle = Math.PI * 0.1 + Math.random() * Math.PI * 0.8;
+                    var r = R + (Math.random() - 0.5) * 20;
+                    dataPoints.push({ x: cx1 + Math.cos(angle) * r, y: cy1 - Math.sin(angle) * r });
+                }
+                /* Lower crescent */
+                for (var i = 0; i < 60; i++) {
+                    var angle = Math.PI * 1.1 + Math.random() * Math.PI * 0.8;
+                    var r = R + (Math.random() - 0.5) * 20;
+                    dataPoints.push({ x: cx2 + Math.cos(angle) * r, y: cy2 - Math.sin(angle) * r });
+                }
+                /* Noise */
+                for (var i = 0; i < 15; i++) {
+                    dataPoints.push({
+                        x: 20 + Math.random() * (WKM - 40),
+                        y: 20 + Math.random() * (HKM - 40)
+                    });
+                }
+            }
+
+            function drawComparison() {
+                var K = parseInt(kSlider.value, 10);
+                var eps = parseInt(eps2Slider.value, 10);
+                var minPts = parseInt(minpts2Slider.value, 10);
+                var cols = clusterColors();
+                var c = getColors();
+
+                /* Scale points to each canvas (they share coordinate space of canvas-kmeans) */
+                var scaleX = WDB / WKM;
+                var scaleY = HDB / HKM;
+
+                /* K-Means */
+                var kmResult = kMeans(dataPoints, K);
+
+                ctxKM.clearRect(0, 0, WKM, HKM);
+                ctxKM.strokeStyle = c.GRID;
+                ctxKM.lineWidth = 0.5;
+                for (var gx = 0; gx < WKM; gx += 40) {
+                    ctxKM.beginPath(); ctxKM.moveTo(gx, 0); ctxKM.lineTo(gx, HKM); ctxKM.stroke();
+                }
+                for (var gy = 0; gy < HKM; gy += 40) {
+                    ctxKM.beginPath(); ctxKM.moveTo(0, gy); ctxKM.lineTo(WKM, gy); ctxKM.stroke();
+                }
+
+                for (var i = 0; i < dataPoints.length; i++) {
+                    ctxKM.beginPath();
+                    ctxKM.arc(dataPoints[i].x, dataPoints[i].y, 4, 0, Math.PI * 2);
+                    ctxKM.fillStyle = cols[kmResult.labels[i] % cols.length];
+                    ctxKM.fill();
+                }
+                /* Draw centroids */
+                for (var k = 0; k < kmResult.centroids.length; k++) {
+                    ctxKM.beginPath();
+                    ctxKM.arc(kmResult.centroids[k].x, kmResult.centroids[k].y, 8, 0, Math.PI * 2);
+                    ctxKM.strokeStyle = cols[k % cols.length];
+                    ctxKM.lineWidth = 3;
+                    ctxKM.stroke();
+                    ctxKM.beginPath();
+                    ctxKM.moveTo(kmResult.centroids[k].x - 5, kmResult.centroids[k].y);
+                    ctxKM.lineTo(kmResult.centroids[k].x + 5, kmResult.centroids[k].y);
+                    ctxKM.moveTo(kmResult.centroids[k].x, kmResult.centroids[k].y - 5);
+                    ctxKM.lineTo(kmResult.centroids[k].x, kmResult.centroids[k].y + 5);
+                    ctxKM.stroke();
+                }
+
+                /* DBSCAN (scale points into DB canvas space) */
+                var dbPoints = [];
+                for (var i = 0; i < dataPoints.length; i++) {
+                    dbPoints.push({ x: dataPoints[i].x * scaleX, y: dataPoints[i].y * scaleY });
+                }
+                var dbResult = dbscan(dbPoints, eps * scaleX, minPts);
+
+                ctxDB.clearRect(0, 0, WDB, HDB);
+                ctxDB.strokeStyle = c.GRID;
+                ctxDB.lineWidth = 0.5;
+                for (var gx = 0; gx < WDB; gx += 40) {
+                    ctxDB.beginPath(); ctxDB.moveTo(gx, 0); ctxDB.lineTo(gx, HDB); ctxDB.stroke();
+                }
+                for (var gy = 0; gy < HDB; gy += 40) {
+                    ctxDB.beginPath(); ctxDB.moveTo(0, gy); ctxDB.lineTo(WDB, gy); ctxDB.stroke();
+                }
+
+                for (var i = 0; i < dbPoints.length; i++) {
+                    var px = dbPoints[i].x, py = dbPoints[i].y;
+                    var type = dbResult.types[i];
+                    var label = dbResult.labels[i];
+                    var color = label >= 0 ? cols[label % cols.length] : c.MUTED;
+
+                    if (type === 'core') {
+                        ctxDB.beginPath();
+                        ctxDB.arc(px, py, 5, 0, Math.PI * 2);
+                        ctxDB.fillStyle = color;
+                        ctxDB.fill();
+                    } else if (type === 'border') {
+                        ctxDB.beginPath();
+                        ctxDB.arc(px, py, 4, 0, Math.PI * 2);
+                        ctxDB.strokeStyle = color;
+                        ctxDB.lineWidth = 2;
+                        ctxDB.stroke();
+                    } else {
+                        ctxDB.strokeStyle = c.RED || '#ef4444';
+                        ctxDB.lineWidth = 2;
+                        ctxDB.beginPath();
+                        ctxDB.moveTo(px - 3, py - 3); ctxDB.lineTo(px + 3, py + 3);
+                        ctxDB.moveTo(px + 3, py - 3); ctxDB.lineTo(px - 3, py + 3);
+                        ctxDB.stroke();
+                    }
+                }
+            }
+
+            kSlider.addEventListener('input', function() { kLabel.textContent = this.value; drawComparison(); });
+            eps2Slider.addEventListener('input', function() { eps2Label.textContent = this.value; drawComparison(); });
+            minpts2Slider.addEventListener('input', function() { minpts2Label.textContent = this.value; drawComparison(); });
+            btnGenComp.addEventListener('click', function() { generateMoonData(); drawComparison(); });
+
+            /* Initial load */
+            generateMoonData();
+            drawComparison();
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

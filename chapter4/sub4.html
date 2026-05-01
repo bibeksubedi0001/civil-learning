@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.4 CNN Architecture | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Build a complete CNN architecture: stacking convolutional layers, pooling, flatten, fully connected layers, ReLU, softmax, batch normalization, dropout, receptive fields, and feature hierarchy. Interactive CNN builder and feature hierarchy visualizer for crack classification.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.4
+            </div>
+            <h1 class="chapter-hero__title">CNN Architecture</h1>
+            <p class="chapter-hero__subtitle">
+                Assembling convolutions, pooling, activations, and dense layers into a
+                complete Convolutional Neural Network &mdash; the blueprint that turns raw
+                pixel data from drone inspections into reliable crack/no-crack predictions.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>From Individual Layers to a Complete Blueprint</h2>
+                        <p>
+                            You have studied the convolution operation, learned how pooling
+                            compresses spatial dimensions, and understood how activation
+                            functions inject non-linearity. Each of these components is
+                            powerful on its own, but none can solve a real-world problem
+                            alone. A CNN architecture is the <strong>engineering
+                            blueprint</strong> that specifies how to stack these building
+                            blocks together so that raw pixels flow in at one end and a
+                            confident prediction &mdash; "crack" or "no crack" &mdash; emerges
+                            at the other.
+                        </p>
+                        <p>
+                            This sub-chapter teaches you to read, reason about, and design
+                            CNN architectures. By the end you will be able to sketch a
+                            complete network for crack classification, calculate its parameter
+                            count, and explain every layer's purpose.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Designing a CNN is remarkably similar to designing a structural system.
+                    Just as a building has foundations, columns, beams, and a roof &mdash;
+                    each serving a distinct structural role &mdash; a CNN has convolutional
+                    blocks, pooling stages, normalization layers, and a classifier head.
+                    Change one component and the entire system's behaviour shifts.
+                </p>
+
+                <p>
+                    We will walk through each stage of the architecture from input to output,
+                    introduce two critical regularisation techniques (batch normalization and
+                    dropout), explain the concept of receptive fields, and visualise the
+                    feature hierarchy that makes CNNs so effective. Two interactive demos
+                    will let you build and explore architectures hands-on.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds on <strong>Sub-chapter 4.2: The Convolution
+                        Operation</strong> and <strong>Sub-chapter 4.3: Pooling &amp;
+                        Stride</strong>. You should be comfortable with how convolutional
+                        kernels produce feature maps and how pooling reduces spatial
+                        dimensions. Familiarity with ReLU and the concept of trainable
+                        parameters is assumed.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: THE BIG PICTURE
+             ========================================== -->
+        <section class="ch-section" id="big-picture">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sitemap"></i>
+                    The Big Picture: Anatomy of a CNN
+                </h2>
+
+                <p>
+                    Every image classification CNN follows the same high-level pattern.
+                    Data flows through two conceptual stages:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-arrow-right-long"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Two Stages of a CNN</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Feature Extraction (backbone)</strong> &mdash;
+                                Alternating convolutional and pooling layers progressively
+                                transform the raw image into compact, high-level feature
+                                representations. Spatial dimensions shrink while the number
+                                of channels (feature maps) grows.
+                            </li>
+                            <li>
+                                <strong>Classification Head</strong> &mdash; The extracted
+                                features are flattened into a 1-D vector and passed through
+                                one or more fully connected (dense) layers that map the
+                                features to class probabilities.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    This two-stage pattern holds from the simplest networks (LeNet-5, 1998)
+                    to modern architectures (ResNet, EfficientNet). The differences lie in
+                    the number and arrangement of layers, kernel sizes, channel depths, and
+                    the use of modern techniques like batch normalization and skip connections.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>A CNN is like a multi-stage quality assurance pipeline on
+                            a construction site.</strong> Raw materials (pixels) arrive at the
+                            gate. Each inspection station (convolutional block) tests for
+                            specific properties &mdash; first checking obvious defects, then
+                            subtler issues. After each station, a summary report is created
+                            (pooling) that discards irrelevant details. Finally, the quality
+                            manager (classifier head) reads the consolidated reports and makes
+                            a pass/fail decision. The pipeline is fixed once designed, but the
+                            inspectors' criteria (kernel weights) are trained to recognise the
+                            defects that matter.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Typical Layer Ordering</h3>
+
+                <p>
+                    Within the feature extraction stage, layers are typically arranged in
+                    repeating blocks. The most common block pattern is:
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; margin:16px 0; line-height:1.9; padding:16px; background:var(--bg-code); border-radius:8px; overflow-x:auto;">
+  Input Image
+    |
+    v
+  [ Conv -> BatchNorm -> ReLU ] x N    (convolutional block, repeated N times)
+    |
+    v
+  [ MaxPool 2x2 ]                       (spatial downsampling)
+    |
+    v
+  [ Conv -> BatchNorm -> ReLU ] x M    (deeper block, more filters)
+    |
+    v
+  [ MaxPool 2x2 ]
+    |
+    v
+    ...                                  (repeat pattern, increasing filters)
+    |
+    v
+  [ Flatten ]                            (reshape 3-D feature map to 1-D vector)
+    |
+    v
+  [ Dense -> ReLU -> Dropout ]           (fully connected layer)
+    |
+    v
+  [ Dense -> Softmax ]                   (output: class probabilities)</pre>
+
+                <p>
+                    Let us now examine each layer type in detail, starting with the
+                    convolutional layers at the foundation.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: CONVOLUTIONAL LAYERS
+             ========================================== -->
+        <section class="ch-section" id="conv-layers">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-border-all"></i>
+                    Convolutional Layers: The Feature Detectors
+                </h2>
+
+                <p>
+                    You already know the mechanics of convolution from Sub-chapter 4.2.
+                    In an architecture context, the key design decisions for each
+                    convolutional layer are:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Convolutional Layer Hyperparameters</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Number of filters (channels)</strong> &mdash; How many
+                                distinct feature maps this layer produces. Common progressions:
+                                32 &rarr; 64 &rarr; 128 &rarr; 256. More filters = more
+                                features detected, but more parameters and computation.
+                            </li>
+                            <li>
+                                <strong>Kernel size</strong> &mdash; 3&times;3 is the modern
+                                default. Two stacked 3&times;3 layers cover the same receptive
+                                field as one 5&times;5 layer but with fewer parameters and
+                                an extra non-linearity.
+                            </li>
+                            <li>
+                                <strong>Padding</strong> &mdash; "Same" padding preserves
+                                spatial dimensions; "valid" (no padding) shrinks them by
+                                (kernel_size &minus; 1).
+                            </li>
+                            <li>
+                                <strong>Stride</strong> &mdash; Usually 1 within a block.
+                                Stride 2 may replace pooling for downsampling in some
+                                architectures.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Parameter Count for a Conv Layer</h3>
+
+                <p>
+                    The number of learnable parameters in a single convolutional layer is:
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.92rem; margin:12px 0; line-height:1.8; padding:12px; background:var(--bg-code); border-radius:8px;">
+  params = (kernel_h x kernel_w x input_channels + 1) x num_filters
+                   ^                                ^        ^
+            spatial kernel size            bias term    output channels</pre>
+
+                <p>
+                    For example, a Conv layer with 64 filters of size 3&times;3 applied to
+                    an input with 32 channels has:
+                </p>
+
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.92rem; margin:12px 0; line-height:1.8; padding:12px; background:var(--bg-code); border-radius:8px;">
+  (3 x 3 x 32 + 1) x 64 = 289 x 64 = 18,496 parameters</pre>
+
+                <p>
+                    Understanding this formula is essential for estimating model size and
+                    computational cost &mdash; a civil engineer's instinct for "bill of
+                    quantities" applied to neural network design.
+                </p>
+
+                <h3>Channel Progression: Why Filters Double</h3>
+
+                <p>
+                    A recurring pattern in CNN design is to double the number of filters
+                    each time the spatial dimensions are halved by pooling: 32 &rarr; 64
+                    &rarr; 128 &rarr; 256. The reasoning is practical: after 2&times;2
+                    pooling cuts spatial area by 4&times;, doubling channels only doubles the
+                    total activations (rather than quadrupling them). This keeps the
+                    computational load roughly constant per block while allowing deeper
+                    layers to capture more complex features.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: ACTIVATION FUNCTIONS
+             ========================================== -->
+        <section class="ch-section" id="activation-functions">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bolt"></i>
+                    Activation Functions: Injecting Non-Linearity
+                </h2>
+
+                <p>
+                    Without activation functions, stacking any number of convolutional layers
+                    would be mathematically equivalent to a single linear transformation.
+                    The activation function applied after each convolution is what gives the
+                    network the power to learn complex, non-linear relationships between
+                    pixels and labels.
+                </p>
+
+                <h3>ReLU &mdash; Rectified Linear Unit</h3>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>ReLU Definition</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.95rem; margin:8px 0; line-height:1.8;">
+  ReLU(x) = max(0, x)
+
+  If x > 0  ->  output = x    (pass through)
+  If x <= 0 ->  output = 0    (clamp to zero)</pre>
+                        <p style="margin-top:10px;">
+                            ReLU is the default activation in virtually all modern CNNs. It is
+                            computationally trivial (a single comparison), avoids the vanishing
+                            gradient problem that plagued sigmoid/tanh in deep networks, and
+                            introduces sparsity by zeroing out negative values.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    ReLU is applied element-wise to every value in the feature map. If a
+                    convolution kernel produces a feature map where some positions are
+                    negative (indicating the pattern was not found), ReLU sets those to zero.
+                    Positive values pass through unchanged, preserving the strength of
+                    detected features.
+                </p>
+
+                <h3>Why Not Sigmoid or Tanh?</h3>
+
+                <p>
+                    Older networks used sigmoid (output range 0&ndash;1) or tanh
+                    (range &minus;1 to 1). Both suffer from <strong>vanishing
+                    gradients</strong>: for large positive or negative inputs, the gradient
+                    approaches zero, effectively stopping learning in early layers. ReLU's
+                    gradient is either 0 (for negative inputs) or 1 (for positive inputs),
+                    so gradients flow freely through deep networks.
+                </p>
+
+                <h3>ReLU Variants</h3>
+
+                <p>
+                    Several variants address the "dying ReLU" problem (neurons that output
+                    zero for all inputs and stop learning):
+                </p>
+
+                <ul style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>Leaky ReLU:</strong> allows a small negative slope
+                        (e.g. 0.01x) instead of clamping to zero.
+                    </li>
+                    <li>
+                        <strong>PReLU (Parametric ReLU):</strong> learns the negative slope
+                        as a trainable parameter.
+                    </li>
+                    <li>
+                        <strong>ELU / SELU:</strong> smooth approximations that can produce
+                        slightly negative outputs.
+                    </li>
+                </ul>
+
+                <p>
+                    In practice, standard ReLU works well for the vast majority of CNN
+                    architectures, including crack detection models.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: POOLING RECAP
+             ========================================== -->
+        <section class="ch-section" id="pooling-recap">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compress"></i>
+                    Pooling Layers in Context
+                </h2>
+
+                <p>
+                    You studied pooling in depth in Sub-chapter 4.3. In the context of a
+                    full architecture, pooling layers serve as <strong>stage
+                    boundaries</strong>. After one or more Conv-BN-ReLU blocks extract
+                    features at a given spatial resolution, a 2&times;2 max pooling layer
+                    halves both height and width, producing a more compact representation
+                    for the next stage.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Pooling's Role in Architecture</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Reduces spatial dimensions</strong> &mdash; cuts each
+                                dimension by half, reducing total activations by 4&times;.
+                            </li>
+                            <li>
+                                <strong>Provides translation invariance</strong> &mdash; small
+                                shifts in the input do not change the pooled output.
+                            </li>
+                            <li>
+                                <strong>Expands the effective receptive field</strong> &mdash;
+                                after pooling, each position in the next layer "sees" a larger
+                                region of the original input.
+                            </li>
+                            <li>
+                                <strong>Zero parameters</strong> &mdash; adds no trainable
+                                weights, keeping model size constant.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    A typical classification network has 3&ndash;5 pooling stages. Starting
+                    from a 224&times;224 input, five rounds of 2&times;2 max pooling yield a
+                    7&times;7 feature map &mdash; compact enough to flatten and feed into a
+                    dense classifier.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: FLATTEN
+             ========================================== -->
+        <section class="ch-section" id="flatten-layer">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-to-dot"></i>
+                    The Flatten Layer: Bridging 2-D and 1-D
+                </h2>
+
+                <p>
+                    Convolutional and pooling layers produce 3-D tensors with shape
+                    (height &times; width &times; channels). Fully connected layers expect
+                    1-D vectors. The <strong>flatten</strong> layer bridges these two worlds
+                    by reshaping the 3-D tensor into a single long vector.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-right-long"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Flatten Example</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0; line-height:1.8;">
+  Before flatten:  7 x 7 x 256 = 12,544 values in a 3-D tensor
+  After flatten:   12,544 values in a 1-D vector
+
+  No computation occurs. No parameters. Just a reshape.</pre>
+                        <p style="margin-top:10px;">
+                            Think of it as unrolling a 3-D blueprint into a single-line bill
+                            of materials. The information is identical &mdash; only the
+                            arrangement changes.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Flatten is one of the simplest operations in a CNN, but it marks a
+                    critical architectural transition. Everything before the flatten
+                    preserves spatial structure; everything after treats the data as an
+                    unordered collection of features. This is why convolutional layers
+                    must do the heavy lifting of spatial feature extraction before the
+                    flatten point.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: FULLY CONNECTED LAYERS
+             ========================================== -->
+        <section class="ch-section" id="dense-layers">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                    Fully Connected (Dense) Layers
+                </h2>
+
+                <p>
+                    After flattening, the feature vector passes through one or more
+                    <strong>fully connected</strong> (FC) layers, also called
+                    <strong>dense</strong> layers. In an FC layer, every input neuron
+                    is connected to every output neuron, with each connection carrying
+                    a learnable weight.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Dense Layer Parameter Count</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0; line-height:1.8;">
+  params = (input_size + 1) x output_size
+                        ^            ^
+                   bias per neuron    neurons in this layer</pre>
+                        <p style="margin-top:8px;">
+                            Example: a dense layer connecting 12,544 inputs to 512 neurons has
+                            (12,544 + 1) &times; 512 = <strong>6,422,528 parameters</strong>.
+                            Dense layers dominate the total parameter count in many CNNs.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    FC layers act as the <strong>decision-making</strong> component of the
+                    network. They combine the spatial features extracted by convolutional
+                    layers into a holistic representation. A common configuration is one or
+                    two hidden FC layers (e.g. 512 or 256 neurons each) followed by the
+                    output layer.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The dense layer is the project manager reading all
+                            inspection summaries simultaneously.</strong> The convolutional
+                            layers are specialist inspectors who each examine one aspect
+                            (cracks, spalling, corrosion). The dense layer receives all their
+                            reports and combines them &mdash; "there's a crack AND it's in a
+                            load-bearing member AND there's corrosion nearby" &mdash; to make
+                            a single decision: critical repair needed or routine maintenance.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: SOFTMAX OUTPUT
+             ========================================== -->
+        <section class="ch-section" id="softmax-output">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Softmax: The Output Layer
+                </h2>
+
+                <p>
+                    The final layer of a classification CNN uses the <strong>softmax</strong>
+                    activation function, which converts raw output values (logits) into
+                    probability estimates that sum to 1.0.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-percent"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Softmax Mechanics</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin:8px 0; line-height:1.8;">
+  softmax(z_i) = exp(z_i) / sum(exp(z_j))   for all classes j
+
+  Example for crack/no-crack (2 classes):
+    Logits:        [3.2,  1.1]
+    Exponentials:  [24.5, 3.0]
+    Sum:           27.5
+    Probabilities: [0.89, 0.11]   ->  89% crack, 11% no-crack</pre>
+                    </div>
+                </div>
+
+                <p>
+                    For a binary classification task like crack/no-crack, the output layer
+                    has 2 neurons. For multi-class problems (e.g. classifying damage into
+                    "crack", "spalling", "corrosion", "delamination", "intact") the output
+                    layer has one neuron per class. The class with the highest probability
+                    is the network's prediction.
+                </p>
+
+                <p>
+                    The number of neurons in the output layer is the <em>only</em> place
+                    where the task definition directly shapes the architecture. Everything
+                    else &mdash; depth, width, kernel sizes &mdash; is an engineering design
+                    choice optimised through experimentation.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: BATCH NORMALIZATION
+             ========================================== -->
+        <section class="ch-section" id="batch-norm">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Batch Normalization
+                </h2>
+
+                <p>
+                    Introduced in 2015, <strong>batch normalization (BatchNorm)</strong>
+                    has become a near-universal component in modern CNN architectures. It
+                    normalizes the activations within each mini-batch to have zero mean and
+                    unit variance, then applies a learnable scale and shift.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>BatchNorm in Four Steps</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Compute mini-batch mean</strong> &mdash; average the
+                                activations across all samples in the batch for each channel.
+                            </li>
+                            <li>
+                                <strong>Compute mini-batch variance</strong> &mdash; measure
+                                how spread out the activations are.
+                            </li>
+                            <li>
+                                <strong>Normalize</strong> &mdash; subtract the mean and divide
+                                by the standard deviation (plus a small epsilon for numerical
+                                stability).
+                            </li>
+                            <li>
+                                <strong>Scale and shift</strong> &mdash; multiply by a learnable
+                                parameter gamma and add a learnable parameter beta. This lets
+                                the network undo the normalization if that is optimal.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h3>Why BatchNorm Helps</h3>
+
+                <ul style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>Stabilizes training:</strong> prevents activations from
+                        exploding or collapsing to zero across layers, a problem called
+                        internal covariate shift.
+                    </li>
+                    <li>
+                        <strong>Allows higher learning rates:</strong> the normalized
+                        distribution makes the loss landscape smoother, so larger steps
+                        are safe.
+                    </li>
+                    <li>
+                        <strong>Acts as mild regularization:</strong> the noise introduced by
+                        batch statistics provides a slight regularisation effect, sometimes
+                        reducing the need for dropout.
+                    </li>
+                </ul>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-hashtag"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>BatchNorm Parameters</h3>
+                        <p>
+                            BatchNorm adds 4 values per channel: two learnable (gamma, beta)
+                            and two tracked statistics (running mean, running variance). For a
+                            layer with 64 channels, that is 4 &times; 64 = 256 values. Only
+                            gamma and beta (128 parameters) are learnable &mdash; a negligible
+                            addition compared to the convolution weights.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Batch normalization is like standardising measurement
+                            units on a multi-team construction project.</strong> Different
+                            survey crews may report deflections in millimetres, inches, or
+                            even thousandths of an inch. Before the structural engineer can
+                            compare readings across beams, all measurements must be normalised
+                            to a common scale. BatchNorm does the same for neural activations
+                            &mdash; ensuring that every layer receives inputs in a consistent,
+                            well-behaved range.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: DROPOUT
+             ========================================== -->
+        <section class="ch-section" id="dropout">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-eraser"></i>
+                    Dropout: Preventing Overfitting
+                </h2>
+
+                <p>
+                    <strong>Dropout</strong> is a regularization technique that randomly
+                    deactivates a fraction of neurons during each training step. At test
+                    time, all neurons are active, but their outputs are scaled down to
+                    compensate.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-random"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How Dropout Works</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                During <strong>training</strong>: each neuron is independently
+                                set to zero with probability <em>p</em> (commonly 0.5 for FC
+                                layers, 0.2&ndash;0.3 for conv layers). The remaining neurons
+                                are scaled up by 1/(1&minus;p) to maintain the expected output
+                                magnitude.
+                            </li>
+                            <li>
+                                During <strong>inference</strong>: no neurons are dropped. The
+                                full network is used, producing the average of all the
+                                "thinned" networks seen during training.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    Dropout forces the network to learn redundant representations. No single
+                    neuron can become overly specialized because it might be absent in the
+                    next training step. This prevents <strong>co-adaptation</strong> &mdash;
+                    the phenomenon where neurons learn to depend on specific other neurons
+                    rather than contributing independently useful features.
+                </p>
+
+                <h3>Where to Place Dropout</h3>
+
+                <ul style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>After FC layers</strong> (most common) &mdash; dropout rates
+                        of 0.5 are standard. This is where most parameters reside and
+                        overfitting risk is highest.
+                    </li>
+                    <li>
+                        <strong>After conv layers</strong> (less common) &mdash; lower dropout
+                        rates (0.1&ndash;0.25) are used because spatial correlations make
+                        aggressive dropout harmful.
+                    </li>
+                    <li>
+                        <strong>Never after the output layer</strong> &mdash; dropping
+                        outputs would randomly remove class predictions.
+                    </li>
+                </ul>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Dropout is like cross-training your engineering
+                            team.</strong> If the only person who understands the structural
+                            analysis software is absent, the project stalls. By randomly
+                            "removing" team members during practice exercises (training), you
+                            force the remaining staff to develop overlapping skills. When the
+                            full team is present on the real project (inference), the
+                            redundancy makes the team more resilient and capable.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: RECEPTIVE FIELD
+             ========================================== -->
+        <section class="ch-section" id="receptive-field">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    Receptive Field: What Each Neuron "Sees"
+                </h2>
+
+                <p>
+                    The <strong>receptive field</strong> of a neuron is the region of the
+                    original input image that influences its value. In the first convolutional
+                    layer with a 3&times;3 kernel, each output neuron's receptive field is
+                    exactly 3&times;3 pixels. But as we stack layers and pooling, each
+                    deeper neuron's receptive field grows dramatically.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Receptive Field Growth</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.92rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:10px; text-align:left;">After Layer</th>
+                                    <th style="padding:10px; text-align:left;">Receptive Field</th>
+                                    <th style="padding:10px; text-align:left;">What It Captures</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Conv1 (3&times;3)</td>
+                                    <td style="padding:10px;">3&times;3</td>
+                                    <td style="padding:10px;">Individual pixel relationships</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Conv2 (3&times;3)</td>
+                                    <td style="padding:10px;">5&times;5</td>
+                                    <td style="padding:10px;">Edges, small gradients</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Pool (2&times;2, s=2)</td>
+                                    <td style="padding:10px;">6&times;6</td>
+                                    <td style="padding:10px;">Edges at multiple orientations</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Conv3 (3&times;3)</td>
+                                    <td style="padding:10px;">10&times;10</td>
+                                    <td style="padding:10px;">Texture patches, crack segments</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:10px;">Conv4 (3&times;3)</td>
+                                    <td style="padding:10px;">14&times;14</td>
+                                    <td style="padding:10px;">Object parts, crack junctions</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px;">Pool + Conv5</td>
+                                    <td style="padding:10px;">30&times;30+</td>
+                                    <td style="padding:10px;">Whole crack patterns, context</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    The progressive growth of receptive fields is <em>why</em> deeper layers
+                    capture higher-level features. A neuron deep in the network might have a
+                    receptive field covering a 100&times;100 pixel region &mdash; large enough
+                    to recognise an entire crack pattern with surrounding concrete context.
+                </p>
+
+                <p>
+                    For crack detection, ensuring that the receptive field is large enough to
+                    capture the full extent of typical cracks is a critical design
+                    consideration. Too small a receptive field and the network sees fragments
+                    without context; too large and fine details are lost.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: FEATURE HIERARCHY
+             ========================================== -->
+        <section class="ch-section" id="feature-hierarchy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Feature Hierarchy: Edges to Objects
+                </h2>
+
+                <p>
+                    One of the most profound insights about CNNs is that they automatically
+                    learn a <strong>hierarchical representation</strong> of the input. Each
+                    layer builds upon the features detected by the previous layer, creating
+                    an increasingly abstract understanding of the image.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-stairs"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>The Four Levels of Feature Abstraction</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Layer 1 &mdash; Edges:</strong> the first convolutional
+                                layer learns to detect simple edges at various orientations
+                                (horizontal, vertical, diagonal). In concrete imagery, these
+                                correspond to sharp brightness transitions at crack boundaries.
+                            </li>
+                            <li>
+                                <strong>Layer 2 &mdash; Textures:</strong> combinations of
+                                edges form textures. Concrete grain, aggregate patterns, and
+                                surface roughness are captured here. Crack textures (thin dark
+                                lines) become distinguishable from concrete textures.
+                            </li>
+                            <li>
+                                <strong>Layer 3 &mdash; Parts:</strong> textures combine into
+                                recognisable parts &mdash; a crack segment, a patch of intact
+                                concrete, a spalling region. The network begins to "understand"
+                                meaningful structural features.
+                            </li>
+                            <li>
+                                <strong>Layer 4+ &mdash; Objects / Scenes:</strong> parts
+                                combine into full objects or scene-level representations. A
+                                branching crack pattern, a corroded rebar exposure, or a clean
+                                concrete surface are each represented as distinct activation
+                                patterns.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    This hierarchical decomposition is not hand-programmed. It emerges
+                    naturally from training on labelled data. The network discovers that
+                    edges are useful building blocks for textures, textures for parts, and
+                    parts for final classification &mdash; an emergent structure remarkably
+                    similar to how human visual cortex processes images.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>The feature hierarchy is like progressive levels of
+                            detail in engineering drawings.</strong> A site plan shows the
+                            building footprint (high-level, abstract). Structural drawings
+                            show individual members and connections (mid-level). Shop drawings
+                            detail every bolt, weld, and dimension (low-level, concrete). The
+                            CNN works in reverse: starting from the most detailed view (pixels)
+                            and progressively abstracting to the highest level
+                            (classification).
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: CE CASE STUDY
+             ========================================== -->
+        <section class="ch-section" id="crack-classifier">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    Case Study: Crack Classification Architecture
+                </h2>
+
+                <p>
+                    Let us put everything together and design a concrete (pun intended)
+                    CNN architecture for classifying 128&times;128 grayscale images of
+                    concrete surfaces as <strong>"crack"</strong> or
+                    <strong>"no crack"</strong>.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-network-wired"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>CrackNet-Lite: Layer-by-Layer</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:8px; text-align:left;">#</th>
+                                    <th style="padding:8px; text-align:left;">Layer</th>
+                                    <th style="padding:8px; text-align:left;">Output Shape</th>
+                                    <th style="padding:8px; text-align:right;">Params</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">0</td>
+                                    <td style="padding:8px;">Input</td>
+                                    <td style="padding:8px;">128 &times; 128 &times; 1</td>
+                                    <td style="padding:8px; text-align:right;">&mdash;</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">1</td>
+                                    <td style="padding:8px;">Conv2D 3&times;3, 32 filters, same pad</td>
+                                    <td style="padding:8px;">128 &times; 128 &times; 32</td>
+                                    <td style="padding:8px; text-align:right;">320</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">2</td>
+                                    <td style="padding:8px;">BatchNorm + ReLU</td>
+                                    <td style="padding:8px;">128 &times; 128 &times; 32</td>
+                                    <td style="padding:8px; text-align:right;">64</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">3</td>
+                                    <td style="padding:8px;">MaxPool 2&times;2</td>
+                                    <td style="padding:8px;">64 &times; 64 &times; 32</td>
+                                    <td style="padding:8px; text-align:right;">0</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">4</td>
+                                    <td style="padding:8px;">Conv2D 3&times;3, 64 filters, same pad</td>
+                                    <td style="padding:8px;">64 &times; 64 &times; 64</td>
+                                    <td style="padding:8px; text-align:right;">18,496</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">5</td>
+                                    <td style="padding:8px;">BatchNorm + ReLU</td>
+                                    <td style="padding:8px;">64 &times; 64 &times; 64</td>
+                                    <td style="padding:8px; text-align:right;">128</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">6</td>
+                                    <td style="padding:8px;">MaxPool 2&times;2</td>
+                                    <td style="padding:8px;">32 &times; 32 &times; 64</td>
+                                    <td style="padding:8px; text-align:right;">0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">7</td>
+                                    <td style="padding:8px;">Conv2D 3&times;3, 128 filters, same pad</td>
+                                    <td style="padding:8px;">32 &times; 32 &times; 128</td>
+                                    <td style="padding:8px; text-align:right;">73,856</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">8</td>
+                                    <td style="padding:8px;">BatchNorm + ReLU</td>
+                                    <td style="padding:8px;">32 &times; 32 &times; 128</td>
+                                    <td style="padding:8px; text-align:right;">256</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">9</td>
+                                    <td style="padding:8px;">MaxPool 2&times;2</td>
+                                    <td style="padding:8px;">16 &times; 16 &times; 128</td>
+                                    <td style="padding:8px; text-align:right;">0</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">10</td>
+                                    <td style="padding:8px;">Conv2D 3&times;3, 256 filters, same pad</td>
+                                    <td style="padding:8px;">16 &times; 16 &times; 256</td>
+                                    <td style="padding:8px; text-align:right;">295,168</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">11</td>
+                                    <td style="padding:8px;">BatchNorm + ReLU</td>
+                                    <td style="padding:8px;">16 &times; 16 &times; 256</td>
+                                    <td style="padding:8px; text-align:right;">512</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">12</td>
+                                    <td style="padding:8px;">MaxPool 2&times;2</td>
+                                    <td style="padding:8px;">8 &times; 8 &times; 256</td>
+                                    <td style="padding:8px; text-align:right;">0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">13</td>
+                                    <td style="padding:8px;">Flatten</td>
+                                    <td style="padding:8px;">16,384</td>
+                                    <td style="padding:8px; text-align:right;">0</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">14</td>
+                                    <td style="padding:8px;">Dense 256 + ReLU</td>
+                                    <td style="padding:8px;">256</td>
+                                    <td style="padding:8px; text-align:right;">4,194,560</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">15</td>
+                                    <td style="padding:8px;">Dropout (0.5)</td>
+                                    <td style="padding:8px;">256</td>
+                                    <td style="padding:8px; text-align:right;">0</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">16</td>
+                                    <td style="padding:8px;">Dense 2 + Softmax</td>
+                                    <td style="padding:8px;">2</td>
+                                    <td style="padding:8px; text-align:right;">514</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr style="border-top:2px solid var(--border-subtle); font-weight:700;">
+                                    <td colspan="3" style="padding:8px;">Total Parameters</td>
+                                    <td style="padding:8px; text-align:right;">4,583,874</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    Notice that the dense layer (#14) alone accounts for over 91% of the
+                    total parameters. This is common in CNN architectures and is precisely
+                    why Global Average Pooling (GAP) is increasingly favoured in modern
+                    designs &mdash; it eliminates the massive flatten-to-dense connection
+                    entirely.
+                </p>
+
+                <h3>Design Rationale</h3>
+
+                <ul style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>Four conv-pool stages:</strong> progressively grow the
+                        receptive field from 3&times;3 to over 40&times;40, sufficient to
+                        capture typical concrete crack patterns.
+                    </li>
+                    <li>
+                        <strong>Filter doubling (32&rarr;64&rarr;128&rarr;256):</strong>
+                        keeps per-stage computation balanced while increasing feature capacity.
+                    </li>
+                    <li>
+                        <strong>BatchNorm after every conv:</strong> stabilises training
+                        and allows higher learning rates.
+                    </li>
+                    <li>
+                        <strong>Single dense layer + dropout:</strong> minimises overfitting
+                        risk while providing sufficient classification capacity for a binary
+                        task.
+                    </li>
+                    <li>
+                        <strong>~4.6M parameters:</strong> small enough to train on a
+                        single GPU in minutes with a dataset of ~40,000 crack images.
+                    </li>
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: DEMO 1 — CNN ARCHITECTURE BUILDER
+             ========================================== -->
+        <section class="ch-section" id="demo-architecture-builder">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-cubes"></i>
+                    Interactive Demo: CNN Architecture Builder
+                </h2>
+
+                <p>
+                    Use this interactive tool to build your own CNN architecture. Click the
+                    layer buttons below to add layers to the network. The visualisation shows
+                    the data flow, output shapes, and running parameter count. Experiment
+                    with different layer combinations to understand how each choice affects
+                    the network's structure.
+                </p>
+
+                <div class="demo-panel" id="arch-builder-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-cubes"></i>
+                        <span>CNN Architecture Builder</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                        <button class="demo-btn" id="ab-add-conv32" title="Add Conv 3x3, 32 filters">
+                            <i class="fa-solid fa-plus"></i> Conv 32
+                        </button>
+                        <button class="demo-btn" id="ab-add-conv64" title="Add Conv 3x3, 64 filters">
+                            <i class="fa-solid fa-plus"></i> Conv 64
+                        </button>
+                        <button class="demo-btn" id="ab-add-conv128" title="Add Conv 3x3, 128 filters">
+                            <i class="fa-solid fa-plus"></i> Conv 128
+                        </button>
+                        <button class="demo-btn" id="ab-add-conv256" title="Add Conv 3x3, 256 filters">
+                            <i class="fa-solid fa-plus"></i> Conv 256
+                        </button>
+                        <button class="demo-btn" id="ab-add-pool" title="Add MaxPool 2x2">
+                            <i class="fa-solid fa-compress"></i> MaxPool
+                        </button>
+                        <button class="demo-btn" id="ab-add-bn" title="Add BatchNorm + ReLU">
+                            <i class="fa-solid fa-scale-balanced"></i> BN+ReLU
+                        </button>
+                        <button class="demo-btn" id="ab-add-flatten" title="Flatten">
+                            <i class="fa-solid fa-arrows-to-dot"></i> Flatten
+                        </button>
+                        <button class="demo-btn" id="ab-add-dense256" title="Add Dense 256 + ReLU">
+                            <i class="fa-solid fa-circle-nodes"></i> Dense 256
+                        </button>
+                        <button class="demo-btn" id="ab-add-dense128" title="Add Dense 128 + ReLU">
+                            <i class="fa-solid fa-circle-nodes"></i> Dense 128
+                        </button>
+                        <button class="demo-btn" id="ab-add-dropout" title="Add Dropout 0.5">
+                            <i class="fa-solid fa-eraser"></i> Dropout
+                        </button>
+                        <button class="demo-btn" id="ab-add-output" title="Add Softmax Output (2 classes)">
+                            <i class="fa-solid fa-flag-checkered"></i> Output
+                        </button>
+                        <span style="flex-grow:1;"></span>
+                        <button class="demo-btn" id="ab-undo" title="Remove last layer" style="background:var(--accent-warm); color:#000;">
+                            <i class="fa-solid fa-rotate-left"></i> Undo
+                        </button>
+                        <button class="demo-btn" id="ab-reset" title="Clear all layers" style="background:var(--accent-danger); color:#fff;">
+                            <i class="fa-solid fa-trash-can"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="ab-canvas" style="width:100%; height:480px; border-radius:8px; background:var(--bg-code); cursor:default;"></canvas>
+                    <div id="ab-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.9rem;">
+                        <span style="color:var(--text-secondary);"><i class="fa-solid fa-layer-group"></i> Layers: <strong id="ab-layer-count">1</strong></span>
+                        <span style="color:var(--text-secondary);"><i class="fa-solid fa-hashtag"></i> Parameters: <strong id="ab-param-count">0</strong></span>
+                        <span style="color:var(--text-secondary);"><i class="fa-solid fa-cube"></i> Output: <strong id="ab-output-shape">128&times;128&times;1</strong></span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: FEATURE HIERARCHY DETAIL
+             ========================================== -->
+        <section class="ch-section" id="feature-hierarchy-detail">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-eye"></i>
+                    Visualising What Each Layer Sees
+                </h2>
+
+                <p>
+                    Understanding the feature hierarchy is not just theoretical. Researchers
+                    have developed techniques to visualise what each layer of a trained CNN
+                    responds to. These visualisations confirm the edges-to-textures-to-parts
+                    -to-objects hierarchy and provide invaluable debugging insight.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-binoculars"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Visualisation Techniques</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Filter visualisation:</strong> display the learned
+                                kernel weights as small images. First-layer kernels typically
+                                resemble Gabor filters (oriented edge detectors).
+                            </li>
+                            <li>
+                                <strong>Activation maps:</strong> feed an image through the
+                                network and visualise the output of each layer. Bright
+                                regions indicate where the layer "fires" &mdash; i.e. detects
+                                the feature it has learned.
+                            </li>
+                            <li>
+                                <strong>Gradient-weighted Class Activation Mapping
+                                (Grad-CAM):</strong> highlights the regions of the input image
+                                that most influence the final classification, creating a heatmap
+                                overlay.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p>
+                    The demo below simulates the feature hierarchy for a concrete crack
+                    image. Each stage shows an approximate representation of what the
+                    network "sees" at that depth &mdash; from raw pixel edges to the final
+                    abstract pattern that drives the crack/no-crack decision.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: DEMO 2 — FEATURE HIERARCHY VISUALIZER
+             ========================================== -->
+        <section class="ch-section" id="demo-feature-hierarchy">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-microscope"></i>
+                    Interactive Demo: Feature Hierarchy Visualizer
+                </h2>
+
+                <p>
+                    This visualiser simulates how a CNN progressively transforms a concrete
+                    surface image through four stages of feature extraction. Use the buttons
+                    to switch between layers and observe how the representation evolves from
+                    low-level edges to high-level crack patterns.
+                </p>
+
+                <div class="demo-panel" id="fh-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-microscope"></i>
+                        <span>Feature Hierarchy Visualizer</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                        <button class="demo-btn fh-layer-btn active" data-layer="0" title="Original input image">
+                            <i class="fa-solid fa-image"></i> Input
+                        </button>
+                        <button class="demo-btn fh-layer-btn" data-layer="1" title="Layer 1: Edge detection">
+                            <i class="fa-solid fa-grip-lines-vertical"></i> Layer 1: Edges
+                        </button>
+                        <button class="demo-btn fh-layer-btn" data-layer="2" title="Layer 2: Textures">
+                            <i class="fa-solid fa-braille"></i> Layer 2: Textures
+                        </button>
+                        <button class="demo-btn fh-layer-btn" data-layer="3" title="Layer 3: Parts">
+                            <i class="fa-solid fa-puzzle-piece"></i> Layer 3: Parts
+                        </button>
+                        <button class="demo-btn fh-layer-btn" data-layer="4" title="Layer 4: Objects">
+                            <i class="fa-solid fa-object-group"></i> Layer 4: Objects
+                        </button>
+                        <span style="flex-grow:1;"></span>
+                        <button class="demo-btn" id="fh-toggle-crack" title="Toggle crack presence">
+                            <i class="fa-solid fa-repeat"></i> Toggle Crack
+                        </button>
+                        <button class="demo-btn" id="fh-new-surface" title="Generate new surface">
+                            <i class="fa-solid fa-rotate"></i> New Surface
+                        </button>
+                    </div>
+                    <canvas id="fh-canvas" style="width:100%; height:460px; border-radius:8px; background:var(--bg-code);"></canvas>
+                    <div id="fh-info" style="margin-top:12px; font-size:0.9rem; color:var(--text-secondary); min-height:50px;">
+                        <strong>Input Image:</strong> Raw 128&times;128 grayscale concrete surface. The network
+                        has not processed this yet &mdash; this is what the camera captures.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 17: FAMOUS ARCHITECTURES
+             ========================================== -->
+        <section class="ch-section" id="famous-architectures">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-landmark"></i>
+                    Milestone CNN Architectures
+                </h2>
+
+                <p>
+                    The principles we have discussed are embodied in several landmark
+                    architectures that have shaped the field. Understanding them provides
+                    context for the design choices you will make in practice.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-timeline"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Architectures Through the Years</h3>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-subtle);">
+                                    <th style="padding:8px; text-align:left;">Year</th>
+                                    <th style="padding:8px; text-align:left;">Name</th>
+                                    <th style="padding:8px; text-align:left;">Depth</th>
+                                    <th style="padding:8px; text-align:left;">Key Innovation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">1998</td>
+                                    <td style="padding:8px;">LeNet-5</td>
+                                    <td style="padding:8px;">5 layers</td>
+                                    <td style="padding:8px;">Proved Conv-Pool-FC pipeline works</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">2012</td>
+                                    <td style="padding:8px;">AlexNet</td>
+                                    <td style="padding:8px;">8 layers</td>
+                                    <td style="padding:8px;">GPU training, ReLU, dropout</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">2014</td>
+                                    <td style="padding:8px;">VGG-16</td>
+                                    <td style="padding:8px;">16 layers</td>
+                                    <td style="padding:8px;">Uniform 3&times;3 kernels, depth matters</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">2014</td>
+                                    <td style="padding:8px;">GoogLeNet</td>
+                                    <td style="padding:8px;">22 layers</td>
+                                    <td style="padding:8px;">Inception modules, GAP</td>
+                                </tr>
+                                <tr style="background:var(--table-row-alt);">
+                                    <td style="padding:8px;">2015</td>
+                                    <td style="padding:8px;">ResNet</td>
+                                    <td style="padding:8px;">50&ndash;152</td>
+                                    <td style="padding:8px;">Skip connections, BatchNorm</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">2019</td>
+                                    <td style="padding:8px;">EfficientNet</td>
+                                    <td style="padding:8px;">varies</td>
+                                    <td style="padding:8px;">Compound scaling (depth+width+resolution)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <p>
+                    For civil engineering applications, <strong>ResNet-50</strong> and
+                    <strong>EfficientNet-B0</strong> are popular backbone choices. They
+                    offer an excellent balance of accuracy, computational efficiency, and
+                    availability of pre-trained weights (transfer learning), which we will
+                    explore in Sub-chapter 4.5.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 18: DESIGN GUIDELINES
+             ========================================== -->
+        <section class="ch-section" id="design-guidelines">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                    Practical Architecture Design Guidelines
+                </h2>
+
+                <p>
+                    While there is no single "correct" CNN architecture, decades of research
+                    have established rules of thumb that produce reliable starting points.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Eight Design Rules for CNN Beginners</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Use 3&times;3 kernels.</strong> They are the most
+                                parameter-efficient way to capture spatial patterns. Stack
+                                two 3&times;3 layers instead of one 5&times;5.
+                            </li>
+                            <li>
+                                <strong>Double filters when halving spatial dimensions.</strong>
+                                After each pooling stage, double the number of filters
+                                (32 &rarr; 64 &rarr; 128 &rarr; 256).
+                            </li>
+                            <li>
+                                <strong>Use "same" padding.</strong> This preserves spatial
+                                dimensions within a block, making size calculations easier.
+                            </li>
+                            <li>
+                                <strong>Apply BatchNorm after every Conv layer.</strong>
+                                It stabilises training and usually improves accuracy.
+                            </li>
+                            <li>
+                                <strong>Use ReLU activation throughout.</strong> Only use
+                                softmax at the output layer.
+                            </li>
+                            <li>
+                                <strong>Add Dropout (0.5) before the output layer.</strong>
+                                This is the single most effective regularisation for the
+                                dense classifier head.
+                            </li>
+                            <li>
+                                <strong>Start simple.</strong> Begin with 3&ndash;4 conv-pool
+                                stages and increase complexity only if underfitting.
+                            </li>
+                            <li>
+                                <strong>Consider transfer learning first.</strong> A pre-trained
+                                ResNet or EfficientNet fine-tuned on your crack data will almost
+                                always outperform a network trained from scratch on small
+                                datasets.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 19: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of CNN architecture with these four questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In a typical CNN architecture, which component contains the most
+                        learnable parameters?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> Convolutional layers
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> Pooling layers
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> Fully connected (dense) layers
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> BatchNorm layers
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Fully connected layers have connections from
+                        every input to every output neuron, producing massive parameter counts.
+                        In CrackNet-Lite, the single dense layer accounts for over 91% of all
+                        parameters.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Fully connected layers typically dominate
+                        the parameter count because every input is connected to every output
+                        neuron. Pooling has zero parameters, and conv layers use weight sharing.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the primary purpose of batch normalization in a CNN?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To reduce the number of parameters
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To normalize activations for
+                            stable and faster training
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To downsample the feature maps
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> To add non-linearity
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Batch normalization normalizes the
+                        activations to zero mean and unit variance within each mini-batch,
+                        stabilising training and allowing higher learning rates.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> BatchNorm normalizes activations within
+                        each batch to have zero mean and unit variance. This stabilises
+                        training, reduces internal covariate shift, and permits higher
+                        learning rates.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In the CNN feature hierarchy, what do the deepest layers typically detect?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Individual pixel intensities
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Simple edges and gradients
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Textures and repeating patterns
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> Whole objects, complex patterns,
+                            and scene-level features
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> The deepest layers have the largest receptive
+                        fields and combine lower-level features into whole objects or
+                        scene-level representations (e.g. a complete crack pattern with
+                        surrounding context).
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> The hierarchy goes: edges (shallow) &rarr;
+                        textures &rarr; parts &rarr; whole objects/scenes (deep). The deepest
+                        layers capture the most abstract, high-level features.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A Conv2D layer has 128 filters of size 3&times;3 applied to an input
+                        with 64 channels. How many learnable parameters does it have (including bias)?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> 73,728
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> 73,856
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> 36,928
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> 1,152
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> (3 &times; 3 &times; 64 + 1) &times; 128 =
+                        577 &times; 128 = 73,856 parameters.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Use the formula: (kernel_h &times; kernel_w
+                        &times; input_channels + bias) &times; num_filters =
+                        (3 &times; 3 &times; 64 + 1) &times; 128 = 73,856.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 20: SUMMARY
+             ========================================== -->
+        <section class="ch-section" id="summary">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-ul"></i>
+                    Chapter Summary
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                A CNN has two stages: a <strong>feature extraction
+                                backbone</strong> (conv + pool) and a <strong>classification
+                                head</strong> (flatten + dense + softmax).
+                            </li>
+                            <li>
+                                <strong>Convolutional layers</strong> detect spatial features
+                                through learned kernels. Use 3&times;3 kernels and double
+                                filters when halving spatial dimensions.
+                            </li>
+                            <li>
+                                <strong>ReLU</strong> is the standard activation function.
+                                It prevents vanishing gradients and introduces non-linearity.
+                            </li>
+                            <li>
+                                <strong>Pooling</strong> layers reduce spatial dimensions,
+                                provide translation invariance, and have zero parameters.
+                            </li>
+                            <li>
+                                <strong>Flatten</strong> reshapes 3-D feature maps into a 1-D
+                                vector for the classifier head. No computation, no parameters.
+                            </li>
+                            <li>
+                                <strong>Fully connected layers</strong> combine features for
+                                classification. They dominate the parameter count.
+                            </li>
+                            <li>
+                                <strong>Softmax</strong> converts logits to class probabilities
+                                in the output layer.
+                            </li>
+                            <li>
+                                <strong>Batch normalization</strong> stabilises training by
+                                normalizing activations. Place it after every conv layer.
+                            </li>
+                            <li>
+                                <strong>Dropout</strong> prevents overfitting by randomly
+                                deactivating neurons during training.
+                            </li>
+                            <li>
+                                The <strong>receptive field</strong> grows with depth, allowing
+                                deeper layers to capture larger patterns.
+                            </li>
+                            <li>
+                                CNNs learn a <strong>feature hierarchy</strong>: edges &rarr;
+                                textures &rarr; parts &rarr; objects.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub3.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 4.3 Pooling
+        </a>
+        <a href="sub5.html" class="chapter-nav__link next">
+            4.5 Training CNNs <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── Shared helpers ── */
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var dark = window.isDarkMode ? window.isDarkMode() : true;
+            return {
+                TEAL: dark?'#2dd4bf':'#059669', CYAN: dark?'#22d3ee':'#0284c7',
+                AMBER: dark?'#fbbf24':'#d97706', RED: dark?'#ef4444':'#dc2626',
+                GREEN: dark?'#22c55e':'#16a34a', BG: dark?'#0a0a0f':'#f8f9fc',
+                TEXT: dark?'rgba(255,255,255,0.7)':'rgba(0,0,0,0.6)',
+                DIM: dark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
+                GRID: dark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.04)',
+                STROKE: dark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.1)',
+                WHITE: dark?'#fff':'#1a1a2e',
+                MUTED: dark?'rgba(255,255,255,0.4)':'rgba(0,0,0,0.4)'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d; c.height = r.height * d;
+            var x = c.getContext('2d'); x.scale(d,d);
+            return { ctx:x, w:r.width, h:r.height };
+        };
+
+        /* Helper: format large numbers */
+        function fmtNum(n) {
+            return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED ARCHITECTURE FLOW
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+            var C = initCanvas(canvas), ctx = C.ctx, W = C.w, H = C.h;
+            var cols = getColors();
+            var nodes = [];
+            var layerColors = [cols.TEAL, cols.CYAN, cols.AMBER, cols.GREEN, cols.RED];
+
+            /* Create flowing layer blocks */
+            for (var i = 0; i < 60; i++) {
+                nodes.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    w: 10 + Math.random() * 40,
+                    h: 6 + Math.random() * 20,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    color: layerColors[Math.floor(Math.random() * layerColors.length)],
+                    alpha: 0.05 + Math.random() * 0.12
+                });
+            }
+
+            /* Connection lines */
+            function drawConnections() {
+                for (var i = 0; i < nodes.length; i++) {
+                    for (var j = i + 1; j < nodes.length; j++) {
+                        var dx = nodes[i].x - nodes[j].x;
+                        var dy = nodes[i].y - nodes[j].y;
+                        var dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.strokeStyle = cols.TEAL;
+                            ctx.globalAlpha = 0.04 * (1 - dist/120);
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                drawConnections();
+                for (var i = 0; i < nodes.length; i++) {
+                    var n = nodes[i];
+                    n.x += n.vx; n.y += n.vy;
+                    if (n.x < -50) n.x = W + 50;
+                    if (n.x > W + 50) n.x = -50;
+                    if (n.y < -50) n.y = H + 50;
+                    if (n.y > H + 50) n.y = -50;
+                    ctx.fillStyle = n.color;
+                    ctx.globalAlpha = n.alpha;
+                    ctx.fillRect(n.x - n.w/2, n.y - n.h/2, n.w, n.h);
+                    ctx.globalAlpha = 1;
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            /* Resize */
+            window.addEventListener('resize', function() {
+                C = initCanvas(canvas); ctx = C.ctx; W = C.w; H = C.h;
+            });
+        })();
+
+        /* ==============================================
+           DEMO 1: CNN ARCHITECTURE BUILDER
+           ============================================== */
+        (function initArchBuilder() {
+            var canvas = document.getElementById('ab-canvas');
+            if (!canvas) return;
+            var C = initCanvas(canvas), ctx = C.ctx, W = C.w, H = C.h;
+
+            /* Layer model */
+            var INPUT_H = 128, INPUT_W = 128, INPUT_C = 1;
+            var layers = [];  /* { type, filters?, outH, outW, outC, params, label } */
+
+            /* Colors for different layer types */
+            var layerTypeColors = {};
+
+            function updateTypeColors() {
+                var c = getColors();
+                layerTypeColors = {
+                    'input':   c.MUTED,
+                    'conv':    c.TEAL,
+                    'bn':      c.AMBER,
+                    'pool':    c.CYAN,
+                    'flatten': c.GREEN,
+                    'dense':   '#a78bfa',
+                    'dropout': c.RED,
+                    'output':  '#f472b6'
+                };
+            }
+            updateTypeColors();
+
+            /* State tracking */
+            var isFlattened = false;
+
+            function currentShape() {
+                if (layers.length === 0) return { h: INPUT_H, w: INPUT_W, c: INPUT_C, flat: false, size: 0 };
+                var last = layers[layers.length - 1];
+                return { h: last.outH, w: last.outW, c: last.outC, flat: last.flat || false, size: last.outSize || 0 };
+            }
+
+            function addLayer(type, filters) {
+                var sh = currentShape();
+                var layer = { type: type, params: 0 };
+
+                if (type === 'conv') {
+                    if (sh.flat) return; /* Can't conv after flatten */
+                    var kh = 3, kw = 3;
+                    layer.params = (kh * kw * sh.c + 1) * filters;
+                    layer.outH = sh.h; layer.outW = sh.w; layer.outC = filters;
+                    layer.label = 'Conv 3x3, ' + filters;
+                    layer.flat = false;
+                } else if (type === 'bn') {
+                    if (sh.flat) return;
+                    layer.params = sh.c * 2; /* gamma + beta */
+                    layer.outH = sh.h; layer.outW = sh.w; layer.outC = sh.c;
+                    layer.label = 'BN+ReLU';
+                    layer.flat = false;
+                } else if (type === 'pool') {
+                    if (sh.flat || sh.h < 2 || sh.w < 2) return;
+                    layer.outH = Math.floor(sh.h / 2);
+                    layer.outW = Math.floor(sh.w / 2);
+                    layer.outC = sh.c;
+                    layer.label = 'MaxPool 2x2';
+                    layer.flat = false;
+                } else if (type === 'flatten') {
+                    if (sh.flat) return;
+                    layer.outH = 1; layer.outW = 1;
+                    layer.outC = sh.h * sh.w * sh.c;
+                    layer.outSize = layer.outC;
+                    layer.label = 'Flatten';
+                    layer.flat = true;
+                } else if (type === 'dense') {
+                    if (!sh.flat && layers.length > 0 && !layers[layers.length-1].flat) return;
+                    var inSize = sh.flat ? (sh.size || sh.c) : sh.h * sh.w * sh.c;
+                    layer.params = (inSize + 1) * filters;
+                    layer.outH = 1; layer.outW = 1; layer.outC = filters;
+                    layer.outSize = filters;
+                    layer.label = 'Dense ' + filters;
+                    layer.flat = true;
+                } else if (type === 'dropout') {
+                    if (!sh.flat && layers.length > 0) {
+                        layer.outH = sh.h; layer.outW = sh.w; layer.outC = sh.c;
+                        layer.outSize = sh.size || 0;
+                        layer.flat = sh.flat || false;
+                    } else {
+                        layer.outH = 1; layer.outW = 1; layer.outC = sh.size || sh.c;
+                        layer.outSize = sh.size || sh.c;
+                        layer.flat = true;
+                    }
+                    layer.label = 'Dropout 0.5';
+                } else if (type === 'output') {
+                    var inSz = sh.flat ? (sh.size || sh.c) : sh.h * sh.w * sh.c;
+                    layer.params = (inSz + 1) * 2;
+                    layer.outH = 1; layer.outW = 1; layer.outC = 2;
+                    layer.outSize = 2;
+                    layer.label = 'Softmax (2)';
+                    layer.flat = true;
+                }
+
+                layers.push(layer);
+                draw();
+                updateStats();
+            }
+
+            function undoLayer() {
+                if (layers.length > 0) { layers.pop(); draw(); updateStats(); }
+            }
+
+            function resetLayers() {
+                layers = []; draw(); updateStats();
+            }
+
+            function totalParams() {
+                var t = 0;
+                for (var i = 0; i < layers.length; i++) t += layers[i].params;
+                return t;
+            }
+
+            function updateStats() {
+                var el1 = document.getElementById('ab-layer-count');
+                var el2 = document.getElementById('ab-param-count');
+                var el3 = document.getElementById('ab-output-shape');
+                if (el1) el1.textContent = layers.length + 1; /* +1 for input */
+                if (el2) el2.textContent = fmtNum(totalParams());
+                var sh = currentShape();
+                if (el3) {
+                    if (sh.flat) el3.textContent = (sh.size || sh.c) + '';
+                    else el3.textContent = sh.h + '\u00d7' + sh.w + '\u00d7' + sh.c;
+                }
+            }
+
+            function draw() {
+                var cols = getColors();
+                updateTypeColors();
+                ctx.clearRect(0, 0, W, H);
+
+                /* Background grid */
+                ctx.strokeStyle = cols.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < W; gx += 40) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (var gy = 0; gy < H; gy += 40) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                /* Draw pipeline */
+                var allLayers = [{ type:'input', label:'Input 128x128x1', params:0, outH:INPUT_H, outW:INPUT_W, outC:INPUT_C }].concat(layers);
+                var totalL = allLayers.length;
+                var maxBoxW = Math.min(120, (W - 60) / totalL - 10);
+                var boxW = Math.max(50, maxBoxW);
+                var gap = Math.max(6, ((W - 40) - totalL * boxW) / Math.max(totalL - 1, 1));
+                var startX = 20;
+                var midY = H / 2;
+
+                for (var i = 0; i < allLayers.length; i++) {
+                    var lyr = allLayers[i];
+                    var x = startX + i * (boxW + gap);
+                    var boxH;
+
+                    /* Scale box height by spatial area or neuron count */
+                    if (lyr.flat) {
+                        boxH = Math.max(30, Math.min(160, Math.log2((lyr.outSize||lyr.outC)+1) * 12));
+                    } else {
+                        boxH = Math.max(30, Math.min(200, (lyr.outH / INPUT_H) * 180));
+                    }
+
+                    var y = midY - boxH / 2;
+
+                    /* Connection arrow */
+                    if (i > 0) {
+                        var prevX = startX + (i-1) * (boxW + gap) + boxW;
+                        ctx.beginPath();
+                        ctx.moveTo(prevX + 2, midY);
+                        ctx.lineTo(x - 2, midY);
+                        ctx.strokeStyle = cols.STROKE;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        /* Arrowhead */
+                        ctx.beginPath();
+                        ctx.moveTo(x - 2, midY);
+                        ctx.lineTo(x - 8, midY - 4);
+                        ctx.lineTo(x - 8, midY + 4);
+                        ctx.closePath();
+                        ctx.fillStyle = cols.STROKE;
+                        ctx.fill();
+                    }
+
+                    /* Layer box */
+                    var color = layerTypeColors[lyr.type] || cols.TEAL;
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = 0.15;
+                    ctx.fillRect(x, y, boxW, boxH);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(x, y, boxW, boxH);
+
+                    /* Label */
+                    ctx.fillStyle = cols.WHITE;
+                    ctx.font = '600 ' + Math.max(9, Math.min(11, boxW/8)) + 'px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    /* Word wrap for small boxes */
+                    var words = lyr.label.split(' ');
+                    var lineH = Math.max(11, Math.min(14, boxW/7));
+                    var lines = [];
+                    var currentLine = '';
+                    for (var ww = 0; ww < words.length; ww++) {
+                        var testLine = currentLine ? currentLine + ' ' + words[ww] : words[ww];
+                        if (ctx.measureText(testLine).width > boxW - 8 && currentLine) {
+                            lines.push(currentLine);
+                            currentLine = words[ww];
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    if (currentLine) lines.push(currentLine);
+
+                    var textStartY = midY - (lines.length - 1) * lineH / 2;
+                    for (var li = 0; li < lines.length; li++) {
+                        ctx.fillText(lines[li], x + boxW/2, textStartY + li * lineH);
+                    }
+
+                    /* Shape label below */
+                    ctx.font = '400 9px "JetBrains Mono"';
+                    ctx.fillStyle = cols.MUTED;
+                    if (lyr.flat) {
+                        ctx.fillText((lyr.outSize || lyr.outC) + '', x + boxW/2, y + boxH + 14);
+                    } else {
+                        ctx.fillText(lyr.outH + 'x' + lyr.outW + 'x' + lyr.outC, x + boxW/2, y + boxH + 14);
+                    }
+
+                    /* Param label above */
+                    if (lyr.params > 0) {
+                        ctx.font = '500 9px "JetBrains Mono"';
+                        ctx.fillStyle = color;
+                        ctx.fillText(fmtNum(lyr.params) + 'p', x + boxW/2, y - 8);
+                    }
+                }
+
+                ctx.textAlign = 'left';
+            }
+
+            /* Event bindings */
+            var btnMap = {
+                'ab-add-conv32':  function(){ addLayer('conv', 32); },
+                'ab-add-conv64':  function(){ addLayer('conv', 64); },
+                'ab-add-conv128': function(){ addLayer('conv', 128); },
+                'ab-add-conv256': function(){ addLayer('conv', 256); },
+                'ab-add-pool':    function(){ addLayer('pool'); },
+                'ab-add-bn':      function(){ addLayer('bn'); },
+                'ab-add-flatten': function(){ addLayer('flatten'); },
+                'ab-add-dense256':function(){ addLayer('dense', 256); },
+                'ab-add-dense128':function(){ addLayer('dense', 128); },
+                'ab-add-dropout': function(){ addLayer('dropout'); },
+                'ab-add-output':  function(){ addLayer('output'); },
+                'ab-undo':        undoLayer,
+                'ab-reset':       resetLayers
+            };
+            Object.keys(btnMap).forEach(function(id) {
+                var btn = document.getElementById(id);
+                if (btn) btn.addEventListener('click', btnMap[id]);
+            });
+
+            /* Theme change redraw */
+            var obs = new MutationObserver(function() { draw(); });
+            obs.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+
+            /* Resize */
+            window.addEventListener('resize', function() {
+                C = initCanvas(canvas); ctx = C.ctx; W = C.w; H = C.h; draw();
+            });
+
+            draw();
+            updateStats();
+        })();
+
+        /* ==============================================
+           DEMO 2: FEATURE HIERARCHY VISUALIZER
+           ============================================== */
+        (function initFeatureHierarchy() {
+            var canvas = document.getElementById('fh-canvas');
+            if (!canvas) return;
+            var C = initCanvas(canvas), ctx = C.ctx, W = C.w, H = C.h;
+
+            var currentLayer = 0;
+            var hasCrack = true;
+            var seed = Math.random() * 10000;
+
+            /* Seeded random for reproducible surfaces */
+            function seededRand(s) {
+                var x = Math.sin(s) * 43758.5453123;
+                return x - Math.floor(x);
+            }
+
+            /* Generate concrete surface with optional crack */
+            function generateSurface(size, withCrack) {
+                var data = [];
+                for (var y = 0; y < size; y++) {
+                    data[y] = [];
+                    for (var x = 0; x < size; x++) {
+                        /* Base concrete texture */
+                        var base = 0.55 + seededRand(seed + y * size + x) * 0.25;
+                        /* Large-scale variation */
+                        base += Math.sin(x * 0.08 + seed) * 0.06;
+                        base += Math.cos(y * 0.06 + seed * 1.3) * 0.05;
+                        /* Aggregate speckle */
+                        if (seededRand(seed + y * 997 + x * 1013) > 0.92) {
+                            base -= 0.15;
+                        }
+                        data[y][x] = Math.max(0, Math.min(1, base));
+                    }
+                }
+
+                if (withCrack) {
+                    /* Draw a crack path */
+                    var cx = size * 0.3 + seededRand(seed + 777) * size * 0.4;
+                    var cy = 2;
+                    var angle = Math.PI / 2 + (seededRand(seed + 888) - 0.5) * 0.5;
+                    for (var step = 0; step < size * 1.2; step++) {
+                        var ix = Math.round(cx);
+                        var iy = Math.round(cy);
+                        if (ix >= 0 && ix < size && iy >= 0 && iy < size) {
+                            data[iy][ix] = 0.08;
+                            if (ix > 0) data[iy][ix-1] = Math.min(data[iy][ix-1], 0.2);
+                            if (ix < size-1) data[iy][ix+1] = Math.min(data[iy][ix+1], 0.2);
+                        }
+                        angle += (seededRand(seed + step * 37) - 0.5) * 0.4;
+                        cx += Math.cos(angle) * 1.2;
+                        cy += Math.sin(angle) * 1.2;
+                        /* Branch */
+                        if (seededRand(seed + step * 73) > 0.94 && step > 10) {
+                            var bx = cx, by = cy;
+                            var ba = angle + (seededRand(seed + step) > 0.5 ? 0.6 : -0.6);
+                            for (var bs = 0; bs < 15; bs++) {
+                                var bix = Math.round(bx), biy = Math.round(by);
+                                if (bix >= 0 && bix < size && biy >= 0 && biy < size) {
+                                    data[biy][bix] = 0.12;
+                                }
+                                bx += Math.cos(ba) * 1; by += Math.sin(ba) * 1;
+                                ba += (seededRand(seed + bs * 91) - 0.5) * 0.3;
+                            }
+                        }
+                    }
+                }
+                return data;
+            }
+
+            /* Apply simulated edge detection */
+            function edgeFilter(data, size) {
+                var out = [];
+                for (var y = 0; y < size; y++) {
+                    out[y] = [];
+                    for (var x = 0; x < size; x++) {
+                        if (y === 0 || y === size-1 || x === 0 || x === size-1) {
+                            out[y][x] = 0; continue;
+                        }
+                        var gx = data[y-1][x+1] + 2*data[y][x+1] + data[y+1][x+1]
+                               - data[y-1][x-1] - 2*data[y][x-1] - data[y+1][x-1];
+                        var gy = data[y+1][x-1] + 2*data[y+1][x] + data[y+1][x+1]
+                               - data[y-1][x-1] - 2*data[y-1][x] - data[y-1][x+1];
+                        out[y][x] = Math.min(1, Math.sqrt(gx*gx + gy*gy));
+                    }
+                }
+                return out;
+            }
+
+            /* Simulated texture layer (pooled + blurred edges) */
+            function textureFilter(edgeData, size) {
+                var half = Math.floor(size / 2);
+                var out = [];
+                for (var y = 0; y < half; y++) {
+                    out[y] = [];
+                    for (var x = 0; x < half; x++) {
+                        var sum = 0;
+                        for (var dy = 0; dy < 2; dy++) {
+                            for (var dx = 0; dx < 2; dx++) {
+                                var sy = y*2+dy, sx = x*2+dx;
+                                if (sy < size && sx < size) sum = Math.max(sum, edgeData[sy][sx]);
+                            }
+                        }
+                        out[y][x] = sum;
+                    }
+                }
+                return { data: out, size: half };
+            }
+
+            /* Simulated parts layer (further pooled with blob detection) */
+            function partsFilter(texData, texSize) {
+                var half = Math.floor(texSize / 2);
+                var out = [];
+                for (var y = 0; y < half; y++) {
+                    out[y] = [];
+                    for (var x = 0; x < half; x++) {
+                        var sum = 0, cnt = 0;
+                        for (var dy = -1; dy <= 2; dy++) {
+                            for (var dx = -1; dx <= 2; dx++) {
+                                var sy = y*2+dy, sx = x*2+dx;
+                                if (sy >= 0 && sy < texSize && sx >= 0 && sx < texSize) {
+                                    sum += texData[sy][sx]; cnt++;
+                                }
+                            }
+                        }
+                        out[y][x] = Math.min(1, (sum/cnt) * 1.8);
+                    }
+                }
+                return { data: out, size: half };
+            }
+
+            /* Simulated object/scene layer (heat map) */
+            function objectFilter(partsData, partsSize) {
+                var half = Math.floor(partsSize / 2);
+                var out = [];
+                for (var y = 0; y < half; y++) {
+                    out[y] = [];
+                    for (var x = 0; x < half; x++) {
+                        var sum = 0, cnt = 0;
+                        for (var dy = 0; dy < 3; dy++) {
+                            for (var dx = 0; dx < 3; dx++) {
+                                var sy = y*2+dy, sx = x*2+dx;
+                                if (sy >= 0 && sy < partsSize && sx >= 0 && sx < partsSize) {
+                                    sum += partsData[sy][sx]; cnt++;
+                                }
+                            }
+                        }
+                        out[y][x] = Math.min(1, (sum/cnt) * 2.2);
+                    }
+                }
+                return { data: out, size: half };
+            }
+
+            /* Draw a data grid on canvas */
+            function drawGrid(data, size, xOff, yOff, cellSize, colorFn) {
+                for (var y = 0; y < size; y++) {
+                    for (var x = 0; x < size; x++) {
+                        ctx.fillStyle = colorFn(data[y][x]);
+                        ctx.fillRect(xOff + x * cellSize, yOff + y * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            var layerDescriptions = [
+                '<strong>Input Image:</strong> Raw 128\u00d7128 grayscale concrete surface. The network has not processed this yet \u2014 this is what the camera captures.',
+                '<strong>Layer 1 \u2014 Edges:</strong> The first convolutional layer applies Sobel-like edge detectors. Crack boundaries appear as bright lines against a dark background. Both crack edges and aggregate boundaries are detected.',
+                '<strong>Layer 2 \u2014 Textures:</strong> After pooling and a second convolution, edge responses are grouped into texture patches. The crack texture (thin, elongated, high-contrast) becomes distinguishable from the random aggregate texture.',
+                '<strong>Layer 3 \u2014 Parts:</strong> Further pooling and convolution merge textures into recognisable parts. Crack segments, junctions, and branching points emerge as distinct activation clusters.',
+                '<strong>Layer 4 \u2014 Objects:</strong> The deepest layer produces a low-resolution heat map. High-activation regions (warm colours) indicate where the network "sees" crack-like patterns. This abstract map drives the final classification.'
+            ];
+
+            function render() {
+                var cols = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                /* Background */
+                ctx.fillStyle = cols.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                /* Grid */
+                ctx.strokeStyle = cols.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = 0; gx < W; gx += 30) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                }
+                for (var gy = 0; gy < H; gy += 30) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+
+                var SZ = 64; /* Grid resolution for performance */
+                var surface = generateSurface(SZ, hasCrack);
+
+                if (currentLayer === 0) {
+                    /* Input: grayscale */
+                    var cellSz = Math.min((W - 80) / SZ, (H - 80) / SZ);
+                    var ox = (W - SZ * cellSz) / 2;
+                    var oy = (H - SZ * cellSz) / 2;
+                    drawGrid(surface, SZ, ox, oy, cellSz, function(v) {
+                        var c = Math.round(v * 255);
+                        return 'rgb(' + c + ',' + c + ',' + c + ')';
+                    });
+                    /* Border */
+                    ctx.strokeStyle = cols.TEAL;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(ox, oy, SZ * cellSz, SZ * cellSz);
+                    /* Title */
+                    ctx.fillStyle = cols.WHITE;
+                    ctx.font = '600 14px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Input: 128\u00d7128\u00d71 (grayscale)', W/2, oy - 16);
+                    ctx.textAlign = 'left';
+
+                } else if (currentLayer === 1) {
+                    /* Edges */
+                    var edges = edgeFilter(surface, SZ);
+                    var cellSz = Math.min((W - 80) / SZ, (H - 80) / SZ);
+                    var ox = (W - SZ * cellSz) / 2;
+                    var oy = (H - SZ * cellSz) / 2;
+                    drawGrid(edges, SZ, ox, oy, cellSz, function(v) {
+                        var c = Math.round(v * 255);
+                        return 'rgb(' + c + ',' + Math.round(c*0.95) + ',' + Math.round(c*0.8) + ')';
+                    });
+                    ctx.strokeStyle = cols.CYAN;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(ox, oy, SZ * cellSz, SZ * cellSz);
+                    ctx.fillStyle = cols.WHITE;
+                    ctx.font = '600 14px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Layer 1: Edge Detection (128\u00d7128\u00d732)', W/2, oy - 16);
+                    ctx.textAlign = 'left';
+
+                } else if (currentLayer === 2) {
+                    /* Textures */
+                    var edges = edgeFilter(surface, SZ);
+                    var tex = textureFilter(edges, SZ);
+                    var cellSz = Math.min((W - 80) / tex.size, (H - 80) / tex.size);
+                    var ox = (W - tex.size * cellSz) / 2;
+                    var oy = (H - tex.size * cellSz) / 2;
+                    drawGrid(tex.data, tex.size, ox, oy, cellSz, function(v) {
+                        var r = Math.round(45 + v * 180);
+                        var g = Math.round(200 - v * 50);
+                        var b = Math.round(190 - v * 100);
+                        return 'rgb(' + r + ',' + g + ',' + b + ')';
+                    });
+                    ctx.strokeStyle = cols.AMBER;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(ox, oy, tex.size * cellSz, tex.size * cellSz);
+                    ctx.fillStyle = cols.WHITE;
+                    ctx.font = '600 14px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Layer 2: Texture Patterns (64\u00d764\u00d764)', W/2, oy - 16);
+                    ctx.textAlign = 'left';
+
+                } else if (currentLayer === 3) {
+                    /* Parts */
+                    var edges = edgeFilter(surface, SZ);
+                    var tex = textureFilter(edges, SZ);
+                    var parts = partsFilter(tex.data, tex.size);
+                    var cellSz = Math.min((W - 80) / parts.size, (H - 80) / parts.size);
+                    var ox = (W - parts.size * cellSz) / 2;
+                    var oy = (H - parts.size * cellSz) / 2;
+                    drawGrid(parts.data, parts.size, ox, oy, cellSz, function(v) {
+                        var r = Math.round(30 + v * 225);
+                        var g = Math.round(80 + v * 100);
+                        var b = Math.round(220 - v * 140);
+                        return 'rgb(' + r + ',' + g + ',' + b + ')';
+                    });
+                    ctx.strokeStyle = cols.GREEN;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(ox, oy, parts.size * cellSz, parts.size * cellSz);
+                    ctx.fillStyle = cols.WHITE;
+                    ctx.font = '600 14px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Layer 3: Structural Parts (32\u00d732\u00d7128)', W/2, oy - 16);
+                    ctx.textAlign = 'left';
+
+                } else if (currentLayer === 4) {
+                    /* Objects / heat map */
+                    var edges = edgeFilter(surface, SZ);
+                    var tex = textureFilter(edges, SZ);
+                    var parts = partsFilter(tex.data, tex.size);
+                    var obj = objectFilter(parts.data, parts.size);
+                    var cellSz = Math.min((W - 80) / obj.size, (H - 80) / obj.size);
+                    var ox = (W - obj.size * cellSz) / 2;
+                    var oy = (H - obj.size * cellSz) / 2;
+                    drawGrid(obj.data, obj.size, ox, oy, cellSz, function(v) {
+                        /* Heat map: blue -> cyan -> yellow -> red */
+                        var r, g, b;
+                        if (v < 0.25) { r = 0; g = Math.round(v*4*255); b = 255; }
+                        else if (v < 0.5) { r = 0; g = 255; b = Math.round((1-(v-0.25)*4)*255); }
+                        else if (v < 0.75) { r = Math.round((v-0.5)*4*255); g = 255; b = 0; }
+                        else { r = 255; g = Math.round((1-(v-0.75)*4)*255); b = 0; }
+                        return 'rgb(' + r + ',' + g + ',' + b + ')';
+                    });
+                    ctx.strokeStyle = cols.RED;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(ox, oy, obj.size * cellSz, obj.size * cellSz);
+                    ctx.fillStyle = cols.WHITE;
+                    ctx.font = '600 14px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Layer 4: Object-Level Activation (16\u00d716\u00d7256)', W/2, oy - 16);
+
+                    /* Classification result */
+                    var totalAct = 0, cnt = 0;
+                    for (var yy = 0; yy < obj.size; yy++) {
+                        for (var xx = 0; xx < obj.size; xx++) {
+                            totalAct += obj.data[yy][xx]; cnt++;
+                        }
+                    }
+                    var avgAct = totalAct / cnt;
+                    var prediction = hasCrack ? 'CRACK' : 'NO CRACK';
+                    var confidence = hasCrack ? (65 + avgAct * 30).toFixed(1) : (70 + (1-avgAct) * 25).toFixed(1);
+
+                    ctx.font = '700 18px Inter';
+                    ctx.fillStyle = hasCrack ? cols.RED : cols.GREEN;
+                    ctx.fillText('Prediction: ' + prediction + ' (' + confidence + '%)', W/2, oy + obj.size * cellSz + 36);
+                    ctx.textAlign = 'left';
+                }
+
+                /* Update description */
+                var infoEl = document.getElementById('fh-info');
+                if (infoEl) infoEl.innerHTML = layerDescriptions[currentLayer];
+            }
+
+            /* Layer buttons */
+            var layerBtns = document.querySelectorAll('.fh-layer-btn');
+            layerBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    layerBtns.forEach(function(b){ b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    currentLayer = parseInt(btn.getAttribute('data-layer'));
+                    render();
+                });
+            });
+
+            /* Toggle crack */
+            var toggleBtn = document.getElementById('fh-toggle-crack');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    hasCrack = !hasCrack;
+                    render();
+                });
+            }
+
+            /* New surface */
+            var newSurfBtn = document.getElementById('fh-new-surface');
+            if (newSurfBtn) {
+                newSurfBtn.addEventListener('click', function() {
+                    seed = Math.random() * 10000;
+                    render();
+                });
+            }
+
+            /* Theme change */
+            var obs = new MutationObserver(function() { render(); });
+            obs.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+
+            /* Resize */
+            window.addEventListener('resize', function() {
+                C = initCanvas(canvas); ctx = C.ctx; W = C.w; H = C.h; render();
+            });
+
+            render();
+        })();
+
+    })();
+    </script>
+
+</body>
+</html>

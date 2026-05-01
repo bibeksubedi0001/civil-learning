@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.3 Polynomial &amp; Multiple Regression | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Go beyond straight lines with polynomial regression and multiple linear regression. Learn to model nonlinear soil stress-strain curves, predict concrete strength from multiple mix factors, understand multicollinearity, and master adjusted R-squared.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 2</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 2 &mdash; Sub-chapter 2.3
+            </div>
+            <h1 class="chapter-hero__title">Polynomial &amp; Multiple Regression</h1>
+            <p class="chapter-hero__subtitle">
+                Real engineering data rarely falls on a straight line. Soil stress-strain curves
+                bend, concrete strength depends on dozens of mix factors simultaneously, and
+                settlement predictions require multiple inputs. This sub-chapter teaches you the
+                tools to model curves, handle multiple features, and diagnose the pitfalls that
+                come with added complexity.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 40 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: THE OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wave-square"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>When Straight Lines Are Not Enough</h2>
+                        <p>
+                            In Sub-chapter 2.2 you learned to fit a straight line through data. That
+                            line worked beautifully for the narrow w/c-ratio-to-strength relationship.
+                            But consider a triaxial compression test on clay: the stress-strain curve
+                            starts steep, bends through a yield point, and eventually flattens toward
+                            residual strength. No single straight line can capture that shape.
+                        </p>
+                        <p>
+                            Or consider predicting the 28-day compressive strength of concrete
+                            <em>in production</em>. The water-cement ratio matters, yes, but so do
+                            cement content, aggregate gradation, superplasticiser dosage, curing
+                            temperature, and age at testing. You need a model that ingests
+                            <strong>multiple features at once</strong> and still produces a single
+                            reliable prediction.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This sub-chapter addresses both limitations. First, we extend the single-feature
+                    model by adding <strong>polynomial terms</strong> &mdash; x<sup>2</sup>,
+                    x<sup>3</sup>, and beyond &mdash; so the model can trace curves through data.
+                    Second, we extend the model in a different direction by adding <strong>multiple
+                    features</strong>, each with its own coefficient, so the model can account for
+                    several physical variables simultaneously. Along the way you will meet two
+                    critical concepts: <strong>multicollinearity</strong> (what happens when your
+                    features are correlated with each other) and <strong>adjusted R-squared</strong>
+                    (a fairer metric when the number of features grows).
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter assumes you have completed Sub-chapter 2.2 (Linear
+                        Regression) and are comfortable with the concepts of slope, intercept,
+                        MSE, R-squared, gradient descent, and residual analysis. We build directly
+                        on those foundations.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: POLYNOMIAL REGRESSION INTRODUCTION
+             ========================================== -->
+        <section class="ch-section" id="polynomial-intro">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bezier-curve"></i>
+                    Polynomial Regression: Adding Curves
+                </h2>
+
+                <p>
+                    Polynomial regression is the natural next step when your scatter plot shows
+                    curvature. Instead of fitting y = w<sub>0</sub> + w<sub>1</sub>x, you add
+                    higher powers of x as additional terms:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Polynomial Regression Equations
+                    </div>
+                    <pre><code>Degree 1 (linear):      y = w0 + w1*x
+Degree 2 (quadratic):   y = w0 + w1*x + w2*x^2
+Degree 3 (cubic):       y = w0 + w1*x + w2*x^2 + w3*x^3
+Degree n:               y = w0 + w1*x + w2*x^2 + ... + wn*x^n</code></pre>
+                </div>
+
+                <p>
+                    The key insight is that polynomial regression is still a form of
+                    <strong>linear regression</strong>. That sounds contradictory, but "linear"
+                    in "linear regression" refers to linearity in the <em>parameters</em>
+                    (w<sub>0</sub>, w<sub>1</sub>, w<sub>2</sub>, ...), not in x. Each parameter
+                    appears to the first power and is multiplied by a function of x. You can treat
+                    x<sup>2</sup> as a brand-new feature &mdash; call it z &mdash; and the equation
+                    y = w<sub>0</sub> + w<sub>1</sub>x + w<sub>2</sub>z is linear in x and z.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Polynomial regression is like fitting a vertical curve to a road
+                            profile.</strong> When you design a crest or sag curve on a highway, you
+                            do not use a straight line &mdash; you use a parabola (degree 2) to
+                            smoothly connect the two tangent grades. The degree of the polynomial
+                            determines how flexible the curve is. A parabola handles simple
+                            transitions; higher-degree curves handle more complex terrain, but you
+                            would never use a degree-20 polynomial for a simple sag because it would
+                            introduce unnecessary oscillations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-gears"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>How It Works Under the Hood</h3>
+                        <p>
+                            To fit a polynomial of degree <em>n</em>, you create <em>n</em> new
+                            features from the original x:
+                        </p>
+                        <div class="code-peek" style="margin:12px 0;">
+                            <div class="code-peek__header">
+                                <i class="fa-solid fa-code"></i> Feature Engineering
+                            </div>
+                            <pre><code>Original feature: x
+Engineered features: x, x^2, x^3, ..., x^n
+
+Example (degree 3, x = 0.45):
+  feature_1 = 0.45
+  feature_2 = 0.45^2 = 0.2025
+  feature_3 = 0.45^3 = 0.0911</code></pre>
+                        </div>
+                        <p>
+                            Then you feed these features into the same least-squares machinery you
+                            already know. The algorithm finds the optimal weights w<sub>0</sub>
+                            through w<sub>n</sub> that minimise the MSE. No new maths &mdash; just
+                            more features and more weights.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: CE CONTEXT - SOIL STRESS-STRAIN
+             ========================================== -->
+        <section class="ch-section" id="ce-soil-stress-strain">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-mountain-sun"></i>
+                    CE Context: Soil Stress-Strain Curves
+                </h2>
+
+                <p>
+                    Every geotechnical engineer has seen a stress-strain curve from a triaxial
+                    compression or unconfined compression test. The curve starts near the origin,
+                    rises steeply (elastic region), bends through a yield point, and eventually
+                    levels off or even drops toward residual strength. This nonlinear shape is a
+                    classic candidate for polynomial regression.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sample Dataset: Unconfined Compression Test on Clay</h3>
+                        <p>Consider data from an unconfined compression test on a silty clay sample:</p>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin-top:12px;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-primary);">
+                                        <th style="text-align:center; padding:8px 12px;">Strain (%)</th>
+                                        <th style="text-align:center; padding:8px 12px;">Stress (kPa)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">0.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">0</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">0.5</td>
+                                        <td style="text-align:center; padding:8px 12px;">35</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">1.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">62</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">2.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">105</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">3.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">130</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">4.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">142</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">6.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">148</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="text-align:center; padding:8px 12px;">8.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">145</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:center; padding:8px 12px;">10.0</td>
+                                        <td style="text-align:center; padding:8px 12px;">140</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="margin-top:12px; font-size:0.85rem; color:var(--text-secondary);">
+                            The stress rises steeply at first, peaks around 6% strain, then declines
+                            slightly &mdash; a classic strain-softening response. A straight line
+                            cannot capture this behaviour.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    If you fitted a linear regression (degree 1) to this data, the line would cut
+                    diagonally through the curve, under-predicting at both ends and over-predicting
+                    in the middle. The residuals would show a clear U-shape &mdash; the warning
+                    sign we discussed in Sub-chapter 2.2. A degree-2 (quadratic) polynomial
+                    captures the rise and flattening. A degree-3 (cubic) polynomial can also capture
+                    the slight decline after the peak. Beyond degree 3, additional terms add
+                    wiggles without physical meaning.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Physical Meaning Matters</span>
+                    </div>
+                    <p>
+                        Always ask: does the polynomial shape make physical sense? A degree-6
+                        polynomial might achieve a marginally lower MSE on your training data,
+                        but if it oscillates wildly between measured points, it is fitting the
+                        <em>noise</em>, not the <em>signal</em>. In geotechnical engineering, the
+                        stress-strain relationship should be smooth and monotonic (or have at most
+                        one peak). Any polynomial that violates this physical expectation is
+                        overfitting, no matter how good its R-squared looks.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: DEGREE SELECTION AND OVERFITTING
+             ========================================== -->
+        <section class="ch-section" id="degree-overfitting">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    Choosing the Right Degree: The Overfitting Trap
+                </h2>
+
+                <p>
+                    As you increase the polynomial degree, the model gains more flexibility. With
+                    enough terms, the curve can pass through every single data point &mdash;
+                    achieving an R-squared of 1.0 on the training data. But this is a trap.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-chart-area"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Underfitting, Good Fit, and Overfitting</h3>
+                        <ul>
+                            <li>
+                                <strong>Underfitting (degree too low)</strong> &mdash; The model is
+                                too simple to capture the true pattern. A straight line through a
+                                curved dataset. High training error, high test error. In civil
+                                engineering terms: you are using a rule of thumb where a proper
+                                analysis is needed.
+                            </li>
+                            <li>
+                                <strong>Good fit (degree just right)</strong> &mdash; The model
+                                captures the underlying trend without following the noise. Moderate
+                                training error, similar test error. Like a well-calibrated design
+                                equation: accurate enough for engineering decisions.
+                            </li>
+                            <li>
+                                <strong>Overfitting (degree too high)</strong> &mdash; The model
+                                memorises the training data, including measurement noise and random
+                                fluctuations. Very low training error but high test error. Like
+                                designing a road alignment that follows every GPS waypoint jitter
+                                instead of the intended centreline.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Start with degree 1 (linear)</h3>
+                        <p>
+                            Establish the baseline. If the residuals show no pattern, you are done.
+                            If they curve, proceed to degree 2.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Increment the degree gradually</h3>
+                        <p>
+                            Try degree 2, then degree 3. At each step, check the residual plot. If
+                            the pattern disappears, stop. Each additional degree should be justified
+                            by a meaningful improvement in fit <em>and</em> physical plausibility.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Use cross-validation or a held-out test set</h3>
+                        <p>
+                            Split your data into training and test sets. Train on one, evaluate on
+                            the other. The degree that minimises <em>test</em> error (not training
+                            error) is the best choice. If test error starts increasing while training
+                            error keeps decreasing, you have crossed into overfitting territory.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Apply engineering judgement</h3>
+                        <p>
+                            Does the fitted curve make physical sense? Does it extrapolate
+                            reasonably just beyond the data range? A degree-5 polynomial that fits
+                            the data perfectly but predicts negative stress at 12% strain is
+                            physically meaningless and should be rejected regardless of its metrics.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Overfitting is like using a spline with too many control
+                            points.</strong> In road design, a horizontal alignment needs smooth,
+                            sweeping curves defined by a few key control points (PI stations and
+                            curve radii). If you add a control point for every survey stake, the
+                            alignment becomes a jagged mess that no driver could follow safely.
+                            Similarly, a polynomial with too many terms follows every noisy data
+                            point instead of the smooth underlying relationship.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: INTERACTIVE DEMO 1 - POLYNOMIAL CURVE FITTER
+             ========================================== -->
+        <section class="ch-section" id="demo-poly-fitter">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Polynomial Curve Fitter
+                </h2>
+
+                <p>
+                    See overfitting happen in real time. The canvas below displays data from a
+                    simulated soil stress-strain test. Use the degree slider to adjust the
+                    polynomial degree from 1 (linear) to 6. Watch how the curve fits the data more
+                    tightly as degree increases &mdash; and how it starts to oscillate wildly at
+                    high degrees, fitting noise rather than the true pattern. Pay attention to both
+                    the training R<sup>2</sup> and the test R<sup>2</sup> (computed on held-out
+                    points shown as hollow circles).
+                </p>
+
+                <div class="demo-panel" id="demo-panel-poly">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-bezier-curve"></i> Polynomial Degree vs. Fit Quality</h3>
+                        <p>
+                            Drag the slider to change the polynomial degree. Solid dots are training
+                            data; hollow dots are test data. The curve fits training points &mdash;
+                            compare training R<sup>2</sup> (always improves) with test R<sup>2</sup>
+                            (peaks then drops).
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls">
+                        <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; color:var(--text-secondary);">
+                            Polynomial Degree:
+                            <input type="range" id="poly-degree" min="1" max="6" value="1" style="width:160px;">
+                            <span id="poly-degree-val" style="font-weight:700; color:var(--text-primary); min-width:20px;">1</span>
+                        </label>
+                        <button id="poly-new-data" class="demo-btn" title="Generate new random data">
+                            <i class="fa-solid fa-rotate-left"></i> New Data
+                        </button>
+                    </div>
+                    <canvas id="poly-canvas" style="width:100%; height:450px; border-radius:8px;"></canvas>
+                    <div id="poly-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="poly-train-r2">Train R<sup>2</sup>: &mdash;</span>
+                        <span id="poly-test-r2">Test R<sup>2</sup>: &mdash;</span>
+                        <span id="poly-equation">Equation: &mdash;</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: MULTIPLE LINEAR REGRESSION
+             ========================================== -->
+        <section class="ch-section" id="multiple-regression">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Multiple Linear Regression: Many Features, One Prediction
+                </h2>
+
+                <p>
+                    Polynomial regression adds complexity along a single feature axis. Multiple
+                    linear regression adds complexity by introducing <strong>additional
+                    features</strong>. Instead of predicting concrete strength from the w/c ratio
+                    alone, you include cement content, aggregate proportions, admixture dosage,
+                    curing temperature, and any other measured variable. The model becomes:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-square-root-variable"></i> Multiple Linear Regression
+                    </div>
+                    <pre><code>y_hat = w0 + w1*x1 + w2*x2 + w3*x3 + ... + wp*xp
+
+Concrete strength example:
+  Strength = w0
+           + w1 * cement_content     (kg/m3)
+           + w2 * water_cement_ratio
+           + w3 * fine_aggregate     (kg/m3)
+           + w4 * coarse_aggregate   (kg/m3)
+           + w5 * superplasticiser   (litres/m3)
+           + w6 * curing_temp        (deg C)</code></pre>
+                </div>
+
+                <p>
+                    Each weight w<sub>i</sub> represents the effect of feature x<sub>i</sub> on
+                    the prediction, <em>holding all other features constant</em>. For example,
+                    w<sub>1</sub> tells you how much the predicted strength changes when cement
+                    content increases by 1 kg/m<sup>3</sup>, assuming the w/c ratio, aggregate
+                    proportions, and everything else remain fixed.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Geometry: From Lines to Hyperplanes</h3>
+                        <p>
+                            With one feature, the model is a line in 2D space. With two features,
+                            the model is a <strong>plane</strong> in 3D space &mdash; imagine a
+                            flat sheet tilted to best fit a cloud of data points floating in three
+                            dimensions. With three or more features, the model is a
+                            <strong>hyperplane</strong> in higher-dimensional space. You cannot
+                            visualise this directly, but the mathematics is identical: find the
+                            flat surface (of any dimensionality) that minimises the MSE.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Multiple regression is like a multi-factor design mix
+                            formula.</strong> In concrete mix design, you do not determine the
+                            28-day strength from a single variable. You use a series of charts
+                            and tables that account for cement content, aggregate size, w/c ratio,
+                            admixtures, and curing conditions. Multiple regression automates this
+                            process: give it all the input variables and measured outcomes, and it
+                            produces a formula that predicts strength from any combination of
+                            inputs within the observed range.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: CE CONTEXT - CONCRETE STRENGTH FROM MULTIPLE FACTORS
+             ========================================== -->
+        <section class="ch-section" id="ce-concrete-multi">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building-columns"></i>
+                    CE Context: Concrete Strength from Multiple Mix Factors
+                </h2>
+
+                <p>
+                    The UCI Machine Learning Repository hosts a famous concrete compressive strength
+                    dataset (Yeh, 1998) with 1,030 specimens. Each record includes eight input
+                    features: cement, blast furnace slag, fly ash, water, superplasticiser, coarse
+                    aggregate, fine aggregate, and age. The label is the 28-day compressive
+                    strength in MPa.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Typical Feature Ranges</h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin-top:12px;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-primary);">
+                                        <th style="text-align:left; padding:8px 12px;">Feature</th>
+                                        <th style="text-align:center; padding:8px 12px;">Unit</th>
+                                        <th style="text-align:center; padding:8px 12px;">Min</th>
+                                        <th style="text-align:center; padding:8px 12px;">Max</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">Cement</td>
+                                        <td style="text-align:center; padding:8px 12px;">kg/m<sup>3</sup></td>
+                                        <td style="text-align:center; padding:8px 12px;">102</td>
+                                        <td style="text-align:center; padding:8px 12px;">540</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">Water</td>
+                                        <td style="text-align:center; padding:8px 12px;">kg/m<sup>3</sup></td>
+                                        <td style="text-align:center; padding:8px 12px;">122</td>
+                                        <td style="text-align:center; padding:8px 12px;">247</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">Superplasticiser</td>
+                                        <td style="text-align:center; padding:8px 12px;">kg/m<sup>3</sup></td>
+                                        <td style="text-align:center; padding:8px 12px;">0</td>
+                                        <td style="text-align:center; padding:8px 12px;">32</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">Age</td>
+                                        <td style="text-align:center; padding:8px 12px;">days</td>
+                                        <td style="text-align:center; padding:8px 12px;">1</td>
+                                        <td style="text-align:center; padding:8px 12px;">365</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 12px;">Compressive Strength</td>
+                                        <td style="text-align:center; padding:8px 12px;">MPa</td>
+                                        <td style="text-align:center; padding:8px 12px;">2.3</td>
+                                        <td style="text-align:center; padding:8px 12px;">82.6</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="margin-top:12px; font-size:0.85rem; color:var(--text-secondary);">
+                            Notice the wildly different scales. Cement ranges from 102 to 540 while
+                            superplasticiser ranges from 0 to 32. Feature scaling is essential
+                            before fitting a multiple regression model.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Using a single-feature linear regression with only the w/c ratio, a typical
+                    R<sup>2</sup> on this dataset hovers around 0.25. Adding all eight features
+                    pushes R<sup>2</sup> to roughly 0.60. That is a substantial improvement, but
+                    it also raises new questions: which features matter most? Are some redundant?
+                    Could we drop half the features and still get R<sup>2</sup> = 0.55?
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Feature Importance</span>
+                    </div>
+                    <p>
+                        In a multiple regression model, the magnitude of each weight does
+                        <strong>not</strong> directly tell you which feature is most important
+                        &mdash; unless all features are on the same scale. If cement content is
+                        measured in hundreds of kg/m<sup>3</sup> and superplasticiser in single
+                        digits, the weight for superplasticiser may be numerically larger even
+                        though cement has more physical influence. Always standardise features
+                        (zero mean, unit variance) before comparing weights.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: MULTICOLLINEARITY
+             ========================================== -->
+        <section class="ch-section" id="multicollinearity">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-link-slash"></i>
+                    Multicollinearity: When Features Are Tangled
+                </h2>
+
+                <p>
+                    <strong>Multicollinearity</strong> occurs when two or more features in your
+                    model are highly correlated with each other. In the concrete dataset, water
+                    content and w/c ratio are correlated by definition (w/c = water / cement).
+                    Including both as separate features creates redundancy that can destabilise
+                    the model.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Multicollinearity Does</h3>
+                        <ul>
+                            <li>
+                                <strong>Inflated standard errors</strong> &mdash; The uncertainty in
+                                each weight estimate balloons. A weight that should be, say,
+                                w = -12.3 +/- 2.0 might become w = -12.3 +/- 45.0. The estimate is
+                                useless because the confidence interval is enormous.
+                            </li>
+                            <li>
+                                <strong>Unstable weights</strong> &mdash; Small changes in the data
+                                (adding or removing a few specimens) cause large swings in the weight
+                                values. The model becomes fragile and unreliable for interpretation.
+                            </li>
+                            <li>
+                                <strong>Misleading feature importance</strong> &mdash; The model
+                                cannot distinguish the individual effects of correlated features. It
+                                might assign most of the effect to one feature and almost none to the
+                                other, even though both are physically important.
+                            </li>
+                        </ul>
+                        <p>
+                            Crucially, multicollinearity does <strong>not</strong> harm the overall
+                            prediction accuracy on new data (as long as the same correlation structure
+                            holds). It harms <strong>interpretation</strong> of individual weights.
+                            If you only care about prediction, multicollinearity is less of a
+                            concern. If you care about understanding which factors drive strength,
+                            it is a serious problem.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Detecting Multicollinearity</h3>
+                        <ul>
+                            <li>
+                                <strong>Correlation matrix</strong> &mdash; Compute the pairwise
+                                correlation between all features. Pairs with |r| > 0.8 are suspect.
+                            </li>
+                            <li>
+                                <strong>Variance Inflation Factor (VIF)</strong> &mdash; For each
+                                feature, regress it against all other features and compute
+                                VIF = 1 / (1 - R<sup>2</sup>). A VIF above 5&ndash;10 indicates
+                                problematic collinearity.
+                            </li>
+                            <li>
+                                <strong>Sign flips</strong> &mdash; If the weight for a feature has
+                                an unexpected sign (e.g., cement content shows a negative weight
+                                for strength prediction), collinearity is likely the culprit.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wrench"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Remedies for Multicollinearity</h3>
+                        <ul>
+                            <li>
+                                <strong>Remove one of the correlated features</strong> &mdash; If
+                                water content and w/c ratio are both present, drop one. Use domain
+                                knowledge to choose which to keep.
+                            </li>
+                            <li>
+                                <strong>Combine correlated features</strong> &mdash; Create a
+                                composite variable (e.g., use w/c ratio instead of separate water
+                                and cement columns).
+                            </li>
+                            <li>
+                                <strong>Regularisation</strong> &mdash; Techniques like Ridge
+                                Regression (covered in a later sub-chapter) add a penalty term that
+                                shrinks correlated weights toward zero, stabilising the model.
+                            </li>
+                            <li>
+                                <strong>Principal Component Analysis (PCA)</strong> &mdash;
+                                Transform correlated features into a smaller set of uncorrelated
+                                principal components. This trades interpretability for stability.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Multicollinearity is like having redundant survey
+                            benchmarks.</strong> If two benchmarks are located 0.5 metres apart and
+                            have nearly identical elevations, using both to interpolate a surface
+                            adds no new information &mdash; it only introduces numerical instability
+                            into the interpolation algorithm. You are better off picking one
+                            benchmark and discarding the other. Similarly, two highly correlated
+                            features contribute redundant information to the regression.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-calculator"></i> VIF Calculation
+                    </div>
+                    <pre><code>// For feature x_j, regress x_j against all other features:
+// x_j = a0 + a1*x_1 + ... + a_{j-1}*x_{j-1} + a_{j+1}*x_{j+1} + ...
+// Compute R^2_j for this regression, then:
+
+VIF_j = 1 / (1 - R^2_j)
+
+// Interpretation:
+//   VIF = 1.0  ->  No collinearity (x_j is independent of others)
+//   VIF = 5.0  ->  Moderate collinearity (80% of x_j variance explained by others)
+//   VIF = 10+  ->  Severe collinearity (90%+ explained) -> investigate and fix</code></pre>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: ADJUSTED R-SQUARED
+             ========================================== -->
+        <section class="ch-section" id="adjusted-r-squared">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Adjusted R-Squared: A Fairer Metric
+                </h2>
+
+                <p>
+                    In Sub-chapter 2.2, we used R<sup>2</sup> to evaluate model quality. But
+                    R<sup>2</sup> has a built-in flaw: it <strong>never decreases</strong> when
+                    you add more features, even if those features are completely random and carry
+                    no real information. Add a column of lottery numbers to your concrete dataset,
+                    and R<sup>2</sup> will tick upward (or at worst stay the same). This makes
+                    naive R<sup>2</sup> unreliable for comparing models with different numbers of
+                    features.
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-calculator"></i> Adjusted R-Squared Formula
+                    </div>
+                    <pre><code>Adjusted R^2 = 1 - [(1 - R^2) * (n - 1) / (n - p - 1)]
+
+where:
+  n = number of data points
+  p = number of features (predictors) in the model
+  R^2 = ordinary R-squared
+
+// The penalty factor (n-1)/(n-p-1) grows as p increases,
+// so Adjusted R^2 can DECREASE when a useless feature is added.</code></pre>
+                </div>
+
+                <p>
+                    Adjusted R<sup>2</sup> introduces a penalty for each additional feature. If a
+                    new feature does not improve the model enough to offset the penalty, adjusted
+                    R<sup>2</sup> drops. This makes it a better criterion for comparing models
+                    with different numbers of features. For example:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Comparing Models with Adjusted R<sup>2</sup></h3>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin-top:12px;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border-primary);">
+                                        <th style="text-align:left; padding:8px 12px;">Model</th>
+                                        <th style="text-align:center; padding:8px 12px;">Features</th>
+                                        <th style="text-align:center; padding:8px 12px;">R<sup>2</sup></th>
+                                        <th style="text-align:center; padding:8px 12px;">Adj. R<sup>2</sup></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">A (w/c ratio only)</td>
+                                        <td style="text-align:center; padding:8px 12px;">1</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.250</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.249</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">B (cement + w/c + age)</td>
+                                        <td style="text-align:center; padding:8px 12px;">3</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.520</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.518</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--border-primary);">
+                                        <td style="padding:8px 12px;">C (all 8 features)</td>
+                                        <td style="text-align:center; padding:8px 12px;">8</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.615</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.612</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 12px;">D (all 8 + 3 random cols)</td>
+                                        <td style="text-align:center; padding:8px 12px;">11</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.618</td>
+                                        <td style="text-align:center; padding:8px 12px;">0.610</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="margin-top:12px; font-size:0.85rem; color:var(--text-secondary);">
+                            Model D has a slightly higher R<sup>2</sup> than C because the random
+                            columns capture tiny amounts of noise. But adjusted R<sup>2</sup>
+                            <em>drops</em>, correctly telling us that the random columns are not
+                            worth including.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>When to Use Which Metric</span>
+                    </div>
+                    <p>
+                        Use <strong>R<sup>2</sup></strong> when comparing models with the
+                        <em>same</em> number of features. Use <strong>adjusted R<sup>2</sup></strong>
+                        when comparing models with <em>different</em> numbers of features. In
+                        practice, always report adjusted R<sup>2</sup> for multiple regression
+                        models &mdash; it is the more honest metric.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: FEATURE SELECTION
+             ========================================== -->
+        <section class="ch-section" id="feature-selection">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-filter"></i>
+                    Feature Selection: Choosing What Matters
+                </h2>
+
+                <p>
+                    Not every measured variable belongs in your model. Including irrelevant or
+                    redundant features wastes data, invites multicollinearity, and can hurt
+                    prediction accuracy on new data (especially with small datasets). Feature
+                    selection is the process of identifying the subset of features that yields
+                    the best trade-off between model simplicity and predictive power.
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Domain knowledge (always start here)</h3>
+                        <p>
+                            As a civil engineer, you know which physical variables influence the
+                            outcome. Start with features that have a plausible causal link to the
+                            label. For concrete strength, cement content and w/c ratio are obvious
+                            candidates. The colour of the delivery truck is not.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Correlation analysis</h3>
+                        <p>
+                            Compute the correlation between each feature and the label. Features
+                            with very low correlation (|r| &lt; 0.1) are unlikely to be useful.
+                            Also check for high inter-feature correlations to flag multicollinearity.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Forward / backward selection</h3>
+                        <p>
+                            <strong>Forward selection</strong>: start with no features, add the one
+                            that most improves adjusted R<sup>2</sup>, repeat until no feature
+                            improves the metric. <strong>Backward elimination</strong>: start with
+                            all features, remove the one whose removal hurts least, repeat until
+                            every remaining feature contributes meaningfully.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Cross-validation</h3>
+                        <p>
+                            Validate your final feature set on held-out data. If you selected
+                            features using the training set, the training metrics will be
+                            optimistically biased. Only the test-set performance tells you how
+                            the model will perform on new, unseen specimens.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 11: INTERACTIVE DEMO 2 - MULTIPLE REGRESSION FEATURE SELECTOR
+             ========================================== -->
+        <section class="ch-section" id="demo-feature-selector">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    Interactive Demo: Multiple Regression Feature Selector
+                </h2>
+
+                <p>
+                    Explore how different feature combinations affect model quality. The demo
+                    below simulates a concrete strength dataset with four features: cement content,
+                    water-cement ratio, superplasticiser dosage, and curing age. Toggle each
+                    feature on or off and watch how R<sup>2</sup> and adjusted R<sup>2</sup>
+                    change in real time. Notice that adding a weakly relevant feature may
+                    increase R<sup>2</sup> but decrease adjusted R<sup>2</sup>.
+                </p>
+
+                <div class="demo-panel" id="demo-panel-features">
+                    <div class="demo-panel__header">
+                        <h3><i class="fa-solid fa-toggle-on"></i> Toggle Features &mdash; Watch R<sup>2</sup> Change</h3>
+                        <p>
+                            Enable or disable features to build different regression models.
+                            The bar chart shows each feature's individual correlation with
+                            strength. The metrics update in real time.
+                        </p>
+                    </div>
+                    <div class="demo-panel__controls" style="flex-wrap:wrap;">
+                        <label class="demo-toggle-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="checkbox" id="feat-cement" checked class="feat-checkbox">
+                            <span style="font-size:0.88rem;">Cement Content</span>
+                        </label>
+                        <label class="demo-toggle-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="checkbox" id="feat-wc" checked class="feat-checkbox">
+                            <span style="font-size:0.88rem;">W/C Ratio</span>
+                        </label>
+                        <label class="demo-toggle-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="checkbox" id="feat-sp" class="feat-checkbox">
+                            <span style="font-size:0.88rem;">Superplasticiser</span>
+                        </label>
+                        <label class="demo-toggle-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="checkbox" id="feat-age" class="feat-checkbox">
+                            <span style="font-size:0.88rem;">Curing Age</span>
+                        </label>
+                        <button id="feat-reset" class="demo-btn" title="Reset toggles">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                    <canvas id="feat-canvas" style="width:100%; height:400px; border-radius:8px;"></canvas>
+                    <div id="feat-stats" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:16px; font-size:0.88rem; color:var(--text-secondary); min-height:24px;">
+                        <span id="feat-r2">R<sup>2</sup>: &mdash;</span>
+                        <span id="feat-adj-r2">Adj. R<sup>2</sup>: &mdash;</span>
+                        <span id="feat-count">Active features: 0</span>
+                        <span id="feat-rmse">RMSE: &mdash;</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 12: COMBINING POLYNOMIAL AND MULTIPLE
+             ========================================== -->
+        <section class="ch-section" id="combining-approaches">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-code-merge"></i>
+                    Combining Polynomial and Multiple Regression
+                </h2>
+
+                <p>
+                    You are not limited to choosing between polynomial regression and multiple
+                    regression. In practice, you often use both. For example, you might model
+                    concrete strength as:
+                </p>
+
+                <div class="code-peek">
+                    <div class="code-peek__header">
+                        <i class="fa-solid fa-code"></i> Combined Model
+                    </div>
+                    <pre><code>Strength = w0
+         + w1 * cement
+         + w2 * wc_ratio
+         + w3 * wc_ratio^2      // polynomial term for nonlinearity
+         + w4 * age
+         + w5 * age^2            // strength gain is nonlinear with age
+         + w6 * superplasticiser</code></pre>
+                </div>
+
+                <p>
+                    Here you have multiple features (cement, w/c ratio, age, superplasticiser)
+                    <em>and</em> polynomial terms (wc_ratio<sup>2</sup>, age<sup>2</sup>).
+                    The model is still "linear" in the parameters &mdash; each weight appears to
+                    the first power &mdash; so all the same least-squares machinery applies. This
+                    flexibility is one of the great strengths of the regression framework: you can
+                    encode complex domain knowledge (e.g., "strength gain decelerates with age")
+                    simply by adding the right engineered features.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Feature Explosion Warning</span>
+                    </div>
+                    <p>
+                        If you have 8 features and you create polynomial terms up to degree 3 for
+                        each, plus all pairwise interaction terms, you can easily end up with
+                        hundreds of derived features. This invites overfitting and
+                        multicollinearity. Be deliberate: only add polynomial or interaction terms
+                        that are physically motivated. If you know that strength gain is nonlinear
+                        with age, add age<sup>2</sup>. Do not blindly generate every possible
+                        combination.
+                    </p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Interaction Terms</h3>
+                        <p>
+                            Sometimes the effect of one feature depends on the value of another.
+                            For example, the benefit of superplasticiser might be greater at low
+                            w/c ratios than at high ones. You can model this by adding an
+                            <strong>interaction term</strong>:
+                        </p>
+                        <div class="code-peek" style="margin:12px 0;">
+                            <div class="code-peek__header">
+                                <i class="fa-solid fa-code"></i> Interaction Term
+                            </div>
+                            <pre><code>Strength = w0 + w1*wc + w2*sp + w3*(wc * sp)
+// w3 captures the interaction: the combined effect of
+// w/c ratio and superplasticiser that is not explained
+// by their individual effects alone.</code></pre>
+                        </div>
+                        <p>
+                            Interaction terms are powerful but increase model complexity. Use them
+                            when domain knowledge suggests a genuine interaction, not as a
+                            shotgun approach.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 13: PRACTICAL WORKFLOW
+             ========================================== -->
+        <section class="ch-section" id="practical-workflow">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    The Practical Modelling Workflow
+                </h2>
+
+                <p>
+                    Bringing all the pieces together, here is the recommended workflow for building
+                    a polynomial or multiple regression model in civil engineering practice:
+                </p>
+
+                <div class="process-step">
+                    <div class="process-step__number">1</div>
+                    <div class="process-step__content">
+                        <h3>Collect and clean data</h3>
+                        <p>
+                            Gather test results with as many relevant features as possible. Remove
+                            duplicates, fix obvious errors, and handle missing values. Document
+                            units and measurement methods.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">2</div>
+                    <div class="process-step__content">
+                        <h3>Explore the data</h3>
+                        <p>
+                            Plot scatter diagrams of each feature vs. the label. Compute the
+                            correlation matrix. Identify nonlinear patterns (candidates for
+                            polynomial terms) and highly correlated feature pairs (candidates
+                            for removal or combination).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">3</div>
+                    <div class="process-step__content">
+                        <h3>Scale features</h3>
+                        <p>
+                            Standardise all features to zero mean and unit variance, or normalise
+                            to the [0, 1] range. This ensures gradient descent converges efficiently
+                            and that weight magnitudes are comparable.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">4</div>
+                    <div class="process-step__content">
+                        <h3>Split data into training and test sets</h3>
+                        <p>
+                            Typically 70-80% for training, 20-30% for testing. Never peek at the
+                            test set during model building &mdash; it must remain unseen until
+                            final evaluation.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">5</div>
+                    <div class="process-step__content">
+                        <h3>Build and compare models</h3>
+                        <p>
+                            Start simple (linear, few features), then add polynomial terms and
+                            additional features. Compare models using adjusted R<sup>2</sup> on
+                            the training set and RMSE on the test set. Stop when adding complexity
+                            no longer improves test performance.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">6</div>
+                    <div class="process-step__content">
+                        <h3>Diagnose and refine</h3>
+                        <p>
+                            Check VIF for multicollinearity. Plot residuals vs. predicted values.
+                            Verify that the model's predictions are physically plausible. If
+                            residuals show patterns, add or remove terms accordingly.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-step">
+                    <div class="process-step__number">7</div>
+                    <div class="process-step__content">
+                        <h3>Report results with uncertainty</h3>
+                        <p>
+                            Present the final equation, adjusted R<sup>2</sup>, RMSE, and the
+                            valid input ranges. Always state the limitations: the model is valid
+                            only within the range of the training data and under similar conditions.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 14: PRACTICAL TIPS
+             ========================================== -->
+        <section class="ch-section" id="practical-tips">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wrench"></i>
+                    Practical Tips for Civil Engineers
+                </h2>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 1: Degree 2 or 3 Is Usually Enough</span>
+                    </div>
+                    <p>
+                        In most civil engineering applications, a quadratic (degree 2) or cubic
+                        (degree 3) polynomial captures the relevant nonlinearity. Higher degrees
+                        rarely improve test-set performance and often introduce wild oscillations
+                        near the edges of the data range. If you need more flexibility than
+                        degree 3, consider switching to a non-parametric model (e.g., decision
+                        trees or splines) rather than pushing the polynomial degree higher.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 2: Scale Before Adding Polynomial Terms</span>
+                    </div>
+                    <p>
+                        If your feature x ranges from 100 to 500, then x<sup>3</sup> ranges from
+                        1,000,000 to 125,000,000. Such extreme values cause numerical instability
+                        in the least-squares solver. Always normalise x to a small range (e.g.,
+                        0 to 1) <em>before</em> computing polynomial features. This is equivalent
+                        to converting all measurements to consistent units before analysis.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 3: Watch for Extrapolation Disasters</span>
+                    </div>
+                    <p>
+                        Polynomial models are especially dangerous outside the training range.
+                        A degree-3 polynomial fitted to data from 0 to 10% strain might predict
+                        negative stress at 12% strain or absurdly high stress at 15%. Linear
+                        models extrapolate more gracefully (they just continue the line), but
+                        polynomials can skyrocket or plummet. Always enforce physical bounds
+                        when deploying polynomial models in production.
+                    </p>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Tip 4: Document Your Model</span>
+                    </div>
+                    <p>
+                        A regression model is only useful if future engineers can understand and
+                        apply it. Document the equation, the feature definitions (with units), the
+                        valid input ranges, the training data source, and the performance metrics.
+                        Treat the model like a structural calculation: it should be auditable and
+                        reproducible by someone who was not involved in its creation.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 15: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-brain"></i>
+                    Test Your Understanding
+                </h2>
+
+                <p>
+                    Answer the following questions to check your grasp of polynomial and multiple
+                    regression concepts. Each question relates to civil engineering applications
+                    covered in this sub-chapter.
+                </p>
+
+                <!-- Quiz 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 1</h3>
+                    <p class="quiz-question">
+                        A quadratic regression model (degree 2) has the form
+                        y = w<sub>0</sub> + w<sub>1</sub>x + w<sub>2</sub>x<sup>2</sup>.
+                        Why is this still considered a "linear" regression model?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-a"></i> Because the curve it produces is always a straight line
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-b"></i> Because the model is linear in its parameters (w<sub>0</sub>, w<sub>1</sub>, w<sub>2</sub>), even though it is nonlinear in x
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-c"></i> Because x<sup>2</sup> is simply x multiplied by x, which is a linear operation
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-d"></i> Because the R-squared value is always between 0 and 1
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! "Linear" in "linear
+                        regression" refers to linearity in the <strong>parameters</strong>, not in
+                        x. Each weight (w<sub>0</sub>, w<sub>1</sub>, w<sub>2</sub>) appears to the
+                        first power and is multiplied by a function of x. This means the same
+                        least-squares solution applies, regardless of the polynomial degree.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. A quadratic model
+                        produces a curve, not a straight line. The term "linear" refers to
+                        <strong>linearity in the parameters</strong> (w<sub>0</sub>, w<sub>1</sub>,
+                        w<sub>2</sub>), not in x. Each parameter appears to the first power, so
+                        the standard least-squares machinery still works.
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 2</h3>
+                    <p class="quiz-question">
+                        You fit a polynomial of degree 8 to 10 soil stress-strain data points and
+                        achieve R<sup>2</sup> = 0.999 on the training data. When you test on 5
+                        new data points, the RMSE is three times worse than a degree-2 fit. What
+                        has happened?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-a"></i> The degree-2 model is too complex for this data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-b"></i> The test data points are incorrectly measured
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-c"></i> The degree-8 model is overfitting &mdash; it memorised the training noise and generalises poorly to new data
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-d"></i> R-squared of 0.999 proves the degree-8 model is the best choice
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! With 8 degrees of freedom
+                        and only 10 data points, the polynomial can essentially pass through every
+                        point, fitting noise rather than the true curve. It achieves near-perfect
+                        training R<sup>2</sup> but fails on unseen data. This is the classic
+                        signature of overfitting.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. When a high-degree
+                        polynomial achieves near-perfect training fit but poor test performance,
+                        the diagnosis is <strong>overfitting</strong>. The model memorised the
+                        training data (including noise) instead of learning the underlying
+                        pattern. A simpler model generalises better.
+                    </div>
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 3</h3>
+                    <p class="quiz-question">
+                        In a multiple regression model predicting concrete strength, you notice
+                        that the VIF for "water content" is 15.2 and the VIF for "cement content"
+                        is 12.8. What does this indicate, and what should you do?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-a"></i> Both features are essential and should be kept in the model
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-b"></i> Severe multicollinearity exists &mdash; consider replacing both with the w/c ratio or dropping one
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-c"></i> The model is underfitting and needs more features
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-d"></i> The R-squared is too low and the model should be discarded
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! VIF values above 10
+                        indicate severe multicollinearity. Water content and cement content are
+                        inherently linked (w/c = water / cement), so including both creates
+                        redundancy. Replacing them with the w/c ratio or dropping one resolves the
+                        issue while preserving the physical information.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. VIF values of 15.2 and
+                        12.8 far exceed the threshold of 10, indicating
+                        <strong>severe multicollinearity</strong>. Water and cement content are
+                        inherently correlated (their ratio is the w/c ratio). The remedy is to
+                        combine them into a single feature (w/c ratio) or drop one.
+                    </div>
+                </div>
+
+                <!-- Quiz 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <h3><i class="fa-solid fa-circle-question"></i> Quick Check 4</h3>
+                    <p class="quiz-question">
+                        You build two models for concrete strength prediction. Model A uses 3
+                        features and achieves R<sup>2</sup> = 0.58, adjusted R<sup>2</sup> = 0.57.
+                        Model B uses 8 features and achieves R<sup>2</sup> = 0.61, adjusted
+                        R<sup>2</sup> = 0.56. Which model should you prefer, and why?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-a"></i> Model B, because it has a higher R<sup>2</sup>
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-b"></i> Model A, because it has a higher adjusted R<sup>2</sup> with fewer features
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-c"></i> Neither &mdash; both R<sup>2</sup> values are too low to be useful
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-d"></i> Model B, because more features always produce better predictions
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none">
+                        <i class="fa-solid fa-check-circle"></i> Correct! Model A achieves a higher
+                        adjusted R<sup>2</sup> (0.57 vs. 0.56) with only 3 features instead of 8.
+                        The five additional features in Model B do not compensate for the penalty
+                        imposed by adjusted R<sup>2</sup>. Model A is simpler, more interpretable,
+                        and less prone to multicollinearity and overfitting.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none">
+                        <i class="fa-solid fa-times-circle"></i> Not quite. When comparing models
+                        with different numbers of features, use <strong>adjusted R<sup>2</sup></strong>,
+                        not raw R<sup>2</sup>. Model A's adjusted R<sup>2</sup> (0.57) is higher
+                        than Model B's (0.56), meaning the extra five features in Model B do not
+                        justify their added complexity. Simpler is better when performance is equal
+                        or better.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 16: KEY TAKEAWAYS
+             ========================================== -->
+        <section class="ch-section" id="takeaways">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-bookmark"></i>
+                    Key Takeaways
+                </h2>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What You Should Remember</h3>
+                        <ul>
+                            <li>
+                                <strong>Polynomial regression</strong> adds higher powers of x
+                                (x<sup>2</sup>, x<sup>3</sup>, ...) to model curved relationships.
+                                It is still linear in the parameters and uses the same least-squares
+                                optimisation.
+                            </li>
+                            <li>
+                                <strong>Overfitting</strong> occurs when the model is too complex
+                                for the available data. It memorises noise instead of learning the
+                                underlying pattern. Symptoms: high training R<sup>2</sup>, poor
+                                test R<sup>2</sup>, wild oscillations between data points.
+                            </li>
+                            <li>
+                                <strong>Multiple linear regression</strong> uses multiple features
+                                simultaneously. Each weight represents the effect of one feature
+                                while holding all others constant.
+                            </li>
+                            <li>
+                                <strong>Multicollinearity</strong> arises when features are
+                                correlated with each other. It inflates standard errors, destabilises
+                                weights, and misleads feature importance. Detect it with VIF; fix it
+                                by removing or combining correlated features.
+                            </li>
+                            <li>
+                                <strong>Adjusted R<sup>2</sup></strong> penalises unnecessary
+                                features and is the correct metric for comparing models with
+                                different numbers of predictors.
+                            </li>
+                            <li>
+                                <strong>Feature selection</strong> should be guided by domain
+                                knowledge first, then refined with correlation analysis, forward/backward
+                                selection, and cross-validation.
+                            </li>
+                            <li>
+                                <strong>Polynomial extrapolation</strong> is dangerous. Always enforce
+                                physical bounds and limit predictions to the training data range.
+                            </li>
+                            <li>
+                                In civil engineering, polynomial and multiple regression apply to
+                                soil stress-strain modelling, concrete strength prediction,
+                                settlement estimation, and any problem where a single straight
+                                line is insufficient.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>Coming Up Next</span>
+                    </div>
+                    <p>
+                        In Sub-chapter 2.4, we move from regression (predicting continuous values)
+                        to <strong>Classification</strong> &mdash; predicting discrete categories.
+                        You will learn how to classify soil types, detect structural damage, and
+                        decide whether a concrete specimen passes or fails a strength threshold.
+                        The foundational concepts of features, training, and evaluation you have
+                        built across Sub-chapters 2.1&ndash;2.3 carry forward directly.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub2.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 2.2 Linear Regression
+        </a>
+        <a href="sub4.html" class="chapter-nav__link next">
+            2.4 Classification Basics <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){
+            var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444',
+                GREEN:'#22c55e', PURPLE:'#a78bfa',
+                BG: isDark ? '#0a0a0f' : '#ffffff',
+                TEXT: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                DIM: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                STROKE: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                WHITE: isDark ? '#fff' : '#111',
+                MUTED: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+                POINT_FILL: isDark ? '#fff' : '#333',
+                CANVAS_BG: isDark ? '#0f1117' : '#f8f9fa'
+            };
+        };
+        var initCanvas = Utils.initCanvas || function(c){
+            var d = window.devicePixelRatio || 1;
+            var r = c.getBoundingClientRect();
+            c.width = r.width * d;
+            c.height = r.height * d;
+            var x = c.getContext('2d');
+            x.scale(d, d);
+            return { ctx: x, w: r.width, h: r.height };
+        };
+        var lerp = Utils.lerp || function(a,b,t){ return a+(b-a)*t; };
+        var rand = Utils.rand || function(a,b){ return Math.random()*(b-a)+a; };
+        var clamp = Utils.clamp || function(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); };
+
+        /* ==============================================
+           HERO CANVAS - ANIMATED POLYNOMIAL CURVES
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var animId;
+            var time = 0;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+            }
+
+            function draw() {
+                var c = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                // Draw multiple animated polynomial curves
+                var curves = [
+                    { color: c.TEAL, alpha: 0.3, speed: 0.8, deg: 2, yOff: 0 },
+                    { color: c.CYAN, alpha: 0.2, speed: 1.0, deg: 3, yOff: 20 },
+                    { color: c.AMBER, alpha: 0.15, speed: 0.6, deg: 4, yOff: -15 },
+                    { color: c.PURPLE, alpha: 0.12, speed: 1.2, deg: 2, yOff: 30 }
+                ];
+
+                curves.forEach(function(curve) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = curve.color;
+                    ctx.globalAlpha = curve.alpha;
+                    ctx.lineWidth = 2;
+                    for (var px = 0; px <= w; px += 2) {
+                        var t = px / w;
+                        var y = h * 0.5 + curve.yOff
+                            + Math.sin(t * Math.PI * curve.deg + time * curve.speed) * (h * 0.15)
+                            + Math.cos(t * Math.PI * 1.5 + time * curve.speed * 0.7) * (h * 0.08);
+                        if (px === 0) ctx.moveTo(px, y);
+                        else ctx.lineTo(px, y);
+                    }
+                    ctx.stroke();
+                });
+
+                // Scatter points
+                ctx.globalAlpha = 0.25;
+                for (var i = 0; i < 40; i++) {
+                    var seed = i * 137.508;
+                    var px = ((seed * 0.618) % 1) * w;
+                    var py = h * 0.3 + ((seed * 0.381) % 1) * h * 0.4;
+                    py += Math.sin(time * 0.5 + i) * 8;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = i % 3 === 0 ? c.TEAL : (i % 3 === 1 ? c.CYAN : c.AMBER);
+                    ctx.fill();
+                }
+
+                ctx.globalAlpha = 1;
+                time += 0.012;
+                animId = requestAnimationFrame(draw);
+            }
+
+            resize();
+            draw();
+            window.addEventListener('resize', function() {
+                resize();
+            });
+        })();
+
+
+        /* ==============================================
+           DEMO 1: POLYNOMIAL CURVE FITTER
+           ============================================== */
+        (function initPolynomialDemo() {
+            var canvas = document.getElementById('poly-canvas');
+            if (!canvas) return;
+
+            var ctx, W, H;
+            var PADDING = { top: 30, right: 30, bottom: 50, left: 60 };
+            var trainData = [];
+            var testData = [];
+            var degree = 1;
+            var degreeSlider = document.getElementById('poly-degree');
+            var degreeVal = document.getElementById('poly-degree-val');
+            var newDataBtn = document.getElementById('poly-new-data');
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+                redraw();
+            }
+
+            // Generate stress-strain-like data with noise
+            function generateData() {
+                trainData = [];
+                testData = [];
+                var allX = [];
+                for (var i = 0; i <= 18; i++) {
+                    allX.push(i * 0.55);
+                }
+                // Shuffle
+                for (var s = allX.length - 1; s > 0; s--) {
+                    var j = Math.floor(Math.random() * (s + 1));
+                    var tmp = allX[s]; allX[s] = allX[j]; allX[j] = tmp;
+                }
+                for (var k = 0; k < allX.length; k++) {
+                    var x = allX[k];
+                    // Underlying function: stress-strain curve
+                    var yTrue = 150 * (1 - Math.exp(-0.6 * x)) - 2.5 * x;
+                    var noise = (Math.random() - 0.5) * 18;
+                    var pt = { x: x, y: yTrue + noise };
+                    if (k < 13) trainData.push(pt);
+                    else testData.push(pt);
+                }
+                trainData.sort(function(a,b){ return a.x - b.x; });
+                testData.sort(function(a,b){ return a.x - b.x; });
+            }
+
+            // Polynomial least squares fit using normal equations
+            function polyFit(data, deg) {
+                var n = data.length;
+                if (n <= deg) return null;
+
+                // Build Vandermonde matrix
+                var size = deg + 1;
+                var XtX = [];
+                var XtY = [];
+                for (var i = 0; i < size; i++) {
+                    XtX[i] = [];
+                    for (var j = 0; j < size; j++) {
+                        var s = 0;
+                        for (var k = 0; k < n; k++) {
+                            s += Math.pow(data[k].x, i) * Math.pow(data[k].x, j);
+                        }
+                        XtX[i][j] = s;
+                    }
+                    var sy = 0;
+                    for (var k2 = 0; k2 < n; k2++) {
+                        sy += Math.pow(data[k2].x, i) * data[k2].y;
+                    }
+                    XtY[i] = sy;
+                }
+
+                // Solve using Gaussian elimination
+                var A = [];
+                for (var r = 0; r < size; r++) {
+                    A[r] = XtX[r].slice();
+                    A[r].push(XtY[r]);
+                }
+                for (var col = 0; col < size; col++) {
+                    // Partial pivoting
+                    var maxRow = col;
+                    for (var row = col + 1; row < size; row++) {
+                        if (Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+                    }
+                    var temp = A[col]; A[col] = A[maxRow]; A[maxRow] = temp;
+
+                    if (Math.abs(A[col][col]) < 1e-12) return null;
+
+                    for (var row2 = col + 1; row2 < size; row2++) {
+                        var factor = A[row2][col] / A[col][col];
+                        for (var c = col; c <= size; c++) {
+                            A[row2][c] -= factor * A[col][c];
+                        }
+                    }
+                }
+                // Back substitution
+                var coeffs = new Array(size);
+                for (var i2 = size - 1; i2 >= 0; i2--) {
+                    coeffs[i2] = A[i2][size];
+                    for (var j2 = i2 + 1; j2 < size; j2++) {
+                        coeffs[i2] -= A[i2][j2] * coeffs[j2];
+                    }
+                    coeffs[i2] /= A[i2][i2];
+                }
+                return coeffs;
+            }
+
+            function polyEval(coeffs, x) {
+                var y = 0;
+                for (var i = 0; i < coeffs.length; i++) {
+                    y += coeffs[i] * Math.pow(x, i);
+                }
+                return y;
+            }
+
+            function computeR2(data, coeffs) {
+                if (!coeffs || data.length < 2) return NaN;
+                var mean = 0;
+                for (var i = 0; i < data.length; i++) mean += data[i].y;
+                mean /= data.length;
+                var ssTot = 0, ssRes = 0;
+                for (var j = 0; j < data.length; j++) {
+                    var pred = polyEval(coeffs, data[j].x);
+                    ssRes += (data[j].y - pred) * (data[j].y - pred);
+                    ssTot += (data[j].y - mean) * (data[j].y - mean);
+                }
+                if (ssTot === 0) return 1;
+                return 1 - ssRes / ssTot;
+            }
+
+            function xToCanvas(x, xMin, xMax) {
+                return PADDING.left + (x - xMin) / (xMax - xMin) * (W - PADDING.left - PADDING.right);
+            }
+            function yToCanvas(y, yMin, yMax) {
+                return H - PADDING.bottom - (y - yMin) / (yMax - yMin) * (H - PADDING.top - PADDING.bottom);
+            }
+
+            function redraw() {
+                if (!ctx) return;
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+
+                // Background
+                ctx.fillStyle = c.CANVAS_BG || c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                var allData = trainData.concat(testData);
+                if (allData.length < 2) return;
+
+                var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+                allData.forEach(function(p) {
+                    if (p.x < xMin) xMin = p.x;
+                    if (p.x > xMax) xMax = p.x;
+                    if (p.y < yMin) yMin = p.y;
+                    if (p.y > yMax) yMax = p.y;
+                });
+                var xPad = (xMax - xMin) * 0.1 || 1;
+                var yPad = (yMax - yMin) * 0.15 || 10;
+                xMin -= xPad; xMax += xPad;
+                yMin -= yPad; yMax += yPad;
+
+                // Grid lines
+                ctx.strokeStyle = c.GRID;
+                ctx.lineWidth = 1;
+                for (var gx = Math.ceil(xMin); gx <= Math.floor(xMax); gx += 1) {
+                    var cx = xToCanvas(gx, xMin, xMax);
+                    ctx.beginPath(); ctx.moveTo(cx, PADDING.top); ctx.lineTo(cx, H - PADDING.bottom); ctx.stroke();
+                }
+                for (var gy = Math.ceil(yMin / 20) * 20; gy <= yMax; gy += 20) {
+                    var cy = yToCanvas(gy, yMin, yMax);
+                    ctx.beginPath(); ctx.moveTo(PADDING.left, cy); ctx.lineTo(W - PADDING.right, cy); ctx.stroke();
+                }
+
+                // Axes
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(PADDING.left, PADDING.top);
+                ctx.lineTo(PADDING.left, H - PADDING.bottom);
+                ctx.lineTo(W - PADDING.right, H - PADDING.bottom);
+                ctx.stroke();
+
+                // Axis labels
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '12px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Strain (%)', W / 2, H - 8);
+                ctx.save();
+                ctx.translate(15, H / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Stress (kPa)', 0, 0);
+                ctx.restore();
+
+                // Tick labels
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                for (var tx = Math.ceil(xMin); tx <= Math.floor(xMax); tx += 2) {
+                    ctx.fillText(tx.toString(), xToCanvas(tx, xMin, xMax), H - PADDING.bottom + 18);
+                }
+                ctx.textAlign = 'right';
+                for (var ty = Math.ceil(yMin / 20) * 20; ty <= yMax; ty += 20) {
+                    ctx.fillText(ty.toFixed(0), PADDING.left - 8, yToCanvas(ty, yMin, yMax) + 4);
+                }
+
+                // Fit polynomial
+                var coeffs = polyFit(trainData, degree);
+
+                // Draw fitted curve
+                if (coeffs) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = c.TEAL;
+                    ctx.lineWidth = 2.5;
+                    var steps = 200;
+                    for (var s = 0; s <= steps; s++) {
+                        var xx = xMin + (xMax - xMin) * s / steps;
+                        var yy = polyEval(coeffs, xx);
+                        var cxp = xToCanvas(xx, xMin, xMax);
+                        var cyp = yToCanvas(yy, yMin, yMax);
+                        if (s === 0) ctx.moveTo(cxp, cyp);
+                        else ctx.lineTo(cxp, cyp);
+                    }
+                    ctx.stroke();
+                }
+
+                // Draw train points (filled)
+                trainData.forEach(function(p) {
+                    ctx.beginPath();
+                    ctx.arc(xToCanvas(p.x, xMin, xMax), yToCanvas(p.y, yMin, yMax), 5, 0, Math.PI * 2);
+                    ctx.fillStyle = c.CYAN;
+                    ctx.fill();
+                    ctx.strokeStyle = c.CYAN;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+
+                // Draw test points (hollow)
+                testData.forEach(function(p) {
+                    ctx.beginPath();
+                    ctx.arc(xToCanvas(p.x, xMin, xMax), yToCanvas(p.y, yMin, yMax), 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = c.AMBER;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+
+                // Legend
+                ctx.font = '12px Inter, sans-serif';
+                ctx.fillStyle = c.CYAN;
+                ctx.beginPath();
+                ctx.arc(W - PADDING.right - 140, PADDING.top + 14, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = c.TEXT;
+                ctx.textAlign = 'left';
+                ctx.fillText('Training data', W - PADDING.right - 130, PADDING.top + 18);
+
+                ctx.strokeStyle = c.AMBER;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(W - PADDING.right - 140, PADDING.top + 34, 5, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fillStyle = c.TEXT;
+                ctx.fillText('Test data', W - PADDING.right - 130, PADDING.top + 38);
+
+                // Degree label on chart
+                ctx.font = 'bold 13px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.textAlign = 'left';
+                ctx.fillText('Degree ' + degree, PADDING.left + 10, PADDING.top + 18);
+
+                // Update stats
+                var trainR2 = computeR2(trainData, coeffs);
+                var testR2 = computeR2(testData, coeffs);
+
+                var trainR2El = document.getElementById('poly-train-r2');
+                var testR2El = document.getElementById('poly-test-r2');
+                var eqEl = document.getElementById('poly-equation');
+
+                if (trainR2El) trainR2El.innerHTML = 'Train R<sup>2</sup>: ' + (isNaN(trainR2) ? '&mdash;' : trainR2.toFixed(4));
+                if (testR2El) {
+                    testR2El.innerHTML = 'Test R<sup>2</sup>: ' + (isNaN(testR2) ? '&mdash;' : testR2.toFixed(4));
+                    testR2El.style.color = testR2 < trainR2 - 0.1 ? c.RED : c.GREEN;
+                }
+                if (eqEl && coeffs) {
+                    var eq = 'y = ' + coeffs[0].toFixed(2);
+                    for (var ei = 1; ei < coeffs.length; ei++) {
+                        var cv = coeffs[ei];
+                        eq += (cv >= 0 ? ' + ' : ' - ') + Math.abs(cv).toFixed(2) + (ei === 1 ? 'x' : 'x^' + ei);
+                    }
+                    eqEl.textContent = eq.length > 80 ? eq.substring(0, 77) + '...' : eq;
+                }
+            }
+
+            degreeSlider.addEventListener('input', function() {
+                degree = parseInt(this.value, 10);
+                degreeVal.textContent = degree;
+                redraw();
+            });
+
+            newDataBtn.addEventListener('click', function() {
+                generateData();
+                redraw();
+            });
+
+            generateData();
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+
+        /* ==============================================
+           DEMO 2: MULTIPLE REGRESSION FEATURE SELECTOR
+           ============================================== */
+        (function initFeatureDemo() {
+            var canvas = document.getElementById('feat-canvas');
+            if (!canvas) return;
+
+            var ctx, W, H;
+            var PADDING = { top: 30, right: 30, bottom: 60, left: 60 };
+
+            // Simulated concrete dataset (50 samples)
+            var N = 50;
+            var dataset = [];
+            var rng = (function(seed) {
+                // Simple seeded PRNG for reproducibility
+                return function() {
+                    seed = (seed * 16807 + 0) % 2147483647;
+                    return (seed - 1) / 2147483646;
+                };
+            })(42);
+
+            // Feature definitions with realistic correlations to strength
+            var FEATURES = [
+                { id: 'cement', name: 'Cement', corr: 0.55, mean: 300, std: 80, unit: 'kg/m3' },
+                { id: 'wc', name: 'W/C Ratio', corr: -0.62, mean: 0.50, std: 0.08, unit: '' },
+                { id: 'sp', name: 'Superplast.', corr: 0.30, mean: 8, std: 4, unit: 'kg/m3' },
+                { id: 'age', name: 'Curing Age', corr: 0.42, mean: 45, std: 30, unit: 'days' }
+            ];
+
+            // Generate synthetic data
+            (function generateSyntheticData() {
+                for (var i = 0; i < N; i++) {
+                    var cement = FEATURES[0].mean + (rng() - 0.5) * 2 * FEATURES[0].std * 1.5;
+                    var wc = FEATURES[1].mean + (rng() - 0.5) * 2 * FEATURES[1].std * 1.5;
+                    var sp = Math.max(0, FEATURES[2].mean + (rng() - 0.5) * 2 * FEATURES[2].std * 1.5);
+                    var age = Math.max(1, Math.round(FEATURES[3].mean + (rng() - 0.5) * 2 * FEATURES[3].std * 1.5));
+
+                    // True strength with realistic coefficients + noise
+                    var strength = 10
+                        + 0.08 * cement
+                        - 45 * wc
+                        + 0.6 * sp
+                        + 0.05 * age
+                        + (rng() - 0.5) * 12; // noise
+
+                    strength = Math.max(5, Math.min(85, strength));
+
+                    dataset.push({
+                        features: [cement, wc, sp, age],
+                        y: strength
+                    });
+                }
+            })();
+
+            function getActiveFeatures() {
+                var active = [];
+                var checkboxes = ['feat-cement', 'feat-wc', 'feat-sp', 'feat-age'];
+                checkboxes.forEach(function(id, idx) {
+                    var el = document.getElementById(id);
+                    if (el && el.checked) active.push(idx);
+                });
+                return active;
+            }
+
+            // Multiple regression using normal equations
+            function multiRegress(active) {
+                if (active.length === 0) return null;
+                var n = dataset.length;
+                var p = active.length;
+                var size = p + 1; // +1 for intercept
+
+                // Build X^T X and X^T y
+                var XtX = [];
+                var XtY = [];
+                for (var i = 0; i < size; i++) {
+                    XtX[i] = [];
+                    for (var j = 0; j < size; j++) {
+                        var s = 0;
+                        for (var k = 0; k < n; k++) {
+                            var xi = (i === 0) ? 1 : dataset[k].features[active[i - 1]];
+                            var xj = (j === 0) ? 1 : dataset[k].features[active[j - 1]];
+                            s += xi * xj;
+                        }
+                        XtX[i][j] = s;
+                    }
+                    var sy = 0;
+                    for (var k2 = 0; k2 < n; k2++) {
+                        var xii = (i === 0) ? 1 : dataset[k2].features[active[i - 1]];
+                        sy += xii * dataset[k2].y;
+                    }
+                    XtY[i] = sy;
+                }
+
+                // Solve via Gaussian elimination
+                var A = [];
+                for (var r = 0; r < size; r++) {
+                    A[r] = XtX[r].slice();
+                    A[r].push(XtY[r]);
+                }
+                for (var col = 0; col < size; col++) {
+                    var maxRow = col;
+                    for (var row = col + 1; row < size; row++) {
+                        if (Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+                    }
+                    var temp = A[col]; A[col] = A[maxRow]; A[maxRow] = temp;
+                    if (Math.abs(A[col][col]) < 1e-12) return null;
+                    for (var row2 = col + 1; row2 < size; row2++) {
+                        var factor = A[row2][col] / A[col][col];
+                        for (var c = col; c <= size; c++) {
+                            A[row2][c] -= factor * A[col][c];
+                        }
+                    }
+                }
+                var coeffs = new Array(size);
+                for (var i2 = size - 1; i2 >= 0; i2--) {
+                    coeffs[i2] = A[i2][size];
+                    for (var j2 = i2 + 1; j2 < size; j2++) {
+                        coeffs[i2] -= A[i2][j2] * coeffs[j2];
+                    }
+                    coeffs[i2] /= A[i2][i2];
+                }
+                return coeffs;
+            }
+
+            function predict(coeffs, active, sample) {
+                var y = coeffs[0];
+                for (var i = 0; i < active.length; i++) {
+                    y += coeffs[i + 1] * sample.features[active[i]];
+                }
+                return y;
+            }
+
+            function computeMetrics(active) {
+                if (active.length === 0) return { r2: 0, adjR2: 0, rmse: 0 };
+                var coeffs = multiRegress(active);
+                if (!coeffs) return { r2: 0, adjR2: 0, rmse: 0 };
+
+                var n = dataset.length;
+                var p = active.length;
+                var mean = 0;
+                for (var i = 0; i < n; i++) mean += dataset[i].y;
+                mean /= n;
+
+                var ssTot = 0, ssRes = 0;
+                for (var j = 0; j < n; j++) {
+                    var pred = predict(coeffs, active, dataset[j]);
+                    ssRes += (dataset[j].y - pred) * (dataset[j].y - pred);
+                    ssTot += (dataset[j].y - mean) * (dataset[j].y - mean);
+                }
+
+                var r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+                var adjR2 = 1 - ((1 - r2) * (n - 1)) / (n - p - 1);
+                var rmse = Math.sqrt(ssRes / n);
+
+                return { r2: r2, adjR2: adjR2, rmse: rmse, coeffs: coeffs };
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; W = info.w; H = info.h;
+                redraw();
+            }
+
+            function redraw() {
+                if (!ctx) return;
+                var c = getColors();
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = c.CANVAS_BG || c.BG;
+                ctx.fillRect(0, 0, W, H);
+
+                var active = getActiveFeatures();
+                var metrics = computeMetrics(active);
+
+                // Draw bar chart showing individual correlations + active status
+                var barAreaW = W - PADDING.left - PADDING.right;
+                var barAreaH = H - PADDING.top - PADDING.bottom;
+                var barW = barAreaW / (FEATURES.length * 2 + 1);
+                var barGap = barW;
+                var maxCorr = 0.7;
+
+                // Axes
+                ctx.strokeStyle = c.STROKE;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(PADDING.left, PADDING.top);
+                ctx.lineTo(PADDING.left, H - PADDING.bottom);
+                ctx.lineTo(W - PADDING.right, H - PADDING.bottom);
+                ctx.stroke();
+
+                // Zero line
+                var zeroY = PADDING.top + barAreaH / 2;
+                ctx.strokeStyle = c.DIM;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(PADDING.left, zeroY);
+                ctx.lineTo(W - PADDING.right, zeroY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Y-axis labels
+                ctx.fillStyle = c.MUTED;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('+' + maxCorr.toFixed(1), PADDING.left - 8, PADDING.top + 10);
+                ctx.fillText('0', PADDING.left - 8, zeroY + 4);
+                ctx.fillText('-' + maxCorr.toFixed(1), PADDING.left - 8, H - PADDING.bottom - 2);
+
+                ctx.save();
+                ctx.translate(14, H / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Correlation with Strength', 0, 0);
+                ctx.restore();
+
+                // Draw bars
+                var colors = [c.CYAN, c.RED, c.GREEN, c.AMBER];
+                FEATURES.forEach(function(feat, idx) {
+                    var isActive = active.indexOf(idx) !== -1;
+                    var x = PADDING.left + barGap + idx * (barW + barGap);
+                    var corrVal = feat.corr;
+                    var barH = Math.abs(corrVal) / maxCorr * (barAreaH / 2);
+                    var barTop = corrVal >= 0 ? zeroY - barH : zeroY;
+
+                    ctx.fillStyle = isActive ? colors[idx] : c.DIM;
+                    ctx.globalAlpha = isActive ? 0.85 : 0.3;
+
+                    // Rounded rect
+                    var radius = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(x + radius, barTop);
+                    ctx.lineTo(x + barW - radius, barTop);
+                    ctx.quadraticCurveTo(x + barW, barTop, x + barW, barTop + radius);
+                    ctx.lineTo(x + barW, barTop + barH - radius);
+                    ctx.quadraticCurveTo(x + barW, barTop + barH, x + barW - radius, barTop + barH);
+                    ctx.lineTo(x + radius, barTop + barH);
+                    ctx.quadraticCurveTo(x, barTop + barH, x, barTop + barH - radius);
+                    ctx.lineTo(x, barTop + radius);
+                    ctx.quadraticCurveTo(x, barTop, x + radius, barTop);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // Correlation value
+                    ctx.fillStyle = isActive ? colors[idx] : c.MUTED;
+                    ctx.font = 'bold 12px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    var valY = corrVal >= 0 ? barTop - 8 : barTop + barH + 16;
+                    ctx.fillText(corrVal.toFixed(2), x + barW / 2, valY);
+
+                    // Feature name
+                    ctx.font = '11px Inter, sans-serif';
+                    ctx.fillStyle = isActive ? c.TEXT : c.MUTED;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(feat.name, x + barW / 2, H - PADDING.bottom + 18);
+                    if (feat.unit) {
+                        ctx.font = '10px Inter, sans-serif';
+                        ctx.fillStyle = c.MUTED;
+                        ctx.fillText(feat.unit, x + barW / 2, H - PADDING.bottom + 32);
+                    }
+
+                    // Active indicator
+                    if (isActive) {
+                        ctx.fillStyle = colors[idx];
+                        ctx.beginPath();
+                        ctx.arc(x + barW / 2, H - PADDING.bottom + 44, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                // Draw R2 and Adj R2 as big text overlay
+                var metricsX = W - PADDING.right - 10;
+                ctx.textAlign = 'right';
+                ctx.font = 'bold 24px Inter, sans-serif';
+                ctx.fillStyle = c.TEAL;
+                ctx.fillText('R\u00B2 = ' + metrics.r2.toFixed(4), metricsX, PADDING.top + 40);
+                ctx.font = 'bold 20px Inter, sans-serif';
+                ctx.fillStyle = metrics.adjR2 >= metrics.r2 - 0.005 ? c.GREEN : c.AMBER;
+                ctx.fillText('Adj R\u00B2 = ' + metrics.adjR2.toFixed(4), metricsX, PADDING.top + 68);
+                ctx.font = '14px Inter, sans-serif';
+                ctx.fillStyle = c.MUTED;
+                ctx.fillText('RMSE = ' + metrics.rmse.toFixed(2) + ' MPa', metricsX, PADDING.top + 92);
+
+                // Update stats
+                var r2El = document.getElementById('feat-r2');
+                var adjR2El = document.getElementById('feat-adj-r2');
+                var countEl = document.getElementById('feat-count');
+                var rmseEl = document.getElementById('feat-rmse');
+
+                if (r2El) r2El.innerHTML = 'R<sup>2</sup>: ' + metrics.r2.toFixed(4);
+                if (adjR2El) adjR2El.innerHTML = 'Adj. R<sup>2</sup>: ' + metrics.adjR2.toFixed(4);
+                if (countEl) countEl.textContent = 'Active features: ' + active.length;
+                if (rmseEl) rmseEl.textContent = 'RMSE: ' + metrics.rmse.toFixed(2) + ' MPa';
+            }
+
+            // Event listeners for checkboxes
+            var checkboxIds = ['feat-cement', 'feat-wc', 'feat-sp', 'feat-age'];
+            checkboxIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('change', redraw);
+            });
+
+            var resetBtn = document.getElementById('feat-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    checkboxIds.forEach(function(id, idx) {
+                        var el = document.getElementById(id);
+                        if (el) el.checked = (idx < 2); // reset to cement + w/c
+                    });
+                    redraw();
+                });
+            }
+
+            resize();
+            window.addEventListener('resize', resize);
+        })();
+
+
+        /* ==============================================
+           QUIZ HANDLER
+           ============================================== */
+        window.checkQuiz = function(btn, quizId) {
+            var block = document.getElementById(quizId);
+            if (!block || block.classList.contains('answered')) return;
+            block.classList.add('answered');
+
+            var isCorrect = btn.getAttribute('data-correct') === 'true';
+            btn.classList.add(isCorrect ? 'selected-correct' : 'selected-wrong');
+
+            // Highlight correct answer
+            var options = block.querySelectorAll('.quiz-option');
+            options.forEach(function(opt) {
+                opt.disabled = true;
+                if (opt.getAttribute('data-correct') === 'true') {
+                    opt.classList.add('reveal-correct');
+                }
+            });
+
+            var correctEl = document.getElementById(quizId + '-correct');
+            var wrongEl = document.getElementById(quizId + '-wrong');
+            if (isCorrect && correctEl) correctEl.style.display = 'block';
+            else if (!isCorrect && wrongEl) wrongEl.style.display = 'block';
+        };
+
+    })();
+    </script>
+
+</body>
+</html>

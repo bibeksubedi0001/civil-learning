@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.2 Convolution Operation | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Learn the convolution operation: sliding kernels over images, element-wise multiplication and summation, padding, stride, and common filters like Sobel edge detection. Interactive demos with civil engineering examples.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/chapters.css">
+</head>
+<body>
+
+    <!-- ============ SCROLL PROGRESS BAR ============ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ============ NAVIGATION ============ -->
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI/ML for Civil Engineers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="index.html" class="nav-link active"><i class="fa-solid fa-book"></i> Chapter 4</a>
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-list"></i> Sub-chapters</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============ CHAPTER HERO ============ -->
+    <header class="chapter-hero">
+        <div class="chapter-hero__background">
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        </div>
+        <div class="chapter-hero__content">
+            <div class="chapter-hero__badge">
+                <i class="fa-solid fa-graduation-cap"></i> Chapter 4 &mdash; Sub-chapter 4.2
+            </div>
+            <h1 class="chapter-hero__title">The Convolution Operation</h1>
+            <p class="chapter-hero__subtitle">
+                The mathematical heart of every CNN &mdash; a small sliding window that
+                transforms a raw grid of pixel values into a meaningful feature map, one
+                element-wise multiply-and-sum at a time.
+            </p>
+            <div class="chapter-hero__meta">
+                <span><i class="fa-solid fa-clock"></i> 35 min read</span>
+                <span><i class="fa-solid fa-flask"></i> 2 interactive demos</span>
+                <span><i class="fa-solid fa-circle-question"></i> 4 quiz questions</span>
+            </div>
+        </div>
+        <div class="chapter-hero__scroll-cue">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <!-- ============ MAIN CONTENT ============ -->
+    <main class="chapter-content">
+
+        <!-- ==========================================
+             SECTION 1: OPENING HOOK
+             ========================================== -->
+        <section class="ch-section" id="opening-hook">
+            <div class="section-container">
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h2>From Raw Numbers to Meaningful Features</h2>
+                        <p>
+                            In Sub-chapter 4.1 you learned that every digital image is a
+                            rectangular grid of numbers. A 640&times;480 grayscale photo of a
+                            concrete surface is 307,200 numbers. A crack running across that
+                            surface is not labelled anywhere in those numbers &mdash; it is just
+                            a narrow band of darker values surrounded by lighter ones.
+                        </p>
+                        <p>
+                            How does a neural network find that crack? It cannot examine the entire
+                            image at once the way you do. Instead, it uses a brilliantly simple
+                            trick: a tiny sliding window &mdash; called a <strong>kernel</strong>
+                            or <strong>filter</strong> &mdash; that scans across the image, one
+                            small patch at a time, performing the same arithmetic at every position.
+                            This operation is called <strong>convolution</strong>, and it is the
+                            single most important building block of convolutional neural networks.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    Convolution is not unique to deep learning. Signal processing engineers have
+                    used convolution for decades to blur, sharpen, and detect edges in images.
+                    What CNNs added was the ability to <em>learn</em> the optimal kernel values
+                    from data, rather than requiring a human to hand-craft them. But the
+                    underlying mathematics is exactly the same.
+                </p>
+                <p>
+                    In this sub-chapter we will build the convolution operation from first
+                    principles. We will walk through the sliding-window mechanics step by step,
+                    understand padding and stride, explore classic hand-crafted kernels (edge
+                    detection, blur, sharpen), and see how CNNs learn their own kernels. Along
+                    the way, two interactive demos will let you watch convolution happen in real
+                    time and experiment with different filters on simulated structural images.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Prerequisites</span>
+                    </div>
+                    <p>
+                        This sub-chapter builds directly on
+                        <strong>Sub-chapter 4.1: Images as Data</strong>. You should be comfortable
+                        with the idea of pixel grids, grayscale values (0&ndash;255), and the
+                        concept of an image as a 2D array of numbers. No calculus or linear algebra
+                        beyond basic multiplication and addition is needed.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 2: WHAT IS CONVOLUTION?
+             ========================================== -->
+        <section class="ch-section" id="what-is-convolution">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    What Is Convolution?
+                </h2>
+
+                <p>
+                    At its core, convolution is a mathematical operation that combines two arrays
+                    of numbers to produce a third. In the context of image processing, those two
+                    arrays are:
+                </p>
+
+                <ol style="margin:12px 0 20px 20px; line-height:2;">
+                    <li>
+                        <strong>The input image</strong> &mdash; a 2D grid of pixel values (e.g.
+                        a 5&times;5 grayscale patch).
+                    </li>
+                    <li>
+                        <strong>The kernel (filter)</strong> &mdash; a much smaller 2D grid of
+                        weights (typically 3&times;3 or 5&times;5).
+                    </li>
+                </ol>
+
+                <p>
+                    The output is called a <strong>feature map</strong> (or activation map). Every
+                    value in the feature map is produced by placing the kernel on top of a region
+                    of the input, multiplying each overlapping pair of values, and summing the
+                    results. The kernel then slides one position to the right, and the process
+                    repeats. When it reaches the right edge, it drops down one row and starts
+                    again from the left.
+                </p>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Convolution is like a site inspector with a magnifying
+                            glass.</strong> Imagine you are inspecting a large concrete wall for
+                            hairline cracks. You hold a small magnifying glass (the kernel) and
+                            examine a small patch of the wall at a time. At each position you assess
+                            whether the pattern of light and dark under your magnifying glass
+                            matches a "crack-like" pattern. You then move the glass a small step to
+                            the right and repeat. When you reach the edge of the wall, you drop down
+                            one row and start again.
+                        </p>
+                        <p>
+                            The result of your inspection is a map of the wall showing where crack-
+                            like patterns were detected &mdash; exactly analogous to the feature
+                            map produced by convolution. The magnifying glass never changes; it
+                            applies the same assessment criteria everywhere. This is called
+                            <strong>weight sharing</strong>, and it is one of the key reasons CNNs
+                            are so efficient.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Step-by-Step Mechanics</h3>
+
+                <p>
+                    Let us work through a concrete example. Suppose we have a 5&times;5 input
+                    image and a 3&times;3 kernel. Here is the procedure:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Convolution in Four Steps</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Place the kernel</strong> on the top-left corner of the
+                                input image so the 3&times;3 kernel overlaps the top-left 3&times;3
+                                region of the image.
+                            </li>
+                            <li>
+                                <strong>Element-wise multiply</strong>: multiply each kernel weight
+                                by the corresponding pixel value beneath it. This gives 9 products
+                                (for a 3&times;3 kernel).
+                            </li>
+                            <li>
+                                <strong>Sum all products</strong>: add the 9 products together to
+                                get a single number. This number is written into the corresponding
+                                position of the output feature map.
+                            </li>
+                            <li>
+                                <strong>Slide the kernel</strong> one position to the right and
+                                repeat steps 1&ndash;3. When you reach the right edge, move down
+                                one row and start from the left again. Continue until every valid
+                                position has been processed.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    With a 5&times;5 input and a 3&times;3 kernel (no padding, stride 1), the
+                    kernel can be placed in 3 horizontal positions and 3 vertical positions,
+                    producing a 3&times;3 output feature map. The general formula for the output
+                    size is:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Output Size Formula</h3>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; text-align:center; margin:16px 0;">
+                            output_size = (input_size &minus; kernel_size) / stride + 1
+                        </p>
+                        <p>
+                            For our example: (5 &minus; 3) / 1 + 1 = 3. So a 5&times;5 input with
+                            a 3&times;3 kernel at stride 1 produces a 3&times;3 output.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>A Worked Numerical Example</h3>
+
+                <p>
+                    Consider the following 5&times;5 grayscale patch (perhaps from a concrete
+                    surface photograph) and a 3&times;3 edge-detection kernel:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Numerical Walkthrough</h3>
+                        <p><strong>Input patch (5&times;5):</strong></p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:8px 0;">
+ 120  130  125  128  132
+ 122  135  140  138  130
+ 118   20   15   22  128
+ 125   18   12   20  135
+ 130  128  132  130  128</pre>
+                        <p>
+                            The low values (12&ndash;22) in the centre-left represent a dark crack
+                            against a lighter concrete background (120&ndash;140).
+                        </p>
+                        <p><strong>Kernel (3&times;3, horizontal edge):</strong></p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:8px 0;">
+ -1  -1  -1
+  0   0   0
+  1   1   1</pre>
+                        <p><strong>Top-left position calculation:</strong></p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.9;">
+                            (-1&times;120) + (-1&times;130) + (-1&times;125)<br>
+                            + (0&times;122) + (0&times;135) + (0&times;140)<br>
+                            + (1&times;118) + (1&times;20) + (1&times;15)<br>
+                            = -375 + 0 + 153 = <strong>&minus;222</strong>
+                        </p>
+                        <p>
+                            A large negative value indicates a strong horizontal edge (transition
+                            from bright above to dark below). The kernel has detected the top edge
+                            of the crack region.
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    This same multiply-and-sum operation is repeated at every position the kernel
+                    can occupy. Regions with no edge produce values near zero; regions with strong
+                    edges produce large positive or negative values. The resulting feature map is
+                    essentially a "crack presence" map &mdash; exactly the kind of signal a CNN
+                    needs to begin classifying structural damage.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 3: PADDING AND STRIDE
+             ========================================== -->
+        <section class="ch-section" id="padding-and-stride">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-arrows-left-right-to-line"></i>
+                    Padding and Stride
+                </h2>
+
+                <p>
+                    Two parameters control how the kernel slides across the input and what size
+                    the output feature map will be: <strong>padding</strong> and
+                    <strong>stride</strong>.
+                </p>
+
+                <h3>Padding: Preserving Spatial Dimensions</h3>
+
+                <p>
+                    You may have noticed that with a 3&times;3 kernel and no padding, a 5&times;5
+                    input shrinks to 3&times;3. Each convolution layer loses pixels around the
+                    border. In a deep network with many layers, this cumulative shrinkage would
+                    quickly reduce the feature map to a tiny remnant.
+                </p>
+
+                <p>
+                    <strong>Padding</strong> solves this by adding extra rows and columns of
+                    zeros (or other values) around the border of the input before convolution.
+                    The two most common padding modes are:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-border-none"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Valid vs Same Padding</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Valid padding (no padding)</strong> &mdash; the kernel is
+                                only placed where it fully overlaps the input. Output is smaller
+                                than the input. Output size:
+                                <span style="font-family:'JetBrains Mono',monospace;">(n &minus; k) / s + 1</span>.
+                            </li>
+                            <li>
+                                <strong>Same padding</strong> &mdash; enough zeros are added around
+                                the border so that the output has the <em>same</em> spatial
+                                dimensions as the input (when stride = 1). For a 3&times;3 kernel,
+                                this means adding 1 row/column of zeros on each side.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>Padding is like extending a survey grid beyond the site
+                            boundary.</strong> When your geotechnical survey grid reaches the edge
+                            of the site, you cannot sample points beyond the boundary. But if you
+                            <em>assume</em> the ground conditions at the boundary are similar to
+                            the surrounding area (or assign a default value of zero), you can extend
+                            your analysis grid outward so that your boundary measurements still get
+                            a full neighbourhood of data. The result is a complete map that covers
+                            the same area as your original site &mdash; no edge data is lost.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Stride: Controlling the Step Size</h3>
+
+                <p>
+                    By default the kernel slides one pixel at a time (stride = 1). But we can
+                    choose to skip positions by using a larger stride. A <strong>stride of 2</strong>
+                    means the kernel jumps two pixels at a time, both horizontally and vertically,
+                    reducing the output size by roughly half in each dimension.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-shoe-prints"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Stride Effects</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Stride 1</strong>: fine-grained output, captures every
+                                position. Most common in early layers.
+                            </li>
+                            <li>
+                                <strong>Stride 2</strong>: halves the output dimensions. Used as
+                                a downsampling mechanism, sometimes replacing pooling layers.
+                            </li>
+                            <li>
+                                <strong>Stride 3+</strong>: aggressive downsampling. Rarely used
+                                except in specialised architectures.
+                            </li>
+                        </ul>
+                        <p>
+                            The generalised output size formula with padding <em>p</em> and stride
+                            <em>s</em> is:
+                        </p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:1.05rem; text-align:center; margin:12px 0;">
+                            output = floor((n + 2p &minus; k) / s) + 1
+                        </p>
+                    </div>
+                </div>
+
+                <p>
+                    For most practical CNN architectures, the early convolution layers use
+                    stride 1 with same padding (to preserve spatial resolution), while later
+                    layers may use stride 2 or pooling to progressively reduce the feature map
+                    size. We will explore pooling in detail in Sub-chapter 4.3.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 4: COMMON KERNELS
+             ========================================== -->
+        <section class="ch-section" id="common-kernels">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-filter"></i>
+                    Classic Hand-Crafted Kernels
+                </h2>
+
+                <p>
+                    Before the rise of deep learning, engineers and computer scientists manually
+                    designed convolution kernels for specific purposes. Understanding these
+                    classic kernels builds valuable intuition for what CNN-learned kernels do.
+                </p>
+
+                <h3>Edge Detection Kernels</h3>
+
+                <p>
+                    Edge detection is arguably the most important low-level operation in image
+                    analysis. Edges mark boundaries between objects, transitions in texture, and
+                    &mdash; critically for civil engineers &mdash; cracks, spalling boundaries,
+                    and joint lines in structural surfaces.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-grip-lines-vertical"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sobel Operators</h3>
+                        <p>
+                            The Sobel operator uses two 3&times;3 kernels to detect horizontal and
+                            vertical edges separately:
+                        </p>
+                        <div style="display:flex; flex-wrap:wrap; gap:32px; margin:16px 0;">
+                            <div>
+                                <p style="font-weight:600; margin-bottom:6px;">Sobel Horizontal (G<sub>x</sub>):</p>
+                                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8;">
+ -1   0   1
+ -2   0   2
+ -1   0   1</pre>
+                            </div>
+                            <div>
+                                <p style="font-weight:600; margin-bottom:6px;">Sobel Vertical (G<sub>y</sub>):</p>
+                                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8;">
+ -1  -2  -1
+  0   0   0
+  1   2   1</pre>
+                            </div>
+                        </div>
+                        <p>
+                            The horizontal Sobel kernel responds to vertical edges (intensity
+                            changes from left to right), while the vertical Sobel responds to
+                            horizontal edges (changes from top to bottom). The total edge strength
+                            at any point is often computed as
+                            <span style="font-family:'JetBrains Mono',monospace;">sqrt(G<sub>x</sub><sup>2</sup> + G<sub>y</sub><sup>2</sup>)</span>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-border-top-left"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Prewitt Operators</h3>
+                        <p>
+                            Prewitt kernels are similar to Sobel but use uniform weights instead of
+                            emphasising the centre row/column:
+                        </p>
+                        <div style="display:flex; flex-wrap:wrap; gap:32px; margin:16px 0;">
+                            <div>
+                                <p style="font-weight:600; margin-bottom:6px;">Prewitt Horizontal:</p>
+                                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8;">
+ -1   0   1
+ -1   0   1
+ -1   0   1</pre>
+                            </div>
+                            <div>
+                                <p style="font-weight:600; margin-bottom:6px;">Prewitt Vertical:</p>
+                                <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8;">
+ -1  -1  -1
+  0   0   0
+  1   1   1</pre>
+                            </div>
+                        </div>
+                        <p>
+                            Prewitt is slightly less noise-sensitive than Sobel because it does not
+                            weight the centre pixel more heavily. In practice, Sobel is more widely
+                            used, but Prewitt remains a useful reference.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Blur Kernels</h3>
+
+                <p>
+                    Blurring smooths out noise and fine detail. The simplest blur kernel is a
+                    <strong>box blur</strong> (also called an averaging filter) &mdash; every
+                    weight is equal, and the kernel sums the neighbourhood and divides by the
+                    number of elements:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Box Blur (3&times;3)</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:8px 0;">
+  1/9  1/9  1/9
+  1/9  1/9  1/9
+  1/9  1/9  1/9</pre>
+                        <p>
+                            Each output pixel is the average of its 3&times;3 neighbourhood. This
+                            reduces noise but also blurs edges. The Gaussian blur uses a bell-curve
+                            distribution of weights to prioritise nearby pixels:
+                        </p>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:8px 0;">
+  1/16  2/16  1/16
+  2/16  4/16  2/16
+  1/16  2/16  1/16</pre>
+                        <p>
+                            Gaussian blur preserves edges slightly better than box blur while still
+                            reducing high-frequency noise.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Sharpen Kernel</h3>
+
+                <p>
+                    Sharpening enhances edges and fine detail by amplifying the difference between
+                    a pixel and its neighbours:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diamond"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Sharpen (3&times;3)</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:8px 0;">
+   0  -1   0
+  -1   5  -1
+   0  -1   0</pre>
+                        <p>
+                            The centre weight (5) is much larger than the negative neighbours. This
+                            means the output amplifies differences between a pixel and its
+                            neighbours, enhancing edges and fine textures. In crack detection, a
+                            sharpen filter applied before edge detection can improve visibility of
+                            very faint hairline cracks.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Emboss Kernel</h3>
+
+                <p>
+                    Embossing creates a 3D relief effect by detecting gradients in one direction:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-cube"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Emboss (3&times;3)</h3>
+                        <pre style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.8; margin:8px 0;">
+  -2  -1   0
+  -1   1   1
+   0   1   2</pre>
+                        <p>
+                            The emboss kernel highlights directional texture by emphasising the
+                            gradient from the top-left to the bottom-right. It can be rotated to
+                            detect gradients in other directions. In structural inspection, emboss
+                            filters can reveal surface texture variations and subtle deformation
+                            patterns that are difficult to see in the original image.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Why Engineers Should Care About Classic Kernels</span>
+                    </div>
+                    <p>
+                        Understanding hand-crafted kernels is not just academic. When you visualise
+                        the kernels a CNN has learned, you will often find that the first
+                        convolutional layer has learned filters remarkably similar to Sobel, Gabor,
+                        and other classic operators. Knowing what these classical filters do helps
+                        you interpret what your neural network has discovered on its own.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 5: HOW CNNS LEARN KERNELS
+             ========================================== -->
+        <section class="ch-section" id="cnn-learns-kernels">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-brain"></i>
+                    How CNNs Learn Their Own Kernels
+                </h2>
+
+                <p>
+                    The breakthrough of convolutional neural networks is that they do not require
+                    a human to design the kernels. Instead, the kernel weights are treated as
+                    <strong>learnable parameters</strong> that are adjusted during training using
+                    backpropagation and gradient descent &mdash; the same optimisation process
+                    covered in Chapter 2.
+                </p>
+
+                <p>
+                    During training, the network sees thousands of labelled images (e.g. "cracked"
+                    vs "intact" concrete). It starts with random kernel weights and makes terrible
+                    predictions. The loss function measures how wrong the predictions are. The
+                    gradients of the loss with respect to each kernel weight tell the optimiser
+                    which direction to adjust each weight. Over many iterations, the kernels
+                    converge to patterns that extract the most useful features for the task.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>What Different Layers Learn</h3>
+                        <ul style="margin:12px 0; padding-left:20px; line-height:2;">
+                            <li>
+                                <strong>Layer 1 (early)</strong>: simple edge and texture detectors
+                                &mdash; remarkably similar to Sobel and Gabor filters.
+                            </li>
+                            <li>
+                                <strong>Layers 2&ndash;3 (middle)</strong>: combinations of edges
+                                forming corners, curves, and simple shapes.
+                            </li>
+                            <li>
+                                <strong>Layers 4+ (deep)</strong>: complex, abstract patterns
+                                specific to the task &mdash; crack-like textures, spalling patterns,
+                                reinforcement outlines.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analogy-block">
+                    <div class="analogy-block__header">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                        <span>Civil Engineering Analogy</span>
+                    </div>
+                    <div class="analogy-block__content">
+                        <p>
+                            <strong>A CNN learning kernels is like a junior inspector developing
+                            expertise.</strong> A new graduate inspecting bridges for the first
+                            time might look at everything randomly. Over time, they learn to focus
+                            on certain telltale signs: dark lines against lighter backgrounds
+                            (cracks), colour changes (corrosion), texture differences (spalling).
+                            They develop a set of mental "filters" tuned to the defects they need
+                            to find. A CNN does the same thing mathematically &mdash; it develops
+                            kernels (filters) tuned to the features that best distinguish the
+                            classes in its training data.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>Multiple Kernels Per Layer</h3>
+
+                <p>
+                    A single kernel can only detect one type of pattern (e.g. horizontal edges).
+                    To capture the full richness of an image, each convolutional layer applies
+                    <strong>many kernels in parallel</strong>. A typical first layer might have
+                    32 or 64 different 3&times;3 kernels, each producing its own feature map.
+                    The collection of feature maps stacks together to form a multi-channel
+                    output, which becomes the input to the next layer.
+                </p>
+
+                <p>
+                    This is why deep CNNs have millions of parameters &mdash; each layer has
+                    dozens to hundreds of kernels, and each kernel has its own set of learnable
+                    weights. But because each kernel is small (3&times;3 = 9 weights), the total
+                    parameter count is far smaller than what a fully connected network would
+                    require for the same input size.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-wrench"></i>
+                        <span>Key Advantages of Learned Kernels</span>
+                    </div>
+                    <ul style="margin:8px 0; padding-left:20px; line-height:2;">
+                        <li>
+                            <strong>Weight sharing:</strong> the same kernel is applied at every
+                            spatial position, so a crack detector works regardless of where the
+                            crack appears in the image.
+                        </li>
+                        <li>
+                            <strong>Translation invariance:</strong> the feature map records
+                            <em>where</em> a feature was found, not at a fixed location.
+                        </li>
+                        <li>
+                            <strong>Parameter efficiency:</strong> a 3&times;3 kernel has only 9
+                            weights, no matter how large the input image is.
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 6: CE APPLICATION — CRACK DETECTION
+             ========================================== -->
+        <section class="ch-section" id="crack-detection-application">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-building-columns"></i>
+                    Civil Engineering Focus: Edge Detection for Crack Finding
+                </h2>
+
+                <p>
+                    Let us bring the theory home with a concrete civil engineering application.
+                    Detecting cracks in concrete surfaces is one of the most active areas of
+                    AI-assisted structural inspection. Understanding convolution is essential
+                    because it is the mechanism by which a CNN processes the raw image and begins
+                    to isolate crack-like features.
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Why Edges Matter for Crack Detection</h3>
+                        <p>
+                            A crack in a concrete surface is, fundamentally, an edge &mdash; a
+                            sharp transition from the lighter concrete background to the darker
+                            crack interior. When a Sobel or similar edge-detection kernel is
+                            convolved over an image of a cracked surface, the output feature map
+                            lights up along the crack path while suppressing the uniform concrete
+                            background.
+                        </p>
+                        <p>
+                            In a CNN trained for crack detection, the first convolutional layer
+                            learns kernels very similar to Sobel operators. Deeper layers then
+                            combine these edge signals to distinguish genuine cracks from benign
+                            features like construction joints, surface staining, or casting marks.
+                        </p>
+                    </div>
+                </div>
+
+                <h3>The Processing Pipeline</h3>
+
+                <p>
+                    A simplified pipeline for CNN-based crack detection looks like this:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>From Photo to Crack Map</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Capture:</strong> photograph the concrete surface with a
+                                camera or drone.
+                            </li>
+                            <li>
+                                <strong>Preprocessing:</strong> convert to grayscale, resize to
+                                a standard dimension, normalise pixel values to 0&ndash;1.
+                            </li>
+                            <li>
+                                <strong>Convolution layers:</strong> the CNN applies learned kernels
+                                to extract edge and texture features at multiple scales.
+                            </li>
+                            <li>
+                                <strong>Classification/Segmentation:</strong> deeper layers and a
+                                final classifier decide whether each region is "cracked" or "intact"
+                                (classification) or label every pixel (segmentation).
+                            </li>
+                            <li>
+                                <strong>Output:</strong> a crack map or probability heatmap
+                                highlighting detected cracks, which the engineer can review.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    The convolution operation is the workhorse of steps 3 and 4. Without it, the
+                    network would have no mechanism to detect the local spatial patterns that
+                    distinguish cracks from background. This is why convolution is not just a
+                    mathematical curiosity &mdash; it is the operational core of every vision-
+                    based AI system used in structural engineering today.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-box__header">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                        <span>Real-World Note</span>
+                    </div>
+                    <p>
+                        Production crack-detection systems typically use pre-trained networks
+                        (like ResNet or EfficientNet) that have been fine-tuned on domain-specific
+                        datasets of concrete images. These networks have dozens of convolutional
+                        layers, each with hundreds of learned kernels. But the fundamental
+                        operation in every one of those layers is the same slide-multiply-sum
+                        process described in this sub-chapter.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 7: DEMO 1 — CONVOLUTION VISUALISER
+             ========================================== -->
+        <section class="ch-section" id="demo-convolution-visualiser">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-play-circle"></i>
+                    Interactive Demo 1: Convolution Visualiser
+                </h2>
+
+                <p>
+                    Watch the convolution operation step by step. A 3&times;3 kernel slides across
+                    a small input grid, performing the element-wise multiplication and summation at
+                    each position. The output feature map builds up in real time as the kernel
+                    moves. Use the controls to step through manually or let the animation play.
+                </p>
+
+                <div class="demo-panel" id="conv-viz-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-play-circle"></i>
+                        <span>Convolution Step-by-Step Visualiser</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <button id="conv-play" class="demo-btn" title="Play animation">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                        <button id="conv-pause" class="demo-btn" title="Pause animation">
+                            <i class="fa-solid fa-pause"></i> Pause
+                        </button>
+                        <button id="conv-step" class="demo-btn" title="Single step forward">
+                            <i class="fa-solid fa-forward-step"></i> Step
+                        </button>
+                        <button id="conv-reset" class="demo-btn" title="Reset to beginning">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <select id="conv-kernel-select" class="demo-select" title="Choose kernel">
+                            <option value="edge-h">Horizontal Edge</option>
+                            <option value="edge-v">Vertical Edge</option>
+                            <option value="sobel-x">Sobel Gx</option>
+                            <option value="sobel-y">Sobel Gy</option>
+                            <option value="sharpen">Sharpen</option>
+                            <option value="blur">Box Blur</option>
+                        </select>
+                    </div>
+                    <canvas id="conv-viz-canvas" style="width:100%; height:420px; border-radius:8px; background:var(--bg-code);"></canvas>
+                    <p id="conv-viz-info" style="margin-top:12px; font-size:0.9rem; color:var(--text-secondary); min-height:40px;">
+                        Press <strong>Play</strong> to watch the kernel slide across the input grid,
+                        or <strong>Step</strong> to advance one position at a time.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 8: DEMO 2 — KERNEL GALLERY
+             ========================================== -->
+        <section class="ch-section" id="demo-kernel-gallery">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-images"></i>
+                    Interactive Demo 2: Kernel Gallery
+                </h2>
+
+                <p>
+                    Select different kernels from the gallery and see their effect on a simulated
+                    concrete surface image. The original image (left) is processed in real time to
+                    produce the filtered output (right). Notice how edge-detection kernels
+                    highlight crack-like features while blur kernels suppress them.
+                </p>
+
+                <div class="demo-panel" id="kernel-gallery-panel">
+                    <div class="demo-panel__header">
+                        <i class="fa-solid fa-images"></i>
+                        <span>Kernel Effect Gallery &mdash; Concrete Surface</span>
+                    </div>
+                    <div class="demo-panel__controls" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <button id="kg-identity" class="demo-btn kg-btn active-kg" title="Identity (no change)">
+                            <i class="fa-solid fa-equals"></i> Identity
+                        </button>
+                        <button id="kg-edge" class="demo-btn kg-btn" title="Edge detection">
+                            <i class="fa-solid fa-grip-lines-vertical"></i> Edge Detect
+                        </button>
+                        <button id="kg-sobel" class="demo-btn kg-btn" title="Sobel operator">
+                            <i class="fa-solid fa-arrow-right-arrow-left"></i> Sobel
+                        </button>
+                        <button id="kg-blur" class="demo-btn kg-btn" title="Gaussian blur">
+                            <i class="fa-solid fa-droplet"></i> Blur
+                        </button>
+                        <button id="kg-sharpen" class="demo-btn kg-btn" title="Sharpen">
+                            <i class="fa-solid fa-diamond"></i> Sharpen
+                        </button>
+                        <button id="kg-emboss" class="demo-btn kg-btn" title="Emboss">
+                            <i class="fa-solid fa-cube"></i> Emboss
+                        </button>
+                    </div>
+                    <canvas id="kg-canvas" style="width:100%; height:400px; border-radius:8px; background:var(--bg-code);"></canvas>
+                    <div id="kg-kernel-display" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-secondary); min-height:60px;">
+                        Current kernel: Identity (no change)
+                    </div>
+                    <p id="kg-info" style="margin-top:8px; font-size:0.9rem; color:var(--text-secondary);">
+                        Click a kernel button above to see how different filters transform the
+                        simulated concrete image. The left panel shows the original; the right
+                        panel shows the convolution result.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 9: PUTTING IT ALL TOGETHER
+             ========================================== -->
+        <section class="ch-section" id="putting-it-together">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    Putting It All Together
+                </h2>
+
+                <p>
+                    Let us summarise the key ideas from this sub-chapter before moving on:
+                </p>
+
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Key Takeaways</h3>
+                        <ol style="margin:8px 0; padding-left:20px; line-height:2.2;">
+                            <li>
+                                <strong>Convolution</strong> is a slide-multiply-sum operation that
+                                transforms a raw image into a feature map highlighting specific
+                                patterns.
+                            </li>
+                            <li>
+                                The <strong>kernel</strong> (filter) is a small grid of weights
+                                that determines what pattern the convolution detects.
+                            </li>
+                            <li>
+                                <strong>Padding</strong> (same vs valid) controls whether the
+                                output preserves the input dimensions or shrinks.
+                            </li>
+                            <li>
+                                <strong>Stride</strong> controls the step size and therefore the
+                                output resolution.
+                            </li>
+                            <li>
+                                Classic kernels (Sobel, Prewitt, blur, sharpen, emboss) demonstrate
+                                what different patterns of weights detect.
+                            </li>
+                            <li>
+                                CNNs <strong>learn</strong> their kernel weights from data, often
+                                rediscovering classical edge detectors in early layers.
+                            </li>
+                            <li>
+                                For civil engineers, convolution is the mechanism that enables a
+                                network to detect cracks, edges, and texture patterns in structural
+                                images.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <p>
+                    In the next sub-chapter we will explore <strong>pooling and stride</strong>
+                    &mdash; the operations that reduce the spatial dimensions of feature maps and
+                    build progressively more abstract representations. Together with convolution,
+                    pooling completes the core building blocks of every CNN architecture.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SECTION 10: QUIZ
+             ========================================== -->
+        <section class="ch-section" id="quiz-section">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Knowledge Check
+                </h2>
+
+                <p>
+                    Test your understanding of the convolution operation with these four
+                    questions.
+                </p>
+
+                <!-- QUIZ 1 -->
+                <div class="quiz-block" id="quiz-1">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 1 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A 7&times;7 input image is convolved with a 3&times;3 kernel using
+                        stride 1 and no padding (valid). What is the output size?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 7 &times; 7
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 5 &times; 5
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 3 &times; 3
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-1')">
+                            <i class="fa-solid fa-circle"></i> 4 &times; 4
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-1-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Using the formula: (7 &minus; 3) / 1 + 1 = 5.
+                        The output is 5&times;5.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-1-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Apply the formula: output = (input &minus;
+                        kernel) / stride + 1 = (7 &minus; 3) / 1 + 1 = 5. Output is 5&times;5.
+                    </div>
+                </div>
+
+                <!-- QUIZ 2 -->
+                <div class="quiz-block" id="quiz-2">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 2 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        In a convolution step, after overlaying the 3&times;3 kernel on a
+                        3&times;3 image patch, what operation produces the single output value?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Matrix multiplication
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Cross product
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Element-wise multiply then sum
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-2')">
+                            <i class="fa-solid fa-circle"></i> Average of all values
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-2-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Each kernel weight is multiplied by the
+                        corresponding pixel, and all 9 products are summed into a single value.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-2-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Convolution performs element-wise multiplication
+                        (not matrix multiplication) of the kernel and the image patch, then sums
+                        all products to produce one number.
+                    </div>
+                </div>
+
+                <!-- QUIZ 3 -->
+                <div class="quiz-block" id="quiz-3">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 3 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        What is the purpose of "same" padding in convolution?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> To double the output dimensions
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> To make the kernel the same size as the input
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> To preserve the input spatial dimensions in the output
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-3')">
+                            <i class="fa-solid fa-circle"></i> To remove all zero-valued pixels
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-3-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Same padding adds zeros around the border so
+                        that the output feature map has the same width and height as the input
+                        (when stride = 1).
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-3-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> "Same" padding means the output has the
+                        <em>same</em> spatial dimensions as the input. It achieves this by adding
+                        rows and columns of zeros around the input border.
+                    </div>
+                </div>
+
+                <!-- QUIZ 4 -->
+                <div class="quiz-block" id="quiz-4">
+                    <div class="quiz-block__header">
+                        <i class="fa-solid fa-circle-question"></i>
+                        <span>Question 4 of 4</span>
+                    </div>
+                    <p class="quiz-question">
+                        A Sobel edge-detection kernel applied to a concrete surface image would
+                        most strongly respond to which feature?
+                    </p>
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> Uniform grey areas of intact concrete
+                        </button>
+                        <button class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> Sharp transitions like cracks and edges
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> Colour hue variations
+                        </button>
+                        <button class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz-4')">
+                            <i class="fa-solid fa-circle"></i> Overall average brightness of the image
+                        </button>
+                    </div>
+                    <div class="quiz-feedback correct" id="quiz-4-correct" style="display:none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <strong>Correct!</strong> Sobel operators detect intensity gradients
+                        &mdash; the sharp transitions from bright to dark that characterise edges,
+                        cracks, and boundaries.
+                    </div>
+                    <div class="quiz-feedback wrong" id="quiz-4-wrong" style="display:none;">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <strong>Not quite.</strong> Edge-detection kernels like Sobel respond to
+                        sharp changes in pixel intensity &mdash; exactly what occurs at crack
+                        boundaries, where dark crack pixels meet lighter concrete pixels.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ CHAPTER NAV FOOTER ============ -->
+    <nav class="chapter-nav-footer">
+        <a href="sub1.html" class="chapter-nav__link prev">
+            <i class="fa-solid fa-arrow-left"></i> 4.1 Images as Data
+        </a>
+        <a href="sub3.html" class="chapter-nav__link next">
+            4.3 Pooling &amp; Stride <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </nav>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>
+                <i class="fa-solid fa-graduation-cap"></i>
+                Civil Engineer's Guide to AI &amp; Machine Learning
+            </p>
+            <p class="footer-sub">
+                Building the future with intelligent infrastructure.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="../js/theme.js"></script>
+    <script src="../js/sub-common.js"></script>
+
+    <!-- ============ INLINE INITIALISATION SCRIPT ============ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var Utils = window.ChapterUtils || {};
+        var $ = Utils.$ || function(s){ return document.querySelector(s); };
+        var $$ = Utils.$$ || function(s){ return document.querySelectorAll(s); };
+        var getColors = Utils.getColors || function(){ return { TEAL:'#2dd4bf', CYAN:'#22d3ee', AMBER:'#fbbf24', RED:'#ef4444', GREEN:'#22c55e', BG:'#0a0a0f', TEXT:'rgba(255,255,255,0.7)', DIM:'rgba(255,255,255,0.08)', GRID:'rgba(255,255,255,0.03)', STROKE:'rgba(255,255,255,0.1)', WHITE:'#fff', MUTED:'rgba(255,255,255,0.4)' }; };
+        var initCanvas = Utils.initCanvas || function(c){ var d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;var x=c.getContext('2d');x.scale(d,d);return{ctx:x,w:r.width,h:r.height}; };
+
+        /* ==============================================
+           HERO CANVAS — ANIMATED SLIDING KERNEL
+           ============================================== */
+        (function initHeroCanvas() {
+            var canvas = document.getElementById('hero-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+            var gridCols = 0, gridRows = 0;
+            var cellSize = 36;
+            var kernelRow = 0, kernelCol = 0;
+            var tickCounter = 0;
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                gridCols = Math.ceil(w / cellSize) + 1;
+                gridRows = Math.ceil(h / cellSize) + 1;
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                /* Draw background grid cells */
+                for (var r = 0; r < gridRows; r++) {
+                    for (var c = 0; c < gridCols; c++) {
+                        var x = c * cellSize;
+                        var y = r * cellSize;
+                        var val = ((r * 7 + c * 13 + 42) % 200) + 28;
+                        var alpha = 0.04 + (val / 255) * 0.08;
+                        ctx.fillStyle = 'rgba(0,212,170,' + alpha + ')';
+                        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+                    }
+                }
+
+                /* Draw sliding 3x3 kernel highlight */
+                var kx = (kernelCol % Math.max(1, gridCols - 2)) * cellSize;
+                var ky = (kernelRow % Math.max(1, gridRows - 2)) * cellSize;
+                ctx.strokeStyle = colors.TEAL;
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(kx, ky, cellSize * 3, cellSize * 3);
+                ctx.fillStyle = 'rgba(0,212,170,0.08)';
+                ctx.fillRect(kx, ky, cellSize * 3, cellSize * 3);
+
+                /* Advance kernel position */
+                tickCounter++;
+                if (tickCounter % 12 === 0) {
+                    kernelCol++;
+                    if (kernelCol >= gridCols - 2) {
+                        kernelCol = 0;
+                        kernelRow++;
+                        if (kernelRow >= gridRows - 2) {
+                            kernelRow = 0;
+                        }
+                    }
+                }
+            }
+
+            function loop() {
+                draw();
+                requestAnimationFrame(loop);
+            }
+
+            resize();
+            loop();
+            window.addEventListener('resize', resize);
+
+            var themeObs = new MutationObserver(function () { resize(); });
+            themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        })();
+
+        /* ==============================================
+           DEMO 1: CONVOLUTION VISUALISER
+           ============================================== */
+        (function initConvolutionViz() {
+            var canvas = document.getElementById('conv-viz-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+
+            /* 7x7 input grid simulating a concrete patch with a vertical crack */
+            var inputGrid = [
+                [120, 130, 125, 20, 128, 132, 126],
+                [122, 135, 140, 18, 138, 130, 124],
+                [118, 128, 132, 15, 130, 135, 120],
+                [125, 130, 128, 12, 125, 132, 128],
+                [130, 132, 135, 14, 128, 130, 125],
+                [128, 126, 130, 18, 132, 128, 130],
+                [124, 130, 128, 20, 130, 135, 126]
+            ];
+            var gridSize = 7;
+
+            /* Kernel definitions */
+            var kernels = {
+                'edge-h':  { name: 'Horizontal Edge', k: [[-1,-1,-1],[0,0,0],[1,1,1]] },
+                'edge-v':  { name: 'Vertical Edge',   k: [[-1,0,1],[-1,0,1],[-1,0,1]] },
+                'sobel-x': { name: 'Sobel Gx',        k: [[-1,0,1],[-2,0,2],[-1,0,1]] },
+                'sobel-y': { name: 'Sobel Gy',        k: [[-1,-2,-1],[0,0,0],[1,2,1]] },
+                'sharpen': { name: 'Sharpen',          k: [[0,-1,0],[-1,5,-1],[0,-1,0]] },
+                'blur':    { name: 'Box Blur',         k: [[1,1,1],[1,1,1],[1,1,1]] }
+            };
+            var currentKernel = 'edge-h';
+            var kSize = 3;
+
+            /* Output grid (5x5 for valid convolution on 7x7 with 3x3) */
+            var outSize = gridSize - kSize + 1; /* 5 */
+            var outputGrid = [];
+            for (var ii = 0; ii < outSize; ii++) {
+                outputGrid.push(new Array(outSize).fill(null));
+            }
+
+            /* Animation state */
+            var curRow = 0, curCol = 0;
+            var animating = false;
+            var animInterval = null;
+            var completed = false;
+
+            function computeConvAt(r, c) {
+                var k = kernels[currentKernel].k;
+                var sum = 0;
+                for (var kr = 0; kr < kSize; kr++) {
+                    for (var kc = 0; kc < kSize; kc++) {
+                        sum += inputGrid[r + kr][c + kc] * k[kr][kc];
+                    }
+                }
+                /* For blur kernel, normalize */
+                if (currentKernel === 'blur') sum = Math.round(sum / 9);
+                return sum;
+            }
+
+            function resetState() {
+                curRow = 0; curCol = 0; completed = false;
+                for (var r = 0; r < outSize; r++) {
+                    for (var c = 0; c < outSize; c++) {
+                        outputGrid[r][c] = null;
+                    }
+                }
+            }
+
+            function stepForward() {
+                if (completed) return;
+                outputGrid[curRow][curCol] = computeConvAt(curRow, curCol);
+                curCol++;
+                if (curCol >= outSize) {
+                    curCol = 0;
+                    curRow++;
+                    if (curRow >= outSize) {
+                        completed = true;
+                        curRow = outSize - 1;
+                        curCol = outSize - 1;
+                        if (animating) stopAnim();
+                    }
+                }
+                draw();
+                updateInfo();
+            }
+
+            function startAnim() {
+                if (animating) return;
+                if (completed) resetState();
+                animating = true;
+                animInterval = setInterval(stepForward, 450);
+            }
+
+            function stopAnim() {
+                animating = false;
+                if (animInterval) { clearInterval(animInterval); animInterval = null; }
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                draw();
+            }
+
+            function updateInfo() {
+                var el = document.getElementById('conv-viz-info');
+                if (!el) return;
+                if (completed) {
+                    el.innerHTML = '<i class="fa-solid fa-check-circle" style="color:var(--accent-success);"></i> ' +
+                        'Convolution complete! The <strong>' + kernels[currentKernel].name +
+                        '</strong> kernel has been applied to all 25 positions, producing a 5&times;5 output feature map.';
+                } else {
+                    var val = outputGrid[curRow] && outputGrid[curRow][curCol] !== null
+                        ? outputGrid[curRow][curCol]
+                        : (curRow < outSize && curCol < outSize ? computeConvAt(curRow, curCol) : '');
+                    el.innerHTML = 'Kernel: <strong>' + kernels[currentKernel].name +
+                        '</strong> | Position: (' + curRow + ', ' + curCol +
+                        ') | Next output value: <strong>' + val + '</strong>';
+                }
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                var pad = 16;
+                var totalCellArea = w - pad * 3;
+                var inputAreaW = totalCellArea * 0.42;
+                var kernelAreaW = totalCellArea * 0.18;
+                var outputAreaW = totalCellArea * 0.40;
+
+                var maxCellH = (h - pad * 2 - 50) / gridSize;
+                var cellInput = Math.min(inputAreaW / gridSize, maxCellH);
+                var cellKernel = Math.min(kernelAreaW / kSize, maxCellH);
+                var cellOutput = Math.min(outputAreaW / outSize, maxCellH);
+
+                cellInput = Math.floor(Math.min(cellInput, 52));
+                cellKernel = Math.floor(Math.min(cellKernel, 52));
+                cellOutput = Math.floor(Math.min(cellOutput, 52));
+
+                /* Positions */
+                var inputX = pad;
+                var inputY = 44;
+                var kernelX = inputX + gridSize * cellInput + pad;
+                var kernelY = inputY + (gridSize * cellInput - kSize * cellKernel) / 2;
+                var outputX = kernelX + kSize * cellKernel + pad;
+                var outputY = inputY + (gridSize * cellInput - outSize * cellOutput) / 2;
+
+                /* Labels */
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = colors.TEXT;
+                ctx.fillText('Input (7x7)', inputX + gridSize * cellInput / 2, 24);
+                ctx.fillText('Kernel (3x3)', kernelX + kSize * cellKernel / 2, 24);
+                ctx.fillText('Output (5x5)', outputX + outSize * cellOutput / 2, 24);
+
+                /* Draw input grid */
+                for (var r = 0; r < gridSize; r++) {
+                    for (var c = 0; c < gridSize; c++) {
+                        var x = inputX + c * cellInput;
+                        var y = inputY + r * cellInput;
+                        var v = inputGrid[r][c];
+                        var brightness = v / 255;
+
+                        /* Cell background */
+                        ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+                        ctx.fillRect(x + 1, y + 1, cellInput - 2, cellInput - 2);
+
+                        /* Cell border */
+                        ctx.strokeStyle = colors.STROKE;
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(x + 1, y + 1, cellInput - 2, cellInput - 2);
+
+                        /* Cell value text */
+                        ctx.font = '500 ' + Math.max(9, cellInput * 0.26) + 'px JetBrains Mono, monospace';
+                        ctx.fillStyle = brightness > 0.5 ? '#000' : '#fff';
+                        ctx.fillText(v.toString(), x + cellInput / 2, y + cellInput / 2);
+                    }
+                }
+
+                /* Highlight kernel overlay on input */
+                if (!completed) {
+                    var hlX = inputX + curCol * cellInput;
+                    var hlY = inputY + curRow * cellInput;
+                    ctx.strokeStyle = colors.TEAL;
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeRect(hlX - 1, hlY - 1, kSize * cellInput + 2, kSize * cellInput + 2);
+                    ctx.fillStyle = 'rgba(0,212,170,0.12)';
+                    ctx.fillRect(hlX, hlY, kSize * cellInput, kSize * cellInput);
+                }
+
+                /* Draw kernel grid */
+                var kData = kernels[currentKernel].k;
+                for (var kr = 0; kr < kSize; kr++) {
+                    for (var kc = 0; kc < kSize; kc++) {
+                        var kx = kernelX + kc * cellKernel;
+                        var ky = kernelY + kr * cellKernel;
+                        var kv = kData[kr][kc];
+
+                        if (kv > 0) ctx.fillStyle = 'rgba(0,212,170,0.25)';
+                        else if (kv < 0) ctx.fillStyle = 'rgba(239,68,68,0.25)';
+                        else ctx.fillStyle = colors.DIM;
+                        ctx.fillRect(kx + 1, ky + 1, cellKernel - 2, cellKernel - 2);
+
+                        ctx.strokeStyle = colors.STROKE;
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(kx + 1, ky + 1, cellKernel - 2, cellKernel - 2);
+
+                        ctx.font = '600 ' + Math.max(10, cellKernel * 0.32) + 'px JetBrains Mono, monospace';
+                        ctx.fillStyle = colors.WHITE;
+                        ctx.fillText(kv.toString(), kx + cellKernel / 2, ky + cellKernel / 2);
+                    }
+                }
+
+                /* Draw output grid */
+                /* Find min/max for colour mapping */
+                var allOut = [];
+                for (var or2 = 0; or2 < outSize; or2++) {
+                    for (var oc2 = 0; oc2 < outSize; oc2++) {
+                        if (outputGrid[or2][oc2] !== null) allOut.push(outputGrid[or2][oc2]);
+                    }
+                }
+                var oMin = allOut.length ? Math.min.apply(null, allOut) : 0;
+                var oMax = allOut.length ? Math.max.apply(null, allOut) : 1;
+                if (oMax === oMin) oMax = oMin + 1;
+
+                for (var or3 = 0; or3 < outSize; or3++) {
+                    for (var oc3 = 0; oc3 < outSize; oc3++) {
+                        var ox = outputX + oc3 * cellOutput;
+                        var oy = outputY + or3 * cellOutput;
+                        var ov = outputGrid[or3][oc3];
+
+                        if (ov !== null) {
+                            var norm = (ov - oMin) / (oMax - oMin);
+                            var g = Math.round(norm * 255);
+                            ctx.fillStyle = 'rgb(' + g + ',' + g + ',' + g + ')';
+                        } else {
+                            ctx.fillStyle = colors.DIM;
+                        }
+                        ctx.fillRect(ox + 1, oy + 1, cellOutput - 2, cellOutput - 2);
+
+                        ctx.strokeStyle = colors.STROKE;
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(ox + 1, oy + 1, cellOutput - 2, cellOutput - 2);
+
+                        if (ov !== null) {
+                            ctx.font = '500 ' + Math.max(9, cellOutput * 0.24) + 'px JetBrains Mono, monospace';
+                            var nb = g / 255;
+                            ctx.fillStyle = nb > 0.5 ? '#000' : '#fff';
+                            ctx.fillText(ov.toString(), ox + cellOutput / 2, oy + cellOutput / 2);
+                        }
+                    }
+                }
+
+                /* Arrow between input and kernel */
+                var arrowY = inputY + gridSize * cellInput / 2;
+                ctx.strokeStyle = colors.MUTED;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(inputX + gridSize * cellInput + 4, arrowY);
+                ctx.lineTo(kernelX - 4, arrowY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(kernelX - 4, arrowY);
+                ctx.lineTo(kernelX - 12, arrowY - 4);
+                ctx.lineTo(kernelX - 12, arrowY + 4);
+                ctx.closePath();
+                ctx.fillStyle = colors.MUTED;
+                ctx.fill();
+
+                /* Arrow between kernel and output */
+                ctx.beginPath();
+                ctx.moveTo(kernelX + kSize * cellKernel + 4, arrowY);
+                ctx.lineTo(outputX - 4, arrowY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(outputX - 4, arrowY);
+                ctx.lineTo(outputX - 12, arrowY - 4);
+                ctx.lineTo(outputX - 12, arrowY + 4);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            /* Button handlers */
+            var btnPlay  = document.getElementById('conv-play');
+            var btnPause = document.getElementById('conv-pause');
+            var btnStep  = document.getElementById('conv-step');
+            var btnReset = document.getElementById('conv-reset');
+            var selectKernel = document.getElementById('conv-kernel-select');
+
+            if (btnPlay)  btnPlay.addEventListener('click', startAnim);
+            if (btnPause) btnPause.addEventListener('click', stopAnim);
+            if (btnStep)  btnStep.addEventListener('click', function () { stopAnim(); stepForward(); });
+            if (btnReset) btnReset.addEventListener('click', function () { stopAnim(); resetState(); draw(); updateInfo(); });
+            if (selectKernel) selectKernel.addEventListener('change', function () {
+                currentKernel = this.value;
+                stopAnim();
+                resetState();
+                draw();
+                updateInfo();
+            });
+
+            var themeObs1 = new MutationObserver(function () { resize(); });
+            themeObs1.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            resize();
+            updateInfo();
+            window.addEventListener('resize', function () { resize(); });
+        })();
+
+        /* ==============================================
+           DEMO 2: KERNEL GALLERY
+           ============================================== */
+        (function initKernelGallery() {
+            var canvas = document.getElementById('kg-canvas');
+            if (!canvas) return;
+
+            var ctx, w, h;
+
+            /* Simulated concrete surface: a 64x64 grayscale grid with cracks */
+            var imgSize = 64;
+            var concreteImg = [];
+            var filteredImg = [];
+
+            function generateConcreteImage() {
+                concreteImg = [];
+                /* Base: random concrete texture 120-180 */
+                for (var r = 0; r < imgSize; r++) {
+                    var row = [];
+                    for (var c = 0; c < imgSize; c++) {
+                        var base = 130 + Math.round(Math.sin(r * 0.3) * 15 + Math.cos(c * 0.4) * 10);
+                        base += Math.round((Math.random() - 0.5) * 30);
+                        row.push(Math.max(0, Math.min(255, base)));
+                    }
+                    concreteImg.push(row);
+                }
+
+                /* Add vertical crack near column 20 */
+                for (var r2 = 5; r2 < 58; r2++) {
+                    var cCol = 20 + Math.round(Math.sin(r2 * 0.15) * 2);
+                    for (var dc = -1; dc <= 1; dc++) {
+                        var cc = cCol + dc;
+                        if (cc >= 0 && cc < imgSize) {
+                            concreteImg[r2][cc] = 15 + Math.round(Math.random() * 15);
+                        }
+                    }
+                }
+
+                /* Add horizontal crack near row 42 */
+                for (var c2 = 10; c2 < 55; c2++) {
+                    var cRow = 42 + Math.round(Math.sin(c2 * 0.12) * 1);
+                    for (var dr = -1; dr <= 0; dr++) {
+                        var rr = cRow + dr;
+                        if (rr >= 0 && rr < imgSize) {
+                            concreteImg[rr][c2] = 10 + Math.round(Math.random() * 12);
+                        }
+                    }
+                }
+
+                /* Add diagonal hairline crack */
+                for (var i = 0; i < 30; i++) {
+                    var dr2 = 8 + i;
+                    var dc2 = 40 + Math.round(i * 0.7);
+                    if (dr2 < imgSize && dc2 < imgSize) {
+                        concreteImg[dr2][dc2] = 20 + Math.round(Math.random() * 10);
+                        if (dc2 + 1 < imgSize) concreteImg[dr2][dc2 + 1] = 25 + Math.round(Math.random() * 10);
+                    }
+                }
+            }
+
+            /* Kernel definitions */
+            var kGallery = {
+                'identity': { name: 'Identity (no change)', k: [[0,0,0],[0,1,0],[0,0,0]], norm: 1 },
+                'edge':     { name: 'Edge Detection',       k: [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]], norm: 1 },
+                'sobel':    { name: 'Sobel (|Gx|+|Gy|)',    k: null, norm: 1, special: 'sobel' },
+                'blur':     { name: 'Gaussian Blur',         k: [[1,2,1],[2,4,2],[1,2,1]], norm: 16 },
+                'sharpen':  { name: 'Sharpen',               k: [[0,-1,0],[-1,5,-1],[0,-1,0]], norm: 1 },
+                'emboss':   { name: 'Emboss',                k: [[-2,-1,0],[-1,1,1],[0,1,2]], norm: 1 }
+            };
+
+            var currentFilter = 'identity';
+
+            function applyKernel(filterKey) {
+                filteredImg = [];
+                var fObj = kGallery[filterKey];
+
+                for (var r = 0; r < imgSize; r++) {
+                    var row = [];
+                    for (var c = 0; c < imgSize; c++) {
+                        if (r === 0 || r === imgSize - 1 || c === 0 || c === imgSize - 1) {
+                            row.push(concreteImg[r][c]);
+                            continue;
+                        }
+
+                        if (fObj.special === 'sobel') {
+                            /* Sobel: compute |Gx| + |Gy| */
+                            var sobelX = [[-1,0,1],[-2,0,2],[-1,0,1]];
+                            var sobelY = [[-1,-2,-1],[0,0,0],[1,2,1]];
+                            var gx = 0, gy = 0;
+                            for (var kr = -1; kr <= 1; kr++) {
+                                for (var kc = -1; kc <= 1; kc++) {
+                                    var pv = concreteImg[r + kr][c + kc];
+                                    gx += pv * sobelX[kr + 1][kc + 1];
+                                    gy += pv * sobelY[kr + 1][kc + 1];
+                                }
+                            }
+                            row.push(Math.min(255, Math.abs(gx) + Math.abs(gy)));
+                        } else {
+                            var k = fObj.k;
+                            var sum = 0;
+                            for (var kr2 = -1; kr2 <= 1; kr2++) {
+                                for (var kc2 = -1; kc2 <= 1; kc2++) {
+                                    sum += concreteImg[r + kr2][c + kc2] * k[kr2 + 1][kc2 + 1];
+                                }
+                            }
+                            sum = Math.round(sum / fObj.norm);
+                            /* Emboss: shift to 128 centre */
+                            if (filterKey === 'emboss') sum = sum + 128;
+                            row.push(Math.max(0, Math.min(255, sum)));
+                        }
+                    }
+                    filteredImg.push(row);
+                }
+            }
+
+            function resize() {
+                var info = initCanvas(canvas);
+                ctx = info.ctx; w = info.w; h = info.h;
+                draw();
+            }
+
+            function draw() {
+                var colors = getColors();
+                ctx.clearRect(0, 0, w, h);
+
+                var pad = 16;
+                var gap = 20;
+                var labelH = 28;
+                var availW = w - pad * 2 - gap;
+                var panelW = availW / 2;
+                var panelH = h - pad * 2 - labelH;
+
+                var cellW = panelW / imgSize;
+                var cellH = panelH / imgSize;
+                var cell = Math.min(cellW, cellH);
+
+                /* Centre panels */
+                var totalW = 2 * (imgSize * cell) + gap;
+                var startX = (w - totalW) / 2;
+                var startY = pad + labelH;
+
+                /* Labels */
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = colors.TEXT;
+                ctx.fillText('Original Concrete Surface', startX + imgSize * cell / 2, pad + labelH / 2);
+                ctx.fillText('After ' + kGallery[currentFilter].name, startX + imgSize * cell + gap + imgSize * cell / 2, pad + labelH / 2);
+
+                /* Draw original image */
+                for (var r = 0; r < imgSize; r++) {
+                    for (var c = 0; c < imgSize; c++) {
+                        var v = concreteImg[r][c];
+                        ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+                        ctx.fillRect(startX + c * cell, startY + r * cell, Math.ceil(cell), Math.ceil(cell));
+                    }
+                }
+
+                /* Draw filtered image */
+                var filtStartX = startX + imgSize * cell + gap;
+                for (var r2 = 0; r2 < imgSize; r2++) {
+                    for (var c2 = 0; c2 < imgSize; c2++) {
+                        var fv = filteredImg[r2] ? filteredImg[r2][c2] : 128;
+                        ctx.fillStyle = 'rgb(' + fv + ',' + fv + ',' + fv + ')';
+                        ctx.fillRect(filtStartX + c2 * cell, startY + r2 * cell, Math.ceil(cell), Math.ceil(cell));
+                    }
+                }
+
+                /* Border around panels */
+                ctx.strokeStyle = colors.STROKE;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(startX, startY, imgSize * cell, imgSize * cell);
+                ctx.strokeRect(filtStartX, startY, imgSize * cell, imgSize * cell);
+            }
+
+            function setFilter(filterKey) {
+                currentFilter = filterKey;
+                applyKernel(filterKey);
+
+                /* Update display */
+                var kDisp = document.getElementById('kg-kernel-display');
+                if (kDisp) {
+                    var fObj = kGallery[filterKey];
+                    if (fObj.k) {
+                        var kStr = fObj.k.map(function (row) {
+                            return '[ ' + row.map(function (v) {
+                                var s = v.toString();
+                                while (s.length < 3) s = ' ' + s;
+                                return s;
+                            }).join('  ') + ' ]';
+                        }).join('\n');
+                        kDisp.textContent = 'Current kernel: ' + fObj.name + '\n' + kStr;
+                        kDisp.style.whiteSpace = 'pre';
+                    } else {
+                        kDisp.textContent = 'Current kernel: ' + fObj.name + ' (combined |Gx| + |Gy| magnitude)';
+                        kDisp.style.whiteSpace = 'normal';
+                    }
+                }
+
+                /* Update info */
+                var infoEl = document.getElementById('kg-info');
+                if (infoEl) {
+                    var descriptions = {
+                        'identity': 'The identity kernel passes the image through unchanged. It serves as a baseline for comparison.',
+                        'edge': 'The Laplacian-style edge detector highlights all edges regardless of orientation. Notice how the cracks light up brightly while the uniform concrete becomes nearly black.',
+                        'sobel': 'The Sobel operator computes gradient magnitude. Crack edges appear as bright lines; the stronger the intensity transition, the brighter the line.',
+                        'blur': 'Gaussian blur smooths the image, reducing noise but also softening crack edges. Small hairline cracks may become less visible.',
+                        'sharpen': 'Sharpening enhances local contrast. Fine cracks and surface texture become more pronounced, but noise is also amplified.',
+                        'emboss': 'Emboss creates a raised relief effect by detecting directional gradients. Surface texture and cracks appear as 3D features.'
+                    };
+                    infoEl.textContent = descriptions[filterKey] || '';
+                }
+
+                /* Update active button */
+                var btns = document.querySelectorAll('.kg-btn');
+                btns.forEach(function (b) { b.classList.remove('active-kg'); });
+                var activeBtn = document.getElementById('kg-' + filterKey);
+                if (activeBtn) activeBtn.classList.add('active-kg');
+
+                draw();
+            }
+
+            /* Button handlers */
+            var kgButtons = ['identity', 'edge', 'sobel', 'blur', 'sharpen', 'emboss'];
+            kgButtons.forEach(function (key) {
+                var btn = document.getElementById('kg-' + key);
+                if (btn) {
+                    btn.addEventListener('click', function () { setFilter(key); });
+                }
+            });
+
+            var themeObs2 = new MutationObserver(function () { resize(); });
+            themeObs2.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+            generateConcreteImage();
+            setFilter('identity');
+            resize();
+            window.addEventListener('resize', function () { resize(); });
+        })();
+
+        /* ==============================================
+           SCROLL-TRIGGERED REVEAL ANIMATION
+           ============================================== */
+        (function initRevealAnimations() {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.info-card, .analogy-block, .tip-box, .process-step, .quiz-block, .demo-panel')
+                .forEach(function (el) { observer.observe(el); });
+        })();
+
+    })();
+    </script>
+
+    <!-- ============ DEMO BUTTON STYLES (scoped) ============ -->
+    <style>
+        .demo-btn, .demo-select {
+            padding: 8px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--border-active);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .demo-btn:hover, .demo-select:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+        .demo-select {
+            appearance: auto;
+            padding-right: 24px;
+        }
+        .active-kg {
+            border-color: var(--accent-primary) !important;
+            color: var(--accent-primary) !important;
+            background: rgba(0,212,170,0.08) !important;
+        }
+    </style>
+
+</body>
+</html>
