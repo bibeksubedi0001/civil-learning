@@ -3,12 +3,12 @@
  * Auto-injected into sub-chapters based on URL path.
  *
  * Demos:
- *  1. Settlement Regression — interactive linear regression on consolidation data
- *  2. Soil Classifier — k-NN-style soil classification from SPT + LL + PI
- *  3. Liquefaction Predictor — logistic regression / sigmoid for liquefaction yes/no
- *  4. Bearing Capacity Forest — random forest-style bearing capacity prediction
- *  5. Flood Regression — multiple regression on catchment params → peak discharge
- *  6. Model Evaluator — interactive precision/recall/F1 for dam safety classification
+ * 1. Settlement Regression — interactive linear regression on consolidation data
+ * 2. Soil Classifier — k-NN-style soil classification from SPT + LL + PI
+ * 3. Liquefaction Predictor — logistic regression / sigmoid for liquefaction yes/no
+ * 4. Bearing Capacity Forest — random forest-style bearing capacity prediction
+ * 5. Flood Regression — multiple regression on catchment params → peak discharge
+ * 6. Model Evaluator — interactive precision/recall/F1 for dam safety classification
  */
 
 (function () {
@@ -81,7 +81,7 @@
 
         // Generate synthetic consolidation data
         let noise = 15;
-        let slope = 0.12;  // mm per kPa
+        let slope = 0.12; // mm per kPa
         let intercept = 5; // initial settlement
         let data = [];
 
@@ -176,7 +176,7 @@
             ctx.fillText(`Settlement = ${fit.m.toFixed(3)} × Load + ${fit.b.toFixed(1)}`, W - pad.r - 200, pad.t + 28);
             ctx.fillText(`R² = ${fit.r2.toFixed(4)}`, W - pad.r - 200, pad.t + 48);
             ctx.fillStyle = fit.r2 > 0.85 ? colors.teal : fit.r2 > 0.6 ? colors.amber : colors.red;
-            ctx.fillText(fit.r2 > 0.85 ? '✓ Good fit' : fit.r2 > 0.6 ? '⚠ Moderate fit' : '✗ Poor fit', W - pad.r - 200, pad.t + 68);
+            ctx.fillText(fit.r2 > 0.85 ? ' Good fit' : fit.r2 > 0.6 ? ' Moderate fit' : ' Poor fit', W - pad.r - 200, pad.t + 68);
         }
 
         genData(); draw();
@@ -438,7 +438,7 @@
             ctx.font = 'bold 13px Inter';
             ctx.fillText(`P(Liq) = ${(probLiq * 100).toFixed(1)}%`, bx, pad.t + 90);
             ctx.font = '11px Inter';
-            ctx.fillText(probLiq > 0.5 ? '⚠ LIQUEFIABLE' : '✓ SAFE', bx + 140, pad.t + 90);
+            ctx.fillText(probLiq > 0.5 ? ' LIQUEFIABLE' : ' SAFE', bx + 140, pad.t + 90);
         }
 
         draw();
@@ -552,7 +552,7 @@
             ctx.fillStyle = colors.text; ctx.font = 'bold 22px JetBrains Mono'; ctx.textAlign = 'center';
             ctx.fillText(`${result.qu.toFixed(0)} kPa`, gx + gw / 2, gaugeY + gaugeH + 35);
             ctx.fillStyle = colors.muted; ctx.font = '11px Inter';
-            ctx.fillText(`Nc=${result.Nc.toFixed(1)}  Nq=${result.Nq.toFixed(1)}  Nγ=${result.Ng.toFixed(1)}`, gx + gw / 2, gaugeY + gaugeH + 55);
+            ctx.fillText(`Nc=${result.Nc.toFixed(1)} Nq=${result.Nq.toFixed(1)} Nγ=${result.Ng.toFixed(1)}`, gx + gw / 2, gaugeY + gaugeH + 55);
 
             // Safety verdict
             const allowable = result.qu / 3;
@@ -753,10 +753,10 @@
             ctx.fillStyle = colors.muted; ctx.font = '10px Inter'; ctx.textAlign = 'left';
             if (m.FN > 0) {
                 ctx.fillStyle = colors.red;
-                ctx.fillText(`⚠ ${m.FN} at-risk dams classified as SAFE — DANGEROUS!`, mx, iy);
+                ctx.fillText(` ${m.FN} at-risk dams classified as SAFE — DANGEROUS!`, mx, iy);
             } else {
                 ctx.fillStyle = colors.teal;
-                ctx.fillText('✓ No at-risk dams misclassified as safe', mx, iy);
+                ctx.fillText(' No at-risk dams misclassified as safe', mx, iy);
             }
             ctx.fillStyle = colors.muted;
             ctx.fillText(`${m.FP} safe dams flagged for inspection (false alarms — costly but not dangerous)`, mx, iy + 18);
@@ -792,7 +792,7 @@
             ctx.strokeStyle = 'rgba(14,165,233,0.2)'; ctx.lineWidth = 1;
             ctx.strokeRect(rx, ky, rw - 20, 70);
             ctx.fillStyle = colors.cyan; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'left';
-            ctx.fillText('💡 For dam safety:', rx + 10, ky + 18);
+            ctx.fillText(' For dam safety:', rx + 10, ky + 18);
             ctx.fillStyle = colors.text; ctx.font = '10px Inter';
             ctx.fillText('RECALL matters most — missing a failing dam is', rx + 10, ky + 36);
             ctx.fillText('catastrophic. Accept more false alarms (lower precision)', rx + 10, ky + 50);
@@ -810,12 +810,225 @@
         // CE insight note
         const note = ce('div', '', `
             <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:16px;margin-top:16px">
-                <strong style="color:${colors.amber}">🎯 Engineer's Rule:</strong>
+                <strong style="color:${colors.amber}"> Engineer's Rule:</strong>
                 <span style="color:${colors.text};font-size:.9rem"> Lower the threshold for safety-critical systems (dams, bridges, slopes) — 
                 it's better to inspect 10 safe dams than miss 1 failing dam.</span>
             </div>
         `);
         container.appendChild(note);
+    }
+
+    /* ──────────────────────────────────────────────
+       7) BEAM DEFLECTION REGRESSION
+       Interactive beam loading with regression fit
+       ────────────────────────────────────────────── */
+    function createBeamDeflectionDemo(container) {
+        if (!container) return;
+        const wrap = ce('div');
+        container.appendChild(wrap);
+        const ctrlRow = ce('div', '', '');
+        ctrlRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:center';
+        const mkSlider = (label, id, min, max, val, unit) => {
+            const l = ce('label', '', `<span style="color:${colors.muted};font-size:.82rem">${label}: </span><input type="range" id="${id}" min="${min}" max="${max}" value="${val}" style="width:90px"><span id="${id}-v" style="color:${colors.amber};font-size:.82rem;font-family:JetBrains Mono,monospace"> ${val}${unit}</span>`);
+            ctrlRow.appendChild(l);
+        };
+        mkSlider('Span L (m)', 'bd-L', 3, 15, 8, 'm');
+        mkSlider('Load P (kN)', 'bd-P', 5, 100, 40, 'kN');
+        mkSlider('EI (kN·m²)', 'bd-EI', 500, 10000, 3000, '');
+        mkSlider('Noise', 'bd-noise', 0, 30, 10, '%');
+        const genBtn = ce('button', 'demo-btn', '<i class="fa-solid fa-rotate"></i> New Data');
+        const fitBtn = ce('button', 'demo-btn', '<i class="fa-solid fa-chart-line"></i> Fit Curve');
+        ctrlRow.appendChild(genBtn); ctrlRow.appendChild(fitBtn);
+        wrap.appendChild(ctrlRow);
+        const canvas = ce('canvas');
+        canvas.style.cssText = `width:100%;height:360px;border-radius:8px;border:1px solid ${colors.border}`;
+        wrap.appendChild(canvas);
+        const info = ce('div');
+        info.style.cssText = `padding:8px;font-size:.82rem;color:${colors.muted};font-family:JetBrains Mono,monospace`;
+        wrap.appendChild(info);
+        const dpr = window.devicePixelRatio || 1;
+        const r = canvas.getBoundingClientRect();
+        canvas.width = r.width * dpr; canvas.height = 360 * dpr;
+        canvas.style.height = '360px';
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const W = r.width, H = 360;
+        let pts = [], fitted = false;
+        function generate() {
+            const L = +wrap.querySelector('#bd-L').value;
+            const P = +wrap.querySelector('#bd-P').value;
+            const EI = +wrap.querySelector('#bd-EI').value;
+            const noise = +wrap.querySelector('#bd-noise').value / 100;
+            pts = [];
+            for (let i = 0; i <= 20; i++) {
+                const x = (i / 20) * L;
+                const deflTrue = (P * x * (3 * L * L - 4 * x * x)) / (48 * EI) * 1000;
+                const defl = Math.max(0, deflTrue * (1 + (Math.random() - 0.5) * 2 * noise));
+                pts.push({ x, y: x <= L / 2 ? defl : (P * (L - x) * (3 * L * L - 4 * (L - x) * (L - x))) / (48 * EI) * 1000 * (1 + (Math.random() - 0.5) * 2 * noise) });
+            }
+            fitted = false;
+            wrap.querySelector('#bd-L-v').textContent = ' ' + L + 'm';
+            wrap.querySelector('#bd-P-v').textContent = ' ' + P + 'kN';
+            wrap.querySelector('#bd-EI-v').textContent = ' ' + EI;
+            wrap.querySelector('#bd-noise-v').textContent = ' ' + wrap.querySelector('#bd-noise').value + '%';
+        }
+        function draw() {
+            const L = +wrap.querySelector('#bd-L').value;
+            const P = +wrap.querySelector('#bd-P').value;
+            const EI = +wrap.querySelector('#bd-EI').value;
+            ctx.clearRect(0, 0, W, H);
+            const pad = { l: 55, r: 20, t: 50, b: 45 };
+            const gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
+            const maxDefl = Math.max(...pts.map(p => p.y), 1);
+            // Draw beam
+            ctx.strokeStyle = colors.border; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(pad.l, pad.t - 10); ctx.lineTo(pad.l + gw, pad.t - 10); ctx.stroke();
+            // Supports
+            ctx.fillStyle = colors.teal;
+            ctx.beginPath(); ctx.moveTo(pad.l - 8, pad.t - 5); ctx.lineTo(pad.l + 8, pad.t - 5); ctx.lineTo(pad.l, pad.t + 5); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(pad.l + gw - 8, pad.t - 5); ctx.lineTo(pad.l + gw + 8, pad.t - 5); ctx.lineTo(pad.l + gw, pad.t + 5); ctx.fill();
+            // Load arrow
+            const loadX = pad.l + gw / 2;
+            ctx.strokeStyle = colors.red; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(loadX, pad.t - 30); ctx.lineTo(loadX, pad.t - 10); ctx.stroke();
+            ctx.fillStyle = colors.red; ctx.beginPath(); ctx.moveTo(loadX - 5, pad.t - 15); ctx.lineTo(loadX, pad.t - 8); ctx.lineTo(loadX + 5, pad.t - 15); ctx.fill();
+            ctx.fillStyle = colors.red; ctx.font = '11px JetBrains Mono'; ctx.fillText('P=' + P + 'kN', loadX + 8, pad.t - 20);
+            // Axes
+            ctx.strokeStyle = colors.border; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad.l, pad.t + 10); ctx.lineTo(pad.l, H - pad.b); ctx.lineTo(W - pad.r, H - pad.b); ctx.stroke();
+            ctx.fillStyle = colors.muted; ctx.font = '11px Inter';
+            ctx.fillText('Position (m)', W / 2 - 30, H - 5);
+            ctx.save(); ctx.translate(12, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('Deflection (mm)', 0, 0); ctx.restore();
+            // Data points
+            pts.forEach(p => {
+                const x = pad.l + (p.x / L) * gw;
+                const y = pad.t + 15 + (p.y / maxDefl) * (gh - 15);
+                ctx.fillStyle = colors.cyan + 'cc'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+            });
+            // Theoretical curve
+            if (fitted) {
+                ctx.strokeStyle = colors.amber; ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i <= 100; i++) {
+                    const xp = (i / 100) * L;
+                    const half = xp <= L / 2;
+                    const xx = half ? xp : L - xp;
+                    const deflTrue = (P * xx * (3 * L * L - 4 * xx * xx)) / (48 * EI) * 1000;
+                    const px = pad.l + (xp / L) * gw;
+                    const py = pad.t + 15 + (deflTrue / maxDefl) * (gh - 15);
+                    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+            const maxTheo = (P * (L / 2) * (3 * L * L - 4 * (L / 2) * (L / 2))) / (48 * EI) * 1000;
+            info.innerHTML = `Max theoretical δ = <span style="color:${colors.amber}">${maxTheo.toFixed(2)} mm</span> at midspan | L/δ = ${(L * 1000 / maxTheo).toFixed(0)} ${L * 1000 / maxTheo > 250 ? '<span style="color:' + colors.teal + '">(OK, > L/250)</span>' : '<span style="color:' + colors.red + '">(Exceeds L/250 limit)</span>'}`;
+        }
+        generate(); draw();
+        genBtn.addEventListener('click', () => { generate(); draw(); });
+        fitBtn.addEventListener('click', () => { fitted = true; draw(); });
+        ['bd-L', 'bd-P', 'bd-EI', 'bd-noise'].forEach(id => wrap.querySelector('#' + id).addEventListener('input', () => { generate(); draw(); }));
+    }
+
+    /* ──────────────────────────────────────────────
+       8) CONSOLIDATION CURVE FITTER
+       Cv determination from oedometer data
+       ────────────────────────────────────────────── */
+    function createConsolidationDemo(container) {
+        if (!container) return;
+        const wrap = ce('div');
+        container.appendChild(wrap);
+        const ctrlRow = ce('div');
+        ctrlRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:center';
+        const mkSlider = (label, id, min, max, val, step) => {
+            const l = ce('label', '', `<span style="color:${colors.muted};font-size:.82rem">${label}: </span><input type="range" id="${id}" min="${min}" max="${max}" value="${val}" step="${step || 1}" style="width:80px"><span id="${id}-v" style="color:${colors.amber};font-size:.82rem;font-family:JetBrains Mono,monospace"> ${val}</span>`);
+            ctrlRow.appendChild(l);
+        };
+        mkSlider('Cv (m²/yr)', 'cs-cv', 0.5, 10, 3, 0.5);
+        mkSlider('H_dr (m)', 'cs-h', 1, 10, 5, 0.5);
+        mkSlider('Δσ (kPa)', 'cs-ds', 50, 300, 150, 10);
+        mkSlider('Noise', 'cs-n', 0, 20, 5, 1);
+        const genBtn = ce('button', 'demo-btn', '<i class="fa-solid fa-rotate"></i> New Test');
+        ctrlRow.appendChild(genBtn);
+        wrap.appendChild(ctrlRow);
+        const canvas = ce('canvas');
+        canvas.style.cssText = `width:100%;height:350px;border-radius:8px;border:1px solid ${colors.border}`;
+        wrap.appendChild(canvas);
+        const info = ce('div');
+        info.style.cssText = `padding:8px;font-size:.82rem;color:${colors.muted};font-family:JetBrains Mono,monospace`;
+        wrap.appendChild(info);
+        const dpr = window.devicePixelRatio || 1;
+        const r = canvas.getBoundingClientRect();
+        canvas.width = r.width * dpr; canvas.height = 350 * dpr;
+        canvas.style.height = '350px';
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const W = r.width, HH = 350;
+        let data = [];
+        function generate() {
+            const Cv = +wrap.querySelector('#cs-cv').value;
+            const Hdr = +wrap.querySelector('#cs-h').value;
+            const noise = +wrap.querySelector('#cs-n').value / 100;
+            data = [];
+            const times = [0, 0.25, 0.5, 1, 2, 4, 8, 15, 30, 60, 120, 240, 480, 1440];
+            times.forEach(t => {
+                const Tv = Cv * (t / 60 / 24 / 365) / (Hdr * Hdr);
+                let U;
+                if (Tv < 0.2827) U = Math.sqrt(4 * Tv / Math.PI);
+                else U = 1 - (8 / (Math.PI * Math.PI)) * Math.exp(-Math.PI * Math.PI * Tv / 4);
+                U = Math.min(U, 0.999) * (1 + (Math.random() - 0.5) * noise);
+                data.push({ t, U: Math.max(0, Math.min(1, U)), sqrtT: Math.sqrt(t) });
+            });
+            wrap.querySelector('#cs-cv-v').textContent = ' ' + Cv;
+            wrap.querySelector('#cs-h-v').textContent = ' ' + Hdr;
+            wrap.querySelector('#cs-ds-v').textContent = ' ' + wrap.querySelector('#cs-ds').value;
+            wrap.querySelector('#cs-n-v').textContent = ' ' + wrap.querySelector('#cs-n').value;
+        }
+        function draw() {
+            const ds = +wrap.querySelector('#cs-ds').value;
+            ctx.clearRect(0, 0, W, HH);
+            const pad = { l: 55, r: 20, t: 25, b: 45 };
+            const gw = W - pad.l - pad.r, gh = HH - pad.t - pad.b;
+            const maxSqrt = Math.sqrt(1440);
+            // Axes
+            ctx.strokeStyle = colors.border; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, HH - pad.b); ctx.lineTo(W - pad.r, HH - pad.b); ctx.stroke();
+            ctx.fillStyle = colors.muted; ctx.font = '11px Inter';
+            ctx.fillText('√t (√min)', W / 2 - 25, HH - 5);
+            ctx.save(); ctx.translate(12, HH / 2 + 20); ctx.rotate(-Math.PI / 2); ctx.fillText('U (degree of consolidation)', 0, 0); ctx.restore();
+            // U=90% line
+            ctx.strokeStyle = colors.amber + '40'; ctx.setLineDash([5, 5]);
+            const y90 = pad.t + 0.9 * gh;
+            ctx.beginPath(); ctx.moveTo(pad.l, y90); ctx.lineTo(W - pad.r, y90); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = colors.amber; ctx.font = '10px JetBrains Mono'; ctx.fillText('U=90%', W - pad.r - 40, y90 - 4);
+            // Data points
+            data.forEach(d => {
+                const x = pad.l + (d.sqrtT / maxSqrt) * gw;
+                const y = pad.t + d.U * gh;
+                ctx.fillStyle = colors.cyan; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+            });
+            // Smooth theoretical curve
+            ctx.strokeStyle = colors.teal; ctx.lineWidth = 2;
+            const Cv = +wrap.querySelector('#cs-cv').value;
+            const Hdr = +wrap.querySelector('#cs-h').value;
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const t = (i / 100) * 1440;
+                const Tv = Cv * (t / 60 / 24 / 365) / (Hdr * Hdr);
+                let U = Tv < 0.2827 ? Math.sqrt(4 * Tv / Math.PI) : 1 - (8 / (Math.PI * Math.PI)) * Math.exp(-Math.PI * Math.PI * Tv / 4);
+                U = Math.min(U, 0.999);
+                const x = pad.l + (Math.sqrt(t) / maxSqrt) * gw;
+                const y = pad.t + U * gh;
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            // Settlement value
+            const Sc = ds * 0.3; // simplified Cc/(1+e0) * Hdr * log(...)
+            info.innerHTML = `Cv = <span style="color:${colors.teal}">${Cv} m²/yr</span> | t₉₀ = <span style="color:${colors.amber}">${(0.848 * Hdr * Hdr / Cv * 365).toFixed(0)} days</span> | Est. final settlement ≈ ${(Sc).toFixed(1)} mm`;
+        }
+        generate(); draw();
+        genBtn.addEventListener('click', () => { generate(); draw(); });
+        ['cs-cv', 'cs-h', 'cs-ds', 'cs-n'].forEach(id => wrap.querySelector('#' + id).addEventListener('input', () => { generate(); draw(); }));
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -828,11 +1041,15 @@
         ],
         'sub2': [
             { fn: createSettlementDemo, title: 'CE Demo: Consolidation Settlement Prediction',
-              icon: 'fa-solid fa-arrow-down-up-across-line', sub: 'Predict settlement from applied load using linear regression — adjust noise and slope' }
+              icon: 'fa-solid fa-arrow-down-up-across-line', sub: 'Predict settlement from applied load using linear regression — adjust noise and slope' },
+            { fn: createBeamDeflectionDemo, title: 'CE Demo: Beam Deflection — Regression Fit',
+              icon: 'fa-solid fa-ruler-horizontal', sub: 'Simulate beam loading data and fit a regression curve — compare noisy measurements to theoretical deflection' }
         ],
         'sub3': [
             { fn: createFloodRegressionDemo, title: 'CE Demo: Flood Discharge — Multiple Regression',
-              icon: 'fa-solid fa-water', sub: 'Adjust catchment parameters to see how multiple factors predict peak flood discharge' }
+              icon: 'fa-solid fa-water', sub: 'Adjust catchment parameters to see how multiple factors predict peak flood discharge' },
+            { fn: createConsolidationDemo, title: 'CE Demo: Consolidation Curve — √t Method',
+              icon: 'fa-solid fa-chart-area', sub: 'Visualize degree of consolidation vs √t — find t₉₀ and coefficient of consolidation (Cv)' }
         ],
         'sub4': [
             { fn: createSoilClassifierDemo, title: 'CE Demo: Soil Type Classification (k-NN)',
@@ -903,6 +1120,8 @@
         createLiquefactionDemo,
         createBearingCapacityRFDemo,
         createFloodRegressionDemo,
-        createModelEvaluatorDemo
+        createModelEvaluatorDemo,
+        createBeamDeflectionDemo,
+        createConsolidationDemo
     };
 })();

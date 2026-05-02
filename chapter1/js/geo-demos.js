@@ -210,7 +210,7 @@
             layers.forEach(layer => {
                 if (layer.depth > drillDepth) return;
                 const status = layer.classified ?
-                    '<span style="color:#2dd4bf">✓ AI Classified</span>' :
+                    '<span style="color:#2dd4bf"> AI Classified</span>' :
                     '<span style="color:var(--text-muted)">Pending</span>';
                 html += `<div style="padding:8px 0;border-bottom:1px solid var(--border-subtle)">
                     <div><strong>${layer.depth.toFixed(1)}m - ${(layer.depth + layer.thickness).toFixed(1)}m</strong> ${status}</div>
@@ -457,7 +457,7 @@
             ctx.fillStyle = C.TEAL;
             ctx.font = 'bold 11px Inter';
             ctx.textAlign = 'right';
-            ctx.fillText('🤖 AI-Predicted Hydrograph', W - 16, 27);
+            ctx.fillText(' AI-Predicted Hydrograph', W - 16, 27);
 
             // Update stats
             container.querySelector('#flood-peak').textContent = data.Qp.toFixed(1);
@@ -566,7 +566,7 @@
 
             container.querySelector('#slope-fos').textContent = fos.toFixed(2);
             container.querySelector('#slope-fos').style.color = fosColor;
-            container.querySelector('#slope-verdict').textContent = '🤖 ' + verdict;
+            container.querySelector('#slope-verdict').textContent = ' ' + verdict;
             container.querySelector('#slope-verdict').style.color = fosColor;
             container.querySelector('#slope-mode').textContent = mode;
 
@@ -676,7 +676,7 @@
             ctx.textAlign = 'center';
             ctx.fillText('FOS = ' + fos.toFixed(2), W - 85, 42);
             ctx.font = '9px Inter';
-            ctx.fillText('🤖 AI Prediction', W - 85, 55);
+            ctx.fillText(' AI Prediction', W - 85, 55);
 
             // Grass on top
             ctx.strokeStyle = '#4ade80';
@@ -862,7 +862,7 @@
             ctx.fillText('Darcy Flow: v = k · i = k · Δh/L', W / 2, 30);
             ctx.font = '10px Inter';
             ctx.fillStyle = C.TEXT;
-            ctx.fillText('🤖 AI predicts flow paths using trained neural network on Darcy\'s law', W / 2, 48);
+            ctx.fillText(' AI predicts flow paths using trained neural network on Darcy\'s law', W / 2, 48);
 
             animFrame = requestAnimationFrame(drawGW);
         }
@@ -1075,11 +1075,313 @@
             ctx.textAlign = 'center';
             ctx.fillText('q_ult = cNc + γDfNq + 0.5γBNγ = ' + qult.toFixed(0) + ' kPa (Terzaghi)', W / 2, H - 30);
             ctx.fillStyle = C.TEAL;
-            ctx.fillText('🤖 AI-corrected: ' + qultAI.toFixed(0) + ' kPa (based on local soil database)', W / 2, H - 14);
+            ctx.fillText(' AI-corrected: ' + qultAI.toFixed(0) + ' kPa (based on local soil database)', W / 2, H - 14);
         }
 
         draw();
         ['bc-width', 'bc-depth', 'bc-phi', 'bc-c'].forEach(id => {
+            container.querySelector('#' + id).addEventListener('input', draw);
+        });
+    }
+
+    /* ──────────────────────────────────────────────
+       6) MOHR'S CIRCLE VISUALIZER
+       Interactive stress transformation tool
+       ────────────────────────────────────────────── */
+    function createMohrCircleDemo(container) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="demo-panel" style="margin-top:24px">
+                <div class="demo-panel__header">
+                    <h3><i class="fa-solid fa-circle-notch"></i> Interactive Mohr's Circle — Stress Analysis</h3>
+                    <p>Adjust principal stresses to see how Mohr's Circle changes. Rotate the analysis plane to find stresses on any orientation — this is exactly the data transformation AI performs on geotechnical data.</p>
+                </div>
+                <div class="demo-panel__controls" style="display:flex;flex-wrap:wrap;gap:12px;padding:12px">
+                    <label style="color:${C.text};font-size:.85rem">σ₁ (kPa): <input type="range" id="mohr-s1" min="50" max="500" value="300" style="width:100px"><span id="mohr-s1-val">300</span></label>
+                    <label style="color:${C.text};font-size:.85rem">σ₃ (kPa): <input type="range" id="mohr-s3" min="10" max="300" value="100" style="width:100px"><span id="mohr-s3-val">100</span></label>
+                    <label style="color:${C.text};font-size:.85rem">θ (°): <input type="range" id="mohr-theta" min="0" max="90" value="30" style="width:100px"><span id="mohr-theta-val">30</span></label>
+                    <label style="color:${C.text};font-size:.85rem">φ (°): <input type="range" id="mohr-phi" min="15" max="45" value="30" style="width:100px"><span id="mohr-phi-val">30</span></label>
+                    <label style="color:${C.text};font-size:.85rem">c (kPa): <input type="range" id="mohr-c" min="0" max="100" value="20" style="width:100px"><span id="mohr-c-val">20</span></label>
+                </div>
+                <canvas id="mohr-canvas" style="width:100%;height:400px;border-radius:8px;border:1px solid ${C.border}"></canvas>
+                <div id="mohr-info" style="padding:12px;font-size:.85rem;color:${C.textSecondary};font-family:'JetBrains Mono',monospace"></div>
+            </div>`;
+        const canvas = container.querySelector('#mohr-canvas');
+        const { ctx, W, H } = initCanvas(canvas);
+        function draw() {
+            const s1 = +container.querySelector('#mohr-s1').value;
+            const s3 = +container.querySelector('#mohr-s3').value;
+            const theta = +container.querySelector('#mohr-theta').value * PI / 180;
+            const phi = +container.querySelector('#mohr-phi').value * PI / 180;
+            const coh = +container.querySelector('#mohr-c').value;
+            container.querySelector('#mohr-s1-val').textContent = s1;
+            container.querySelector('#mohr-s3-val').textContent = s3;
+            container.querySelector('#mohr-theta-val').textContent = Math.round(theta * 180 / PI);
+            container.querySelector('#mohr-phi-val').textContent = Math.round(phi * 180 / PI);
+            container.querySelector('#mohr-c-val').textContent = coh;
+            const center = (s1 + s3) / 2;
+            const radius = (s1 - s3) / 2;
+            const sigN = center + radius * Math.cos(2 * theta);
+            const tau = radius * Math.sin(2 * theta);
+            ctx.clearRect(0, 0, W, H);
+            const cx = W * 0.5, cy = H * 0.55;
+            const scale = Math.min((W - 80) / (s1 + 100), (H - 80) / (s1 * 0.6));
+            // Axes
+            ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(30, cy); ctx.lineTo(W - 10, cy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, 10); ctx.lineTo(cx, H - 10); ctx.stroke();
+            ctx.fillStyle = C.textSecondary; ctx.font = '12px Inter';
+            ctx.fillText('σ (kPa)', W - 50, cy - 8);
+            ctx.fillText('τ (kPa)', cx + 8, 20);
+            // Mohr's Circle
+            ctx.strokeStyle = C.cyan; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx + (center - s1 * 0.5) * scale, cy, radius * scale, 0, TAU);
+            ctx.stroke();
+            // Mohr-Coulomb failure envelope
+            ctx.strokeStyle = C.red; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+            const envLen = s1 * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(cx + (-coh / Math.tan(phi) - s1 * 0.5) * scale, cy);
+            ctx.lineTo(cx + (envLen - s1 * 0.5) * scale, cy - (coh + envLen * Math.tan(phi)) * scale);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + (-coh / Math.tan(phi) - s1 * 0.5) * scale, cy);
+            ctx.lineTo(cx + (envLen - s1 * 0.5) * scale, cy + (coh + envLen * Math.tan(phi)) * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // Point on circle (current θ)
+            const px = cx + (sigN - s1 * 0.5) * scale;
+            const py = cy - tau * scale;
+            ctx.fillStyle = C.amber; ctx.beginPath(); ctx.arc(px, py, 7, 0, TAU); ctx.fill();
+            ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(cx + (s1 - s1 * 0.5) * scale, cy, 5, 0, TAU); ctx.fill();
+            ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(cx + (s3 - s1 * 0.5) * scale, cy, 5, 0, TAU); ctx.fill();
+            // Labels
+            ctx.fillStyle = C.text; ctx.font = '11px JetBrains Mono';
+            ctx.fillText('σ₁=' + s1, cx + (s1 - s1 * 0.5) * scale - 15, cy + 18);
+            ctx.fillText('σ₃=' + s3, cx + (s3 - s1 * 0.5) * scale - 15, cy + 18);
+            ctx.fillStyle = C.amber; ctx.fillText(`(${sigN.toFixed(0)}, ${tau.toFixed(0)})`, px + 10, py - 10);
+            // Failure check
+            const tauFail = coh + sigN * Math.tan(phi);
+            const safe = Math.abs(tau) < tauFail;
+            ctx.fillStyle = C.red; ctx.font = '11px Inter';
+            ctx.fillText('Failure Envelope (τ = c + σ·tan φ)', cx + 20, 40);
+            const info = container.querySelector('#mohr-info');
+            info.innerHTML = `σ<sub>n</sub> = <span style="color:${C.amber}">${sigN.toFixed(1)} kPa</span> | τ = <span style="color:${C.amber}">${tau.toFixed(1)} kPa</span> | τ<sub>fail</sub> = ${tauFail.toFixed(1)} kPa | FoS = <span style="color:${safe ? C.teal : C.red}">${(tauFail / Math.max(Math.abs(tau), 0.1)).toFixed(2)}</span> | ${safe ? '<span style="color:' + C.teal + '">SAFE</span>' : '<span style="color:' + C.red + '">FAILURE</span>'}`;
+        }
+        draw();
+        ['mohr-s1', 'mohr-s3', 'mohr-theta', 'mohr-phi', 'mohr-c'].forEach(id => {
+            container.querySelector('#' + id).addEventListener('input', draw);
+        });
+    }
+
+    /* ──────────────────────────────────────────────
+       7) CONCRETE STRENGTH ESTIMATOR
+       Scatter plot with simple ML prediction line
+       ────────────────────────────────────────────── */
+    function createConcreteDemo(container) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="demo-panel" style="margin-top:24px">
+                <div class="demo-panel__header">
+                    <h3><i class="fa-solid fa-cubes-stacked"></i> Concrete Strength Estimator — Data-Driven Prediction</h3>
+                    <p>This shows how AI learns from data. Each dot is a concrete sample with its water-cement ratio and measured 28-day strength. The AI draws a prediction line through the data. Click on the chart to add new samples!</p>
+                </div>
+                <div class="demo-panel__controls" style="display:flex;flex-wrap:wrap;gap:12px;padding:12px">
+                    <button class="demo-btn" id="conc-gen"><i class="fa-solid fa-rotate"></i> New Dataset</button>
+                    <button class="demo-btn" id="conc-clear"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    <button class="demo-btn" id="conc-fit"><i class="fa-solid fa-chart-line"></i> Fit Model</button>
+                    <span id="conc-eq" style="color:${C.amber};font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:8px"></span>
+                </div>
+                <canvas id="conc-canvas" style="width:100%;height:380px;border-radius:8px;border:1px solid ${C.border}"></canvas>
+            </div>`;
+        const canvas = container.querySelector('#conc-canvas');
+        const { ctx, W, H } = initCanvas(canvas);
+        let data = [], coeffs = null;
+        const pad = { l: 60, r: 20, t: 30, b: 50 };
+        function genData() {
+            data = [];
+            for (let i = 0; i < 30; i++) {
+                const wc = 0.3 + Math.random() * 0.45;
+                const fc = Math.max(5, 75 - wc * 120 + rand(-8, 8));
+                data.push({ x: wc, y: fc });
+            }
+            coeffs = null;
+        }
+        function fitLine() {
+            if (data.length < 2) return;
+            let sx = 0, sy = 0, sxy = 0, sx2 = 0, n = data.length;
+            data.forEach(d => { sx += d.x; sy += d.y; sxy += d.x * d.y; sx2 += d.x * d.x; });
+            const slope = (n * sxy - sx * sy) / (n * sx2 - sx * sx);
+            const intercept = (sy - slope * sx) / n;
+            coeffs = { m: slope, b: intercept };
+            const r2num = data.reduce((s, d) => s + (d.y - (coeffs.m * d.x + coeffs.b)) ** 2, 0);
+            const mean = sy / n;
+            const r2den = data.reduce((s, d) => s + (d.y - mean) ** 2, 0);
+            coeffs.r2 = 1 - r2num / r2den;
+            container.querySelector('#conc-eq').textContent = `f'c = ${coeffs.m.toFixed(1)}(w/c) + ${coeffs.b.toFixed(1)} | R² = ${coeffs.r2.toFixed(3)}`;
+        }
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            const gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
+            // Axes
+            ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.lineTo(W - pad.r, H - pad.b); ctx.stroke();
+            ctx.fillStyle = C.textSecondary; ctx.font = '12px Inter';
+            ctx.fillText('Water-Cement Ratio (w/c)', W / 2 - 60, H - 8);
+            ctx.save(); ctx.translate(14, H / 2 + 40); ctx.rotate(-PI / 2); ctx.fillText("f'c (MPa)", 0, 0); ctx.restore();
+            // Grid
+            for (let v = 0.3; v <= 0.75; v += 0.1) {
+                const x = pad.l + ((v - 0.25) / 0.55) * gw;
+                ctx.fillStyle = C.textSecondary; ctx.font = '10px JetBrains Mono';
+                ctx.fillText(v.toFixed(1), x - 8, H - pad.b + 16);
+                ctx.strokeStyle = C.border + '40'; ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, H - pad.b); ctx.stroke();
+            }
+            for (let v = 0; v <= 80; v += 20) {
+                const y = H - pad.b - (v / 80) * gh;
+                ctx.fillStyle = C.textSecondary; ctx.fillText(v.toString(), pad.l - 30, y + 4);
+                ctx.strokeStyle = C.border + '40'; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+            }
+            // Data points
+            data.forEach(d => {
+                const x = pad.l + ((d.x - 0.25) / 0.55) * gw;
+                const y = H - pad.b - (d.y / 80) * gh;
+                ctx.fillStyle = C.cyan + 'cc'; ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill();
+            });
+            // Regression line
+            if (coeffs) {
+                ctx.strokeStyle = C.amber; ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let wx = 0.25; wx <= 0.8; wx += 0.01) {
+                    const fc = coeffs.m * wx + coeffs.b;
+                    const x = pad.l + ((wx - 0.25) / 0.55) * gw;
+                    const y = H - pad.b - (fc / 80) * gh;
+                    wx === 0.25 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+        genData(); draw();
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = W / rect.width, scaleY = H / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX, my = (e.clientY - rect.top) * scaleY;
+            const gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
+            const wc = 0.25 + (mx - pad.l) / gw * 0.55;
+            const fc = (1 - (my - pad.t) / gh) * 80;
+            if (wc >= 0.25 && wc <= 0.8 && fc >= 0 && fc <= 80) {
+                data.push({ x: wc, y: fc });
+                if (coeffs) fitLine();
+                draw();
+            }
+        });
+        container.querySelector('#conc-gen').addEventListener('click', () => { genData(); draw(); });
+        container.querySelector('#conc-clear').addEventListener('click', () => { data = []; coeffs = null; container.querySelector('#conc-eq').textContent = ''; draw(); });
+        container.querySelector('#conc-fit').addEventListener('click', () => { fitLine(); draw(); });
+    }
+
+    /* ──────────────────────────────────────────────
+       8) RETAINING WALL CALCULATOR
+       Rankine earth pressure analysis
+       ────────────────────────────────────────────── */
+    function createRetainingWallDemo(container) {
+        if (!container) return;
+        container.innerHTML = `
+            <div class="demo-panel" style="margin-top:24px">
+                <div class="demo-panel__header">
+                    <h3><i class="fa-solid fa-landmark"></i> Retaining Wall Stability — AI-Assisted Design</h3>
+                    <p>Adjust soil and wall parameters to see active/passive earth pressures, sliding and overturning factors of safety. AI assists by optimizing wall geometry for minimum cost while maintaining stability.</p>
+                </div>
+                <div class="demo-panel__controls" style="display:flex;flex-wrap:wrap;gap:12px;padding:12px">
+                    <label style="color:${C.text};font-size:.85rem">H (m): <input type="range" id="rw-h" min="2" max="10" value="5" step="0.5"><span id="rw-h-val">5</span></label>
+                    <label style="color:${C.text};font-size:.85rem">φ (°): <input type="range" id="rw-phi" min="20" max="40" value="30"><span id="rw-phi-val">30</span></label>
+                    <label style="color:${C.text};font-size:.85rem">γ (kN/m³): <input type="range" id="rw-gamma" min="16" max="22" value="18" step="0.5"><span id="rw-gamma-val">18</span></label>
+                    <label style="color:${C.text};font-size:.85rem">Base (m): <input type="range" id="rw-base" min="2" max="8" value="3.5" step="0.5"><span id="rw-base-val">3.5</span></label>
+                    <label style="color:${C.text};font-size:.85rem">q (kPa): <input type="range" id="rw-q" min="0" max="30" value="10"><span id="rw-q-val">10</span></label>
+                </div>
+                <canvas id="rw-canvas" style="width:100%;height:400px;border-radius:8px;border:1px solid ${C.border}"></canvas>
+                <div id="rw-results" style="padding:12px;font-size:.82rem;color:${C.textSecondary};font-family:'JetBrains Mono',monospace;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px"></div>
+            </div>`;
+        const canvas = container.querySelector('#rw-canvas');
+        const { ctx, W, H } = initCanvas(canvas);
+        function draw() {
+            const Hw = +container.querySelector('#rw-h').value;
+            const phi = +container.querySelector('#rw-phi').value * PI / 180;
+            const gamma = +container.querySelector('#rw-gamma').value;
+            const B = +container.querySelector('#rw-base').value;
+            const q = +container.querySelector('#rw-q').value;
+            container.querySelector('#rw-h-val').textContent = Hw;
+            container.querySelector('#rw-phi-val').textContent = Math.round(phi * 180 / PI);
+            container.querySelector('#rw-gamma-val').textContent = gamma;
+            container.querySelector('#rw-base-val').textContent = B;
+            container.querySelector('#rw-q-val').textContent = q;
+            const Ka = Math.tan(PI / 4 - phi / 2) ** 2;
+            const Kp = Math.tan(PI / 4 + phi / 2) ** 2;
+            const Pa = 0.5 * gamma * Hw * Hw * Ka + q * Hw * Ka;
+            const Pp = 0.5 * gamma * 1.5 * 1.5 * Kp;
+            const Wwall = 24 * 0.4 * Hw + 24 * B * 0.5;
+            const Wsoil = gamma * (B - 0.4) * Hw * 0.6;
+            const totalV = Wwall + Wsoil + q * (B - 0.4);
+            const mu = Math.tan(phi * 0.67);
+            const fosSlide = (totalV * mu + Pp) / Pa;
+            const armPa = Hw / 3;
+            const Mo = Pa * armPa;
+            const Mr = totalV * B / 2 + Pp * 0.5;
+            const fosOT = Mr / Mo;
+            ctx.clearRect(0, 0, W, H);
+            const scale = Math.min((H - 80) / (Hw + 1), (W - 120) / (B + 4));
+            const ox = W * 0.35, oy = H - 40;
+            // Ground line
+            ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(20, oy); ctx.lineTo(W - 20, oy); ctx.stroke();
+            // Wall
+            ctx.fillStyle = C.border + '80';
+            ctx.fillRect(ox, oy - Hw * scale, 0.4 * scale, Hw * scale);
+            // Base
+            ctx.fillRect(ox - (B - 0.4) * 0.3 * scale, oy, B * scale, 0.5 * scale);
+            // Soil behind wall
+            ctx.fillStyle = C.amber + '25';
+            ctx.fillRect(ox + 0.4 * scale, oy - Hw * scale, (B - 0.4) * 0.7 * scale, Hw * scale);
+            // Active pressure triangle
+            ctx.fillStyle = C.red + '40';
+            ctx.beginPath();
+            ctx.moveTo(ox, oy); ctx.lineTo(ox, oy - Hw * scale);
+            ctx.lineTo(ox - Pa / (gamma * Hw) * scale * 3, oy);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = C.red; ctx.lineWidth = 1.5; ctx.stroke();
+            // Passive pressure triangle (toe)
+            ctx.fillStyle = C.teal + '30';
+            ctx.beginPath();
+            ctx.moveTo(ox + B * scale, oy); ctx.lineTo(ox + B * scale, oy - 1.5 * scale);
+            ctx.lineTo(ox + B * scale + Pp / (gamma * 1.5) * scale * 2, oy);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = C.teal; ctx.stroke();
+            // Labels
+            ctx.fillStyle = C.text; ctx.font = '12px JetBrains Mono';
+            ctx.fillText('H=' + Hw + 'm', ox - 50, oy - Hw * scale / 2);
+            ctx.fillText('B=' + B + 'm', ox + B * scale * 0.3, oy + 0.5 * scale + 18);
+            ctx.fillStyle = C.red; ctx.fillText('Pa=' + Pa.toFixed(1) + ' kN/m', ox - 120, oy - Hw * scale * 0.6);
+            ctx.fillStyle = C.teal; ctx.fillText('Pp=' + Pp.toFixed(1), ox + B * scale + 5, oy - 0.8 * scale);
+            // Surcharge indicator
+            if (q > 0) {
+                ctx.fillStyle = C.purple + '60';
+                for (let i = 0; i < 5; i++) {
+                    const ax = ox + 0.4 * scale + i * (B - 0.4) * 0.7 * scale / 5 + 5;
+                    ctx.beginPath(); ctx.moveTo(ax, oy - Hw * scale - 15); ctx.lineTo(ax, oy - Hw * scale); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(ax - 3, oy - Hw * scale - 8); ctx.lineTo(ax, oy - Hw * scale); ctx.lineTo(ax + 3, oy - Hw * scale - 8); ctx.fill();
+                }
+                ctx.fillStyle = C.purple; ctx.fillText('q=' + q + ' kPa', ox + 0.4 * scale + 5, oy - Hw * scale - 20);
+            }
+            const results = container.querySelector('#rw-results');
+            const safeC = v => v >= 1.5 ? C.teal : v >= 1.0 ? C.amber : C.red;
+            results.innerHTML = `
+                <div>Ka = ${Ka.toFixed(3)} | Kp = ${Kp.toFixed(3)}</div>
+                <div>Pa = <span style="color:${C.red}">${Pa.toFixed(1)} kN/m</span></div>
+                <div>FoS (Sliding) = <span style="color:${safeC(fosSlide)}">${fosSlide.toFixed(2)}</span> ${fosSlide >= 1.5 ? '(SAFE)' : '(UNSAFE)'}</div>
+                <div>FoS (Overturning) = <span style="color:${safeC(fosOT)}">${fosOT.toFixed(2)}</span> ${fosOT >= 2.0 ? '(SAFE)' : '(UNSAFE)'}</div>`;
+        }
+        draw();
+        ['rw-h', 'rw-phi', 'rw-gamma', 'rw-base', 'rw-q'].forEach(id => {
             container.querySelector('#' + id).addEventListener('input', draw);
         });
     }
@@ -1126,6 +1428,16 @@
             });
         }
 
+        // Sub 1.2 - History of AI
+        if (path.includes('sub2')) {
+            appendToMain(container => {
+                container.innerHTML = '<h2 class="section-title"><i class="fa-solid fa-cubes-stacked"></i> Data-Driven Engineering: Concrete Strength Prediction</h2><p>Throughout AI history, data-driven prediction has evolved from simple regression to deep learning. This demo shows the foundation: learning patterns from experimental data. Click the chart to add your own concrete samples!</p>';
+                const demoContainer = document.createElement('div');
+                container.appendChild(demoContainer);
+                createConcreteDemo(demoContainer);
+            });
+        }
+
         // Sub 1.3 - AI Capabilities
         if (path.includes('sub3')) {
             appendToMain(container => {
@@ -1146,6 +1458,16 @@
             });
         }
 
+        // Sub 1.4 - AI Components
+        if (path.includes('sub4')) {
+            appendToMain(container => {
+                container.innerHTML = '<h2 class="section-title"><i class="fa-solid fa-circle-notch"></i> Stress Analysis: Interactive Mohr\'s Circle</h2><p>Understanding how AI processes geotechnical data starts with understanding the data itself. This Mohr\'s Circle visualizer shows stress transformation — the same mathematical transformations that AI uses to analyze soil stress states. Adjust parameters to explore failure conditions.</p>';
+                const demoContainer = document.createElement('div');
+                container.appendChild(demoContainer);
+                createMohrCircleDemo(demoContainer);
+            });
+        }
+
         // Sub 1.6 - What is ML
         if (path.includes('sub6')) {
             appendToMain(container => {
@@ -1163,6 +1485,16 @@
                 const demoContainer = document.createElement('div');
                 container.appendChild(demoContainer);
                 createFloodDemo(demoContainer);
+            });
+        }
+
+        // Sub 1.8 - Real-World Applications
+        if (path.includes('sub8')) {
+            appendToMain(container => {
+                container.innerHTML = '<h2 class="section-title"><i class="fa-solid fa-landmark"></i> Engineering Application: Retaining Wall Stability</h2><p>AI-assisted retaining wall design uses Rankine earth pressure theory combined with machine learning optimization. Adjust parameters to see how wall stability changes — this is the type of problem AI solves in production geotechnical software.</p>';
+                const demoContainer = document.createElement('div');
+                container.appendChild(demoContainer);
+                createRetainingWallDemo(demoContainer);
             });
         }
 
@@ -1219,7 +1551,10 @@
         createFloodDemo,
         createSlopeDemo,
         createGroundwaterDemo,
-        createBearingCapacityDemo
+        createBearingCapacityDemo,
+        createMohrCircleDemo,
+        createConcreteDemo,
+        createRetainingWallDemo
     };
 
 })();

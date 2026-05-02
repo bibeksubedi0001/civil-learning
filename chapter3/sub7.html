@@ -1149,6 +1149,38 @@
             </div>
         </section>
 
+        <!-- ══════ CE APPLICATION SECTION ══════ -->
+        <section class="ch-section" style="border-top:2px solid rgba(0,212,170,.15);margin-top:2rem;">
+            <div class="section-container">
+                <h2 class="section-title" style="color:#00d4aa">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    CE Application: Anomaly Detection in Infrastructure
+                </h2>
+                <p style="color:var(--text-secondary);margin-bottom:1.5rem;">Catching the abnormal before it becomes a failure — the most safety-critical unsupervised learning application in civil engineering.</p>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px;">
+                    <div class="info-card" style="border-left:3px solid #ef4444;">
+                        <h4><i class="fa-solid fa-water" style="color:#ef4444"></i> Dam Piezometer Spikes</h4>
+                        <p>Sudden pore pressure spikes in embankment dams can indicate piping failure. Isolation Forest on time-series data catches anomalies within minutes, enabling emergency drawdown.</p>
+                    </div>
+                    <div class="info-card" style="border-left:3px solid #f59e0b;">
+                        <h4><i class="fa-solid fa-building" style="color:#f59e0b"></i> Settlement Monitoring</h4>
+                        <p>Expected consolidation follows a predictable curve. Anomaly detection flags deviations — unexpected heave, sudden settlement acceleration, or instrument drift.</p>
+                    </div>
+                    <div class="info-card" style="border-left:3px solid #00d4aa;">
+                        <h4><i class="fa-solid fa-bridge" style="color:#00d4aa"></i> Structural Health Monitoring</h4>
+                        <p>Bridge accelerometers: normal vibration patterns form a baseline. When new data deviates beyond the learned boundary, it triggers a structural inspection alert.</p>
+                    </div>
+                </div>
+
+                <div class="tip-box" style="border-color:#0ea5e9;">
+                    <strong> In Practice:</strong> Z-score works for Gaussian sensor data. For skewed distributions (rainfall, settlement), use Isolation Forest or LOF. Always set thresholds with input from geotechnical engineers — a 2σ anomaly in a dam is very different from a 2σ anomaly in a temperature sensor.
+                </div>
+            </div>
+        </section>
+
+        <div id="geo-demo-container"></div>
+
         <!-- ==========================================
              SECTION 12: QUIZ
              ========================================== -->
@@ -1446,25 +1478,25 @@
         var getColors = Utils.getColors || function(){
             var d = document.documentElement.getAttribute('data-theme') === 'dark';
             return {
-                TEAL:   d ? '#2dd4bf' : '#059669',
-                CYAN:   d ? '#22d3ee' : '#0284c7',
-                AMBER:  d ? '#fbbf24' : '#d97706',
-                RED:    d ? '#ef4444' : '#dc2626',
-                GREEN:  d ? '#22c55e' : '#16a34a',
-                BG:     d ? '#0a0a0f' : '#f8f9fc',
-                TEXT:   d ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                DIM:    d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                GRID:   d ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
-                NODE:   d ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                TEAL: d ? '#2dd4bf' : '#059669',
+                CYAN: d ? '#22d3ee' : '#0284c7',
+                AMBER: d ? '#fbbf24' : '#d97706',
+                RED: d ? '#ef4444' : '#dc2626',
+                GREEN: d ? '#22c55e' : '#16a34a',
+                BG: d ? '#0a0a0f' : '#f8f9fc',
+                TEXT: d ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM: d ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: d ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE: d ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
                 STROKE: d ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                WHITE:  d ? '#fff' : '#1a1a2e',
-                MUTED:  d ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
+                WHITE: d ? '#fff' : '#1a1a2e',
+                MUTED: d ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
             };
         };
         var initCanvas = Utils.initCanvas || function(c){
             var dpr = window.devicePixelRatio || 1;
             var rect = c.getBoundingClientRect();
-            c.width  = rect.width  * dpr;
+            c.width = rect.width * dpr;
             c.height = rect.height * dpr;
             var ctx = c.getContext('2d');
             ctx.scale(dpr, dpr);
@@ -1570,7 +1602,7 @@
             var canvas = document.getElementById('demo1-canvas');
             if (!canvas) return;
 
-            var points = [];       /* { x:0-1, y:0-1, type:'normal'|'anomaly' } */
+            var points = []; /* { x:0-1, y:0-1, type:'normal'|'anomaly' } */
             var detections = null; /* { flagged:[], boundary:null } */
             var info = initCanvas(canvas);
             var ctx = info.ctx, W = info.w, H = info.h;
@@ -1999,10 +2031,10 @@
             var detected = [];
 
             var thresholdSlider = document.getElementById('demo2-threshold');
-            var thresholdLabel  = document.getElementById('demo2-threshold-label');
-            var anomalySelect   = document.getElementById('demo2-anomaly-type');
-            var generateBtn     = document.getElementById('demo2-generate');
-            var statsEl         = document.getElementById('demo2-stats');
+            var thresholdLabel = document.getElementById('demo2-threshold-label');
+            var anomalySelect = document.getElementById('demo2-anomaly-type');
+            var generateBtn = document.getElementById('demo2-generate');
+            var statsEl = document.getElementById('demo2-stats');
 
             thresholdSlider.addEventListener('input', function() {
                 thresholdLabel.textContent = parseFloat(thresholdSlider.value).toFixed(1);
@@ -2259,13 +2291,14 @@
             }
 
             var correctFb = document.getElementById(quizId + '-correct');
-            var wrongFb   = document.getElementById(quizId + '-wrong');
+            var wrongFb = document.getElementById(quizId + '-wrong');
             if (isCorrect && correctFb) correctFb.style.display = 'block';
-            if (!isCorrect && wrongFb)  wrongFb.style.display = 'block';
+            if (!isCorrect && wrongFb) wrongFb.style.display = 'block';
         };
 
     })();
     </script>
+    <script src="js/geo-demos.js"></script>
 
 </body>
 </html>

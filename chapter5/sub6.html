@@ -416,8 +416,8 @@
                         </p>
                         <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
                             "geotechnical" &rarr; ["geo", "##tech", "##nical"]<br>
-                            "deflection"   &rarr; ["deflection"] (common enough to be a single token)<br>
-                            "prestressed"  &rarr; ["pre", "##stre", "##ssed"]
+                            "deflection" &rarr; ["deflection"] (common enough to be a single token)<br>
+                            "prestressed" &rarr; ["pre", "##stre", "##ssed"]
                         </p>
                     </div>
                 </div>
@@ -801,7 +801,7 @@
                             different frequencies to encode positions:
                         </p>
                         <p style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin:12px 0; line-height:1.8; color:var(--accent-primary);">
-                            PE(pos, 2i)   = sin(pos / 10000^(2i/d))<br>
+                            PE(pos, 2i) = sin(pos / 10000^(2i/d))<br>
                             PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
                         </p>
                         <p>
@@ -1086,6 +1086,31 @@
                     dedicated "12mm" token, this learning would be unnecessary.
                 </p>
 
+            </div>
+        </section>
+
+        <!-- CE APPLICATION SECTION -->
+        <section class="ch-section" style="border-left:3px solid #f59e0b;padding-left:20px;">
+            <div class="section-container">
+                <h2 class="section-title" style="color:#f59e0b;"><i class="fa-solid fa-font"></i> CE Applications: Tokenization Challenges in Engineering</h2>
+                <p style="color:#94a3b8;margin-bottom:20px;">Engineering text is filled with domain-specific terms, abbreviations, and numerical codes that standard tokenizers struggle with — directly impacting LLM performance on CE tasks.</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
+                    <div style="background:#151f2b;border:1px solid #1e2d3d;border-radius:12px;padding:20px;">
+                        <div style="font-size:1.5rem;margin-bottom:8px;"></div>
+                        <h4 style="color:#00d4aa;margin-bottom:8px;">Code Reference Splitting</h4>
+                        <p style="font-size:.85rem;color:#94a3b8;">"ACI 318-19 §20.6.1.3.4" gets tokenized into 8+ tokens, making it hard for LLMs to treat it as a single reference. Domain-aware tokenizers keep code references intact for better retrieval accuracy.</p>
+                    </div>
+                    <div style="background:#151f2b;border:1px solid #1e2d3d;border-radius:12px;padding:20px;">
+                        <div style="font-size:1.5rem;margin-bottom:8px;"></div>
+                        <h4 style="color:#0ea5e9;margin-bottom:8px;">Unit-Aware Embeddings</h4>
+                        <p style="font-size:.85rem;color:#94a3b8;">"25 MPa" vs "25 kPa" differ by a factor of 1000 but may tokenize identically except the unit token. Specialized embeddings encode magnitude and units together for accurate engineering reasoning.</p>
+                    </div>
+                    <div style="background:#151f2b;border:1px solid #1e2d3d;border-radius:12px;padding:20px;">
+                        <div style="font-size:1.5rem;margin-bottom:8px;"></div>
+                        <h4 style="color:#a855f7;margin-bottom:8px;">Vocabulary Gaps in CE Terms</h4>
+                        <p style="font-size:.85rem;color:#94a3b8;">Terms like "prestressed", "geosynthetics", "shotcrete" are split into subwords by general tokenizers. This means LLMs need more context to understand these as single engineering concepts.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1771,52 +1796,52 @@
             /* Simulated 2D embedding positions (t-SNE-like projection) */
             var words = [
                 /* Structural cluster (top-left) */
-                { word: 'beam',          x: 0.18, y: 0.22, cluster: 'structural' },
-                { word: 'column',        x: 0.15, y: 0.30, cluster: 'structural' },
-                { word: 'slab',          x: 0.22, y: 0.18, cluster: 'structural' },
-                { word: 'truss',         x: 0.25, y: 0.27, cluster: 'structural' },
-                { word: 'girder',        x: 0.20, y: 0.25, cluster: 'structural' },
-                { word: 'moment',        x: 0.28, y: 0.20, cluster: 'structural' },
-                { word: 'deflection',    x: 0.14, y: 0.35, cluster: 'structural' },
+                { word: 'beam', x: 0.18, y: 0.22, cluster: 'structural' },
+                { word: 'column', x: 0.15, y: 0.30, cluster: 'structural' },
+                { word: 'slab', x: 0.22, y: 0.18, cluster: 'structural' },
+                { word: 'truss', x: 0.25, y: 0.27, cluster: 'structural' },
+                { word: 'girder', x: 0.20, y: 0.25, cluster: 'structural' },
+                { word: 'moment', x: 0.28, y: 0.20, cluster: 'structural' },
+                { word: 'deflection', x: 0.14, y: 0.35, cluster: 'structural' },
                 { word: 'reinforcement', x: 0.22, y: 0.33, cluster: 'structural' },
-                { word: 'shear',         x: 0.30, y: 0.30, cluster: 'structural' },
-                { word: 'bending',       x: 0.26, y: 0.15, cluster: 'structural' },
-                { word: 'prestressed',   x: 0.12, y: 0.27, cluster: 'structural' },
-                { word: 'steel',         x: 0.32, y: 0.22, cluster: 'structural' },
+                { word: 'shear', x: 0.30, y: 0.30, cluster: 'structural' },
+                { word: 'bending', x: 0.26, y: 0.15, cluster: 'structural' },
+                { word: 'prestressed', x: 0.12, y: 0.27, cluster: 'structural' },
+                { word: 'steel', x: 0.32, y: 0.22, cluster: 'structural' },
 
                 /* Geotechnical cluster (bottom-left) */
-                { word: 'soil',          x: 0.18, y: 0.65, cluster: 'geotechnical' },
-                { word: 'clay',          x: 0.14, y: 0.72, cluster: 'geotechnical' },
-                { word: 'sand',          x: 0.22, y: 0.70, cluster: 'geotechnical' },
-                { word: 'gravel',        x: 0.20, y: 0.75, cluster: 'geotechnical' },
-                { word: 'foundation',    x: 0.25, y: 0.62, cluster: 'geotechnical' },
-                { word: 'pile',          x: 0.28, y: 0.68, cluster: 'geotechnical' },
-                { word: 'bearing',       x: 0.15, y: 0.68, cluster: 'geotechnical' },
-                { word: 'settlement',    x: 0.30, y: 0.73, cluster: 'geotechnical' },
-                { word: 'excavation',    x: 0.24, y: 0.78, cluster: 'geotechnical' },
-                { word: 'retaining',     x: 0.12, y: 0.62, cluster: 'geotechnical' },
-                { word: 'footing',       x: 0.32, y: 0.65, cluster: 'geotechnical' },
-                { word: 'rock',          x: 0.26, y: 0.80, cluster: 'geotechnical' },
+                { word: 'soil', x: 0.18, y: 0.65, cluster: 'geotechnical' },
+                { word: 'clay', x: 0.14, y: 0.72, cluster: 'geotechnical' },
+                { word: 'sand', x: 0.22, y: 0.70, cluster: 'geotechnical' },
+                { word: 'gravel', x: 0.20, y: 0.75, cluster: 'geotechnical' },
+                { word: 'foundation', x: 0.25, y: 0.62, cluster: 'geotechnical' },
+                { word: 'pile', x: 0.28, y: 0.68, cluster: 'geotechnical' },
+                { word: 'bearing', x: 0.15, y: 0.68, cluster: 'geotechnical' },
+                { word: 'settlement', x: 0.30, y: 0.73, cluster: 'geotechnical' },
+                { word: 'excavation', x: 0.24, y: 0.78, cluster: 'geotechnical' },
+                { word: 'retaining', x: 0.12, y: 0.62, cluster: 'geotechnical' },
+                { word: 'footing', x: 0.32, y: 0.65, cluster: 'geotechnical' },
+                { word: 'rock', x: 0.26, y: 0.80, cluster: 'geotechnical' },
 
                 /* Hydraulic cluster (right) */
-                { word: 'flow',          x: 0.72, y: 0.42, cluster: 'hydraulic' },
-                { word: 'discharge',     x: 0.68, y: 0.48, cluster: 'hydraulic' },
-                { word: 'velocity',      x: 0.75, y: 0.38, cluster: 'hydraulic' },
-                { word: 'pressure',      x: 0.78, y: 0.45, cluster: 'hydraulic' },
-                { word: 'dam',           x: 0.65, y: 0.55, cluster: 'hydraulic' },
-                { word: 'reservoir',     x: 0.70, y: 0.55, cluster: 'hydraulic' },
-                { word: 'pipe',          x: 0.80, y: 0.50, cluster: 'hydraulic' },
-                { word: 'drainage',      x: 0.73, y: 0.58, cluster: 'hydraulic' },
-                { word: 'flood',         x: 0.82, y: 0.40, cluster: 'hydraulic' },
-                { word: 'channel',       x: 0.76, y: 0.52, cluster: 'hydraulic' },
-                { word: 'runoff',        x: 0.68, y: 0.35, cluster: 'hydraulic' },
-                { word: 'hydraulic',     x: 0.85, y: 0.48, cluster: 'hydraulic' }
+                { word: 'flow', x: 0.72, y: 0.42, cluster: 'hydraulic' },
+                { word: 'discharge', x: 0.68, y: 0.48, cluster: 'hydraulic' },
+                { word: 'velocity', x: 0.75, y: 0.38, cluster: 'hydraulic' },
+                { word: 'pressure', x: 0.78, y: 0.45, cluster: 'hydraulic' },
+                { word: 'dam', x: 0.65, y: 0.55, cluster: 'hydraulic' },
+                { word: 'reservoir', x: 0.70, y: 0.55, cluster: 'hydraulic' },
+                { word: 'pipe', x: 0.80, y: 0.50, cluster: 'hydraulic' },
+                { word: 'drainage', x: 0.73, y: 0.58, cluster: 'hydraulic' },
+                { word: 'flood', x: 0.82, y: 0.40, cluster: 'hydraulic' },
+                { word: 'channel', x: 0.76, y: 0.52, cluster: 'hydraulic' },
+                { word: 'runoff', x: 0.68, y: 0.35, cluster: 'hydraulic' },
+                { word: 'hydraulic', x: 0.85, y: 0.48, cluster: 'hydraulic' }
             ];
 
             var clusterColors = {
-                structural:   '#2dd4bf',
+                structural: '#2dd4bf',
                 geotechnical: '#fbbf24',
-                hydraulic:    '#60a5fa'
+                hydraulic: '#60a5fa'
             };
 
             var hoveredIdx = -1;
@@ -2043,6 +2068,8 @@
 
     })();
     </script>
+
+<script src="js/geo-demos.js"></script>
 
 </body>
 </html>

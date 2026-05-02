@@ -1267,7 +1267,7 @@
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-pca = PCA(n_components=<span style="color:var(--code-number)">0.95</span>)  <span style="color:var(--code-comment)"># retain 95% variance</span>
+pca = PCA(n_components=<span style="color:var(--code-number)">0.95</span>) <span style="color:var(--code-comment)"># retain 95% variance</span>
 X_reduced = pca.fit_transform(X_scaled)
 
 <span style="color:var(--code-keyword)">print</span>(f<span style="color:var(--code-string)">"Reduced from {X.shape[1]} to {X_reduced.shape[1]} dims"</span>)
@@ -1338,6 +1338,38 @@ X_reduced = pca.fit_transform(X_scaled)
 
             </div>
         </section>
+
+        <!-- ══════ CE APPLICATION SECTION ══════ -->
+        <section class="ch-section" style="border-top:2px solid rgba(0,212,170,.15);margin-top:2rem;">
+            <div class="section-container">
+                <h2 class="section-title" style="color:#00d4aa">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    CE Application: PCA for Borehole & SHM Data
+                </h2>
+                <p style="color:var(--text-secondary);margin-bottom:1.5rem;">When each borehole has 15+ measurements, PCA compresses them into interpretable components.</p>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px;">
+                    <div class="info-card" style="border-left:3px solid #f59e0b;">
+                        <h4><i class="fa-solid fa-chart-area" style="color:#f59e0b"></i> Soil Data Compression</h4>
+                        <p>SPT-N, LL, PL, PI, grain-size fractions, density, MC, cohesion, friction angle — PCA shows that 2-3 components capture 80%+ variance. PC1 often = "clay vs sand" axis.</p>
+                    </div>
+                    <div class="info-card" style="border-left:3px solid #00d4aa;">
+                        <h4><i class="fa-solid fa-bridge" style="color:#00d4aa"></i> Bridge SHM Dimensionality</h4>
+                        <p>100+ sensors on a bridge → PCA identifies dominant vibration modes. First 3 PCs capture structural behavior; sudden change in PC loadings → possible damage.</p>
+                    </div>
+                    <div class="info-card" style="border-left:3px solid #0ea5e9;">
+                        <h4><i class="fa-solid fa-water" style="color:#0ea5e9"></i> Water Quality Indices</h4>
+                        <p>pH, turbidity, TDS, hardness, DO, BOD, COD, heavy metals — PCA creates composite water quality indices used in environmental impact reports.</p>
+                    </div>
+                </div>
+
+                <div class="tip-box" style="border-color:#a855f7;">
+                    <strong> Key Insight:</strong> In geotech, PCA loadings tell you which soil properties dominate each component. If PC1 loads heavily on LL, PI, and clay% — it's a "plasticity" component. Name your components for engineering interpretation!
+                </div>
+            </div>
+        </section>
+
+        <div id="geo-demo-container"></div>
 
         <!-- ==========================================
              SECTION 14: QUIZ
@@ -1624,15 +1656,15 @@ X_reduced = pca.fit_transform(X_scaled)
         var getColors = Utils.getColors || function(){
             var dark = document.documentElement.getAttribute('data-theme') !== 'light';
             return {
-                TEAL:  dark ? '#2dd4bf' : '#059669',
-                CYAN:  dark ? '#22d3ee' : '#0284c7',
+                TEAL: dark ? '#2dd4bf' : '#059669',
+                CYAN: dark ? '#22d3ee' : '#0284c7',
                 AMBER: dark ? '#fbbf24' : '#d97706',
-                RED:   dark ? '#ef4444' : '#dc2626',
+                RED: dark ? '#ef4444' : '#dc2626',
                 GREEN: dark ? '#22c55e' : '#16a34a',
-                BG:    dark ? '#0a0a0f' : '#ffffff',
-                TEXT:  dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                DIM:   dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                GRID:  dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                BG: dark ? '#0a0a0f' : '#ffffff',
+                TEXT: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
                 STROKE:dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
                 WHITE: dark ? '#fff' : '#111',
                 MUTED: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)'
@@ -1641,7 +1673,7 @@ X_reduced = pca.fit_transform(X_scaled)
         var initCanvas = Utils.initCanvas || function(c){
             var d = window.devicePixelRatio || 1;
             var r = c.getBoundingClientRect();
-            c.width  = r.width  * d;
+            c.width = r.width * d;
             c.height = r.height * d;
             var x = c.getContext('2d');
             x.scale(d, d);
@@ -1778,12 +1810,12 @@ X_reduced = pca.fit_transform(X_scaled)
             var ctx = info.ctx, W = info.w, H = info.h;
 
             var corrSlider = document.getElementById('corr-slider');
-            var rotSlider  = document.getElementById('rot-slider');
-            var corrLabel  = document.getElementById('corr-value');
-            var rotLabel   = document.getElementById('rot-value');
-            var btnProj    = document.getElementById('btn-toggle-proj');
-            var btnRegen   = document.getElementById('btn-regen-pca');
-            var statsEl    = document.getElementById('pca-stats');
+            var rotSlider = document.getElementById('rot-slider');
+            var corrLabel = document.getElementById('corr-value');
+            var rotLabel = document.getElementById('rot-value');
+            var btnProj = document.getElementById('btn-toggle-proj');
+            var btnRegen = document.getElementById('btn-regen-pca');
+            var statsEl = document.getElementById('pca-stats');
 
             var showProjection = false;
             var points = [];
@@ -1996,7 +2028,7 @@ X_reduced = pca.fit_transform(X_scaled)
 
             function onSliderChange() {
                 corrLabel.textContent = (parseFloat(corrSlider.value) / 100).toFixed(2);
-                rotLabel.textContent  = rotSlider.value;
+                rotLabel.textContent = rotSlider.value;
                 generateData();
                 draw();
             }
@@ -2043,10 +2075,10 @@ X_reduced = pca.fit_transform(X_scaled)
             var ctx = info.ctx, W = info.w, H = info.h;
 
             var ncompSlider = document.getElementById('ncomp-slider');
-            var ncompLabel  = document.getElementById('ncomp-value');
-            var totalLabel  = document.getElementById('ncomp-total');
-            var btnRegen    = document.getElementById('btn-regen-var');
-            var statsEl     = document.getElementById('variance-stats');
+            var ncompLabel = document.getElementById('ncomp-value');
+            var totalLabel = document.getElementById('ncomp-total');
+            var btnRegen = document.getElementById('btn-regen-var');
+            var statsEl = document.getElementById('variance-stats');
 
             var eigenvalues = [];
             var D = 10;
@@ -2088,7 +2120,7 @@ X_reduced = pca.fit_transform(X_scaled)
                 var chartW = W - padL - padR;
                 var chartH = H - padT - padB;
                 var barW = chartW / D * 0.55;
-                var gap  = chartW / D;
+                var gap = chartW / D;
 
                 /* Y-axis gridlines and labels */
                 ctx.font = '500 11px Inter, sans-serif';
@@ -2284,13 +2316,14 @@ X_reduced = pca.fit_transform(X_scaled)
             }
 
             var correctFb = document.getElementById(quizId + '-correct');
-            var wrongFb   = document.getElementById(quizId + '-wrong');
+            var wrongFb = document.getElementById(quizId + '-wrong');
             if (isCorrect && correctFb) correctFb.style.display = 'block';
-            if (!isCorrect && wrongFb)  wrongFb.style.display = 'block';
+            if (!isCorrect && wrongFb) wrongFb.style.display = 'block';
         };
 
     })();
     </script>
+    <script src="js/geo-demos.js"></script>
 
 </body>
 </html>

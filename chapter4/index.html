@@ -3,17 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chapter 4: Convolutional Neural Networks | Civil Engineer's Guide to AI</title>
+    <title>Chapter 4: CNNs — Computer Vision | Civil Engineer's Guide to AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="../css/chapters.css">
+    <style>
+        .hub-hero{position:relative;min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 60px;overflow:hidden}
+        .hub-hero canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+        .hub-hero__content{position:relative;z-index:1;max-width:820px}
+        .hub-hero__badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,170,.12);color:#00d4aa;font-weight:600;font-size:.95rem;padding:8px 20px;border-radius:99px;border:1px solid rgba(0,212,170,.25);margin-bottom:24px;animation:fadeInD .6s ease}
+        .hub-hero__title{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:800;line-height:1.15;margin-bottom:20px;background:linear-gradient(135deg,#00d4aa,#0ea5e9,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:fadeInD .8s ease}
+        .hub-hero__subtitle{font-size:1.15rem;color:var(--text-secondary);line-height:1.7;max-width:640px;margin:0 auto 32px;animation:fadeInD 1s ease}
+        .hub-stats{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin-bottom:36px;animation:fadeInD 1.2s ease}
+        .hub-stat{text-align:center}
+        .hub-stat__value{font-size:2.2rem;font-weight:800;color:#00d4aa}
+        .hub-stat__label{font-size:.82rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+        .hub-hero__scroll{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:1;color:var(--text-muted);animation:bounce 2s infinite;font-size:1.2rem}
+        @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+        @keyframes fadeInD{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+        .ce-focus-banner{background:linear-gradient(135deg,rgba(0,212,170,.08),rgba(14,165,233,.08));border:1px solid rgba(0,212,170,.15);border-radius:16px;padding:28px 32px;margin:0 auto 48px;max-width:920px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+        .ce-focus-banner__icon{width:64px;height:64px;border-radius:16px;background:rgba(0,212,170,.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#00d4aa}
+        .ce-focus-banner h3{font-size:1.1rem;margin-bottom:6px;color:var(--text-primary)}
+        .ce-focus-banner p{font-size:.92rem;color:var(--text-secondary);line-height:1.6;margin:0}
+        .ce-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+        .ce-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600}
+        .ce-tag.geotech{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+        .ce-tag.water{background:rgba(14,165,233,.1);color:#0ea5e9;border:1px solid rgba(14,165,233,.2)}
+        .ce-tag.structural{background:rgba(0,212,170,.1);color:#00d4aa;border:1px solid rgba(0,212,170,.2)}
+        .ce-tag.seismic{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+        .app-preview{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+        .app-preview__title{font-size:1.5rem;font-weight:700;text-align:center;margin-bottom:8px}
+        .app-preview__subtitle{text-align:center;color:var(--text-muted);font-size:.92rem;margin-bottom:36px}
+        .app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+        .app-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:14px;padding:22px 20px;text-align:center;transition:all .3s}
+        .app-item:hover{border-color:#00d4aa;transform:translateY(-2px)}
+        .app-item__icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.3rem}
+        .app-item__icon.geotech{background:rgba(245,158,11,.12);color:#fbbf24}
+        .app-item__icon.water{background:rgba(14,165,233,.12);color:#22d3ee}
+        .app-item__icon.structural{background:rgba(0,212,170,.12);color:#2dd4bf}
+        .app-item__icon.seismic{background:rgba(239,68,68,.12);color:#f87171}
+        .app-item h4{font-size:.95rem;margin-bottom:6px}
+        .app-item p{font-size:.82rem;color:var(--text-muted);line-height:1.5}
+        .roadmap-section{max-width:1100px;margin:0 auto;padding:0 24px 40px}
+        .roadmap-title{font-size:1.6rem;font-weight:700;text-align:center;margin-bottom:12px;color:var(--text-primary)}
+        .roadmap-subtitle{text-align:center;color:var(--text-muted);font-size:.95rem;margin-bottom:40px}
+        .sub-grid{max-width:1100px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+        .sub-card{position:relative;display:flex;flex-direction:column;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:16px;padding:28px 24px;transition:all .3s ease;text-decoration:none;overflow:hidden;opacity:0;transform:translateY(20px)}
+        .sub-card.visible{opacity:1;transform:translateY(0)}
+        .sub-card:hover{transform:translateY(-4px);border-color:#00d4aa;box-shadow:0 12px 40px rgba(0,212,170,.1)}
+        .sub-card__header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+        .sub-card__icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+        .sub-card__icon.teal{background:rgba(0,212,170,.12);color:#2dd4bf}
+        .sub-card__icon.cyan{background:rgba(14,165,233,.12);color:#22d3ee}
+        .sub-card__icon.amber{background:rgba(245,158,11,.12);color:#fbbf24}
+        .sub-card__icon.purple{background:rgba(168,85,247,.12);color:#a78bfa}
+        .sub-card__num{font-size:.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+        .sub-card__title{font-size:1.08rem;font-weight:700;color:var(--text-primary);margin-bottom:8px}
+        .sub-card__desc{font-size:.88rem;color:var(--text-secondary);line-height:1.6;flex-grow:1;margin-bottom:14px}
+        .sub-card__meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+        .sub-card__meta-item{display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--text-muted)}
+        .sub-card__meta-item i{font-size:.7rem;color:#00d4aa}
+        .sub-card__tags{display:flex;gap:6px;flex-wrap:wrap}
+        .sub-card__tag{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(255,255,255,.05);color:var(--text-muted);border:1px solid var(--border-subtle)}
+        .sub-card__tag.ce{background:rgba(0,212,170,.08);color:#2dd4bf;border-color:rgba(0,212,170,.2)}
+        .sub-card__tag.geotech{background:rgba(245,158,11,.08);color:#fbbf24;border-color:rgba(245,158,11,.2)}
+        .sub-card__tag.water{background:rgba(14,165,233,.08);color:#22d3ee;border-color:rgba(14,165,233,.2)}
+        .sub-card__tag.interactive{background:rgba(168,85,247,.08);color:#a855f7;border-color:rgba(168,85,247,.2)}
+        .sub-card__arrow{position:absolute;bottom:20px;right:20px;font-size:.9rem;color:var(--text-muted);transition:transform .3s,color .3s}
+        .sub-card:hover .sub-card__arrow{transform:translateX(4px);color:#00d4aa}
+        .hub-footer{text-align:center;padding:40px 24px 60px;border-top:1px solid var(--border-subtle);max-width:600px;margin:0 auto}
+        .hub-footer p{color:var(--text-muted);font-size:.88rem;margin-bottom:20px}
+        .hub-footer__links{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+        .hub-footer__link{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-primary);font-size:.88rem;font-weight:600;text-decoration:none;transition:all .3s}
+        .hub-footer__link:hover{border-color:#00d4aa;transform:translateY(-2px)}
+        .hub-footer__link.primary{background:linear-gradient(135deg,#00d4aa,#0ea5e9);border:none;color:#0a0a0f}
+        @media(max-width:768px){.hub-stats{gap:24px}.hub-stat__value{font-size:1.7rem}.ce-focus-banner{grid-template-columns:1fr;text-align:center}.ce-focus-banner__icon{margin:0 auto}.ce-tags{justify-content:center}.sub-grid{grid-template-columns:1fr}}
+    </style>
 </head>
 <body>
     <nav id="main-nav">
-        <a href="../index.html" class="nav-logo"><i class="fa-solid fa-brain"></i> CE-AI Guide</a>
+        <a href="../index.html" class="nav-logo"><i class="fa-solid fa-helmet-safety"></i> CE-AI Guide</a>
         <div class="nav-links">
             <a href="../index.html"><i class="fa-solid fa-house"></i> Home</a>
             <a href="../chapter1/index.html"><i class="fa-solid fa-robot"></i> Ch 1</a>
@@ -26,95 +98,447 @@
     </nav>
     <div id="scroll-progress"></div>
 
-    <header class="chapter-hero">
-        <div class="chapter-hero__badge">Chapter 4</div>
-        <h1 class="chapter-hero__title">Convolutional Neural Networks</h1>
-        <p class="chapter-hero__subtitle">Visual intelligence for civil engineering - from crack detection to satellite imagery analysis</p>
+    <!-- ══════ HERO ══════ -->
+    <header class="hub-hero">
+        <canvas id="hub-canvas" aria-hidden="true"></canvas>
+        <div class="hub-hero__content">
+            <div class="hub-hero__badge"><i class="fa-solid fa-eye"></i> Chapter 4</div>
+            <h1 class="hub-hero__title">Convolutional Neural Networks</h1>
+            <p class="hub-hero__subtitle">
+                Teach machines to <strong>see</strong> like an inspector — detect <strong>cracks</strong> in concrete,
+                segment <strong>damage zones</strong> pixel-by-pixel, and classify <strong>satellite imagery</strong>
+                for site planning. Computer vision for civil engineering.
+            </p>
+            <div class="hub-stats">
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="10">0</div>
+                    <div class="hub-stat__label">Sub-chapters</div>
+                </div>
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="8">0</div>
+                    <div class="hub-stat__label">Interactive Demos</div>
+                </div>
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="40">0</div>
+                    <div class="hub-stat__label">Minutes</div>
+                </div>
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="6">0</div>
+                    <div class="hub-stat__label">CE Applications</div>
+                </div>
+            </div>
+        </div>
+        <div class="hub-hero__scroll"><i class="fa-solid fa-chevron-down"></i></div>
     </header>
 
-    <section class="chapter-overview">
-        <p>CNNs are the backbone of computer vision in civil engineering. Learn how convolutional layers extract features from images, enabling automated crack detection, structural damage assessment, and construction progress monitoring across 10 sub-chapters.</p>
+    <!-- ══════ CE FOCUS BANNER ══════ -->
+    <div class="ce-focus-banner">
+        <div class="ce-focus-banner__icon"><i class="fa-solid fa-helmet-safety"></i></div>
+        <div>
+            <h3> Civil Engineering Focus</h3>
+            <p>
+                CNNs are transforming infrastructure inspection. Instead of theory-heavy deep learning,
+                every concept is taught through <strong>crack images</strong>, <strong>drone survey photos</strong>,
+                and <strong>satellite bands</strong>. You'll build a working crack detector by the end.
+            </p>
+            <div class="ce-tags">
+                <span class="ce-tag structural"><i class="fa-solid fa-building-circle-exclamation"></i> Crack Detection</span>
+                <span class="ce-tag geotech"><i class="fa-solid fa-mountain"></i> Terrain Classification</span>
+                <span class="ce-tag water"><i class="fa-solid fa-water"></i> Flood Mapping</span>
+                <span class="ce-tag seismic"><i class="fa-solid fa-bridge"></i> Bridge Inspection</span>
+                <span class="ce-tag structural"><i class="fa-solid fa-satellite"></i> Remote Sensing</span>
+                <span class="ce-tag seismic"><i class="fa-solid fa-hard-hat"></i> Safety PPE Detection</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════ APPLICATION PREVIEW ══════ -->
+    <section class="app-preview">
+        <h2 class="app-preview__title">What You'll Build With CNNs</h2>
+        <p class="app-preview__subtitle">Real computer vision systems for infrastructure and site analysis</p>
+        <div class="app-grid">
+            <div class="app-item">
+                <div class="app-item__icon structural"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h4>Crack Detector</h4>
+                <p>Classify concrete surface images as cracked vs. intact — the #1 CNN use in civil engineering</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon seismic"><i class="fa-solid fa-crosshairs"></i></div>
+                <h4>Defect Localizer</h4>
+                <p>YOLO-based bounding boxes on spalling, rebar exposure, and delamination in bridge photos</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon geotech"><i class="fa-solid fa-puzzle-piece"></i></div>
+                <h4>Damage Segmenter</h4>
+                <p>U-Net pixel masks — measure exact crack area in cm² for structural assessment reports</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon water"><i class="fa-solid fa-satellite"></i></div>
+                <h4>Land-Use Classifier</h4>
+                <p>CNN on satellite imagery for flood-zone mapping, watershed delineation, and EIA studies</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon seismic"><i class="fa-solid fa-hard-hat"></i></div>
+                <h4>PPE Safety Monitor</h4>
+                <p>Real-time object detection: helmet, vest, harness compliance on construction sites</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon geotech"><i class="fa-solid fa-microscope"></i></div>
+                <h4>Grad-CAM Explainer</h4>
+                <p>Visualize why the CNN flags a crack — build trust with structural engineers and regulators</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════ ROADMAP ══════ -->
+    <section class="roadmap-section">
+        <h2 class="roadmap-title">10 Sub-Chapters</h2>
+        <p class="roadmap-subtitle">From pixels to a production crack detection system</p>
     </section>
 
     <section class="sub-grid">
         <a href="sub1.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-image"></i></div>
-            <span class="sub-card__num">4.1</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon teal"><i class="fa-solid fa-image"></i></div>
+                <span class="sub-card__num">Section 4.1</span>
+            </div>
             <div class="sub-card__title">Images as Data</div>
-            <div class="sub-card__desc">How computers see - pixels, channels, resolution, and representing construction images as numerical arrays.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">pixels</span><span class="sub-card__tag">channels</span></div>
+            <div class="sub-card__desc">Pixels, channels, and resolution — how drone photos and inspection images become numerical arrays a CNN can process.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 20 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 1 demo</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">pixels</span>
+                <span class="sub-card__tag geotech">drone imagery</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub2.html" class="sub-card">
-            <div class="sub-card__icon cyan"><i class="fa-solid fa-border-top-left"></i></div>
-            <span class="sub-card__num">4.2</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon cyan"><i class="fa-solid fa-border-top-left"></i></div>
+                <span class="sub-card__num">Section 4.2</span>
+            </div>
             <div class="sub-card__title">Convolution Operation</div>
-            <div class="sub-card__desc">The core operation - sliding filters over images to detect edges, textures, and patterns in structures.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">kernels</span><span class="sub-card__tag">filters</span></div>
+            <div class="sub-card__desc">Sliding filters over crack images — edge detection, texture extraction, and how kernels find structural features.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 30 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">kernels</span>
+                <span class="sub-card__tag structural">edge detect</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub3.html" class="sub-card">
-            <div class="sub-card__icon amber"><i class="fa-solid fa-table-cells"></i></div>
-            <span class="sub-card__num">4.3</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon amber"><i class="fa-solid fa-table-cells"></i></div>
+                <span class="sub-card__num">Section 4.3</span>
+            </div>
             <div class="sub-card__title">Pooling & Stride</div>
-            <div class="sub-card__desc">Downsampling feature maps - max pooling, average pooling, and controlling spatial dimensions.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">pooling</span><span class="sub-card__tag">downsampling</span></div>
+            <div class="sub-card__desc">Downsampling while keeping the cracks visible — max pooling, average pooling, and multi-scale defect detection.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 25 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 1 demo</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">pooling</span>
+                <span class="sub-card__tag structural">multi-scale</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub4.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-layer-group"></i></div>
-            <span class="sub-card__num">4.4</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon teal"><i class="fa-solid fa-layer-group"></i></div>
+                <span class="sub-card__num">Section 4.4</span>
+            </div>
             <div class="sub-card__title">CNN Architecture</div>
-            <div class="sub-card__desc">Building a complete CNN - stacking conv, pool, and dense layers for image classification.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">architecture</span><span class="sub-card__tag">layers</span></div>
+            <div class="sub-card__desc">Stacking conv → pool → dense layers into a complete crack classifier. Design choices that matter for real deployment.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 35 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">architecture</span>
+                <span class="sub-card__tag ce">design</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub5.html" class="sub-card">
-            <div class="sub-card__icon cyan"><i class="fa-solid fa-arrows-rotate"></i></div>
-            <span class="sub-card__num">4.5</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon cyan"><i class="fa-solid fa-arrows-rotate"></i></div>
+                <span class="sub-card__num">Section 4.5</span>
+            </div>
             <div class="sub-card__title">Training CNNs</div>
-            <div class="sub-card__desc">Backpropagation through conv layers, data augmentation, batch normalization, and transfer learning.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">training</span><span class="sub-card__tag">augmentation</span></div>
+            <div class="sub-card__desc">Data augmentation for limited crack datasets, transfer learning from ImageNet, handling class imbalance.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 35 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 1 demo</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">transfer learning</span>
+                <span class="sub-card__tag geotech">augmentation</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub6.html" class="sub-card">
-            <div class="sub-card__icon amber"><i class="fa-solid fa-landmark"></i></div>
-            <span class="sub-card__num">4.6</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon amber"><i class="fa-solid fa-landmark"></i></div>
+                <span class="sub-card__num">Section 4.6</span>
+            </div>
             <div class="sub-card__title">Famous CNN Architectures</div>
-            <div class="sub-card__desc">LeNet, AlexNet, VGG, ResNet, Inception - the evolution of CNN design and key innovations.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">ResNet</span><span class="sub-card__tag">VGG</span></div>
+            <div class="sub-card__desc">ResNet for deep crack classifiers, MobileNet for drone edge deployment, EfficientNet for constrained hardware.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 30 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 1 demo</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">ResNet</span>
+                <span class="sub-card__tag ce">MobileNet</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub7.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-crosshairs"></i></div>
-            <span class="sub-card__num">4.7</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon purple"><i class="fa-solid fa-crosshairs"></i></div>
+                <span class="sub-card__num">Section 4.7</span>
+            </div>
             <div class="sub-card__title">Object Detection</div>
-            <div class="sub-card__desc">From classification to localization - YOLO, SSD, and Faster R-CNN for detecting defects in images.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">YOLO</span><span class="sub-card__tag">detection</span></div>
+            <div class="sub-card__desc">YOLO and Faster R-CNN — draw bounding boxes around spalling, rebar exposure, and PPE violations.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 30 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 1 demo</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">YOLO</span>
+                <span class="sub-card__tag seismic">defect boxes</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub8.html" class="sub-card">
-            <div class="sub-card__icon cyan"><i class="fa-solid fa-puzzle-piece"></i></div>
-            <span class="sub-card__num">4.8</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon cyan"><i class="fa-solid fa-puzzle-piece"></i></div>
+                <span class="sub-card__num">Section 4.8</span>
+            </div>
             <div class="sub-card__title">Semantic Segmentation</div>
-            <div class="sub-card__desc">Pixel-level classification - U-Net for crack segmentation and damage area quantification.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">segmentation</span><span class="sub-card__tag">U-Net</span></div>
+            <div class="sub-card__desc">U-Net for pixel-level crack mapping — measure exact damage area in cm² from inspection photos.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 35 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">U-Net</span>
+                <span class="sub-card__tag structural">damage area</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub9.html" class="sub-card">
-            <div class="sub-card__icon amber"><i class="fa-solid fa-microscope"></i></div>
-            <span class="sub-card__num">4.9</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon amber"><i class="fa-solid fa-microscope"></i></div>
+                <span class="sub-card__num">Section 4.9</span>
+            </div>
             <div class="sub-card__title">Visualizing CNN Internals</div>
-            <div class="sub-card__desc">Feature maps, Grad-CAM, saliency maps - understanding what the network sees and why it matters.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">Grad-CAM</span><span class="sub-card__tag">explainability</span></div>
+            <div class="sub-card__desc">Grad-CAM and saliency maps — see what the crack detector is actually looking at. Build trust for structural reports.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 30 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 1 demo</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">Grad-CAM</span>
+                <span class="sub-card__tag ce">explainability</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
-        <a href="sub10.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-building-circle-exclamation"></i></div>
-            <span class="sub-card__num">4.10</span>
-            <div class="sub-card__title">CE Case Study: Crack Detection</div>
-            <div class="sub-card__desc">End-to-end project - building a CNN crack detection system for concrete infrastructure inspection.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">case study</span><span class="sub-card__tag">cracks</span></div>
+
+        <a href="sub10.html" class="sub-card" style="grid-column:1/-1">
+            <div class="sub-card__header">
+                <div class="sub-card__icon teal"><i class="fa-solid fa-building-circle-exclamation"></i></div>
+                <span class="sub-card__num">Section 4.10 — Capstone</span>
+            </div>
+            <div class="sub-card__title"> CE Case Study: Concrete Crack Detection</div>
+            <div class="sub-card__desc">
+                Full end-to-end project: inspection photos → data augmentation → ResNet-18 transfer learning
+                → confusion matrix + ROC evaluation → Grad-CAM validation → drone edge deployment.
+                Everything from 4.1–4.9 applied to the #1 CNN use case in civil engineering.
+            </div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 50 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag structural">crack detection</span>
+                <span class="sub-card__tag geotech">inspection</span>
+                <span class="sub-card__tag ce">full pipeline</span>
+                <span class="sub-card__tag interactive">capstone</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
     </section>
 
-    <nav class="chapter-nav-footer">
-        <a href="../chapter3/index.html" class="chapter-nav__link prev"><i class="fa-solid fa-arrow-left"></i> Chapter 3: Unsupervised Learning</a>
-        <a href="../chapter5/index.html" class="chapter-nav__link next">Chapter 5: LLMs & Transformers <i class="fa-solid fa-arrow-right"></i></a>
-    </nav>
+    <!-- ══════ FOOTER ══════ -->
+    <footer class="hub-footer">
+        <p>Ready to give your infrastructure eyes?</p>
+        <div class="hub-footer__links">
+            <a href="../chapter3/index.html" class="hub-footer__link"><i class="fa-solid fa-arrow-left"></i> Chapter 3</a>
+            <a href="sub1.html" class="hub-footer__link primary"><i class="fa-solid fa-play"></i> Start Chapter 4</a>
+            <a href="../chapter5/index.html" class="hub-footer__link">Chapter 5 <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </footer>
 
     <script src="../js/theme.js"></script>
     <script src="../js/sub-common.js"></script>
+    <script>
+    (function(){
+        /* ── Canvas: Animated CNN feature extraction visualization ── */
+        const canvas = document.getElementById('hub-canvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let W,H,dpr,scanX=0,gridCells=[];
+        const filterColors = ['#00d4aa','#0ea5e9','#f59e0b','#a855f7','#ef4444'];
+
+        function resize(){
+            dpr=window.devicePixelRatio||1;
+            W=canvas.clientWidth;H=canvas.clientHeight;
+            canvas.width=W*dpr;canvas.height=H*dpr;
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+            initGrid();
+        }
+
+        function initGrid(){
+            gridCells=[];
+            const sz=40,cols=Math.ceil(W/sz),rows=Math.ceil(H/sz);
+            for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+                gridCells.push({
+                    x:c*sz,y:r*sz,sz:sz,
+                    val:Math.random(),
+                    activated:false,
+                    activateTime:0,
+                    filterIdx:Math.floor(Math.random()*filterColors.length)
+                });
+            }
+        }
+
+        function draw(t){
+            ctx.clearRect(0,0,W,H);
+            // Background grid (image-like)
+            gridCells.forEach(cell=>{
+                const gray=Math.floor(cell.val*40+10);
+                ctx.fillStyle=`rgb(${gray},${gray+5},${gray+10})`;
+                ctx.fillRect(cell.x,cell.y,cell.sz-1,cell.sz-1);
+            });
+
+            // Scanning filter
+            scanX=(scanX+1.2)%(W+120);
+            const filterW=80;
+            ctx.strokeStyle='#00d4aa';ctx.lineWidth=2;
+            ctx.strokeRect(scanX-filterW/2,H*0.2,filterW,filterW);
+            ctx.fillStyle='rgba(0,212,170,0.08)';
+            ctx.fillRect(scanX-filterW/2,H*0.2,filterW,filterW);
+
+            // Draw 3x3 kernel weights
+            const kSz=filterW/3;
+            for(let kr=0;kr<3;kr++)for(let kc=0;kc<3;kc++){
+                const kx=scanX-filterW/2+kc*kSz+kSz/2;
+                const ky=H*0.2+kr*kSz+kSz/2;
+                const w=Math.sin(t/800+kr*2+kc)*0.5;
+                ctx.fillStyle=w>0?`rgba(0,212,170,${Math.abs(w)*0.5})`:`rgba(239,68,68,${Math.abs(w)*0.5})`;
+                ctx.beginPath();ctx.arc(kx,ky,kSz*0.3,0,Math.PI*2);ctx.fill();
+            }
+
+            // Feature map output (right side)
+            const fmX=W*0.65,fmY=H*0.15,fmW=W*0.28,fmH=H*0.7;
+            ctx.strokeStyle='#1e2d3d';ctx.lineWidth=1;
+            ctx.strokeRect(fmX,fmY,fmW,fmH);
+            ctx.fillStyle='rgba(0,212,170,0.03)';ctx.fillRect(fmX,fmY,fmW,fmH);
+
+            // Simulated feature map cells
+            const fCols=8,fRows=10;
+            const fw=fmW/fCols,fh=fmH/fRows;
+            for(let r=0;r<fRows;r++)for(let c=0;c<fCols;c++){
+                const activation=Math.sin(t/500+r*0.7+c*0.5)*0.5+0.5;
+                const idx=(r*fCols+c)%filterColors.length;
+                ctx.fillStyle=filterColors[idx]+Math.round(activation*60).toString(16).padStart(2,'0');
+                ctx.fillRect(fmX+c*fw+1,fmY+r*fh+1,fw-2,fh-2);
+            }
+
+            // Labels
+            ctx.fillStyle='#94a3b8';ctx.font='12px Inter';ctx.textAlign='center';
+            ctx.fillText('Input Image',scanX,H*0.2-10);
+            ctx.fillText('Feature Maps',fmX+fmW/2,fmY-10);
+
+            // Connection lines
+            ctx.beginPath();ctx.setLineDash([3,4]);
+            ctx.strokeStyle='rgba(0,212,170,0.15)';ctx.lineWidth=1;
+            ctx.moveTo(scanX+filterW/2,H*0.2+filterW/2);
+            ctx.lineTo(fmX,fmY+fmH/2);
+            ctx.stroke();ctx.setLineDash([]);
+
+            // Floating crack-like patterns
+            for(let i=0;i<5;i++){
+                const cx=50+Math.sin(t/2000+i*1.3)*(W*0.3);
+                const cy=H*0.5+Math.cos(t/1800+i*0.9)*100;
+                ctx.beginPath();ctx.moveTo(cx,cy);
+                for(let s=0;s<4;s++){
+                    ctx.lineTo(cx+s*12+Math.sin(t/400+s)*5,cy+s*8+Math.cos(t/350+s)*4);
+                }
+                ctx.strokeStyle='rgba(239,68,68,0.15)';ctx.lineWidth=2;ctx.stroke();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize',resize);resize();draw(0);
+
+        /* ── Animated stat counters ── */
+        document.querySelectorAll('.hub-stat__value[data-target]').forEach(el=>{
+            const io=new IntersectionObserver(entries=>{
+                entries.forEach(e=>{
+                    if(!e.isIntersecting)return;
+                    const target=+el.dataset.target;let cur=0;
+                    const step=()=>{cur+=Math.ceil(target/40);if(cur>=target){el.textContent=target;return;}el.textContent=cur;requestAnimationFrame(step);};
+                    step();io.unobserve(el);
+                });
+            },{threshold:.5});
+            io.observe(el);
+        });
+
+        /* ── Reveal sub-cards on scroll ── */
+        const cio=new IntersectionObserver(entries=>{
+            entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');cio.unobserve(e.target);}});
+        },{threshold:.1});
+        document.querySelectorAll('.sub-card').forEach((c,i)=>{
+            c.style.transitionDelay=`${i*.06}s`;c.style.transition='opacity .5s ease, transform .5s ease';
+            cio.observe(c);
+        });
+    })();
+    </script>
 </body>
 </html>

@@ -8,15 +8,15 @@
 
     // -------- Shared palette --------
     const C = {
-        bg:    '#0d0d14',
-        teal:  '#00d4aa',
-        blue:  '#0ea5e9',
+        bg: '#0d0d14',
+        teal: '#00d4aa',
+        blue: '#0ea5e9',
         amber: '#f59e0b',
         green: '#22c55e',
-        red:   '#ef4444',
+        red: '#ef4444',
         purple:'#a855f7',
-        pink:  '#ec4899',
-        text:  '#e6e7ee',
+        pink: '#ec4899',
+        text: '#e6e7ee',
         muted: 'rgba(230, 231, 238, 0.55)'
     };
 
@@ -181,14 +181,14 @@
         const canvas = document.getElementById('subfields-canvas');
         if (!canvas) return;
         const fields = [
-            { name: 'Computer Vision', icon: '👁', color: C.teal,   tag: 'CNNs, image AI' },
-            { name: 'NLP / LLMs',      icon: '💬', color: C.blue,   tag: 'language understanding' },
-            { name: 'Robotics',        icon: '🤖', color: C.amber,  tag: 'physical intelligence' },
-            { name: 'Planning',        icon: '🧭', color: C.green,  tag: 'optimization & search' },
-            { name: 'Expert Systems',  icon: '📋', color: C.red,    tag: 'rule-based AI' },
-            { name: 'Machine Learning',icon: '📈', color: C.purple, tag: 'learns from data' },
-            { name: 'Knowledge Graphs',icon: '🕸',  color: C.pink,   tag: 'symbolic reasoning' },
-            { name: 'Reinforcement',   icon: '🎯', color: C.teal,   tag: 'reward-driven' }
+            { name: 'Computer Vision', icon: '', color: C.teal, tag: 'CNNs, image AI' },
+            { name: 'NLP / LLMs', icon: '', color: C.blue, tag: 'language understanding' },
+            { name: 'Robotics', icon: '', color: C.amber, tag: 'physical intelligence' },
+            { name: 'Planning', icon: '', color: C.green, tag: 'optimization & search' },
+            { name: 'Expert Systems', icon: '', color: C.red, tag: 'rule-based AI' },
+            { name: 'Machine Learning',icon: '', color: C.purple, tag: 'learns from data' },
+            { name: 'Knowledge Graphs',icon: '', color: C.pink, tag: 'symbolic reasoning' },
+            { name: 'Reinforcement', icon: '', color: C.teal, tag: 'reward-driven' }
         ];
         let view = fitCanvas(canvas);
         let mouse = { x: -999, y: -999 };
@@ -294,18 +294,18 @@
         const slider = document.getElementById('timeline-slider');
         const yearLbl = document.getElementById('timeline-year');
         const events = [
-            { y: 1950, label: 'Turing Test',          color: C.teal },
+            { y: 1950, label: 'Turing Test', color: C.teal },
             { y: 1956, label: 'Dartmouth Conference', color: C.teal },
-            { y: 1965, label: 'ELIZA chatbot',        color: C.blue },
-            { y: 1980, label: 'Expert systems peak',  color: C.amber },
-            { y: 1986, label: 'Backpropagation',      color: C.purple },
+            { y: 1965, label: 'ELIZA chatbot', color: C.blue },
+            { y: 1980, label: 'Expert systems peak', color: C.amber },
+            { y: 1986, label: 'Backpropagation', color: C.purple },
             { y: 1997, label: 'Deep Blue beats Kasparov', color: C.blue },
             { y: 2006, label: 'Deep Learning revival',color: C.green },
-            { y: 2012, label: 'AlexNet / ImageNet',   color: C.red },
+            { y: 2012, label: 'AlexNet / ImageNet', color: C.red },
             { y: 2017, label: '"Attention Is All You Need"', color: C.purple },
-            { y: 2020, label: 'GPT-3',                color: C.pink },
-            { y: 2022, label: 'ChatGPT release',      color: C.teal },
-            { y: 2024, label: 'Multimodal LLMs',      color: C.blue },
+            { y: 2020, label: 'GPT-3', color: C.pink },
+            { y: 2022, label: 'ChatGPT release', color: C.teal },
+            { y: 2024, label: 'Multimodal LLMs', color: C.blue },
             { y: 2026, label: 'AI in your daily CE workflow', color: C.green }
         ];
         let view = fitCanvas(canvas);
@@ -415,9 +415,9 @@
         if (!canvas) return;
         let view = fitCanvas(canvas);
         const types = [
-            { name: 'Narrow AI (ANI)',  desc: 'Excels at one task. Everything we use today.', color: C.teal, level: 1 },
+            { name: 'Narrow AI (ANI)', desc: 'Excels at one task. Everything we use today.', color: C.teal, level: 1 },
             { name: 'General AI (AGI)', desc: 'Human-level across all domains. Theoretical.', color: C.amber, level: 2 },
-            { name: 'Super AI (ASI)',   desc: 'Surpasses all humans combined. Hypothetical.', color: C.red, level: 3 }
+            { name: 'Super AI (ASI)', desc: 'Surpasses all humans combined. Hypothetical.', color: C.red, level: 3 }
         ];
         let mouse = { x: -999, y: -999 };
         let hover = -1;
@@ -503,12 +503,12 @@
         if (!canvas) return;
         let view = fitCanvas(canvas);
         const stages = [
-            { name: 'Collect',  icon: '📊', color: C.teal },
-            { name: 'Clean',    icon: '🧹', color: C.blue },
-            { name: 'Engineer', icon: '⚙', color: C.amber },
-            { name: 'Train',    icon: '🧠', color: C.purple },
-            { name: 'Evaluate', icon: '📈', color: C.green },
-            { name: 'Deploy',   icon: '🚀', color: C.red }
+            { name: 'Collect', icon: '', color: C.teal },
+            { name: 'Clean', icon: '', color: C.blue },
+            { name: 'Engineer', icon: '', color: C.amber },
+            { name: 'Train', icon: '', color: C.purple },
+            { name: 'Evaluate', icon: '', color: C.green },
+            { name: 'Deploy', icon: '', color: C.red }
         ];
         window.addEventListener('resize', () => view = fitCanvas(canvas));
 
@@ -532,7 +532,7 @@
             const lg = ctx.createLinearGradient(padX, 0, view.w - padX, 0);
             const phase = (Math.sin(time) * 0.5 + 0.5);
             lg.addColorStop(Math.max(0, phase - 0.15), 'rgba(0,212,170,0)');
-            lg.addColorStop(phase,                     rgba(C.teal, 0.7));
+            lg.addColorStop(phase, rgba(C.teal, 0.7));
             lg.addColorStop(Math.min(1, phase + 0.15), 'rgba(0,212,170,0)');
             ctx.strokeStyle = lg;
             ctx.lineWidth = 6;
@@ -647,7 +647,7 @@
                 ctx.fillStyle = rgba(C.red, 0.7);
                 ctx.font = 'bold 11px Inter, sans-serif';
                 ctx.textAlign = 'left';
-                ctx.fillText('⚠ OVERTOPPING - design exceeded', 10, 24);
+                ctx.fillText(' OVERTOPPING - design exceeded', 10, 24);
                 // splash particles
                 for (let p = 0; p < 30; p++) {
                     const px = dx0 + Math.random() * dxw2;
@@ -876,7 +876,7 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = `${Math.min(cellW, cellH) * 0.4}px Inter, sans-serif`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('🚧', x * cellW + cellW / 2, y * cellH + cellH / 2);
+                ctx.fillText('', x * cellW + cellW / 2, y * cellH + cellH / 2);
             });
             // goal
             const [gx, gy] = goal;
@@ -885,7 +885,7 @@
             ctx.fillStyle = '#fff';
             ctx.font = `${Math.min(cellW, cellH) * 0.5}px Inter, sans-serif`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('🏁', gx * cellW + cellW / 2, gy * cellH + cellH / 2);
+            ctx.fillText('', gx * cellW + cellW / 2, gy * cellH + cellH / 2);
             // trail
             ctx.strokeStyle = rgba(C.teal, 0.4);
             ctx.lineWidth = 2;
@@ -905,7 +905,7 @@
             ctx.fill();
             ctx.fillStyle = '#000';
             ctx.font = `bold ${Math.min(cellW, cellH) * 0.35}px Inter, sans-serif`;
-            ctx.fillText('🚜', ax, ay);
+            ctx.fillText('', ax, ay);
         }
 
         if (startBtn) startBtn.addEventListener('click', () => {
@@ -1053,14 +1053,14 @@
                     { id: 'Search', label: 'Search Algorithms', color: C.amber }
                 ]},
                 { id: 'ML', label: 'Machine Learning', color: C.teal, children: [
-                    { id: 'Sup',  label: 'Supervised', color: C.teal },
-                    { id: 'Uns',  label: 'Unsupervised', color: C.teal },
-                    { id: 'RL',   label: 'Reinforcement', color: C.teal },
-                    { id: 'DL',   label: 'Deep Learning', color: C.blue, children: [
-                        { id: 'CNN', label: 'CNNs',         color: C.blue },
-                        { id: 'RNN', label: 'RNNs',         color: C.blue },
-                        { id: 'TR',  label: 'Transformers', color: C.blue },
-                        { id: 'GAN', label: 'GANs',         color: C.blue }
+                    { id: 'Sup', label: 'Supervised', color: C.teal },
+                    { id: 'Uns', label: 'Unsupervised', color: C.teal },
+                    { id: 'RL', label: 'Reinforcement', color: C.teal },
+                    { id: 'DL', label: 'Deep Learning', color: C.blue, children: [
+                        { id: 'CNN', label: 'CNNs', color: C.blue },
+                        { id: 'RNN', label: 'RNNs', color: C.blue },
+                        { id: 'TR', label: 'Transformers', color: C.blue },
+                        { id: 'GAN', label: 'GANs', color: C.blue }
                     ]}
                 ]}
             ]
@@ -1236,7 +1236,7 @@
             ctx.fillStyle = rgba(C.text, 0.85);
             ctx.font = 'bold 12px Inter, sans-serif';
             ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-            ctx.fillText(biased ? '⚠ Biased Sample (left-skewed)' : '✓ Balanced Sample', 12, 12);
+            ctx.fillText(biased ? ' Biased Sample (left-skewed)' : ' Balanced Sample', 12, 12);
             ctx.font = '10px Inter, sans-serif';
             ctx.fillStyle = rgba(C.green, 0.8);
             ctx.fillText('— True boundary', 12, 32);

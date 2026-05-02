@@ -414,7 +414,7 @@ function initChapter1() {
         if (t > 0.6) {
             const risk = ((t - 0.6) / 0.4 * 100).toFixed(0);
             rCtx.fillStyle = `rgba(239, 68, 68, ${0.3 + t * 0.4})`;
-            rCtx.fillText(`⚠ Flood Risk Prediction: ${risk}%`, 12, 78);
+            rCtx.fillText(` Flood Risk Prediction: ${risk}%`, 12, 78);
         }
 
         requestAnimationFrame(() => drawRiver(Date.now()));
@@ -728,18 +728,18 @@ function initChapter3() {
     let animFrame;
 
     const clusterColors = [
-        { r: 14, g: 165, b: 233 },   // Water - blue
-        { r: 34, g: 197, b: 94 },    // Vegetation - green
-        { r: 245, g: 158, b: 11 },   // Urban - amber
-        { r: 239, g: 68, b: 68 }     // Landslide - red
+        { r: 14, g: 165, b: 233 }, // Water - blue
+        { r: 34, g: 197, b: 94 }, // Vegetation - green
+        { r: 245, g: 158, b: 11 }, // Urban - amber
+        { r: 239, g: 68, b: 68 } // Landslide - red
     ];
 
     // Define cluster centers
     const clusterCenters = [
-        { x: 0.2, y: 0.7 },   // Water
+        { x: 0.2, y: 0.7 }, // Water
         { x: 0.35, y: 0.35 }, // Vegetation
-        { x: 0.7, y: 0.3 },   // Urban
-        { x: 0.8, y: 0.75 }   // Landslide
+        { x: 0.7, y: 0.3 }, // Urban
+        { x: 0.8, y: 0.75 } // Landslide
     ];
 
     function resize() {
@@ -852,7 +852,7 @@ function initChapter3() {
         // Labels when clustered
         if (clusterProgress > 0.8) {
             const labelAlpha = (clusterProgress - 0.8) / 0.2;
-            const labels = ['🔵 Water', '🟢 Vegetation', '🟡 Urban', '🔴 Landslide Risk'];
+            const labels = [' Water', ' Vegetation', ' Urban', ' Landslide Risk'];
             clusterCenters.forEach((center, i) => {
                 ctx.fillStyle = `rgba(255,255,255,${0.6 * labelAlpha})`;
                 ctx.font = 'bold 11px Inter, sans-serif';

@@ -1344,6 +1344,34 @@
             </div>
         </section>
 
+        <!-- ══════ CE APPLICATION SECTION ══════ -->
+        <section class="ch-section" style="border-top:2px solid rgba(0,212,170,.15);margin-top:2rem;">
+            <div class="section-container">
+                <h2 class="section-title" style="color:#00d4aa">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    CE Application: t-SNE/UMAP for Sensor & SHM Visualization
+                </h2>
+                <p style="color:var(--text-secondary);margin-bottom:1.5rem;">When PCA can't separate your data, non-linear embeddings reveal hidden structure.</p>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px;">
+                    <div class="info-card" style="border-left:3px solid #00d4aa;">
+                        <h4><i class="fa-solid fa-satellite-dish" style="color:#00d4aa"></i> SHM Sensor Patterns</h4>
+                        <p>t-SNE on vibration spectra from bridge sensors reveals clusters of "normal", "thermal drift", and "damage" patterns that PCA misses in high-dimensional frequency data.</p>
+                    </div>
+                    <div class="info-card" style="border-left:3px solid #0ea5e9;">
+                        <h4><i class="fa-solid fa-droplet" style="color:#0ea5e9"></i> Hydrochemical Facies</h4>
+                        <p>UMAP on multi-ion water chemistry data creates stunning visualizations where each cluster represents a distinct water type (Ca-HCO₃, Na-Cl, etc.) — far better than Piper diagrams for large datasets.</p>
+                    </div>
+                </div>
+
+                <div class="tip-box" style="border-color:#ef4444;">
+                    <strong> Warning:</strong> t-SNE/UMAP embeddings are for <em>visualization only</em> — distances between clusters aren't meaningful. Don't measure "how far apart" two soil groups are in t-SNE space.
+                </div>
+            </div>
+        </section>
+
+        <div id="geo-demo-container"></div>
+
         <!-- ==========================================
              SECTION 14: QUIZ
              ========================================== -->
@@ -1630,16 +1658,16 @@
         var getColors = Utils.getColors || function(){
             var dark = document.documentElement.getAttribute('data-theme') !== 'light';
             return {
-                TEAL:  dark ? '#2dd4bf' : '#059669',
-                CYAN:  dark ? '#22d3ee' : '#0284c7',
+                TEAL: dark ? '#2dd4bf' : '#059669',
+                CYAN: dark ? '#22d3ee' : '#0284c7',
                 AMBER: dark ? '#fbbf24' : '#d97706',
-                RED:   dark ? '#ef4444' : '#dc2626',
+                RED: dark ? '#ef4444' : '#dc2626',
                 GREEN: dark ? '#22c55e' : '#16a34a',
-                BG:    dark ? '#0a0a0f' : '#f8f9fc',
-                TEXT:  dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-                DIM:   dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                GRID:  dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
-                NODE:  dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                BG: dark ? '#0a0a0f' : '#f8f9fc',
+                TEXT: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                DIM: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                GRID: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+                NODE: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
                 STROKE:dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
                 WHITE: dark ? '#fff' : '#1a1a2e',
                 MUTED: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'
@@ -1648,7 +1676,7 @@
         var initCanvas = Utils.initCanvas || function(canvas) {
             var dpr = window.devicePixelRatio || 1;
             var rect = canvas.getBoundingClientRect();
-            canvas.width  = rect.width  * dpr;
+            canvas.width = rect.width * dpr;
             canvas.height = rect.height * dpr;
             var ctx = canvas.getContext('2d');
             ctx.scale(dpr, dpr);
@@ -2093,12 +2121,12 @@
             if (!canvas) return;
 
             var perpSlider = document.getElementById('perp-slider');
-            var perpLabel  = document.getElementById('perp-value');
+            var perpLabel = document.getElementById('perp-value');
             var iterSlider = document.getElementById('iter-slider');
-            var iterLabel  = document.getElementById('iter-value');
-            var btnRun     = document.getElementById('btn-run-tsne');
-            var btnRegen   = document.getElementById('btn-regen-data');
-            var statsEl    = document.getElementById('tsne-stats');
+            var iterLabel = document.getElementById('iter-value');
+            var btnRun = document.getElementById('btn-run-tsne');
+            var btnRegen = document.getElementById('btn-regen-data');
+            var statsEl = document.getElementById('tsne-stats');
 
             var nClusters = 5;
             var pointsPerCluster = 30;
@@ -2162,17 +2190,17 @@
            DEMO 2: PCA vs t-SNE COMPARISON
            ============================================ */
         (function() {
-            var canvasPCA  = document.getElementById('canvas-pca-comp');
+            var canvasPCA = document.getElementById('canvas-pca-comp');
             var canvasTSNE = document.getElementById('canvas-tsne-comp');
             if (!canvasPCA || !canvasTSNE) return;
 
             var clustersSlider = document.getElementById('comp-clusters-slider');
-            var clustersLabel  = document.getElementById('comp-clusters-value');
-            var dimsSlider     = document.getElementById('comp-dims-slider');
-            var dimsLabel      = document.getElementById('comp-dims-value');
-            var btnRun         = document.getElementById('btn-run-comparison');
-            var btnRegen       = document.getElementById('btn-regen-comp');
-            var statsEl        = document.getElementById('comparison-stats');
+            var clustersLabel = document.getElementById('comp-clusters-value');
+            var dimsSlider = document.getElementById('comp-dims-slider');
+            var dimsLabel = document.getElementById('comp-dims-value');
+            var btnRun = document.getElementById('btn-run-comparison');
+            var btnRegen = document.getElementById('btn-regen-comp');
+            var statsEl = document.getElementById('comparison-stats');
 
             var dataset, pcaResult, tsneResult;
 
@@ -2265,13 +2293,14 @@
             }
 
             var correctFb = document.getElementById(quizId + '-correct');
-            var wrongFb   = document.getElementById(quizId + '-wrong');
+            var wrongFb = document.getElementById(quizId + '-wrong');
             if (isCorrect && correctFb) correctFb.style.display = 'block';
-            if (!isCorrect && wrongFb)  wrongFb.style.display = 'block';
+            if (!isCorrect && wrongFb) wrongFb.style.display = 'block';
         };
 
     })();
     </script>
+    <script src="js/geo-demos.js"></script>
 
 </body>
 </html>
