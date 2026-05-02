@@ -10,6 +10,78 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="../css/chapters.css">
+    <style>
+        .hub-hero{position:relative;min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 60px;overflow:hidden}
+        .hub-hero canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+        .hub-hero__content{position:relative;z-index:1;max-width:820px}
+        .hub-hero__badge{display:inline-flex;align-items:center;gap:8px;background:rgba(14,165,233,.12);color:#0ea5e9;font-weight:600;font-size:.95rem;padding:8px 20px;border-radius:99px;border:1px solid rgba(14,165,233,.25);margin-bottom:24px;animation:fadeInD .6s ease}
+        .hub-hero__title{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:800;line-height:1.15;margin-bottom:20px;background:linear-gradient(135deg,#0ea5e9,#00d4aa,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:fadeInD .8s ease}
+        .hub-hero__subtitle{font-size:1.15rem;color:var(--text-secondary);line-height:1.7;max-width:640px;margin:0 auto 32px;animation:fadeInD 1s ease}
+        .hub-stats{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin-bottom:36px;animation:fadeInD 1.2s ease}
+        .hub-stat{text-align:center}
+        .hub-stat__value{font-size:2.2rem;font-weight:800;color:#0ea5e9}
+        .hub-stat__label{font-size:.82rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+        .hub-hero__scroll{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:1;color:var(--text-muted);animation:bounce 2s infinite;font-size:1.2rem}
+        @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+        @keyframes fadeInD{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+        .ce-focus-banner{background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(0,212,170,.08));border:1px solid rgba(14,165,233,.15);border-radius:16px;padding:28px 32px;margin:0 auto 48px;max-width:920px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+        .ce-focus-banner__icon{width:64px;height:64px;border-radius:16px;background:rgba(14,165,233,.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#0ea5e9}
+        .ce-focus-banner h3{font-size:1.1rem;margin-bottom:6px;color:var(--text-primary)}
+        .ce-focus-banner p{font-size:.92rem;color:var(--text-secondary);line-height:1.6;margin:0}
+        .ce-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+        .ce-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600}
+        .ce-tag.geotech{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+        .ce-tag.water{background:rgba(14,165,233,.1);color:#0ea5e9;border:1px solid rgba(14,165,233,.2)}
+        .ce-tag.structural{background:rgba(0,212,170,.1);color:#00d4aa;border:1px solid rgba(0,212,170,.2)}
+        .ce-tag.seismic{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+        .app-preview{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+        .app-preview__title{font-size:1.5rem;font-weight:700;text-align:center;margin-bottom:8px}
+        .app-preview__subtitle{text-align:center;color:var(--text-muted);font-size:.92rem;margin-bottom:36px}
+        .app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+        .app-item{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:14px;padding:22px 20px;text-align:center;transition:all .3s}
+        .app-item:hover{border-color:#0ea5e9;transform:translateY(-2px)}
+        .app-item__icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.3rem}
+        .app-item__icon.geotech{background:rgba(245,158,11,.12);color:#fbbf24}
+        .app-item__icon.water{background:rgba(14,165,233,.12);color:#22d3ee}
+        .app-item__icon.structural{background:rgba(0,212,170,.12);color:#2dd4bf}
+        .app-item__icon.seismic{background:rgba(239,68,68,.12);color:#f87171}
+        .app-item h4{font-size:.95rem;margin-bottom:6px}
+        .app-item p{font-size:.82rem;color:var(--text-muted);line-height:1.5}
+        .roadmap-section{max-width:1100px;margin:0 auto;padding:0 24px 40px}
+        .roadmap-title{font-size:1.6rem;font-weight:700;text-align:center;margin-bottom:12px;color:var(--text-primary)}
+        .roadmap-subtitle{text-align:center;color:var(--text-muted);font-size:.95rem;margin-bottom:40px}
+        .sub-grid{max-width:1100px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+        .sub-card{position:relative;display:flex;flex-direction:column;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:16px;padding:28px 24px;transition:all .3s ease;text-decoration:none;overflow:hidden;opacity:0;transform:translateY(20px)}
+        .sub-card.visible{opacity:1;transform:translateY(0)}
+        .sub-card:hover{transform:translateY(-4px);border-color:#0ea5e9;box-shadow:0 12px 40px rgba(14,165,233,.1)}
+        .sub-card__header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+        .sub-card__icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+        .sub-card__icon.teal{background:rgba(0,212,170,.12);color:#2dd4bf}
+        .sub-card__icon.cyan{background:rgba(14,165,233,.12);color:#22d3ee}
+        .sub-card__icon.amber{background:rgba(245,158,11,.12);color:#fbbf24}
+        .sub-card__icon.red{background:rgba(239,68,68,.12);color:#f87171}
+        .sub-card__num{font-size:.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+        .sub-card__title{font-size:1.08rem;font-weight:700;color:var(--text-primary);margin-bottom:8px}
+        .sub-card__desc{font-size:.88rem;color:var(--text-secondary);line-height:1.6;flex-grow:1;margin-bottom:14px}
+        .sub-card__meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+        .sub-card__meta-item{display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--text-muted)}
+        .sub-card__meta-item i{font-size:.7rem;color:#0ea5e9}
+        .sub-card__tags{display:flex;gap:6px;flex-wrap:wrap}
+        .sub-card__tag{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(255,255,255,.05);color:var(--text-muted);border:1px solid var(--border-subtle)}
+        .sub-card__tag.ce{background:rgba(0,212,170,.08);color:#2dd4bf;border-color:rgba(0,212,170,.2)}
+        .sub-card__tag.geotech{background:rgba(245,158,11,.08);color:#fbbf24;border-color:rgba(245,158,11,.2)}
+        .sub-card__tag.water{background:rgba(14,165,233,.08);color:#22d3ee;border-color:rgba(14,165,233,.2)}
+        .sub-card__tag.interactive{background:rgba(168,85,247,.08);color:#a855f7;border-color:rgba(168,85,247,.2)}
+        .sub-card__arrow{position:absolute;bottom:20px;right:20px;font-size:.9rem;color:var(--text-muted);transition:transform .3s,color .3s}
+        .sub-card:hover .sub-card__arrow{transform:translateX(4px);color:#0ea5e9}
+        .hub-footer{text-align:center;padding:40px 24px 60px;border-top:1px solid var(--border-subtle);max-width:600px;margin:0 auto}
+        .hub-footer p{color:var(--text-muted);font-size:.88rem;margin-bottom:20px}
+        .hub-footer__links{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+        .hub-footer__link{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-primary);font-size:.88rem;font-weight:600;text-decoration:none;transition:all .3s}
+        .hub-footer__link:hover{border-color:#0ea5e9;transform:translateY(-2px)}
+        .hub-footer__link.primary{background:linear-gradient(135deg,#0ea5e9,#00d4aa);border:none;color:#0a0a0f}
+        @media(max-width:768px){.hub-stats{gap:24px}.hub-stat__value{font-size:1.7rem}.ce-focus-banner{grid-template-columns:1fr;text-align:center}.ce-focus-banner__icon{margin:0 auto}.ce-tags{justify-content:center}.sub-grid{grid-template-columns:1fr}}
+    </style>
 </head>
 <body>
     <nav id="main-nav">
@@ -26,95 +98,410 @@
     </nav>
     <div id="scroll-progress"></div>
 
-    <header class="chapter-hero">
-        <div class="chapter-hero__badge">Chapter 2</div>
-        <h1 class="chapter-hero__title">Supervised Learning</h1>
-        <p class="chapter-hero__subtitle">Predicting outcomes from labeled data - the workhorse of civil engineering AI</p>
+    <!-- ══════ HERO ══════ -->
+    <header class="hub-hero">
+        <canvas id="hub-canvas" aria-hidden="true"></canvas>
+        <div class="hub-hero__content">
+            <div class="hub-hero__badge"><i class="fa-solid fa-chart-line"></i> Chapter 2</div>
+            <h1 class="hub-hero__title">Supervised Learning</h1>
+            <p class="hub-hero__subtitle">
+                From predicting <strong>bearing capacity</strong> to classifying <strong>liquefaction risk</strong> —
+                supervised learning is the workhorse of AI in civil engineering. Give it labeled data, and it learns to predict.
+            </p>
+            <div class="hub-stats">
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="10">0</div>
+                    <div class="hub-stat__label">Sub-chapters</div>
+                </div>
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="20">0</div>
+                    <div class="hub-stat__label">Interactive Demos</div>
+                </div>
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="40">0</div>
+                    <div class="hub-stat__label">Quiz Questions</div>
+                </div>
+                <div class="hub-stat">
+                    <div class="hub-stat__value" data-target="8">0</div>
+                    <div class="hub-stat__label">CE Applications</div>
+                </div>
+            </div>
+        </div>
+        <div class="hub-hero__scroll"><i class="fa-solid fa-chevron-down"></i></div>
     </header>
 
-    <section class="chapter-overview">
-        <p>Supervised learning is the most widely used ML paradigm in civil engineering. From predicting concrete strength to classifying soil types, learn how labeled data drives accurate predictions across 10 in-depth sub-chapters.</p>
+    <!-- ══════ CE FOCUS BANNER ══════ -->
+    <div class="ce-focus-banner">
+        <div class="ce-focus-banner__icon"><i class="fa-solid fa-helmet-safety"></i></div>
+        <div>
+            <h3>🎯 Civil Engineering Focus</h3>
+            <p>
+                Every algorithm is taught through geotechnical and water resources examples.
+                Predict settlement, classify soil, assess liquefaction risk, forecast floods —
+                not abstract toy problems.
+            </p>
+            <div class="ce-tags">
+                <span class="ce-tag geotech"><i class="fa-solid fa-mountain"></i> Bearing Capacity</span>
+                <span class="ce-tag geotech"><i class="fa-solid fa-layer-group"></i> Soil Classification</span>
+                <span class="ce-tag water"><i class="fa-solid fa-water"></i> Flood Prediction</span>
+                <span class="ce-tag seismic"><i class="fa-solid fa-house-crack"></i> Liquefaction</span>
+                <span class="ce-tag structural"><i class="fa-solid fa-building"></i> Concrete Strength</span>
+                <span class="ce-tag water"><i class="fa-solid fa-droplet"></i> Groundwater</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════ APPLICATION PREVIEW ══════ -->
+    <section class="app-preview">
+        <h2 class="app-preview__title">What You'll Build With Supervised Learning</h2>
+        <p class="app-preview__subtitle">Real prediction & classification systems for geotechnical and water resources engineering</p>
+        <div class="app-grid">
+            <div class="app-item">
+                <div class="app-item__icon geotech"><i class="fa-solid fa-arrow-down-up-across-line"></i></div>
+                <h4>Settlement Predictor</h4>
+                <p>Linear regression on consolidation data to predict total & differential settlement</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon geotech"><i class="fa-solid fa-layer-group"></i></div>
+                <h4>Soil Type Classifier</h4>
+                <p>k-NN & decision trees on borehole logs for automatic USCS classification</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon seismic"><i class="fa-solid fa-house-crack"></i></div>
+                <h4>Liquefaction Risk</h4>
+                <p>SVM & logistic regression on SPT data to predict liquefaction susceptibility</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon water"><i class="fa-solid fa-water"></i></div>
+                <h4>Flood Discharge</h4>
+                <p>Multiple regression on catchment parameters to forecast peak runoff</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon geotech"><i class="fa-solid fa-weight-hanging"></i></div>
+                <h4>Bearing Capacity</h4>
+                <p>Random forest on soil test data to predict ultimate bearing capacity</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon structural"><i class="fa-solid fa-cube"></i></div>
+                <h4>Concrete Strength</h4>
+                <p>Polynomial regression on mix design parameters for f'c prediction</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon water"><i class="fa-solid fa-droplet"></i></div>
+                <h4>Groundwater Level</h4>
+                <p>SVR on well monitoring data to predict seasonal aquifer response</p>
+            </div>
+            <div class="app-item">
+                <div class="app-item__icon seismic"><i class="fa-solid fa-chart-area"></i></div>
+                <h4>Site Response</h4>
+                <p>Full ML pipeline for seismic site amplification prediction from Vs30</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════ ROADMAP ══════ -->
+    <section class="roadmap-section">
+        <h2 class="roadmap-title">10 Sub-Chapters</h2>
+        <p class="roadmap-subtitle">From fundamentals to a complete geotechnical case study</p>
     </section>
 
     <section class="sub-grid">
         <a href="sub1.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-bullseye"></i></div>
-            <span class="sub-card__num">2.1</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon teal"><i class="fa-solid fa-bullseye"></i></div>
+                <span class="sub-card__num">Section 2.1</span>
+            </div>
             <div class="sub-card__title">Supervised Learning Fundamentals</div>
-            <div class="sub-card__desc">Core concepts - features, labels, training, and the supervised learning workflow for CE applications.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">fundamentals</span><span class="sub-card__tag">workflow</span></div>
+            <div class="sub-card__desc">Features, labels, train-test split — the building blocks. CE examples: soil classification from SPT data, concrete strength from mix ratios.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 30 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">fundamentals</span>
+                <span class="sub-card__tag geotech">soil classification</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub2.html" class="sub-card">
-            <div class="sub-card__icon cyan"><i class="fa-solid fa-chart-line"></i></div>
-            <span class="sub-card__num">2.2</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon cyan"><i class="fa-solid fa-chart-line"></i></div>
+                <span class="sub-card__num">Section 2.2</span>
+            </div>
             <div class="sub-card__title">Linear Regression</div>
-            <div class="sub-card__desc">Fitting a line to data - predicting concrete compressive strength from water-cement ratio.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">regression</span><span class="sub-card__tag">prediction</span></div>
+            <div class="sub-card__desc">y = mx + b meets geotechnical engineering. Predict consolidation settlement, concrete strength from water-cement ratio.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 35 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">regression</span>
+                <span class="sub-card__tag geotech">settlement</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub3.html" class="sub-card">
-            <div class="sub-card__icon amber"><i class="fa-solid fa-chart-area"></i></div>
-            <span class="sub-card__num">2.3</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon amber"><i class="fa-solid fa-chart-area"></i></div>
+                <span class="sub-card__num">Section 2.3</span>
+            </div>
             <div class="sub-card__title">Polynomial & Multiple Regression</div>
-            <div class="sub-card__desc">Beyond straight lines - capturing nonlinear relationships in soil behavior and material properties.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">polynomial</span><span class="sub-card__tag">multivariate</span></div>
+            <div class="sub-card__desc">Curved stress-strain relationships, multi-factor concrete mix design. When straight lines aren't enough.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 40 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">polynomial</span>
+                <span class="sub-card__tag geotech">stress-strain</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub4.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-tags"></i></div>
-            <span class="sub-card__num">2.4</span>
-            <div class="sub-card__title">Classification Basics</div>
-            <div class="sub-card__desc">Sorting data into categories - pass/fail structural tests, soil type classification, safety compliance.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">classification</span><span class="sub-card__tag">categories</span></div>
+            <div class="sub-card__header">
+                <div class="sub-card__icon teal"><i class="fa-solid fa-tags"></i></div>
+                <span class="sub-card__num">Section 2.4</span>
+            </div>
+            <div class="sub-card__title">Classification Basics & k-NN</div>
+            <div class="sub-card__desc">Sort soil into USCS categories, flag pass/fail concrete tests, classify dam safety levels — all with k-NN.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 35 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">classification</span>
+                <span class="sub-card__tag geotech">soil types</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub5.html" class="sub-card">
-            <div class="sub-card__icon cyan"><i class="fa-solid fa-divide"></i></div>
-            <span class="sub-card__num">2.5</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon cyan"><i class="fa-solid fa-divide"></i></div>
+                <span class="sub-card__num">Section 2.5</span>
+            </div>
             <div class="sub-card__title">Logistic Regression</div>
-            <div class="sub-card__desc">Probabilistic classification - predicting the likelihood of structural failure or material defects.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">logistic</span><span class="sub-card__tag">probability</span></div>
+            <div class="sub-card__desc">Probability of failure — dam safety, slope stability, liquefaction. The sigmoid function for yes/no engineering decisions.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 40 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">probability</span>
+                <span class="sub-card__tag water">dam safety</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub6.html" class="sub-card">
-            <div class="sub-card__icon amber"><i class="fa-solid fa-tree"></i></div>
-            <span class="sub-card__num">2.6</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon amber"><i class="fa-solid fa-tree"></i></div>
+                <span class="sub-card__num">Section 2.6</span>
+            </div>
             <div class="sub-card__title">Decision Trees & Random Forests</div>
-            <div class="sub-card__desc">Tree-based models for interpretable CE decisions - material selection, risk assessment.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">trees</span><span class="sub-card__tag">ensemble</span></div>
+            <div class="sub-card__desc">IF-THEN engineering decisions. Bearing capacity prediction, material selection, structural risk assessment with ensemble methods.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 45 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">ensemble</span>
+                <span class="sub-card__tag geotech">bearing capacity</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub7.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-vector-square"></i></div>
-            <span class="sub-card__num">2.7</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon red"><i class="fa-solid fa-vector-square"></i></div>
+                <span class="sub-card__num">Section 2.7</span>
+            </div>
             <div class="sub-card__title">Support Vector Machines</div>
-            <div class="sub-card__desc">Finding optimal decision boundaries - earthquake damage classification and site response analysis.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">SVM</span><span class="sub-card__tag">margins</span></div>
+            <div class="sub-card__desc">Maximum-margin classification — earthquake damage levels, soil liquefaction boundaries, SVR for regression.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 45 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">SVM</span>
+                <span class="sub-card__tag seismic">earthquake</span>
+                <span class="sub-card__tag geotech">liquefaction</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub8.html" class="sub-card">
-            <div class="sub-card__icon cyan"><i class="fa-solid fa-gauge-high"></i></div>
-            <span class="sub-card__num">2.8</span>
+            <div class="sub-card__header">
+                <div class="sub-card__icon cyan"><i class="fa-solid fa-gauge-high"></i></div>
+                <span class="sub-card__num">Section 2.8</span>
+            </div>
             <div class="sub-card__title">Model Evaluation Metrics</div>
-            <div class="sub-card__desc">Accuracy, precision, recall, F1, RMSE, R-squared - choosing the right metric for CE applications.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">metrics</span><span class="sub-card__tag">evaluation</span></div>
+            <div class="sub-card__desc">Accuracy, precision, recall, RMSE — choosing the right metric when lives depend on your model's predictions.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 45 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">metrics</span>
+                <span class="sub-card__tag ce">evaluation</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
+
         <a href="sub9.html" class="sub-card">
-            <div class="sub-card__icon amber"><i class="fa-solid fa-sliders"></i></div>
-            <span class="sub-card__num">2.9</span>
-            <div class="sub-card__title">Overfitting, Underfitting & Regularization</div>
-            <div class="sub-card__desc">The bias-variance tradeoff - ensuring your model generalizes to new construction data.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">overfitting</span><span class="sub-card__tag">regularization</span></div>
+            <div class="sub-card__header">
+                <div class="sub-card__icon amber"><i class="fa-solid fa-sliders"></i></div>
+                <span class="sub-card__num">Section 2.9</span>
+            </div>
+            <div class="sub-card__title">Overfitting & Regularization</div>
+            <div class="sub-card__desc">Why your model works on lab data but fails on site. Bias-variance tradeoff, Ridge, Lasso — the Goldilocks of ML.</div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 40 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag ce">regularization</span>
+                <span class="sub-card__tag ce">generalization</span>
+                <span class="sub-card__tag interactive">interactive</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
-        <a href="sub10.html" class="sub-card">
-            <div class="sub-card__icon teal"><i class="fa-solid fa-building"></i></div>
-            <span class="sub-card__num">2.10</span>
-            <div class="sub-card__title">CE Case Study: Site Response Analysis</div>
-            <div class="sub-card__desc">Full end-to-end project - predicting seismic site response using supervised learning techniques.</div>
-            <div class="sub-card__tags"><span class="sub-card__tag">case study</span><span class="sub-card__tag">seismic</span></div>
+
+        <a href="sub10.html" class="sub-card" style="grid-column:1/-1">
+            <div class="sub-card__header">
+                <div class="sub-card__icon red"><i class="fa-solid fa-building"></i></div>
+                <span class="sub-card__num">Section 2.10 — Capstone</span>
+            </div>
+            <div class="sub-card__title">🏗️ CE Case Study: Seismic Site Response Analysis</div>
+            <div class="sub-card__desc">
+                Full end-to-end ML project: collect borehole data → engineer features (Vs30, impedance) →
+                train & compare models → interpret results → deploy. Everything from 2.1–2.9 applied to a real geotechnical problem.
+            </div>
+            <div class="sub-card__meta">
+                <span class="sub-card__meta-item"><i class="fa-solid fa-clock"></i> 50 min</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-hand-pointer"></i> 2 demos</span>
+                <span class="sub-card__meta-item"><i class="fa-solid fa-circle-question"></i> 4 quiz Qs</span>
+            </div>
+            <div class="sub-card__tags">
+                <span class="sub-card__tag geotech">site response</span>
+                <span class="sub-card__tag seismic">seismic</span>
+                <span class="sub-card__tag geotech">borehole data</span>
+                <span class="sub-card__tag interactive">full pipeline</span>
+            </div>
+            <i class="fa-solid fa-arrow-right sub-card__arrow"></i>
         </a>
     </section>
 
-    <nav class="chapter-nav-footer">
-        <a href="../chapter1/index.html" class="chapter-nav__link prev"><i class="fa-solid fa-arrow-left"></i> Chapter 1: AI vs ML</a>
-        <a href="../chapter3/index.html" class="chapter-nav__link next">Chapter 3: Unsupervised Learning <i class="fa-solid fa-arrow-right"></i></a>
-    </nav>
+    <!-- ══════ FOOTER ══════ -->
+    <footer class="hub-footer">
+        <p>Ready to teach machines to predict like an engineer?</p>
+        <div class="hub-footer__links">
+            <a href="../chapter1/index.html" class="hub-footer__link"><i class="fa-solid fa-arrow-left"></i> Chapter 1</a>
+            <a href="sub1.html" class="hub-footer__link primary"><i class="fa-solid fa-play"></i> Start Chapter 2</a>
+            <a href="../chapter3/index.html" class="hub-footer__link">Chapter 3 <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </footer>
 
     <script src="../js/theme.js"></script>
     <script src="../js/sub-common.js"></script>
+    <script>
+    (function(){
+        /* ── Canvas: Regression scatter + fit lines ── */
+        const canvas = document.getElementById('hub-canvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let W,H,dpr,pts=[],lines=[];
+        function resize(){
+            dpr=window.devicePixelRatio||1;
+            W=canvas.clientWidth;H=canvas.clientHeight;
+            canvas.width=W*dpr;canvas.height=H*dpr;
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+            initPts();
+        }
+        function initPts(){
+            pts=[];lines=[];
+            const n=Math.floor(W*H/4000);
+            for(let i=0;i<n;i++){
+                pts.push({
+                    x:Math.random()*W,y:Math.random()*H,
+                    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+                    r:2+Math.random()*3,
+                    hue:[190,165,35][Math.floor(Math.random()*3)],
+                    alpha:.15+Math.random()*.25
+                });
+            }
+            for(let i=0;i<4;i++){
+                const y0=Math.random()*H,slope=(Math.random()-.5)*.4;
+                lines.push({y0,slope,alpha:.04+Math.random()*.04,hue:[190,165,35][i%3]});
+            }
+        }
+        function draw(){
+            ctx.clearRect(0,0,W,H);
+            lines.forEach(l=>{
+                ctx.beginPath();ctx.moveTo(0,l.y0);ctx.lineTo(W,l.y0+l.slope*W);
+                ctx.strokeStyle=`hsla(${l.hue},80%,55%,${l.alpha})`;ctx.lineWidth=1.5;ctx.stroke();
+            });
+            pts.forEach(p=>{
+                p.x+=p.vx;p.y+=p.vy;
+                if(p.x<0||p.x>W)p.vx*=-1;
+                if(p.y<0||p.y>H)p.vy*=-1;
+                ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+                ctx.fillStyle=`hsla(${p.hue},80%,60%,${p.alpha})`;ctx.fill();
+            });
+            for(let i=0;i<pts.length;i++){
+                for(let j=i+1;j<pts.length;j++){
+                    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+                    if(d<100){
+                        ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
+                        ctx.strokeStyle=`rgba(14,165,233,${.06*(1-d/100)})`;ctx.lineWidth=.5;ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+        window.addEventListener('resize',resize);resize();draw();
+
+        /* ── Animated stat counters ── */
+        document.querySelectorAll('.hub-stat__value[data-target]').forEach(el=>{
+            const io=new IntersectionObserver(entries=>{
+                entries.forEach(e=>{
+                    if(!e.isIntersecting)return;
+                    const target=+el.dataset.target;let cur=0;
+                    const step=()=>{cur+=Math.ceil(target/40);if(cur>=target){el.textContent=target;return;}el.textContent=cur;requestAnimationFrame(step);};
+                    step();io.unobserve(el);
+                });
+            },{threshold:.5});
+            io.observe(el);
+        });
+
+        /* ── Reveal sub-cards on scroll ── */
+        const cio=new IntersectionObserver(entries=>{
+            entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');cio.unobserve(e.target);}});
+        },{threshold:.1});
+        document.querySelectorAll('.sub-card').forEach((c,i)=>{
+            c.style.transitionDelay=`${i*.06}s`;c.style.transition='opacity .5s ease, transform .5s ease';
+            cio.observe(c);
+        });
+    })();
+    </script>
 </body>
 </html>

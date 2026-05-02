@@ -177,40 +177,15 @@ where:
                     </div>
                 </div>
 
-                <div class="info-card">
-                    <div class="info-card__icon">
-                        <i class="fa-solid fa-ruler-combined"></i>
-                    </div>
-                    <div class="info-card__content">
-                        <h3>Understanding Slope and Intercept</h3>
-                        <p>
-                            The <strong>slope (m)</strong> tells you the rate of change. In our concrete
-                            example, if m = -65, that means for every 0.01 increase in the w/c ratio,
-                            the predicted compressive strength drops by 0.65 MPa. A negative slope
-                            confirms what engineers already know: more water means weaker concrete.
-                        </p>
-                        <p>
-                            The <strong>intercept (b)</strong> is the predicted value when the input is
-                            zero. For concrete strength vs. w/c ratio, the intercept has no physical
-                            meaning (you cannot have a w/c ratio of zero and still have concrete), but
-                            it is mathematically necessary to position the line correctly. This is
-                            common in engineering &mdash; extrapolation beyond the data range is always
-                            dangerous.
-                        </p>
-                    </div>
-                </div>
-
                 <div class="tip-box">
                     <div class="tip-box__header">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>Extrapolation Warning</span>
+                        <span>Key Points</span>
                     </div>
                     <p>
-                        A regression model is only reliable within the range of the training data. If
-                        your data covers w/c ratios from 0.35 to 0.65, do not use the model to predict
-                        strength at w/c = 0.20 or 0.85. The relationship may be non-linear outside
-                        the observed range. This is a universal rule in engineering modelling, not
-                        unique to machine learning.
+                        <strong>Slope (m)</strong> = rate of change. If m&nbsp;=&nbsp;-65, every 0.01 increase in w/c drops strength by 0.65&nbsp;MPa.
+                        <strong>Intercept (b)</strong> = value at x&nbsp;=&nbsp;0; often physically meaningless but mathematically necessary.
+                        <strong>Extrapolation warning:</strong> Only trust the model within the training data range (e.g., w/c 0.35&ndash;0.65). Outside that range, the relationship may be non-linear.
                     </p>
                 </div>
 
@@ -730,55 +705,32 @@ where:
 
                 <div class="info-card">
                     <div class="info-card__icon">
-                        <i class="fa-solid fa-check-double"></i>
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
                     </div>
                     <div class="info-card__content">
-                        <h3>What Good Residuals Look Like</h3>
-                        <ul>
-                            <li>
-                                <strong>Randomly scattered around zero</strong> &mdash; No systematic
-                                pattern. Points above and below the line are evenly distributed. This
-                                indicates the linear model captures the true relationship.
-                            </li>
-                            <li>
-                                <strong>Constant spread (homoscedasticity)</strong> &mdash; The
-                                residuals have roughly the same magnitude across all values of x.
-                                If they fan out (larger errors at higher x values), the model may
-                                need transformation.
-                            </li>
-                            <li>
-                                <strong>Approximately normal distribution</strong> &mdash; A histogram
-                                of residuals should look roughly bell-shaped. This validates
-                                confidence intervals and hypothesis tests.
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <div class="info-card__icon">
-                        <i class="fa-solid fa-bug"></i>
-                    </div>
-                    <div class="info-card__content">
-                        <h3>Warning Signs in Residuals</h3>
-                        <ul>
-                            <li>
-                                <strong>Curved pattern</strong> &mdash; If residuals form a U-shape
-                                or inverted U, the true relationship is non-linear. A polynomial
-                                regression (covered in Sub-chapter 2.3) may be more appropriate.
-                            </li>
-                            <li>
-                                <strong>Funnel shape</strong> &mdash; Increasing spread suggests
-                                heteroscedasticity. Consider a log transformation or weighted
-                                regression.
-                            </li>
-                            <li>
-                                <strong>Outliers</strong> &mdash; Points with extremely large
-                                residuals deserve investigation. They may be data entry errors,
-                                unusual specimens, or genuine anomalies that reveal important
-                                engineering phenomena.
-                            </li>
-                        </ul>
+                        <h3>Residual Patterns: Good vs. Bad</h3>
+                        <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:0.9rem;">
+                            <thead>
+                                <tr style="border-bottom:2px solid var(--border-color);">
+                                    <th style="text-align:left; padding:6px 10px; color:var(--accent-primary);"><i class="fa-solid fa-check" style="color:#22c55e;"></i> Healthy</th>
+                                    <th style="text-align:left; padding:6px 10px; color:var(--accent-danger);"><i class="fa-solid fa-xmark" style="color:#ef4444;"></i> Warning Sign</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid var(--border-color);">
+                                    <td style="padding:6px 10px;">Randomly scattered around zero</td>
+                                    <td style="padding:6px 10px;"><strong>Curved pattern</strong> &rarr; relationship is non-linear (try polynomial)</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid var(--border-color);">
+                                    <td style="padding:6px 10px;">Constant spread (homoscedastic)</td>
+                                    <td style="padding:6px 10px;"><strong>Funnel shape</strong> &rarr; heteroscedasticity (try log transform)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:6px 10px;">Approximately normal distribution</td>
+                                    <td style="padding:6px 10px;"><strong>Outliers</strong> &rarr; investigate: data error, unusual specimen, or real anomaly</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -813,71 +765,13 @@ where:
                     Putting It All Together: The Complete Workflow
                 </h2>
 
-                <p>
-                    Let us trace the entire linear regression workflow from start to finish, using
-                    our concrete strength prediction problem:
-                </p>
-
-                <div class="process-step">
-                    <div class="process-step__number">1</div>
-                    <div class="process-step__content">
-                        <h3>Collect and prepare data</h3>
-                        <p>
-                            Gather laboratory test results: w/c ratio (feature) and 28-day compressive
-                            strength (label) for each specimen. Clean the data &mdash; remove
-                            obviously erroneous entries, handle missing values, and verify units.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="process-step">
-                    <div class="process-step__number">2</div>
-                    <div class="process-step__content">
-                        <h3>Visualise the data</h3>
-                        <p>
-                            Plot a scatter diagram of x vs y. Does the relationship look linear?
-                            Are there obvious outliers? This visual check is essential before fitting
-                            a model &mdash; just as you would inspect a soil sample before testing it.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="process-step">
-                    <div class="process-step__number">3</div>
-                    <div class="process-step__content">
-                        <h3>Fit the model (find m and b)</h3>
-                        <p>
-                            Use least squares (closed-form) or gradient descent (iterative) to find
-                            the slope and intercept that minimise the MSE. Record the equation:
-                            e.g., Strength = -81.3 * (w/c) + 76.8.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="process-step">
-                    <div class="process-step__number">4</div>
-                    <div class="process-step__content">
-                        <h3>Evaluate the model</h3>
-                        <p>
-                            Compute R<sup>2</sup>, RMSE, and examine the residuals. Is the R<sup>2</sup>
-                            high enough for your application? Are residuals random? If not, revisit
-                            your assumptions.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="process-step">
-                    <div class="process-step__number">5</div>
-                    <div class="process-step__content">
-                        <h3>Make predictions</h3>
-                        <p>
-                            Use the fitted equation to predict strength for new mix designs. For
-                            example, at w/c = 0.48: Strength = -81.3 * 0.48 + 76.8 = 37.8 MPa.
-                            Always report the prediction alongside the R<sup>2</sup> and RMSE so
-                            stakeholders understand the uncertainty.
-                        </p>
-                    </div>
-                </div>
+                <ol style="padding-left:1.2em; line-height:1.9; font-size:0.95rem;">
+                    <li><strong>Collect &amp; clean data</strong> &mdash; w/c ratio (x) and 28-day strength (y) from lab records.</li>
+                    <li><strong>Visualise</strong> &mdash; Scatter plot to confirm linearity and spot outliers.</li>
+                    <li><strong>Fit</strong> &mdash; Least squares or gradient descent &rarr; Strength&nbsp;=&nbsp;-81.3&times;(w/c)&nbsp;+&nbsp;76.8</li>
+                    <li><strong>Evaluate</strong> &mdash; Compute R&sup2;, RMSE, check residuals for patterns.</li>
+                    <li><strong>Predict</strong> &mdash; w/c&nbsp;=&nbsp;0.48 &rarr; 37.8&nbsp;MPa. Always report uncertainty (R&sup2;, RMSE).</li>
+                </ol>
 
                 <div class="code-peek">
                     <div class="code-peek__header">
@@ -1091,62 +985,86 @@ Example for concrete strength:
                     Practical Tips for Civil Engineers
                 </h2>
 
-                <div class="tip-box">
-                    <div class="tip-box__header">
-                        <i class="fa-solid fa-lightbulb"></i>
-                        <span>Tip 1: Start Simple</span>
+                <div class="info-card">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-wrench"></i>
                     </div>
-                    <p>
-                        Always start with a simple linear regression before trying complex models.
-                        If a straight line achieves R<sup>2</sup> = 0.92, you may not need a neural
-                        network. Simple models are easier to interpret, validate, and explain to
-                        non-technical stakeholders &mdash; a critical advantage when presenting to
-                        project managers or regulatory bodies.
-                    </p>
+                    <div class="info-card__content">
+                        <h3>Engineer's Checklist</h3>
+                        <ol style="padding-left:1.2em; line-height:1.8;">
+                            <li><strong>Start simple</strong> &mdash; If linear regression gives R&sup2;&nbsp;=&nbsp;0.92, you may not need a neural network. Simpler models are easier to explain to project managers.</li>
+                            <li><strong>Check assumptions</strong> &mdash; Linearity, independent errors, constant variance, normal residuals. Always plot residuals vs. predicted values.</li>
+                            <li><strong>Use domain knowledge</strong> &mdash; Concrete strength cannot be negative. Settlement increases with load. If your equation violates physics, something is wrong.</li>
+                            <li><strong>Report uncertainty</strong> &mdash; "Predicted strength = 37&nbsp;&plusmn;&nbsp;3&nbsp;MPa (R&sup2;&nbsp;=&nbsp;0.95)" is far more useful than just "37&nbsp;MPa".</li>
+                        </ol>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==========================================
+             CE APPLICATIONS: GEOTECH & WATER RESOURCES
+             ========================================== -->
+        <section class="ch-section" id="ce-applications">
+            <div class="section-container">
+
+                <h2 class="section-title">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    CE Applications: Linear Regression in Practice
+                </h2>
+
+                <p>
+                    Linear regression is arguably the most frequently used ML tool in civil engineering
+                    research. Here are real geotechnical and water resources problems where the
+                    y&nbsp;=&nbsp;mx&nbsp;+&nbsp;b framework applies directly.
+                </p>
+
+                <div class="info-card" style="border-left: 3px solid var(--accent-primary);">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-mountain"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Geotechnical Regression Models</h3>
+                        <ul>
+                            <li><strong>SPT-N &rarr; Settlement</strong> &mdash; Predict footing settlement (mm) from SPT blow count, footing width, and applied pressure. Classic Burland &amp; Burbidge correlations are essentially linear regression fits.</li>
+                            <li><strong>CPT q<sub>c</sub> &rarr; Undrained shear strength</strong> &mdash; s<sub>u</sub> = (q<sub>c</sub>&nbsp;-&nbsp;&sigma;<sub>v0</sub>)&nbsp;/&nbsp;N<sub>k</sub>. The cone factor N<sub>k</sub> is found by regression against lab vane shear data.</li>
+                            <li><strong>Atterberg limits &rarr; Compression index</strong> &mdash; C<sub>c</sub>&nbsp;=&nbsp;0.009(LL&nbsp;-&nbsp;10). Terzaghi's classic correlation is linear regression with one feature.</li>
+                            <li><strong>Load test data &rarr; Pile capacity</strong> &mdash; Fit load-settlement curves to estimate ultimate bearing capacity from static/dynamic test results.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card" style="border-left: 3px solid #0ea5e9;">
+                    <div class="info-card__icon">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <div class="info-card__content">
+                        <h3>Water Resources Regression Models</h3>
+                        <ul>
+                            <li><strong>Rainfall-runoff</strong> &mdash; Predict peak discharge Q from rainfall depth P, catchment area A, and curve number CN. Q&nbsp;=&nbsp;a&middot;P&nbsp;+&nbsp;b is the simplest unit hydrograph approach.</li>
+                            <li><strong>Stage-discharge rating curves</strong> &mdash; Fit Q&nbsp;=&nbsp;a(h&nbsp;-&nbsp;h<sub>0</sub>)<sup>n</sup> to gauging station data. Log-transform makes this a linear regression problem.</li>
+                            <li><strong>Evapotranspiration estimation</strong> &mdash; Predict ET from temperature, humidity, and wind speed. Hargreaves equation is a regression-derived formula.</li>
+                            <li><strong>Groundwater recharge</strong> &mdash; Correlate water table rise with cumulative rainfall, land-use index, and soil permeability.</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="tip-box">
                     <div class="tip-box__header">
                         <i class="fa-solid fa-lightbulb"></i>
-                        <span>Tip 2: Check Your Assumptions</span>
+                        <span>Already Using It</span>
                     </div>
                     <p>
-                        Linear regression assumes a linear relationship, independent errors, constant
-                        variance, and normally distributed residuals. If these assumptions are
-                        violated, the model's predictions and confidence intervals may be unreliable.
-                        Always plot residuals versus predicted values and check for patterns.
+                        If you've ever used Terzaghi's C<sub>c</sub> correlation, Abrams' Law, or a
+                        stage-discharge curve, you've applied linear regression. ML simply automates
+                        fitting, handles multiple features simultaneously, and quantifies uncertainty
+                        through R&sup2; and RMSE.
                     </p>
                 </div>
 
-                <div class="tip-box">
-                    <div class="tip-box__header">
-                        <i class="fa-solid fa-lightbulb"></i>
-                        <span>Tip 3: Domain Knowledge is Your Superpower</span>
-                    </div>
-                    <p>
-                        As a civil engineer, you have something most data scientists lack: deep domain
-                        expertise. You know that concrete strength cannot be negative, that settlement
-                        increases with load, and that certain features are physically correlated. Use
-                        this knowledge to sanity-check your model. If the regression equation predicts
-                        negative strength at reasonable w/c ratios, something is wrong &mdash; do not
-                        blindly trust the mathematics.
-                    </p>
-                </div>
-
-                <div class="tip-box">
-                    <div class="tip-box__header">
-                        <i class="fa-solid fa-lightbulb"></i>
-                        <span>Tip 4: Report Uncertainty</span>
-                    </div>
-                    <p>
-                        Never present a single predicted value without context. Always report the
-                        RMSE, R<sup>2</sup>, and ideally a confidence interval. Saying "predicted
-                        strength = 37 MPa" is incomplete. Saying "predicted strength = 37 +/- 3 MPa
-                        (R<sup>2</sup> = 0.95)" tells the engineer how much to trust the prediction.
-                        This is no different from reporting survey coordinates with their estimated
-                        accuracy.
-                    </p>
-                </div>
+                <!-- Settlement Regression Demo injected by geo-demos.js -->
+                <div id="geo-demo-container"></div>
 
             </div>
         </section>
@@ -2104,6 +2022,7 @@ Example for concrete strength:
 
     })();
     </script>
+    <script src="js/geo-demos.js"></script>
 
 </body>
 </html>
