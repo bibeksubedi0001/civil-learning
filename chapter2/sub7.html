@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1650,6 +1650,72 @@ Feature scaling needed | Yes           | No            | No            | Yes (cr
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-volume-high"></i> Real-world case study &middot; SVM in acoustic leak detection</div>
+            <h3 class="case-v2__title">Echologics &mdash; RBF-kernel SVM picks real leak signatures out of city water-pipe noise</h3>
+            <p class="case-v2__lede">Cities lose 20&ndash;40% of treated water through buried pipe leaks. Echologics' acoustic correlators clip onto fire hydrants, listen for the high-frequency hiss of a pressurised leak, and use an <strong>RBF-kernel SVM</strong> to separate true leaks from traffic, pumps and electrical hum &mdash; deployed in Toronto, Singapore, NYC and beyond.</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> Echologics / Mueller Water Products</li>
+                <li><i class="fa-solid fa-location-dot"></i> Toronto, Singapore (PUB), NYC&nbsp;DEP</li>
+                <li><i class="fa-solid fa-calendar"></i> 2010s&ndash;present</li>
+                <li><i class="fa-solid fa-database"></i> Labelled acoustic signatures</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="5" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">Singapore NRW (world-best)</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="40" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">Typical pre-program NRW</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="3"  data-count-suffix=" ft">0</span><span class="case-v2__kpi-lbl">Leak-location accuracy</span></div>
+            <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="2"  data-count-suffix=" classes">0</span><span class="case-v2__kpi-lbl">Leak vs. noise</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>"Non-revenue water" &mdash; water pumped but never billed &mdash; runs 15&ndash;40% in most North American utilities and over 60% in parts of the developing world. Most of it is small, chronic leaks hidden underground. The acoustic signature of a real leak is buried in noise from cars, pumps, and the city's electrical grid.</p>
+                <ul>
+                    <li>Need a binary decision per hydrant pair: is there a leak between them &mdash; yes or no?</li>
+                    <li>Training data is sparse (you only know there <em>was</em> a leak after you've dug for it).</li>
+                    <li>The classifier has to be small enough to run on a sensor or edge gateway.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>Echologics' LeakFinderRT and ePulse products use cross-correlation acoustic localisation plus a <strong>kernel SVM classifier</strong> on engineered audio features.</p>
+                <ul>
+                    <li><strong>Features:</strong> bandwidth-limited spectral energy ratios, coherence between paired sensors, kurtosis of the time-domain signal.</li>
+                    <li><strong>Model:</strong> SVM with an <strong>RBF kernel</strong> &mdash; effective in the small-N, high-dimensional regime that defines this dataset.</li>
+                    <li><strong>Why SVM:</strong> the leak / no-leak boundary is highly nonlinear in raw feature space; RBF lifts it into a separable one. The margin maximisation also gives the model a graceful uncertainty score.</li>
+                    <li><strong>Operations:</strong> survey crews place sensors on consecutive hydrants overnight; the SVM classifies; flagged segments go to a leak-noise correlator that pinpoints the leak to within ~1&nbsp;m.</li>
+                </ul>
+                <p class="case-v2__pull">Classical kernel SVM &mdash; chosen over deep learning precisely because it works well with hundreds (not millions) of labelled hydrant pairs.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <ul>
+                    <li><strong>Singapore PUB</strong> uses acoustic-leak technology as part of the programme that holds national NRW at ~5% &mdash; the world's lowest.</li>
+                    <li><strong>Toronto Water</strong> reported leak detection rates an order of magnitude above hand-survey baselines.</li>
+                    <li><strong>NYC&nbsp;DEP</strong> deployed Echologics fleet across the boroughs and credits it with finding leaks that hand surveys had missed for decades.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Kernel SVMs still rule when data is precious.</strong> "Use a transformer" is bad advice when you have 500 labelled samples and an embedded device.</li>
+                    <li><strong>Feature engineering carries the model.</strong> The audio features (coherence, kurtosis) encode decades of acoustic-leak research; the SVM just draws the boundary.</li>
+                    <li><strong>The win is operational, not algorithmic.</strong> A modest classifier deployed nightly across thousands of hydrants beats a clever model run quarterly.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://echologics.com/" target="_blank" rel="noopener">Echologics (Mueller) <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://www.pub.gov.sg/Public/WaterLoop/WaterSupply/water-management" target="_blank" rel="noopener">Singapore PUB &mdash; NRW programme <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">

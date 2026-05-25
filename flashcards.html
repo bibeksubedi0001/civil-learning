@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Spaced-repetition flashcards generated from every quiz question in the Civil Engineer's Guide to AI. Review what you learned and lock it in long-term memory.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/flashcards.html">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link active"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flashcards-page" id="flashcards-app">
+
+        <header class="fc-hero">
+            <div class="fc-hero__badge"><i class="fa-solid fa-brain"></i> Spaced Repetition</div>
+            <h1 class="fc-hero__title">Flashcards</h1>
+            <p class="fc-hero__subtitle">
+                Every quiz question across the guide becomes a flashcard. Review what's due,
+                rate how easy it felt, and the SM-2 scheduler decides when to show it again
+                — so concepts stick for the long haul.
+            </p>
+        </header>
+
+        <!-- Stats grid -->
+        <section class="fc-stats" id="fc-stats" aria-label="Deck statistics"></section>
+
+        <!-- Start / controls -->
+        <section class="fc-controls">
+            <button class="fc-btn fc-btn--primary" id="fc-start">Loading…</button>
+            <button class="fc-btn fc-btn--ghost" id="fc-build">
+                <i class="fa-solid fa-rotate"></i> Build / refresh full deck
+            </button>
+            <button class="fc-btn fc-btn--ghost" id="fc-export">
+                <i class="fa-solid fa-file-export"></i> Export deck
+            </button>
+            <button class="fc-btn fc-btn--danger" id="fc-reset">
+                <i class="fa-solid fa-trash"></i> Reset
+            </button>
+            <p class="fc-build-log" id="fc-build-log" aria-live="polite"></p>
+        </section>
+
+        <!-- Empty state -->
+        <section class="fc-empty" id="fc-empty" hidden>
+            <i class="fa-solid fa-folder-open fc-empty__icon"></i>
+            <h2>No cards yet</h2>
+            <p>
+                Open any sub-chapter and its quiz questions are auto-added to your deck —
+                or click <strong>Build / refresh full deck</strong> above to import every
+                quiz across the guide in one go.
+            </p>
+        </section>
+
+        <!-- Review session -->
+        <section class="fc-review" id="fc-review" hidden aria-label="Flashcard review session">
+            <div class="fc-progress" id="fc-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="fc-progress__fill"></div>
+                <span class="fc-progress__label">0 reviewed</span>
+            </div>
+
+            <article class="fc-card">
+                <p class="fc-source" id="fc-source"></p>
+                <h2 class="fc-question" id="fc-question"></h2>
+                <ul class="fc-options" id="fc-options"></ul>
+                <p class="fc-explanation" id="fc-explanation" hidden></p>
+
+                <button class="fc-btn fc-btn--primary fc-btn--wide" id="fc-show">
+                    <i class="fa-solid fa-eye"></i> Show answer
+                    <span class="fc-hint">Space</span>
+                </button>
+
+                <div class="fc-rating" id="fc-rating" hidden aria-label="Rate your recall">
+                    <button class="fc-rate fc-rate--again" data-rating="0">
+                        <span class="fc-rate__label">Again</span>
+                        <span class="fc-rate__sub">&lt; 10 min</span>
+                        <span class="fc-hint">1</span>
+                    </button>
+                    <button class="fc-rate fc-rate--hard" data-rating="1">
+                        <span class="fc-rate__label">Hard</span>
+                        <span class="fc-rate__sub">soon</span>
+                        <span class="fc-hint">2</span>
+                    </button>
+                    <button class="fc-rate fc-rate--good" data-rating="2">
+                        <span class="fc-rate__label">Good</span>
+                        <span class="fc-rate__sub">1-3 d</span>
+                        <span class="fc-hint">3</span>
+                    </button>
+                    <button class="fc-rate fc-rate--easy" data-rating="3">
+                        <span class="fc-rate__label">Easy</span>
+                        <span class="fc-rate__sub">2-5+ d</span>
+                        <span class="fc-hint">4</span>
+                    </button>
+                </div>
+            </article>
+        </section>
+
+        <!-- Session finished -->
+        <section class="fc-finish" id="fc-finish" hidden>
+            <i class="fa-solid fa-circle-check fc-empty__icon"></i>
+            <h2>Session complete</h2>
+            <div class="fc-stats" id="fc-finish-stats"></div>
+            <button class="fc-btn fc-btn--primary" id="fc-finish-again">
+                <i class="fa-solid fa-arrow-rotate-right"></i> Continue
+            </button>
+        </section>
+
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            Stored locally in your browser · no account needed ·
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <script src="js/theme.js"></script>
+    <script src="js/search-index.js" defer></script>
+    <script src="js/flashcards.js" defer></script>
+</body>
+</html>

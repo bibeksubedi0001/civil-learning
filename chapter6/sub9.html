@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
@@ -993,7 +993,7 @@ for xb, yb in batches:
         </div>
         <div style="background:rgba(15,23,42,.5);border:1px solid #1e2d3d;border-radius:12px;padding:20px;">
           <h3 style="color:#0ea5e9;font-size:.95rem;margin-bottom:8px;"><i class="fa-solid fa-code"></i> PyTorch for CE Research</h3>
-          <p style="color:#94a3b8;font-size:.85rem;line-height:1.6;"><strong style="color:#e2e8f0;">PyTorch dominates CE research papers</strong> because its imperative style matches how engineers think — define the model, run data through it, check results, adjust. TensorFlow/Keras is fine too, but if you're reading recent CE-AI journal papers, they'll likely use PyTorch.</p>
+          <p style="color:#94a3b8;font-size:.85rem;line-height:1.6;"><strong style="color:#e2e8f0;">PyTorch dominates CE research papers</strong> because its imperative style matches how engineers think â€” define the model, run data through it, check results, adjust. TensorFlow/Keras is fine too, but if you're reading recent CE-AI journal papers, they'll likely use PyTorch.</p>
         </div>
       </div>
     </div>
@@ -1615,6 +1615,83 @@ for xb, yb in batches:
 .legend { display:flex; gap:1rem; flex-wrap:wrap; font-size:0.85rem; color:#94a3b8; }
 .legend i { font-size:0.6rem; vertical-align:middle; }
 </style>
+                <!-- =================== MINI CASE STUDY (case-v2) =================== -->
+                <section class="case-v2" data-cs="nvidia-bentley-itwin">
+                    <div class="case-v2__hero">
+                        <span class="case-v2__badge"><i class="fa-solid fa-flask"></i> Mini case study</span>
+                        <h2 class="case-v2__title">GPUs &amp; frameworks for AEC: NVIDIA Omniverse + Bentley iTwin digital twins</h2>
+                        <p class="case-v2__lede">At GTC 2023 Bentley Systems and NVIDIA announced Bentley iTwin integration with Omniverse &mdash; live, photoreal 4D digital twins of bridges, plants and offshore platforms streaming straight from the iTwin cloud onto RTX workstations and H100/B200 servers. The interesting engineering choice is the framework stack: Bentley standardised on PyTorch + CUDA + Triton inference, abandoning the in-house C++ pipelines that dominated AEC tooling for three decades.</p>
+                        <ul class="case-v2__meta">
+                            <li><i class="fa-solid fa-cube"></i> Bentley iTwin + NVIDIA Omniverse</li>
+                            <li><i class="fa-solid fa-microchip"></i> CUDA / PyTorch / Triton stack</li>
+                            <li><i class="fa-solid fa-server"></i> RTX workstation &rarr; H100 cluster</li>
+                            <li><i class="fa-solid fa-calendar"></i> Announced NVIDIA GTC 2023</li>
+                        </ul>
+                    </div>
+                    <div class="case-v2__kpis">
+                        <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="989">0</span><span class="case-v2__kpi-lbl">H100 FP16 TFLOPS</span></div>
+                        <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="2.5" data-count-suffix="&nbsp;PFLOPS" data-count-decimals="1">0</span><span class="case-v2__kpi-lbl">B200 FP16 throughput</span></div>
+                        <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="80" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">PyTorch share of AI papers</span></div>
+                        <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="40" data-count-suffix="&times;">0</span><span class="case-v2__kpi-lbl">H100 vs V100 LLM speedup</span></div>
+                    </div>
+                    <div class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+                        <button class="case-v2__tab is-active" data-tab="problem" role="tab" aria-selected="true"><i class="fa-solid fa-circle-question"></i> Problem</button>
+                        <button class="case-v2__tab" data-tab="approach" role="tab" aria-selected="false"><i class="fa-solid fa-microchip"></i> Approach</button>
+                        <button class="case-v2__tab" data-tab="results" role="tab" aria-selected="false"><i class="fa-solid fa-chart-line"></i> Results</button>
+                        <button class="case-v2__tab" data-tab="lessons" role="tab" aria-selected="false"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+                    </div>
+                    <div class="case-v2__panels">
+                        <div class="case-v2__panel is-active" data-panel="problem">
+                            <p>A live offshore-platform digital twin has to render 30&nbsp;FPS of photoreal geometry <em>and</em> run live AI inferences (corrosion segmentation, crack detection, anomaly detection on SCADA) on the same workstation. That requires shared GPU memory, async kernel scheduling, and a deep-learning framework that interoperates with USD (Universal Scene Description) &mdash; the data model Omniverse is built on.</p>
+                            <p class="case-v2__pull">&ldquo;The framework that wins AEC is the one the GPU vendor already optimised.&rdquo;</p>
+                        </div>
+                        <div class="case-v2__panel" data-panel="approach">
+                            <ul>
+                                <li><strong>Inference on Triton.</strong> NVIDIA Triton Inference Server hosts the AEC AI models (crack U-Net, corrosion seg) and serves predictions to the Omniverse renderer over gRPC.</li>
+                                <li><strong>PyTorch + TorchScript for training</strong>, ONNX export, TensorRT for the deployed graph &mdash; the standard NVIDIA inference pipeline.</li>
+                                <li><strong>Mixed precision (FP16/BF16)</strong> on H100 Tensor Cores yields the bulk of the speed-up vs FP32 on older GPUs.</li>
+                            </ul>
+                            <div class="cv2-widget">
+                                <div class="cv2-widget__title"><i class="fa-solid fa-table-list"></i> NVIDIA datacentre GPUs across the deep-learning era (click to sort)</div>
+                                <table class="cv2-table" data-sortable>
+                                    <thead>
+                                        <tr><th data-type="string">GPU</th><th data-type="number">Year</th><th data-type="number">FP16 TFLOPS</th><th data-type="number">HBM (GB)</th><th data-type="string">Notes</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>V100</td><td>2017</td><td>125</td><td>32</td><td>First Tensor Cores</td></tr>
+                                        <tr><td>A100</td><td>2020</td><td>312</td><td>80</td><td>BF16, MIG partitioning</td></tr>
+                                        <tr><td>H100</td><td>2022</td><td>989</td><td>80</td><td>Transformer Engine, FP8</td></tr>
+                                        <tr><td>H200</td><td>2024</td><td>989</td><td>141</td><td>Same compute, 1.7&times; memory</td></tr>
+                                        <tr><td>B200</td><td>2025</td><td>2500</td><td>192</td><td>Blackwell, dual-die</td></tr>
+                                    </tbody>
+                                </table>
+                                <p class="cv2-widget__caption">FP16 throughput roughly doubles every generation; memory has lagged compute &mdash; which is why CE workloads with large mesh tensors love H200/B200.</p>
+                            </div>
+                        </div>
+                        <div class="case-v2__panel" data-panel="results">
+                            <ul>
+                                <li><strong>Real-time AEC digital twins</strong> &mdash; geometry + AI inference share the same RTX workstation without dropping below 30 FPS.</li>
+                                <li><strong>Cross-platform reuse</strong> &mdash; the same PyTorch checkpoint runs on a laptop RTX, a workstation, and an H100 cluster.</li>
+                                <li><strong>AEC SDK adoption</strong> &mdash; Autodesk, Bentley, Hexagon and Trimble all now ship Omniverse / USD connectors.</li>
+                            </ul>
+                        </div>
+                        <div class="case-v2__panel" data-panel="lessons">
+                            <ul>
+                                <li><strong>PyTorch + CUDA is the safe default for AEC ML</strong> in 2025; TensorFlow share has collapsed outside Google.</li>
+                                <li><strong>Memory matters as much as TFLOPS</strong> for engineering meshes &mdash; H200 &gt; H100 for the same kernel set.</li>
+                                <li><strong>Inference servers (Triton) decouple ML from the renderer</strong> &mdash; the AEC tool stays a thin client.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="case-v2__footer">
+                        Sources:
+                        <a href="https://blogs.nvidia.com/blog/bentley-omniverse-itwin-digital-twin/" target="_blank" rel="noopener">NVIDIA blog: Bentley iTwin + Omniverse announcement</a>
+                        &middot;
+                        <a href="https://www.bentley.com/software/itwin/" target="_blank" rel="noopener">Bentley iTwin platform overview</a>
+                    </div>
+                </section>
+                <!-- ================= /MINI CASE STUDY ================= -->
+
 <script src="js/geo-demos.js"></script>
 
 </body>

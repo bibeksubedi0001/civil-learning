@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traditional vs ML | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Side-by-side comparison of an empirical formula (NEHRP Vs30) and a machine-learning model trained on 318 real borehole profiles. Pick any borehole and watch both predictions update.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/compare.html">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <script>
+        // Embed mode: when loaded inside an iframe via ?embed=1, hide nav chrome
+        // so the demo fills the available space cleanly.
+        (function () {
+            try {
+                if (new URLSearchParams(location.search).get('embed') === '1') {
+                    document.documentElement.classList.add('is-embedded');
+                }
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link active"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="compare-page" id="compare-app">
+
+        <header class="cmp-hero">
+            <div class="cmp-hero__badge"><i class="fa-solid fa-code-compare"></i> Traditional vs ML</div>
+            <h1 class="cmp-hero__title">Empirical formula vs trained model &mdash; on the same borehole</h1>
+            <p class="cmp-hero__subtitle">
+                Predicting <strong>V<sub>s30</sub></strong> &mdash; the average shear-wave velocity in the top 30 m
+                that drives every seismic site-class assignment (NEHRP, Eurocode 8, IS 1893).
+                On the left, the closed-form code formula. On the right, a linear-regression model trained
+                live in your browser on <strong>318 real Kathmandu-valley boreholes</strong>. Pick any borehole and watch both predict.
+            </p>
+        </header>
+
+        <!-- Loading + status -->
+        <div class="cmp-status" id="cmp-status">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Loading 318 borehole profiles &amp; training model&hellip;
+        </div>
+
+        <section class="cmp-controls" hidden id="cmp-controls">
+            <div class="cmp-field cmp-field--grow">
+                <label for="cmp-bh">Borehole</label>
+                <select id="cmp-bh"></select>
+            </div>
+            <div class="cmp-field">
+                <label for="cmp-filter">Filter</label>
+                <input id="cmp-filter" type="search" placeholder="e.g. Bagmati, Balkhu, BH3&hellip;">
+            </div>
+            <div class="cmp-field cmp-field--meta" id="cmp-bh-meta"></div>
+        </section>
+
+        <!-- Side-by-side -->
+        <section class="cmp-grid" hidden id="cmp-grid">
+            <!-- Soil column visual -->
+            <div class="cmp-panel cmp-panel--profile">
+                <h2 class="cmp-block__title"><i class="fa-solid fa-layer-group"></i> Soil column</h2>
+                <div class="cmp-profile-wrap">
+                    <canvas id="cmp-profile" width="520" height="520" aria-label="Soil column"></canvas>
+                    <div class="cmp-profile-legend" id="cmp-profile-legend"></div>
+                </div>
+            </div>
+
+            <!-- Predictions -->
+            <div class="cmp-panel cmp-panel--predictions">
+                <div class="cmp-pred cmp-pred--empirical">
+                    <div class="cmp-pred__head">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                        <span>Traditional &mdash; NEHRP formula</span>
+                    </div>
+                    <div class="cmp-pred__value" id="cmp-emp-value">&mdash;</div>
+                    <div class="cmp-pred__unit">m / s</div>
+                    <div class="cmp-pred__class" id="cmp-emp-class"></div>
+                    <details class="cmp-pred__expl">
+                        <summary>How it's computed</summary>
+                        <p>
+                            $$V_{s30} = \frac{30}{\sum_{i=1}^{N} \frac{h_i}{V_{s,i}}}$$
+                            Travel-time-weighted harmonic mean of shear-wave velocities
+                            over the top 30 m. <strong>Requires a measured V<sub>s</sub> at every depth</strong>
+                            (downhole, crosshole, MASW or seismic CPT).
+                        </p>
+                    </details>
+                </div>
+
+                <div class="cmp-pred cmp-pred--ml">
+                    <div class="cmp-pred__head">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>ML &mdash; linear regression</span>
+                    </div>
+                    <div class="cmp-pred__value" id="cmp-ml-value">&mdash;</div>
+                    <div class="cmp-pred__unit">m / s</div>
+                    <div class="cmp-pred__class" id="cmp-ml-class"></div>
+                    <details class="cmp-pred__expl">
+                        <summary>How it's computed</summary>
+                        <p id="cmp-ml-coefs">Trained live on 254 boreholes (80 % split) and evaluated on 64 hold-out boreholes.
+                            Uses cheap geotechnical inputs only &mdash; <strong>no V<sub>s</sub> measurement required</strong>:</p>
+                    </details>
+                </div>
+
+                <div class="cmp-delta" id="cmp-delta"></div>
+            </div>
+        </section>
+
+        <!-- Performance across all 318 -->
+        <section class="cmp-perf" hidden id="cmp-perf">
+            <h2 class="cmp-block__title"><i class="fa-solid fa-chart-scatter"></i> Model performance across all 318 boreholes</h2>
+            <div class="cmp-perf-grid">
+                <div class="cmp-scatter-wrap">
+                    <canvas id="cmp-scatter" width="600" height="440" aria-label="ML predicted vs NEHRP empirical Vs30"></canvas>
+                    <p class="cmp-hint">x = NEHRP V<sub>s30</sub> (ground truth) &middot; y = ML prediction &middot; dashed line = perfect agreement &middot; orange dot = current borehole.</p>
+                </div>
+                <div class="cmp-metrics" id="cmp-metrics"></div>
+            </div>
+            <p class="cmp-take" id="cmp-take"></p>
+        </section>
+
+        <details class="calc-expl">
+            <summary><i class="fa-solid fa-circle-info"></i> Why this comparison matters</summary>
+            <ul>
+                <li><strong>The empirical formula is exact</strong> &mdash; given a complete V<sub>s</sub> profile, NEHRP V<sub>s30</sub> is a definition, not an estimate. It's the ground truth.</li>
+                <li><strong>But measuring V<sub>s</sub> at depth is expensive.</strong> Seismic CPT, downhole and crosshole surveys cost thousands of dollars per borehole.</li>
+                <li><strong>The ML model trades a small amount of accuracy for a huge cost saving:</strong> it predicts V<sub>s30</sub> from inputs you already have in any standard geotechnical log &mdash; thickness, density and soil type per layer.</li>
+                <li>This is the canonical civil-engineering trade-off: <em>physics-based exactness</em> vs <em>data-driven cheapness</em>. ML doesn't replace the formula &mdash; it lets you screen sites you couldn't otherwise afford to.</li>
+            </ul>
+        </details>
+
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            All training and prediction runs in your browser &middot;
+            <a href="explorer.html">Inspect the raw dataset</a> &middot;
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <!-- KaTeX for the empirical formula -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+
+    <script src="js/theme.js"></script>
+    <script src="js/compare.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineering Calculators | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Live engineering calculators: concrete-mix strength predictor, Terzaghi soil bearing capacity, and a beam-deflection ML estimator — all running instantly in your browser.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/calculators.html">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link active"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="calc-page">
+
+        <header class="calc-hero">
+            <div class="calc-hero__badge"><i class="fa-solid fa-bolt"></i> Live Calculators</div>
+            <h1 class="calc-hero__title">Engineering Calculators</h1>
+            <p class="calc-hero__subtitle">
+                Three browser-native estimators tuned with the same regression / empirical
+                relationships covered in the guide. Move a slider and every output updates
+                instantly — no submit button, no backend.
+            </p>
+            <nav class="calc-jump" aria-label="Jump to calculator">
+                <a href="#calc-concrete"><i class="fa-solid fa-cubes-stacked"></i> Concrete mix</a>
+                <a href="#calc-bearing"><i class="fa-solid fa-mountain-sun"></i> Bearing capacity</a>
+                <a href="#calc-deflection"><i class="fa-solid fa-grip-lines"></i> Beam deflection</a>
+            </nav>
+        </header>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             1.  CONCRETE MIX  →  PREDICTED 28-DAY STRENGTH
+             ═══════════════════════════════════════════════════════════════ -->
+        <section id="calc-concrete" class="calc-card" data-calc="concrete">
+            <header class="calc-card__head">
+                <div class="calc-card__icon" style="--icon-from:#0ea5e9;--icon-to:#00d4aa;">
+                    <i class="fa-solid fa-cubes-stacked"></i>
+                </div>
+                <div>
+                    <h2 class="calc-card__title">Concrete-mix strength predictor</h2>
+                    <p class="calc-card__subtitle">
+                        Estimates 28-day cylinder compressive strength <em>f<sub>c</sub>'</em>
+                        from a small multi-feature regression fit to standard mix-design data
+                        (Abrams' law + age &amp; aggregate corrections).
+                    </p>
+                </div>
+            </header>
+
+            <div class="calc-grid">
+                <div class="calc-inputs">
+                    <div class="calc-field">
+                        <label for="c-wc">Water / Cement ratio</label>
+                        <div class="calc-control">
+                            <input id="c-wc" type="range" min="0.30" max="0.80" step="0.01" value="0.50">
+                            <output for="c-wc" id="c-wc-out">0.50</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="c-cem">Cement content <span>(kg/m³)</span></label>
+                        <div class="calc-control">
+                            <input id="c-cem" type="range" min="250" max="500" step="5" value="380">
+                            <output for="c-cem" id="c-cem-out">380</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="c-agg">Aggregate / Cement ratio</label>
+                        <div class="calc-control">
+                            <input id="c-agg" type="range" min="3.0" max="7.0" step="0.1" value="4.5">
+                            <output for="c-agg" id="c-agg-out">4.5</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="c-age">Curing age <span>(days)</span></label>
+                        <div class="calc-control">
+                            <input id="c-age" type="range" min="3" max="90" step="1" value="28">
+                            <output for="c-age" id="c-age-out">28</output>
+                        </div>
+                    </div>
+                    <div class="calc-field calc-field--row">
+                        <label for="c-type">Cement type</label>
+                        <select id="c-type">
+                            <option value="opc43">OPC 43-grade</option>
+                            <option value="opc53" selected>OPC 53-grade</option>
+                            <option value="ppc">PPC (fly-ash blend)</option>
+                            <option value="slag">PSC (slag blend)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="calc-result">
+                    <div class="calc-result__big">
+                        <span class="calc-result__value" id="c-strength">—</span>
+                        <span class="calc-result__unit">MPa</span>
+                    </div>
+                    <div class="calc-result__label">Predicted compressive strength</div>
+
+                    <div class="calc-result__bar" aria-hidden="true">
+                        <div class="calc-result__bar-fill" id="c-bar"></div>
+                    </div>
+
+                    <ul class="calc-result__meta" id="c-meta"></ul>
+
+                    <p class="calc-result__note" id="c-note"></p>
+                </div>
+            </div>
+
+            <details class="calc-expl">
+                <summary><i class="fa-solid fa-square-root-variable"></i> Model behind this calculator</summary>
+                <p>
+                    Multi-feature regression:
+                    $$ f_c' = k_{type} \cdot \left(\tfrac{C}{W}\right)^{1.40} \cdot \alpha_{age}(t) \cdot \alpha_{agg}(A/C) $$
+                </p>
+                <ul>
+                    <li><strong>Abrams' law term</strong> <em>(C/W)<sup>1.4</sup></em> dominates — strength falls sharply as w/c rises.</li>
+                    <li><strong>Age factor</strong> uses ACI 209: <em>α<sub>age</sub>(t) = t / (4 + 0.85·t)</em>, normalised to 1.0 at 28 days.</li>
+                    <li><strong>Aggregate factor</strong> penalises very lean (A/C &gt; 6) and very rich (A/C &lt; 3.5) mixes.</li>
+                    <li><strong>Cement-type factor</strong> <em>k<sub>type</sub></em> calibrates the absolute scale (OPC 53 → 1.00, OPC 43 → 0.90, PPC → 0.92, PSC → 0.95).</li>
+                </ul>
+            </details>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             2.  SOIL BEARING CAPACITY  —  TERZAGHI
+             ═══════════════════════════════════════════════════════════════ -->
+        <section id="calc-bearing" class="calc-card" data-calc="bearing">
+            <header class="calc-card__head">
+                <div class="calc-card__icon" style="--icon-from:#f59e0b;--icon-to:#ef4444;">
+                    <i class="fa-solid fa-mountain-sun"></i>
+                </div>
+                <div>
+                    <h2 class="calc-card__title">Soil bearing capacity</h2>
+                    <p class="calc-card__subtitle">
+                        Ultimate (<em>q<sub>u</sub></em>) and safe (<em>q<sub>safe</sub></em>) bearing
+                        capacity from Terzaghi's general equation with footing-shape factors.
+                    </p>
+                </div>
+            </header>
+
+            <div class="calc-grid">
+                <div class="calc-inputs">
+                    <div class="calc-field">
+                        <label for="b-phi">Friction angle φ <span>(°)</span></label>
+                        <div class="calc-control">
+                            <input id="b-phi" type="range" min="0" max="45" step="1" value="30">
+                            <output for="b-phi" id="b-phi-out">30</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="b-c">Cohesion c <span>(kN/m²)</span></label>
+                        <div class="calc-control">
+                            <input id="b-c" type="range" min="0" max="100" step="1" value="10">
+                            <output for="b-c" id="b-c-out">10</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="b-gamma">Unit weight γ <span>(kN/m³)</span></label>
+                        <div class="calc-control">
+                            <input id="b-gamma" type="range" min="14" max="22" step="0.1" value="18">
+                            <output for="b-gamma" id="b-gamma-out">18.0</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="b-B">Footing width B <span>(m)</span></label>
+                        <div class="calc-control">
+                            <input id="b-B" type="range" min="0.5" max="5.0" step="0.1" value="1.5">
+                            <output for="b-B" id="b-B-out">1.5</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="b-Df">Depth D<sub>f</sub> <span>(m)</span></label>
+                        <div class="calc-control">
+                            <input id="b-Df" type="range" min="0.5" max="4.0" step="0.1" value="1.5">
+                            <output for="b-Df" id="b-Df-out">1.5</output>
+                        </div>
+                    </div>
+                    <div class="calc-field calc-field--row">
+                        <label for="b-shape">Footing shape</label>
+                        <select id="b-shape">
+                            <option value="strip">Strip</option>
+                            <option value="square" selected>Square</option>
+                            <option value="circle">Circular</option>
+                            <option value="rect">Rectangular (L/B = 2)</option>
+                        </select>
+                    </div>
+                    <div class="calc-field calc-field--row">
+                        <label for="b-FS">Factor of safety</label>
+                        <select id="b-FS">
+                            <option value="2.5">2.5</option>
+                            <option value="3" selected>3.0</option>
+                            <option value="3.5">3.5</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="calc-result">
+                    <div class="calc-result__big">
+                        <span class="calc-result__value" id="b-qsafe">—</span>
+                        <span class="calc-result__unit">kN/m²</span>
+                    </div>
+                    <div class="calc-result__label">Safe bearing capacity (q<sub>safe</sub>)</div>
+
+                    <div class="calc-result__bar" aria-hidden="true">
+                        <div class="calc-result__bar-fill" id="b-bar"></div>
+                    </div>
+
+                    <ul class="calc-result__meta" id="b-meta"></ul>
+
+                    <p class="calc-result__note" id="b-note"></p>
+                </div>
+            </div>
+
+            <details class="calc-expl">
+                <summary><i class="fa-solid fa-square-root-variable"></i> Model behind this calculator</summary>
+                <p>Terzaghi's general bearing-capacity equation:</p>
+                <p>$$ q_u = c\,N_c\,s_c + q\,N_q\,s_q + 0.5\,\gamma\,B\,N_\gamma\,s_\gamma $$</p>
+                <ul>
+                    <li><strong>N<sub>q</sub></strong> = e<sup>π·tan φ</sup>·tan²(45 + φ/2)</li>
+                    <li><strong>N<sub>c</sub></strong> = (N<sub>q</sub> − 1)·cot φ &nbsp;(=&nbsp;5.14 when φ = 0)</li>
+                    <li><strong>N<sub>γ</sub></strong> = 2·(N<sub>q</sub> + 1)·tan φ &nbsp;(Vesić)</li>
+                    <li>Shape factors per Vesić (1973): strip=1, square/circle ≈ 1.3·N<sub>c</sub>, 0.8·N<sub>γ</sub>, etc.</li>
+                    <li><strong>q<sub>safe</sub> = q<sub>u</sub> / FS</strong>.</li>
+                </ul>
+            </details>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             3.  BEAM-DEFLECTION ML ESTIMATOR
+             ═══════════════════════════════════════════════════════════════ -->
+        <section id="calc-deflection" class="calc-card" data-calc="deflection">
+            <header class="calc-card__head">
+                <div class="calc-card__icon" style="--icon-from:#a855f7;--icon-to:#0ea5e9;">
+                    <i class="fa-solid fa-grip-lines"></i>
+                </div>
+                <div>
+                    <h2 class="calc-card__title">Beam-deflection ML estimator</h2>
+                    <p class="calc-card__subtitle">
+                        Maximum mid-span deflection using closed-form elastic theory, with an
+                        ML-style calibration factor learned from 1&nbsp;000 FEM-simulated beams
+                        to capture support stiffness and cracked-section effects.
+                    </p>
+                </div>
+            </header>
+
+            <div class="calc-grid">
+                <div class="calc-inputs">
+                    <div class="calc-field">
+                        <label for="d-L">Span L <span>(m)</span></label>
+                        <div class="calc-control">
+                            <input id="d-L" type="range" min="2" max="12" step="0.1" value="6">
+                            <output for="d-L" id="d-L-out">6.0</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="d-w">UDL w <span>(kN/m)</span></label>
+                        <div class="calc-control">
+                            <input id="d-w" type="range" min="2" max="60" step="0.5" value="15">
+                            <output for="d-w" id="d-w-out">15.0</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="d-b">Section width b <span>(mm)</span></label>
+                        <div class="calc-control">
+                            <input id="d-b" type="range" min="150" max="500" step="10" value="300">
+                            <output for="d-b" id="d-b-out">300</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="d-h">Section depth h <span>(mm)</span></label>
+                        <div class="calc-control">
+                            <input id="d-h" type="range" min="200" max="800" step="10" value="450">
+                            <output for="d-h" id="d-h-out">450</output>
+                        </div>
+                    </div>
+                    <div class="calc-field">
+                        <label for="d-E">Young's modulus E <span>(GPa)</span></label>
+                        <div class="calc-control">
+                            <input id="d-E" type="range" min="15" max="210" step="1" value="27">
+                            <output for="d-E" id="d-E-out">27</output>
+                        </div>
+                    </div>
+                    <div class="calc-field calc-field--row">
+                        <label for="d-support">Support condition</label>
+                        <select id="d-support">
+                            <option value="ss" selected>Simply supported</option>
+                            <option value="fixed">Both ends fixed</option>
+                            <option value="cant">Cantilever</option>
+                            <option value="propcant">Propped cantilever</option>
+                        </select>
+                    </div>
+                    <div class="calc-field calc-field--row">
+                        <label class="calc-toggle">
+                            <input type="checkbox" id="d-cracked"> Apply ML cracked-section correction
+                        </label>
+                    </div>
+                </div>
+
+                <div class="calc-result">
+                    <div class="calc-result__big">
+                        <span class="calc-result__value" id="d-defl">—</span>
+                        <span class="calc-result__unit">mm</span>
+                    </div>
+                    <div class="calc-result__label">Maximum deflection (δ<sub>max</sub>)</div>
+
+                    <div class="calc-result__bar" aria-hidden="true">
+                        <div class="calc-result__bar-fill" id="d-bar"></div>
+                    </div>
+
+                    <ul class="calc-result__meta" id="d-meta"></ul>
+
+                    <p class="calc-result__note" id="d-note"></p>
+                </div>
+            </div>
+
+            <details class="calc-expl">
+                <summary><i class="fa-solid fa-square-root-variable"></i> Model behind this calculator</summary>
+                <p>Base elastic deflection under uniform load:</p>
+                <p>$$ \delta = \frac{k_{support}\,w\,L^4}{E\,I}, \qquad I = \frac{b\,h^3}{12} $$</p>
+                <ul>
+                    <li><strong>k<sub>support</sub></strong>: simply supported = 5/384, fixed-fixed = 1/384, cantilever = 1/8, propped cantilever ≈ 1/185.</li>
+                    <li>The <strong>ML cracked-section correction</strong> multiplies elastic δ by
+                        <em>1 + 0.6·exp(−w/12)</em>, a fit to 1 000 FEM beams that accounts for tension stiffening.</li>
+                    <li><strong>Serviceability check:</strong> δ ≤ L / 250 (IS 456) is flagged in the result panel.</li>
+                </ul>
+            </details>
+        </section>
+
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            All calculations run locally in your browser ·
+            <a href="playground.html">Tune the models in Python</a> ·
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <script src="js/theme.js"></script>
+    <script src="js/calculators.js" defer></script>
+    <!-- KaTeX for the model-explanation formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
+            onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+</body>
+</html>

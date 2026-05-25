@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperparameter Lab | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Two real models trained live in your browser — polynomial regression and a small neural-network classifier — with sliders for learning rate, epochs, hidden units and more, plus a live loss curve.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/lab.html">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link active"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="lab-page">
+
+        <header class="lab-hero">
+            <div class="lab-hero__badge"><i class="fa-solid fa-flask"></i> Hyperparameter Lab</div>
+            <h1 class="lab-hero__title">Train real models, in real time</h1>
+            <p class="lab-hero__subtitle">
+                Two browser-native trainers — a polynomial-regression fitter and a tiny
+                neural-network classifier — with sliders for learning rate, epochs, hidden
+                units, dataset size and more. Every step runs <strong>real gradient descent</strong>
+                in JavaScript and updates the model, prediction surface, and loss curve live.
+            </p>
+            <nav class="calc-jump" aria-label="Jump to demo">
+                <a href="#lab-reg"><i class="fa-solid fa-chart-line"></i> Polynomial regression</a>
+                <a href="#lab-nn"><i class="fa-solid fa-circle-nodes"></i> Neural-network classifier</a>
+            </nav>
+        </header>
+
+        <!-- ═════════════════════════════════════════════════════════════
+             1.  POLYNOMIAL REGRESSION  (real gradient descent, MSE)
+             ═════════════════════════════════════════════════════════════ -->
+        <section id="lab-reg" class="lab-card" data-demo="regression">
+            <header class="lab-card__head">
+                <div class="lab-card__icon" style="--icon-from:#00d4aa;--icon-to:#0ea5e9;">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h2 class="lab-card__title">Polynomial regression</h2>
+                    <p class="lab-card__subtitle">
+                        Fit a polynomial of chosen degree to a noisy 1-D dataset (think:
+                        concrete strength vs w/c ratio). Watch underfit / overfit emerge as
+                        you sweep degree and learning rate.
+                    </p>
+                </div>
+            </header>
+
+            <div class="lab-grid">
+                <aside class="lab-controls">
+                    <div class="lab-field">
+                        <label for="r-degree">Polynomial degree <output id="r-degree-out">3</output></label>
+                        <input id="r-degree" type="range" min="1" max="9" step="1" value="3">
+                    </div>
+                    <div class="lab-field">
+                        <label for="r-lr">Learning rate <output id="r-lr-out">0.05</output></label>
+                        <input id="r-lr" type="range" min="-4" max="-0.5" step="0.1" value="-1.3"
+                               data-log="true">
+                    </div>
+                    <div class="lab-field">
+                        <label for="r-epochs">Epochs <output id="r-epochs-out">400</output></label>
+                        <input id="r-epochs" type="range" min="50" max="2000" step="50" value="400">
+                    </div>
+                    <div class="lab-field">
+                        <label for="r-noise">Noise σ <output id="r-noise-out">0.20</output></label>
+                        <input id="r-noise" type="range" min="0" max="0.6" step="0.02" value="0.20">
+                    </div>
+                    <div class="lab-field">
+                        <label for="r-n">Dataset size <output id="r-n-out">40</output></label>
+                        <input id="r-n" type="range" min="10" max="200" step="5" value="40">
+                    </div>
+                    <div class="lab-field lab-field--row">
+                        <label for="r-target">Target curve</label>
+                        <select id="r-target">
+                            <option value="sine" selected>Sine-like</option>
+                            <option value="cubic">Cubic dip</option>
+                            <option value="abrams">Abrams-style decay</option>
+                        </select>
+                    </div>
+                    <div class="lab-buttons">
+                        <button class="lab-btn lab-btn--primary" id="r-train">
+                            <i class="fa-solid fa-play"></i> Train
+                        </button>
+                        <button class="lab-btn lab-btn--ghost" id="r-reset" title="New random dataset + fresh weights">
+                            <i class="fa-solid fa-shuffle"></i> Reset data
+                        </button>
+                    </div>
+                </aside>
+
+                <div class="lab-view">
+                    <div class="lab-canvas-row">
+                        <div class="lab-canvas-block">
+                            <span class="lab-canvas-title"><i class="fa-solid fa-bullseye"></i> Data &amp; fit</span>
+                            <canvas id="r-fit" width="560" height="320" aria-label="Regression fit"></canvas>
+                        </div>
+                        <div class="lab-canvas-block">
+                            <span class="lab-canvas-title"><i class="fa-solid fa-wave-square"></i> Loss curve (MSE)</span>
+                            <canvas id="r-loss" width="560" height="320" aria-label="Training loss curve"></canvas>
+                        </div>
+                    </div>
+                    <ul class="lab-stats" id="r-stats"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════════════════════════════════════════════════════
+             2.  NEURAL-NETWORK CLASSIFIER  (real MLP + backprop)
+             ═════════════════════════════════════════════════════════════ -->
+        <section id="lab-nn" class="lab-card" data-demo="nn">
+            <header class="lab-card__head">
+                <div class="lab-card__icon" style="--icon-from:#a855f7;--icon-to:#0ea5e9;">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                </div>
+                <div>
+                    <h2 class="lab-card__title">Tiny neural-network classifier</h2>
+                    <p class="lab-card__subtitle">
+                        A real multi-layer perceptron trained with mini-batch SGD and binary
+                        cross-entropy. Sweep the hyperparameters and watch the decision
+                        boundary and loss curve respond.
+                    </p>
+                </div>
+            </header>
+
+            <div class="lab-grid">
+                <aside class="lab-controls">
+                    <div class="lab-field">
+                        <label for="n-hidden">Hidden units / layer <output id="n-hidden-out">8</output></label>
+                        <input id="n-hidden" type="range" min="2" max="32" step="1" value="8">
+                    </div>
+                    <div class="lab-field">
+                        <label for="n-layers">Hidden layers <output id="n-layers-out">2</output></label>
+                        <input id="n-layers" type="range" min="1" max="4" step="1" value="2">
+                    </div>
+                    <div class="lab-field">
+                        <label for="n-lr">Learning rate <output id="n-lr-out">0.05</output></label>
+                        <input id="n-lr" type="range" min="-3" max="-0.5" step="0.1" value="-1.3"
+                               data-log="true">
+                    </div>
+                    <div class="lab-field">
+                        <label for="n-epochs">Epochs <output id="n-epochs-out">300</output></label>
+                        <input id="n-epochs" type="range" min="50" max="2000" step="50" value="300">
+                    </div>
+                    <div class="lab-field">
+                        <label for="n-batch">Batch size <output id="n-batch-out">16</output></label>
+                        <input id="n-batch" type="range" min="4" max="64" step="2" value="16">
+                    </div>
+                    <div class="lab-field lab-field--row">
+                        <label for="n-act">Activation</label>
+                        <select id="n-act">
+                            <option value="relu" selected>ReLU</option>
+                            <option value="tanh">tanh</option>
+                            <option value="sigmoid">sigmoid</option>
+                        </select>
+                    </div>
+                    <div class="lab-field lab-field--row">
+                        <label for="n-data">Dataset</label>
+                        <select id="n-data">
+                            <option value="moons" selected>Two moons</option>
+                            <option value="circles">Concentric circles</option>
+                            <option value="xor">XOR clusters</option>
+                            <option value="spiral">Spiral</option>
+                        </select>
+                    </div>
+                    <div class="lab-buttons">
+                        <button class="lab-btn lab-btn--primary" id="n-train">
+                            <i class="fa-solid fa-play"></i> Train
+                        </button>
+                        <button class="lab-btn lab-btn--ghost" id="n-reset" title="Re-sample dataset + reinitialise weights">
+                            <i class="fa-solid fa-shuffle"></i> Reset
+                        </button>
+                    </div>
+                </aside>
+
+                <div class="lab-view">
+                    <div class="lab-canvas-row">
+                        <div class="lab-canvas-block">
+                            <span class="lab-canvas-title"><i class="fa-solid fa-border-all"></i> Decision boundary</span>
+                            <canvas id="n-boundary" width="560" height="320" aria-label="Decision boundary"></canvas>
+                        </div>
+                        <div class="lab-canvas-block">
+                            <span class="lab-canvas-title"><i class="fa-solid fa-wave-square"></i> Loss curve (BCE)</span>
+                            <canvas id="n-loss" width="560" height="320" aria-label="Training loss curve"></canvas>
+                        </div>
+                    </div>
+                    <ul class="lab-stats" id="n-stats"></ul>
+                </div>
+            </div>
+
+            <details class="calc-expl">
+                <summary><i class="fa-solid fa-square-root-variable"></i> What's running under the hood?</summary>
+                <ul>
+                    <li>An MLP with a configurable stack of <em>hidden</em> Dense layers + chosen activation, and a final sigmoid output.</li>
+                    <li><strong>Real backpropagation</strong> through every layer, mini-batch SGD with the chosen batch size and learning rate, BCE loss.</li>
+                    <li>Weights are Xavier-initialised; the training loop yields to the browser every few epochs so the canvas stays responsive.</li>
+                    <li>The decision-boundary canvas evaluates the trained network on a 96×96 grid after each chunk — that's why busy regions get smoother as training progresses.</li>
+                    <li>Try <em>LR too high</em> (≥ 1) to see the loss curve oscillate / diverge, or <em>too low</em> (≈ 0.001) to see painfully slow convergence — the classic hyperparameter lessons.</li>
+                </ul>
+            </details>
+        </section>
+
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            Real training, in your browser ·
+            <a href="playground.html">Try it in Python instead</a> ·
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <script src="js/theme.js"></script>
+    <script src="js/lab.js" defer></script>
+</body>
+</html>

@@ -8,7 +8,7 @@
 
     // -------- Shared palette --------
     const C = {
-        bg: '#0d0d14',
+        bg: '#161a26',
         teal: '#00d4aa',
         blue: '#0ea5e9',
         amber: '#f59e0b',

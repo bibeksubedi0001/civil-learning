@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classifier Metrics | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Interactive confusion matrix and ROC / PR curves. Slide the decision threshold and watch precision, recall, F1, AUC and every cell update in real time.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/metrics.html">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link active"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="metrics-page" id="metrics-app">
+
+        <header class="mx-hero">
+            <div class="mx-hero__badge"><i class="fa-solid fa-bullseye"></i> Classifier metrics</div>
+            <h1 class="mx-hero__title">Confusion matrix &amp; ROC explorer</h1>
+            <p class="mx-hero__subtitle">
+                Drag the threshold and watch the confusion matrix, precision, recall, F1
+                and the dot on the ROC / PR curves update together. Pick a preset classifier
+                (strong, weak, imbalanced, …) or paste your own
+                <code>y_true,y_score</code> CSV.
+            </p>
+        </header>
+
+        <!-- ───────── Controls ───────── -->
+        <section class="mx-controls">
+            <div class="mx-field">
+                <label for="mx-preset">Classifier preset</label>
+                <select id="mx-preset">
+                    <option value="strong" selected>Strong crack detector (AUC ≈ 0.95)</option>
+                    <option value="medium">Medium beam-safety classifier (AUC ≈ 0.85)</option>
+                    <option value="weak">Weak baseline (AUC ≈ 0.65)</option>
+                    <option value="random">Random guesser (AUC ≈ 0.50)</option>
+                    <option value="imbalanced">Imbalanced rare-event detector</option>
+                </select>
+            </div>
+            <div class="mx-field mx-field--grow">
+                <label for="mx-threshold">
+                    Decision threshold
+                    <output id="mx-threshold-out">0.50</output>
+                </label>
+                <input id="mx-threshold" type="range" min="0" max="1" step="0.01" value="0.50">
+            </div>
+            <div class="mx-field">
+                <button class="lab-btn lab-btn--ghost" id="mx-upload-btn">
+                    <i class="fa-solid fa-file-import"></i> Load CSV
+                </button>
+                <input type="file" id="mx-file" accept=".csv,text/csv" hidden>
+            </div>
+        </section>
+
+        <p class="mx-dataset-note" id="mx-dataset-note"></p>
+
+        <!-- ───────── Confusion matrix + key metrics ───────── -->
+        <section class="mx-grid">
+            <div class="mx-cm-block">
+                <h2 class="mx-block__title"><i class="fa-solid fa-grip"></i> Confusion matrix</h2>
+                <div class="mx-cm" id="mx-cm">
+                    <div class="mx-cm__corner"></div>
+                    <div class="mx-cm__top">Predicted Positive</div>
+                    <div class="mx-cm__top">Predicted Negative</div>
+                    <div class="mx-cm__side">Actual Positive</div>
+                    <div class="mx-cm__cell mx-cm__cell--tp" data-cell="tp">
+                        <span class="mx-cm__label">TP</span>
+                        <span class="mx-cm__count" id="mx-tp">0</span>
+                        <span class="mx-cm__hint">Correctly flagged</span>
+                    </div>
+                    <div class="mx-cm__cell mx-cm__cell--fn" data-cell="fn">
+                        <span class="mx-cm__label">FN</span>
+                        <span class="mx-cm__count" id="mx-fn">0</span>
+                        <span class="mx-cm__hint">Missed positives</span>
+                    </div>
+                    <div class="mx-cm__side">Actual Negative</div>
+                    <div class="mx-cm__cell mx-cm__cell--fp" data-cell="fp">
+                        <span class="mx-cm__label">FP</span>
+                        <span class="mx-cm__count" id="mx-fp">0</span>
+                        <span class="mx-cm__hint">False alarms</span>
+                    </div>
+                    <div class="mx-cm__cell mx-cm__cell--tn" data-cell="tn">
+                        <span class="mx-cm__label">TN</span>
+                        <span class="mx-cm__count" id="mx-tn">0</span>
+                        <span class="mx-cm__hint">Correctly cleared</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mx-metrics-block">
+                <h2 class="mx-block__title"><i class="fa-solid fa-gauge-high"></i> Metrics at this threshold</h2>
+                <ul class="mx-metrics" id="mx-metrics"></ul>
+                <div class="mx-explain" id="mx-explain"></div>
+            </div>
+        </section>
+
+        <!-- ───────── ROC + PR curves ───────── -->
+        <section class="mx-grid mx-grid--curves">
+            <div class="mx-curve">
+                <h2 class="mx-block__title"><i class="fa-solid fa-chart-line"></i> ROC curve
+                    <span class="mx-auc" id="mx-auc">AUC: —</span>
+                </h2>
+                <canvas id="mx-roc" width="540" height="420" aria-label="ROC curve"></canvas>
+                <p class="mx-hint">x = False Positive Rate · y = True Positive Rate · dashed = random classifier · dot = current threshold.</p>
+            </div>
+            <div class="mx-curve">
+                <h2 class="mx-block__title"><i class="fa-solid fa-chart-area"></i> Precision–Recall curve
+                    <span class="mx-auc" id="mx-ap">AP: —</span>
+                </h2>
+                <canvas id="mx-pr" width="540" height="420" aria-label="Precision-Recall curve"></canvas>
+                <p class="mx-hint">x = Recall · y = Precision · dashed = baseline (positive prevalence) · dot = current threshold.</p>
+            </div>
+        </section>
+
+        <!-- ───────── Score histogram ───────── -->
+        <section class="mx-curve mx-curve--wide">
+            <h2 class="mx-block__title"><i class="fa-solid fa-chart-column"></i> Score distribution</h2>
+            <canvas id="mx-scores" width="1100" height="280" aria-label="Score distribution"></canvas>
+            <p class="mx-hint">Histogram of predicted scores split by true class — drag the threshold above to see how the cut line slices the populations.</p>
+        </section>
+
+        <details class="calc-expl">
+            <summary><i class="fa-solid fa-square-root-variable"></i> Formulas under the hood</summary>
+            <ul>
+                <li><strong>Accuracy</strong> = (TP + TN) / N</li>
+                <li><strong>Precision</strong> = TP / (TP + FP) — of everything we flagged, how much was real?</li>
+                <li><strong>Recall</strong> (TPR / sensitivity) = TP / (TP + FN) — of all real positives, how many did we catch?</li>
+                <li><strong>Specificity</strong> = TN / (TN + FP)  &nbsp;&nbsp;<strong>FPR</strong> = 1 − Specificity</li>
+                <li><strong>F1</strong> = 2 · Precision · Recall / (Precision + Recall)</li>
+                <li><strong>ROC AUC</strong> = area under the (FPR, TPR) curve — threshold-independent ranking quality.</li>
+                <li><strong>Average Precision</strong> = area under the Precision–Recall curve — more informative on imbalanced datasets.</li>
+            </ul>
+        </details>
+
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            All metrics computed live in your browser ·
+            <a href="lab.html">Train your own model in the Lab</a> ·
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <script src="js/theme.js"></script>
+    <script src="js/metrics.js" defer></script>
+</body>
+</html>

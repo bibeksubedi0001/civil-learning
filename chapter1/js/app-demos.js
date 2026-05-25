@@ -11,7 +11,7 @@ const CE = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) 
 const rand = (a, b) => Math.random() * (b - a) + a;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const lerp = (a, b, t) => a + (b - a) * t;
-const colors = { teal:'#00d4aa', cyan:'#0ea5e9', amber:'#f59e0b', purple:'#a855f7', red:'#ef4444', green:'#22c55e', text:'rgba(255,255,255,.75)', muted:'rgba(255,255,255,.4)', bg:'#0a0a0f', card:'rgba(255,255,255,.03)', border:'rgba(255,255,255,.08)' };
+const colors = { teal:'#00d4aa', cyan:'#0ea5e9', amber:'#f59e0b', purple:'#a855f7', red:'#ef4444', green:'#22c55e', text:'rgba(255,255,255,.78)', muted:'rgba(255,255,255,.45)', bg:'#161a26', card:'rgba(255,255,255,.04)', border:'rgba(255,255,255,.1)' };
 
 /* ── Overlay infrastructure ── */
 function openOverlay(title, icon, buildFn) {

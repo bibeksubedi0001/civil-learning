@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1232,7 +1232,7 @@ Key Hyperparameters:
                     <div class="info-card__content">
                         <h3>Water Resources Examples</h3>
                         <ul>
-                            <li><strong>Rainfall-runoff models</strong> &mdash; A model that perfectly fits a 10-year calibration period may fail on extreme events (2023 flood ≠ 2005 flood). Early stopping prevents memorising specific storm patterns.</li>
+                            <li><strong>Rainfall-runoff models</strong> &mdash; A model that perfectly fits a 10-year calibration period may fail on extreme events (2023 flood â‰  2005 flood). Early stopping prevents memorising specific storm patterns.</li>
                             <li><strong>Groundwater models</strong> &mdash; With sparse borehole data, a complex polynomial model will overfit to observation wells. Ridge regression constrains coefficients for better spatial generalisation.</li>
                             <li><strong>Reservoir inflow forecasting</strong> &mdash; Climate non-stationarity means historical patterns may not persist. K-fold cross-validation across different climate periods tests model robustness.</li>
                         </ul>
@@ -1260,6 +1260,17 @@ Key Hyperparameters:
         <!-- ==========================================
              SECTION 16: QUIZ
              ========================================== -->
+        <!-- Try it interactively -->
+        <section class="try-tool" data-tool="lab">
+            <div class="try-tool__icon"><i class="fa-solid fa-flask"></i></div>
+            <div class="try-tool__body">
+                <div class="try-tool__eyebrow">Try it interactively</div>
+                <h3 class="try-tool__title">See overfitting form before your eyes</h3>
+                <p class="try-tool__desc">Crank the polynomial degree up and the noise &sigma; down: the training loss plummets while the model contorts to memorise noise. The classic overfitting signature, reproducible in three slider drags.</p>
+            </div>
+            <a class="try-tool__cta" href="../lab.html">Open Lab <i class="fa-solid fa-arrow-right"></i></a>
+        </section>
+
         <section class="ch-section" id="quiz-section">
             <div class="section-container">
 
@@ -1512,6 +1523,73 @@ Key Hyperparameters:
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-bolt"></i> Real-world case study &middot; LASSO regularisation in wildfire-risk modelling</div>
+            <h3 class="case-v2__title">PG&amp;E wildfire-ignition risk &mdash; LASSO regularisation tames a 200-feature model to drive PSPS decisions</h3>
+            <p class="case-v2__lede">After the 2018 Camp Fire, PG&amp;E rebuilt its ignition-risk model with hundreds of candidate features (weather, vegetation, asset age, terrain). <strong>LASSO regularisation</strong> shrinks most coefficients to zero, leaving an interpretable, audit-defensible model that drives daily Public Safety Power Shutoff (PSPS) decisions affecting millions.</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> PG&amp;E + Technosylva / Reax</li>
+                <li><i class="fa-solid fa-location-dot"></i> Northern California HFTD</li>
+                <li><i class="fa-solid fa-calendar"></i> Post-2018 (Camp Fire)</li>
+                <li><i class="fa-solid fa-database"></i> 25,000+ historical ignitions</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="200" data-count-suffix="+">0</span><span class="case-v2__kpi-lbl">Candidate features</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="5" data-count-suffix="-fold">0</span><span class="case-v2__kpi-lbl">Spatial CV used</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="3"  data-count-suffix=" M">0</span><span class="case-v2__kpi-lbl">Customers in PSPS area</span></div>
+            <div class="case-v2__kpi case-v2__kpi--red"><span class="case-v2__kpi-val" data-count-to="30"  data-count-suffix=" B">0</span><span class="case-v2__kpi-lbl">USD Camp Fire losses</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>PG&amp;E's grid runs through some of the most fire-prone terrain in the world. After the 2018 Camp Fire (85 dead, $30B&plus; in damage), the utility had to predict, day-by-day and circuit-by-circuit, the probability of a catastrophic ignition &mdash; and use that prediction to justify Public Safety Power Shutoffs that black-out millions of customers.</p>
+                <ul>
+                    <li>Modellers had 200&plus; candidate features: NOAA fire-weather indices, fuel moisture, line age, conductor type, vegetation density, prior outage records, terrain slope.</li>
+                    <li>An unregularised regression on 200 features and ~25,000 historical ignitions <em>memorises noise</em> &mdash; classic overfit.</li>
+                    <li>The CPUC, fire regulators and the courts demand a model whose features can be defended one by one.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>The published methodology hinges on <strong>L1-regularised (LASSO) logistic regression</strong>, validated with <strong>spatial 5-fold cross-validation</strong>.</p>
+                <ul>
+                    <li><strong>Regularisation:</strong> the L1 penalty <code>&lambda;&middot;&Sigma;|&beta;<sub>j</sub>|</code> pushes most of the 200 coefficients exactly to zero, leaving a sparse, readable model.</li>
+                    <li><strong>Spatial CV:</strong> hold-out folds are <em>contiguous regions</em>, not random rows &mdash; otherwise nearby pixels leak into the test set and the model looks better than it is.</li>
+                    <li><strong>Hyper-parameter <code>&lambda;</code></strong> selected by the standard <em>1-SE rule</em> on cross-validated deviance: smallest model whose CV error is within one SE of the best.</li>
+                    <li><strong>Outputs:</strong> per-circuit, per-day probability of an ignition; fed into the operations dashboard that triggers PSPS decisions.</li>
+                </ul>
+                <p class="case-v2__pull">L1 regularisation isn't just a hyper-parameter &mdash; it's how the model survives a deposition.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <p>The regularised model drives PG&amp;E's Wildfire Mitigation Plan, filed annually with the CPUC. PSPS events &mdash; while controversial &mdash; have prevented several known ignition events on high-risk red-flag days.</p>
+                <ul>
+                    <li>Camp Fire-era ignition rates on the network have fallen substantially as the model has guided hardening priorities.</li>
+                    <li>Similar regularised models now used by SCE and SDG&amp;E, and by CalFire's Public Wildfire Mitigation programme.</li>
+                    <li>Sparse coefficient list is published, making the model auditable by independent reviewers (M-Bar, JD Power).</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Sparse is safer than smart.</strong> Five interpretable coefficients beat 200 black-box ones in front of a regulator.</li>
+                    <li><strong>Random CV lies about spatial data.</strong> Use blocked / spatial folds whenever rows aren't independent.</li>
+                    <li><strong>Hyper-parameters are governance decisions.</strong> The <code>&lambda;</code> selection rule is part of the regulatory filing, not an internal tuning detail.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://www.pge.com/en_US/safety/emergency-preparedness/natural-disaster/wildfires/wildfire-safety.page" target="_blank" rel="noopener">PG&amp;E Wildfire Safety <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://www.cpuc.ca.gov/industries-and-topics/wildfires" target="_blank" rel="noopener">CPUC Wildfire Mitigation Plans <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">

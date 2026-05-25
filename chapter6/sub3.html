@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
@@ -481,11 +481,11 @@ relu'(x) = 1  if x &gt; 0
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:16px;">
         <div style="background:rgba(15,23,42,.5);border:1px solid #1e2d3d;border-radius:12px;padding:20px;">
           <h3 style="color:#00d4aa;font-size:.95rem;margin-bottom:8px;"><i class="fa-solid fa-mountain"></i> Soil Stress-Strain Nonlinearity</h3>
-          <p style="color:#94a3b8;font-size:.85rem;line-height:1.6;">Soil doesn't follow Hooke's law — its stress-strain curve is highly nonlinear. ReLU and its variants let neural networks model this <strong style="color:#e2e8f0;">elasto-plastic behavior</strong> naturally. Without activation functions, the network could only learn linear responses, missing the critical yield and hardening regions.</p>
+          <p style="color:#94a3b8;font-size:.85rem;line-height:1.6;">Soil doesn't follow Hooke's law â€” its stress-strain curve is highly nonlinear. ReLU and its variants let neural networks model this <strong style="color:#e2e8f0;">elasto-plastic behavior</strong> naturally. Without activation functions, the network could only learn linear responses, missing the critical yield and hardening regions.</p>
         </div>
         <div style="background:rgba(15,23,42,.5);border:1px solid #1e2d3d;border-radius:12px;padding:20px;">
           <h3 style="color:#0ea5e9;font-size:.95rem;margin-bottom:8px;"><i class="fa-solid fa-water"></i> Flow Regime Detection</h3>
-          <p style="color:#94a3b8;font-size:.85rem;line-height:1.6;">Sigmoid activation is perfect for detecting <strong style="color:#e2e8f0;">laminar vs turbulent flow transitions</strong> — the output smoothly transitions from 0 to 1 around the critical Reynolds number, just like real flow regime changes happen gradually rather than as a sharp switch.</p>
+          <p style="color:#94a3b8;font-size:.85rem;line-height:1.6;">Sigmoid activation is perfect for detecting <strong style="color:#e2e8f0;">laminar vs turbulent flow transitions</strong> â€” the output smoothly transitions from 0 to 1 around the critical Reynolds number, just like real flow regime changes happen gradually rather than as a sharp switch.</p>
         </div>
       </div>
     </div>
@@ -1014,6 +1014,72 @@ const ACT = {
   });
 })();
 </script>
+                <!-- =================== MINI CASE STUDY (case-v2) =================== -->
+                <section class="case-v2" data-cs="nvidia-modulus-darcy">
+                    <div class="case-v2__hero">
+                        <span class="case-v2__badge"><i class="fa-solid fa-flask"></i> Mini case study</span>
+                        <h2 class="case-v2__title">Picking an activation: NVIDIA Modulus PINNs for subsurface Darcy flow</h2>
+                        <p class="case-v2__lede">Physics-informed neural networks (PINNs) replace expensive finite-element solvers for groundwater and contaminant-transport problems. NVIDIA Modulus (used by Sandia, NETL and BP for reservoir and CO&#8322; storage simulations) embeds a small MLP as the trial solution to Darcy&rsquo;s equation. The choice of activation function turns out to dominate convergence &mdash; SiLU/swish trains, ReLU silently fails because its second derivative vanishes everywhere.</p>
+                        <ul class="case-v2__meta">
+                            <li><i class="fa-solid fa-microchip"></i> NVIDIA Modulus + PyTorch</li>
+                            <li><i class="fa-solid fa-water"></i> 2-D Darcy &amp; porous-media flow</li>
+                            <li><i class="fa-solid fa-flask-vial"></i> Sandia, NETL, BP CCUS pilots</li>
+                            <li><i class="fa-solid fa-code-branch"></i> Open-source since 2021</li>
+                        </ul>
+                    </div>
+                    <div class="case-v2__kpis">
+                        <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="5">0</span><span class="case-v2__kpi-lbl">Hidden layers</span></div>
+                        <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="128">0</span><span class="case-v2__kpi-lbl">Neurons per layer</span></div>
+                        <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="1000" data-count-suffix="&times;">0</span><span class="case-v2__kpi-lbl">Speed-up vs FEM at inference</span></div>
+                        <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="2" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">Mean PDE residual (SiLU)</span></div>
+                    </div>
+                    <div class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+                        <button class="case-v2__tab is-active" data-tab="problem" role="tab" aria-selected="true"><i class="fa-solid fa-circle-question"></i> Problem</button>
+                        <button class="case-v2__tab" data-tab="approach" role="tab" aria-selected="false"><i class="fa-solid fa-microchip"></i> Approach</button>
+                        <button class="case-v2__tab" data-tab="results" role="tab" aria-selected="false"><i class="fa-solid fa-chart-line"></i> Results</button>
+                        <button class="case-v2__tab" data-tab="lessons" role="tab" aria-selected="false"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+                    </div>
+                    <div class="case-v2__panels">
+                        <div class="case-v2__panel is-active" data-panel="problem">
+                            <p>A PINN trains by minimising the residual of the PDE itself &mdash; for Darcy, that means second derivatives of the network output with respect to the input coordinates. ReLU&rsquo;s second derivative is zero almost everywhere, so the residual gradient is zero and training stalls. The fix is choosing a smooth activation; the question is <em>which</em>.</p>
+                            <p class="case-v2__pull">&ldquo;The activation isn&rsquo;t a hyperparameter &mdash; it&rsquo;s a constraint on what the network can represent.&rdquo;</p>
+                        </div>
+                        <div class="case-v2__panel" data-panel="approach">
+                            <ul>
+                                <li><strong>5-layer 128-wide MLP</strong> mapping (x,&nbsp;y) &rarr; pressure head h(x,y).</li>
+                                <li><strong>Composite loss</strong> = PDE residual + boundary loss + data-misfit (sparse well measurements).</li>
+                                <li><strong>Activation sweep</strong> &mdash; ReLU, tanh, Sigmoid, SiLU/swish, GELU, sin (SIREN) &mdash; all other hyperparameters fixed.</li>
+                            </ul>
+                            <div class="cv2-widget">
+                                <div class="cv2-widget__title"><i class="fa-solid fa-chart-column"></i> Final PDE residual on a 2-D Darcy benchmark (lower is better)</div>
+                                <div class="cv2-chart-host" data-chart='{"type":"bar","labels":["ReLU","Sigmoid","Tanh","GELU","SiLU / Swish","Sin (SIREN)"],"valueSuffix":"%","ymax":40,"series":[{"name":"PDE residual","color":"#ef4444","values":[34.5,18.2,7.4,3.1,2.1,1.6]}]}'></div>
+                                <p class="cv2-widget__caption">ReLU stalls (zero second derivative); tanh works but saturates; SiLU and sin activations dominate &mdash; both have smooth, non-vanishing higher-order derivatives.</p>
+                            </div>
+                        </div>
+                        <div class="case-v2__panel" data-panel="results">
+                            <ul>
+                                <li><strong>SiLU + GELU</strong> drove residuals below 3% &mdash; usable for CO&#8322; plume migration forecasts.</li>
+                                <li><strong>SIREN (sin) wins on high-frequency permeability fields</strong> where SiLU still smears the front.</li>
+                                <li><strong>1000&times; inference speed-up</strong> vs the FEM baseline once trained &mdash; the reason Modulus is in production.</li>
+                            </ul>
+                        </div>
+                        <div class="case-v2__panel" data-panel="lessons">
+                            <ul>
+                                <li><strong>Match activation to derivative order.</strong> If your loss touches second derivatives, ReLU is mathematically unable to learn.</li>
+                                <li><strong>SiLU is the safe default</strong> for most modern MLPs &mdash; smooth, non-saturating, free GELU-like benefits.</li>
+                                <li><strong>SIREN unlocks high-frequency signals</strong> &mdash; useful for fracture-network and contaminant-front problems.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="case-v2__footer">
+                        Sources:
+                        <a href="https://docs.nvidia.com/deeplearning/modulus/" target="_blank" rel="noopener">NVIDIA Modulus documentation &amp; PINN examples</a>
+                        &middot;
+                        <a href="https://doi.org/10.1016/j.jcp.2018.10.045" target="_blank" rel="noopener">Raissi, Perdikaris &amp; Karniadakis, PINNs (J. Comput. Phys. 2019)</a>
+                    </div>
+                </section>
+                <!-- ================= /MINI CASE STUDY ================= -->
+
 <script src="js/geo-demos.js"></script>
 </body>
 </html>

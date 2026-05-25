@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1418,6 +1418,17 @@ where:
         <!-- ==========================================
              SECTION 15: QUIZ
              ========================================== -->
+        <!-- Try it interactively -->
+        <section class="try-tool" data-tool="lab">
+            <div class="try-tool__icon"><i class="fa-solid fa-flask"></i></div>
+            <div class="try-tool__body">
+                <div class="try-tool__eyebrow">Try it interactively</div>
+                <h3 class="try-tool__title">Watch polynomial degree drive underfit &rarr; overfit</h3>
+                <p class="try-tool__desc">Slide the polynomial degree from 1 to 15 on noisy 1-D data and watch the fitted curve, the live training-loss trace and the noise floor reshape together &mdash; the bias&ndash;variance trade-off in one slider.</p>
+            </div>
+            <a class="try-tool__cta" href="../lab.html">Open Lab <i class="fa-solid fa-arrow-right"></i></a>
+        </section>
+
         <section class="ch-section" id="quiz-section">
             <div class="section-container">
 
@@ -1674,6 +1685,73 @@ where:
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-wave-square"></i> Real-world case study &middot; Polynomial &amp; multiple regression in seismic hazard</div>
+            <h3 class="case-v2__title">PEER NGA-West2 &mdash; the regression equations that set the seismic design loads for every US building</h3>
+            <p class="case-v2__lede">Five research teams independently fit <strong>nonlinear, multiple-regression "Ground Motion Prediction Equations"</strong> to ~21,000 worldwide earthquake records. Their averaged outputs drive the USGS National Seismic Hazard Model, which becomes the <em>S<sub>S</sub></em>/<em>S<sub>1</sub></em> maps in ASCE&nbsp;7 and ultimately every IBC base-shear calc.</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> PEER, USGS, ASCE</li>
+                <li><i class="fa-solid fa-location-dot"></i> Codified across all 50 US states</li>
+                <li><i class="fa-solid fa-calendar"></i> NGA-West2 published 2014; updated in NSHM 2023</li>
+                <li><i class="fa-solid fa-database"></i> 21,540 ground-motion records</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="21540">0</span><span class="case-v2__kpi-lbl">Records in NGA-West2 DB</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="5">0</span><span class="case-v2__kpi-lbl">Independent GMPEs averaged</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="10" data-count-suffix="+ vars">0</span><span class="case-v2__kpi-lbl">Predictors per equation</span></div>
+            <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="100" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">of ASCE&nbsp;7 sites use it</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>To design a building, the structural engineer needs to know <em>how strongly the ground will shake</em> at the site. Given an earthquake magnitude <code>M</code>, a distance <code>R</code>, a fault mechanism, hanging-wall geometry, soil V<sub>S30</sub>, basin depth&hellip; predict the peak ground acceleration and the spectral acceleration at each period.</p>
+                <ul>
+                    <li>The relationship between magnitude/distance and shaking is fundamentally <strong>nonlinear</strong>: log-shaking vs log-distance is curved, with saturation at small <code>R</code>.</li>
+                    <li>There are 10&plus; interacting predictors (M, R, V<sub>S30</sub>, Z<sub>1.0</sub>, F, R<sub>x</sub>, dip, &hellip;).</li>
+                    <li>Decisions made from this model run from $200B annual US construction down to individual residential foundations.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>Each of the five NGA-West2 GMPEs (ASK14, BSSA14, CB14, CY14, I14) is essentially a <strong>multi-variable, polynomial-in-predictors regression</strong> with physics-motivated functional forms &mdash; one of the cleanest and most consequential examples of regression in civil engineering.</p>
+                <ul>
+                    <li><strong>Form (schematic):</strong> <code>ln(Sa) = f<sub>mag</sub>(M) + f<sub>dist</sub>(M, R) + f<sub>site</sub>(V<sub>S30</sub>) + f<sub>mech</sub>(F) + f<sub>basin</sub>(Z<sub>1.0</sub>) + &hellip; + &epsilon;</code></li>
+                    <li><strong>f<sub>mag</sub></strong> uses quadratic/cubic terms in <code>M</code> to capture magnitude saturation.</li>
+                    <li><strong>f<sub>dist</sub></strong> uses <code>ln(R + h(M))</code> &mdash; nonlinear distance scaling.</li>
+                    <li>Coefficients fit by mixed-effects regression with random effects per event and per station.</li>
+                </ul>
+                <p class="case-v2__pull">Five regression teams, one dataset, five sets of coefficients &mdash; then the USGS averages them. That ensemble <em>is</em> the official seismic hazard model.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <p>NGA-West2 GMPEs feed the USGS <strong>National Seismic Hazard Model</strong>, whose hazard maps are adopted by <strong>ASCE&nbsp;7-22</strong>. Every Risk-Targeted MCE<sub>R</sub> spectrum that a structural engineer pulls from the ASCE Hazard Tool starts as the output of these regressions.</p>
+                <ul>
+                    <li>~$200&nbsp;billion of US construction per year is sized against these maps.</li>
+                    <li>Used by FEMA's Hazus loss model, USGS ShakeMap, and most seismic insurance pricing.</li>
+                    <li>NGA-East (2018) and NGA-Subduction (2022) extended the same regression framework to other tectonic regimes.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Physics-shaped polynomial regression</strong> still beats black-box ML when interpretability and code adoption matter.</li>
+                    <li><strong>Mixed-effects</strong> matters &mdash; ignoring event/station random effects underestimates uncertainty.</li>
+                    <li><strong>Ensembling small, transparent models</strong> (the five GMPEs) is a recognised technique long before "stacking" became fashionable in ML.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://peer.berkeley.edu/research/nga-west-2" target="_blank" rel="noopener">PEER NGA-West2 program <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://www.usgs.gov/programs/earthquake-hazards/science/2023-united-states-national-seismic-hazard-model" target="_blank" rel="noopener">USGS 2023 NSHM <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">

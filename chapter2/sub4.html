@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1317,6 +1317,17 @@ F1-Score    = 2 * (Precision * Recall) / (Precision + Recall)
         <!-- ==========================================
              SECTION 17: QUIZ
              ========================================== -->
+        <!-- Try it interactively -->
+        <section class="try-tool" data-tool="explorer">
+            <div class="try-tool__icon"><i class="fa-solid fa-table"></i></div>
+            <div class="try-tool__body">
+                <div class="try-tool__eyebrow">Try it interactively</div>
+                <h3 class="try-tool__title">Inspect a classification dataset before you model it</h3>
+                <p class="try-tool__desc">Drop a CSV and use the colour-by-class scatter plot to see how separable your features actually are &mdash; the cheapest sanity check you can run before picking any classifier.</p>
+            </div>
+            <a class="try-tool__cta" href="../explorer.html">Open Explorer <i class="fa-solid fa-arrow-right"></i></a>
+        </section>
+
         <section class="ch-section" id="quiz-section">
             <div class="section-container">
 
@@ -1562,6 +1573,74 @@ F1-Score    = 2 * (Precision * Recall) / (Precision + Recall)
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-mountain-sun"></i> Real-world case study &middot; Probabilistic classification in geotechnical engineering</div>
+            <h3 class="case-v2__title">Boulanger&ndash;Idriss liquefaction triggering &mdash; the logistic classifier inside every modern liquefaction analysis</h3>
+            <p class="case-v2__lede">Given a CPT or SPT sounding and a design earthquake, will the soil liquefy? Boulanger &amp; Idriss fit a <strong>binary classifier</strong> (logistic regression) to 250&plus; case histories of liquefied vs non-liquefied sites &mdash; and that probability curve now drives NASEM&nbsp;2016, AASHTO LRFD and every commercial geotech software.</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> UC Davis (Boulanger &amp; Idriss)</li>
+                <li><i class="fa-solid fa-location-dot"></i> Worldwide case histories</li>
+                <li><i class="fa-solid fa-calendar"></i> Idriss&ndash;Boulanger 2008; B&amp;I 2014</li>
+                <li><i class="fa-solid fa-database"></i> 250&plus; CPT/SPT case histories</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="250" data-count-suffix="+">0</span><span class="case-v2__kpi-lbl">Case histories in DB</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="2">0</span><span class="case-v2__kpi-lbl">Classes (liquefy / not)</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="15" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">Default design P<sub>L</sub></span></div>
+            <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="100" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">of US DOTs use it</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>Soil liquefaction destroyed neighbourhoods of Niigata (1964), San Francisco's Marina District (1989) and Christchurch (2011). The engineering question is binary: <strong>at this site, under this earthquake, will the sand liquefy &mdash; yes or no?</strong> But the underlying physics is too messy to solve from first principles in design office time.</p>
+                <ul>
+                    <li>Features available from a routine CPT: cone tip resistance <code>q<sub>c</sub></code>, sleeve friction, depth, effective stress, fines content.</li>
+                    <li>Hazard from a USGS deaggregation: PGA, magnitude <code>M</code>.</li>
+                    <li>Answer must be a <em>probability</em>, not a yes/no, so the engineer can apply a load &amp; resistance factor.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>Boulanger &amp; Idriss formalised this as <strong>logistic regression</strong> on case-history data &mdash; one of the cleanest examples of supervised classification in geotechnical practice.</p>
+                <ul>
+                    <li><strong>Feature engineering:</strong> normalise <code>q<sub>c</sub></code> to <code>q<sub>c1Ncs</sub></code>; compute Cyclic Stress Ratio <code>CSR</code> from PGA, depth, magnitude scaling factor.</li>
+                    <li><strong>Model:</strong> <code>P(liquefaction) = 1 / (1 + exp(&minus;(&beta;<sub>0</sub> + &beta;<sub>1</sub>&middot;q<sub>c1Ncs</sub> + &beta;<sub>2</sub>&middot;ln(CSR))))</code>.</li>
+                    <li><strong>Training:</strong> maximum-likelihood fit to 250&plus; sites where liquefaction was/wasn't observed after past earthquakes.</li>
+                    <li><strong>Decision rule:</strong> design typically targets <code>P<sub>L</sub> &le; 15%</code> for important structures.</li>
+                </ul>
+                <p class="case-v2__pull">Same sigmoid you learn in week&nbsp;2 of any ML course &mdash; it just happens to underlie billions of dollars of bridge and port design.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <p>The Boulanger&ndash;Idriss (2014) procedure is the reference method in:</p>
+                <ul>
+                    <li><strong>NASEM Special Report 327</strong> (2016) &mdash; consensus US national guidance on liquefaction triggering.</li>
+                    <li><strong>AASHTO LRFD Bridge Design Specifications</strong> &mdash; Section 10 (geotech).</li>
+                    <li>Commercial software (<em>Settle3D</em>, <em>CLiq</em>, <em>NovoLiq</em>) and essentially every US DOT.</li>
+                </ul>
+                <p>The same logistic framework was used to design ground improvement for the <strong>SR&nbsp;520 floating bridge approaches</strong> (Seattle), the Port of Long Beach Pier&nbsp;G, and post-Christchurch reconstruction of CBD foundations.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Classification doesn't need deep learning.</strong> A well-engineered logistic regression on the <em>right</em> 2&ndash;3 features has driven a generation of geotechnical practice.</li>
+                    <li><strong>Imbalanced data is the rule.</strong> Liquefaction case histories are dominated by "did liquefy" sites &mdash; sampling bias has been the central methodological debate for 30 years.</li>
+                    <li><strong>The output is a probability, not a label.</strong> Codes pick the threshold; engineers pick the consequence class.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://nap.nationalacademies.org/catalog/23474/state-of-the-art-and-practice-in-the-assessment-of-earthquake-induced-soil-liquefaction-and-its-consequences" target="_blank" rel="noopener">NASEM SR&nbsp;327 (2016) <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://faculty.engineering.ucdavis.edu/boulanger/" target="_blank" rel="noopener">Boulanger research group (UC Davis) <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">

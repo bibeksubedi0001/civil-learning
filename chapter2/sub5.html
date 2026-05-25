@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1434,6 +1434,17 @@ Neural Network      | Non-lin  | Varies        | Low              | Slow
         <!-- ==========================================
              SECTION 18: QUIZ
              ========================================== -->
+        <!-- Try it interactively -->
+        <section class="try-tool" data-tool="metrics">
+            <div class="try-tool__icon"><i class="fa-solid fa-bullseye"></i></div>
+            <div class="try-tool__body">
+                <div class="try-tool__eyebrow">Try it interactively</div>
+                <h3 class="try-tool__title">Tune the decision threshold of a logistic classifier</h3>
+                <p class="try-tool__desc">Drag the threshold slider and watch the confusion matrix, precision, recall, F1 and the dot on the ROC curve move in lockstep &mdash; exactly the trade-off a logistic regression forces you to make.</p>
+            </div>
+            <a class="try-tool__cta" href="../metrics.html">Open Metrics <i class="fa-solid fa-arrow-right"></i></a>
+        </section>
+
         <section class="ch-section" id="quiz-section">
             <div class="section-container">
 
@@ -1680,6 +1691,73 @@ Neural Network      | Non-lin  | Varies        | Low              | Slow
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-fire"></i> Real-world case study &middot; Logistic regression in operational warnings</div>
+            <h3 class="case-v2__title">USGS post-fire debris-flow model &mdash; a single logistic equation that triggers National Weather Service warnings</h3>
+            <p class="case-v2__lede">After every major wildfire, the USGS runs a <strong>logistic-regression debris-flow model</strong> (Staley et&nbsp;al. 2017) on the burn scar. The resulting probability maps tell NWS forecasters which 15-minute rainfall intensity will set off a debris flow &mdash; and drive the Flash Flood Warnings that evacuate the canyon below.</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> USGS Landslide Hazards Program</li>
+                <li><i class="fa-solid fa-location-dot"></i> Western US burn scars (CA, CO, NM, OR)</li>
+                <li><i class="fa-solid fa-calendar"></i> Staley et&nbsp;al. 2017; operational since</li>
+                <li><i class="fa-solid fa-database"></i> 1,100&plus; basins from 14 fires</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="1100" data-count-suffix="+">0</span><span class="case-v2__kpi-lbl">Training basins</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="3">0</span><span class="case-v2__kpi-lbl">Input variables</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="15" data-count-suffix=" min">0</span><span class="case-v2__kpi-lbl">Rainfall window</span></div>
+            <div class="case-v2__kpi case-v2__kpi--red"><span class="case-v2__kpi-val" data-count-to="23" data-count-suffix=" dead">0</span><span class="case-v2__kpi-lbl">Montecito 2018 &mdash; model issued warnings</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>A wildfire strips vegetation and bakes a hydrophobic crust into the soil. The <em>next</em> intense rain can mobilise the burn scar as a debris flow within minutes &mdash; sweeping vehicles and houses downcanyon (Montecito,&nbsp;CA, January&nbsp;2018: 23&nbsp;dead).</p>
+                <ul>
+                    <li>USGS needs to publish, basin-by-basin, the rainfall intensity-duration threshold that triggers a flow.</li>
+                    <li>NWS needs that threshold so its rain-gauge / radar data can issue a Flash Flood Warning before, not after.</li>
+                    <li>The model must be fast, transparent, and runnable for any new fire within days.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>Staley et&nbsp;al. fit <strong>logistic regression</strong> to 1,100&plus; basins from 14 historical fires &mdash; each basin labelled "produced a debris flow" or "did not" for a given storm.</p>
+                <ul>
+                    <li><strong>Features (just three!):</strong> 15-min peak rainfall intensity <code>I<sub>15</sub></code>, proportion of basin burned at high/moderate severity <code>%B</code>, average soil dry-ravel <code>R</code>.</li>
+                    <li><strong>Model:</strong> <code>logit(P) = &beta;<sub>0</sub> + &beta;<sub>1</sub>&middot;I<sub>15</sub> + &beta;<sub>2</sub>&middot;%B + &beta;<sub>3</sub>&middot;R</code></li>
+                    <li><strong>Output:</strong> probability of debris flow given the storm; inverted to give the <em>I<sub>15</sub></em> threshold at P&nbsp;=&nbsp;0.5.</li>
+                    <li><strong>Deployment:</strong> within days of a new fire, USGS publishes a basin map with rainfall thresholds, handed to the local NWS office.</li>
+                </ul>
+                <p class="case-v2__pull">Three predictors, one sigmoid, one nation-wide warning system &mdash; the textbook case for keeping it simple.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <p>The Staley 2017 model has been deployed after essentially every major Western US wildfire since publication, including the Thomas Fire (CA, 2017), the East Troublesome (CO, 2020), and the Hermits Peak / Calf Canyon (NM, 2022).</p>
+                <ul>
+                    <li>NWS issued Flash Flood Warnings for Montecito based on these thresholds in January 2018 &mdash; the warnings were correct; many residents chose not to evacuate.</li>
+                    <li>Now embedded in <strong>NOAA's National Water Center</strong> post-fire workflow.</li>
+                    <li>USGS interactive maps (Post-Fire Debris-Flow Hazard Assessments) are linked from county emergency-management pages within a week of containment.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Operational beats clever.</strong> The model could be more accurate with deep nets, but logistic regression is fast enough, transparent enough, and good enough to drive life-safety decisions.</li>
+                    <li><strong>Feature parsimony wins.</strong> Three predictors mean the model still works at sites with sparse soil data.</li>
+                    <li><strong>The hard problem isn't the model &mdash; it's getting people to evacuate</strong> when the warning fires.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://www.usgs.gov/programs/landslide-hazards/science/post-fire-debris-flow-hazard-assessments" target="_blank" rel="noopener">USGS post-fire debris-flow program <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://doi.org/10.1016/j.geomorph.2016.10.019" target="_blank" rel="noopener">Staley et&nbsp;al. 2017 (Geomorphology) <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">

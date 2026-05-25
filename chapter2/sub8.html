@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1219,6 +1219,17 @@ Step 6: Validate against domain knowledge
         <!-- ==========================================
              SECTION 19: QUIZ
              ========================================== -->
+        <!-- Try it interactively -->
+        <section class="try-tool" data-tool="metrics">
+            <div class="try-tool__icon"><i class="fa-solid fa-bullseye"></i></div>
+            <div class="try-tool__body">
+                <div class="try-tool__eyebrow">Try it interactively</div>
+                <h3 class="try-tool__title">Play with every metric in this chapter &mdash; live</h3>
+                <p class="try-tool__desc">Confusion matrix, accuracy, precision, recall, F1, ROC AUC and Average Precision &mdash; all driven by a single threshold slider on five preset classifiers (strong, medium, weak, random, rare-event imbalanced) or your own <code>y_true,y_score</code> CSV.</p>
+            </div>
+            <a class="try-tool__cta" href="../metrics.html">Open Metrics <i class="fa-solid fa-arrow-right"></i></a>
+        </section>
+
         <section class="ch-section" id="quiz-section">
             <div class="section-container">
 
@@ -1467,6 +1478,72 @@ Step 6: Validate against domain knowledge
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-bullseye"></i> Real-world case study &middot; Precision&ndash;recall trade-off in earthquake early warning</div>
+            <h3 class="case-v2__title">USGS ShakeAlert &mdash; how a precision/recall trade-off decides who gets a 10-second warning</h3>
+            <p class="case-v2__lede">USGS ShakeAlert detects an earthquake in progress and issues alerts seconds before strong shaking arrives. The whole system is a study in <strong>model-evaluation metrics</strong>: different magnitude thresholds (M&ge;4.5 vs M&ge;5.0) trade <em>recall</em> (don't miss a Big One) against <em>precision</em> (don't false-alarm 50&nbsp;million phones).</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> USGS + Caltech + UC Berkeley + UW</li>
+                <li><i class="fa-solid fa-location-dot"></i> CA, OR, WA (West Coast)</li>
+                <li><i class="fa-solid fa-calendar"></i> Public alerts since 2018; full coverage 2021</li>
+                <li><i class="fa-solid fa-database"></i> 1,700+ seismic stations</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="4.5" data-count-decimals="1" data-count-prefix="M&ge;">0</span><span class="case-v2__kpi-lbl">Phone-alert threshold</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="5.0" data-count-decimals="1" data-count-prefix="M&ge;">0</span><span class="case-v2__kpi-lbl">Broadcast WEA threshold</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="10" data-count-suffix=" s">0</span><span class="case-v2__kpi-lbl">Typical lead time</span></div>
+            <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="50" data-count-suffix=" M">0</span><span class="case-v2__kpi-lbl">People in alerted region</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>Within seconds of an earthquake nucleating, ShakeAlert's algorithms (EPIC + FinDer) estimate the location, magnitude and likely shaking. The question for the operations team is <strong>where to draw the threshold</strong>:</p>
+                <ul>
+                    <li>Threshold too low &rarr; high <em>recall</em> (catch every quake), but you blast 50&nbsp;million phones every time a M4 hits the Mojave. Public trust collapses.</li>
+                    <li>Threshold too high &rarr; high <em>precision</em> (no false alarms), but you miss the M6 that was the whole point of the system.</li>
+                    <li>The cost of a false positive (panic, lost trust) and a false negative (injured people) are not symmetric.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>ShakeAlert chose <strong>two thresholds</strong>, each tuned to a different precision/recall point:</p>
+                <ul>
+                    <li><strong>M&ge;4.5 + MMI&ge;III</strong> &mdash; sends an alert through MyShake / the Android operating system to phones whose location is in the predicted shaking polygon. Tolerates more false alarms in exchange for catching moderate events.</li>
+                    <li><strong>M&ge;5.0 + MMI&ge;IV</strong> &mdash; triggers the FCC's Wireless Emergency Alerts (WEA) cell broadcast. Much stricter: a false WEA across LA would be catastrophic for trust, so precision must be very high.</li>
+                    <li>Performance is monitored as a <em>confusion matrix</em> per quarter: true alerts, missed events, false alerts, late alerts &mdash; published in the ShakeAlert Performance Report.</li>
+                </ul>
+                <p class="case-v2__pull">Same model, two operating points &mdash; one chosen for recall, one for precision. That is the precision/recall trade-off, lived out across an entire coastline.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <p>ShakeAlert has alerted millions of West Coast residents to events including the 2019 Ridgecrest sequence (M7.1) and the 2022 Ferndale M6.4. Quarterly reports show the chosen thresholds keep false-alert rates near zero while detecting the events where shaking actually matters.</p>
+                <ul>
+                    <li>Operational at FCC/WEA in CA (2020), OR (2021), WA (2021).</li>
+                    <li>Integrated into BART (Bay Area transit) auto-slowdown, hospital elevator stops, factory line halts.</li>
+                    <li>Public-facing MyShake app + Android OS native alerts.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Accuracy is the wrong metric.</strong> For a system where 99.99% of seconds are "no earthquake", reporting "99.99% accurate" tells you nothing.</li>
+                    <li><strong>Pick the threshold from the cost matrix, not the ROC curve.</strong> The asymmetry of a false WEA vs a missed quake is what sets M&ge;5.0.</li>
+                    <li><strong>Confusion-matrix reporting is a public-trust feature.</strong> Quarterly ShakeAlert performance disclosures are how the agency keeps congressional and FCC support.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://www.shakealert.org/" target="_blank" rel="noopener">USGS ShakeAlert <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://www.usgs.gov/programs/earthquake-hazards/science/shakealert-earthquake-early-warning" target="_blank" rel="noopener">USGS &mdash; ShakeAlert science <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">

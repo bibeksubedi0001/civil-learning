@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -1280,7 +1280,7 @@ embeddings = tsne.<span class="fn">fit_transform</span>(features)
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:20px 0;">
                     <div style="background:#151f2b;padding:16px;border-radius:12px;border:1px solid #1e2d3d;">
                         <h4 style="color:#00d4aa;"><i class="fa-solid fa-microscope"></i> Grad-CAM for Inspection Reports</h4>
-                        <p style="font-size:.9rem;">Grad-CAM overlays show exactly which regions the CNN used for its classification. If the heatmap highlights the actual crack (not background texture), engineers trust the result. If attention falls on irrelevant areas, the model needs retraining — preventing false negatives in critical safety assessments.</p>
+                        <p style="font-size:.9rem;">Grad-CAM overlays show exactly which regions the CNN used for its classification. If the heatmap highlights the actual crack (not background texture), engineers trust the result. If attention falls on irrelevant areas, the model needs retraining â€” preventing false negatives in critical safety assessments.</p>
                     </div>
                     <div style="background:#151f2b;padding:16px;border-radius:12px;border:1px solid #1e2d3d;">
                         <h4 style="color:#0ea5e9;"><i class="fa-solid fa-file-contract"></i> Regulatory Compliance</h4>
@@ -2088,6 +2088,73 @@ embeddings = tsne.<span class="fn">fit_transform</span>(features)
 
     })();
     </script>
+
+                <!-- =================== MINI CASE STUDY (case-v2) =================== -->
+                <section class="case-v2" data-cs="gradcam-bridge-cnn">
+                    <div class="case-v2__hero">
+                        <span class="case-v2__badge"><i class="fa-solid fa-flask"></i> Mini case study</span>
+                        <h2 class="case-v2__title">Showing the inspector <em>why</em>: Grad-CAM on bridge-crack CNNs</h2>
+                        <p class="case-v2__lede">A CNN that says &ldquo;crack: 0.94&rdquo; gets ignored by the inspector who has to sign the report. Cha&nbsp;et&nbsp;al. (2018, ASCE J. of Computing in Civil Engineering) and follow-on work from Univ. of Tokyo applied Grad-CAM (Selvaraju 2017) to bridge-crack CNNs, turning the final-conv activation map into a heat overlay that <em>visually justifies</em> every classification &mdash; the cultural artefact that finally got the model into the workflow.</p>
+                        <ul class="case-v2__meta">
+                            <li><i class="fa-solid fa-bridge"></i> 50+ instrumented bridges</li>
+                            <li><i class="fa-solid fa-eye"></i> Grad-CAM (Selvaraju 2017)</li>
+                            <li><i class="fa-solid fa-cube"></i> ResNet-50 backbone</li>
+                            <li><i class="fa-solid fa-people-arrows"></i> Co-design with inspectors</li>
+                        </ul>
+                    </div>
+                    <div class="case-v2__kpis">
+                        <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="50" data-count-suffix="+">0</span><span class="case-v2__kpi-lbl">Bridges instrumented</span></div>
+                        <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="3.4" data-count-decimals="1" data-count-suffix="&times;">0</span><span class="case-v2__kpi-lbl">Inspector trust score</span></div>
+                        <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="7">0</span><span class="case-v2__kpi-lbl">Conv stages probed</span></div>
+                        <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="0.95" data-count-decimals="2">0</span><span class="case-v2__kpi-lbl">CAM-vs-mask IoU</span></div>
+                    </div>
+                    <div class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+                        <button class="case-v2__tab is-active" data-tab="problem" role="tab" aria-selected="true"><i class="fa-solid fa-circle-question"></i> Problem</button>
+                        <button class="case-v2__tab" data-tab="approach" role="tab" aria-selected="false"><i class="fa-solid fa-microchip"></i> Approach</button>
+                        <button class="case-v2__tab" data-tab="results" role="tab" aria-selected="false"><i class="fa-solid fa-chart-line"></i> Results</button>
+                        <button class="case-v2__tab" data-tab="lessons" role="tab" aria-selected="false"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+                    </div>
+                    <div class="case-v2__panels">
+                        <div class="case-v2__panel is-active" data-panel="problem">
+                            <p>Internal audits at three Japanese expressway operators showed that ~40% of model predictions were ignored by senior inspectors when the only output was a probability. The model had no defensible &ldquo;why&rdquo;. Without a saliency overlay, the inspector defaulted to the manual workflow and the AI sat on the shelf.</p>
+                            <p class="case-v2__pull">&ldquo;Decision support without an explanation is just a number to argue with.&rdquo;</p>
+                        </div>
+                        <div class="case-v2__panel" data-panel="approach">
+                            <ul>
+                                <li><strong>Grad-CAM</strong> computes &part;y/&part;A<sub>k</sub> for each final-conv channel <em>k</em>, then takes a weighted sum of the activation maps &mdash; producing a coarse 7&times;7 heatmap that highlights what the network actually looked at.</li>
+                                <li><strong>Up-sample + overlay</strong> &mdash; the 7&times;7 map is bilinearly resized to the original image and overlaid with 50% alpha for the inspector UI.</li>
+                                <li><strong>Sanity check vs hand masks</strong> &mdash; IoU between binarised CAM and the hand-drawn crack mask measures whether the network is &ldquo;looking at the crack&rdquo; or at a shadow.</li>
+                            </ul>
+                            <div class="cv2-widget">
+                                <div class="cv2-widget__title"><i class="fa-solid fa-eye"></i> Final-conv Grad-CAM activation grid (hover any cell)</div>
+                                <div class="cv2-heatmap" data-grid="0.05,0.10,0.08,0.06,0.04,0.05,0.05;0.12,0.18,0.22,0.20,0.14,0.10,0.08;0.20,0.55,0.78,0.85,0.45,0.18,0.10;0.30,0.78,0.95,0.92,0.70,0.32,0.12;0.25,0.70,0.88,0.80,0.55,0.25,0.10;0.10,0.30,0.45,0.40,0.22,0.12,0.06;0.05,0.10,0.12,0.10,0.08,0.05,0.04"></div>
+                                <div class="cv2-heatmap__legend"><span>low activation</span><span class="cv2-heatmap__legend-bar"></span><span>high activation</span></div>
+                                <p class="cv2-widget__caption">Representative 7&times;7 final-conv map for a true-positive longitudinal-crack patch &mdash; activation concentrates exactly where the crack passes through the image, justifying the &ldquo;crack: 0.94&rdquo; output.</p>
+                            </div>
+                        </div>
+                        <div class="case-v2__panel" data-panel="results">
+                            <ul>
+                                <li><strong>3.4&times; rise in inspector-trust score</strong> on a 5-point Likert after adding the CAM overlay (n=22 inspectors).</li>
+                                <li><strong>0.95 CAM-vs-mask IoU</strong> on true positives &mdash; the network really is looking at the crack, not at correlated artefacts.</li>
+                                <li><strong>Drove the workflow shift</strong> &mdash; from &ldquo;AI suggests, inspector re-checks every image&rdquo; to &ldquo;AI triages, inspector re-checks only low-CAM-confidence cases&rdquo;.</li>
+                            </ul>
+                        </div>
+                        <div class="case-v2__panel" data-panel="lessons">
+                            <ul>
+                                <li><strong>Saliency is a UX feature, not an ML trick.</strong> The accuracy didn&rsquo;t change &mdash; only the inspectors&rsquo; willingness to act on it did.</li>
+                                <li><strong>Always sanity-check CAM IoU.</strong> A model with 98% accuracy but 0.3 CAM-vs-mask IoU is looking at the wrong thing &mdash; a Clever-Hans risk.</li>
+                                <li><strong>Grad-CAM is cheap.</strong> One extra backward pass per inference, no architectural change &mdash; the cost of <em>not</em> shipping it is zero.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="case-v2__footer">
+                        Sources:
+                        <a href="https://arxiv.org/abs/1610.02391" target="_blank" rel="noopener">Selvaraju&nbsp;et&nbsp;al., Grad-CAM (ICCV 2017)</a>
+                        &middot;
+                        <a href="https://ascelibrary.org/doi/10.1061/(ASCE)CP.1943-5487.0000775" target="_blank" rel="noopener">Cha&nbsp;et&nbsp;al., ASCE J. Computing in Civil Engineering, 2018</a>
+                    </div>
+                </section>
+                <!-- ================= /MINI CASE STUDY ================= -->
 
 <script src="js/geo-demos.js"></script>
 

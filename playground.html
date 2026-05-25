@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Playground | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="In-browser Python playground powered by Pyodide. Run linear regression on concrete strength, k-means on soil samples, and other ML snippets without installing anything.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/playground.html">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link active"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="playground-page" id="playground-app">
+
+        <header class="pg-hero">
+            <div class="pg-hero__badge"><i class="fa-brands fa-python"></i> Powered by Pyodide</div>
+            <h1 class="pg-hero__title">Python Playground</h1>
+            <p class="pg-hero__subtitle">
+                A real Python 3 interpreter running entirely in your browser — no install, no
+                backend. Pick an engineering ML snippet on the left, tweak the code, hit
+                <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run. NumPy, pandas, scikit-learn and
+                matplotlib are loaded on demand.
+            </p>
+            <div class="pg-status" id="pg-status" role="status" aria-live="polite">
+                <span class="pg-status__dot pg-status__dot--idle"></span>
+                <span class="pg-status__text">Pyodide not started yet — click <strong>Run</strong> to download (~10&nbsp;MB, one-time).</span>
+            </div>
+        </header>
+
+        <div class="pg-layout">
+
+            <!-- ============ Snippet sidebar ============ -->
+            <aside class="pg-sidebar" aria-label="Example snippets">
+                <h2 class="pg-sidebar__title"><i class="fa-solid fa-flask"></i> Examples</h2>
+                <ul class="pg-snippets" id="pg-snippets"></ul>
+
+                <div class="pg-sidebar__hint">
+                    <p><strong>Shortcut:</strong> <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs the code.</p>
+                    <p>Your edits are saved in this browser. Reset with the <i class="fa-solid fa-rotate-left"></i> button.</p>
+                </div>
+            </aside>
+
+            <!-- ============ Editor + output ============ -->
+            <section class="pg-main">
+                <div class="pg-toolbar">
+                    <button class="pg-btn pg-btn--primary" id="pg-run">
+                        <i class="fa-solid fa-play"></i> Run
+                        <span class="pg-hint">Ctrl+Enter</span>
+                    </button>
+                    <button class="pg-btn pg-btn--ghost" id="pg-reset" title="Reset current snippet to its original code">
+                        <i class="fa-solid fa-rotate-left"></i> Reset snippet
+                    </button>
+                    <button class="pg-btn pg-btn--ghost" id="pg-clear" title="Clear the output panel">
+                        <i class="fa-solid fa-eraser"></i> Clear output
+                    </button>
+                    <span class="pg-active" id="pg-active"></span>
+                </div>
+
+                <div class="pg-editor-wrap">
+                    <textarea id="pg-editor" class="pg-editor" spellcheck="false" autocomplete="off"
+                              autocorrect="off" autocapitalize="off" wrap="off"
+                              aria-label="Python code editor"></textarea>
+                </div>
+
+                <div class="pg-output-wrap">
+                    <div class="pg-output-header">
+                        <span><i class="fa-solid fa-terminal"></i> Output</span>
+                        <span class="pg-output-meta" id="pg-output-meta"></span>
+                    </div>
+                    <pre class="pg-output" id="pg-output" aria-live="polite" aria-atomic="false"></pre>
+                    <div class="pg-figures" id="pg-figures" aria-label="Generated plots"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            Runs 100% in your browser via <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a> ·
+            no code leaves your device ·
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <script src="js/theme.js"></script>
+    <!-- Pyodide loader (downloads core JS only; the runtime is fetched on first Run) -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js" defer></script>
+    <script src="js/playground.js" defer></script>
+</body>
+</html>

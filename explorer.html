@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Explorer | Civil Engineer's Guide to AI</title>
+    <meta name="description" content="Upload a CSV and instantly explore it: summary stats, correlation matrix, scatter plots, and per-column histograms — all rendered in your browser.">
+    <link rel="canonical" href="https://civil-learning.bibeksubedi0001.com.np/explorer.html">
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/chapters.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+</head>
+<body>
+    <div id="scroll-progress"></div>
+
+    <nav id="main-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>CE-AI Guide</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="chapter1/index.html" class="nav-link"><i class="fa-solid fa-book"></i> Chapters</a>
+                <a href="flashcards.html" class="nav-link"><i class="fa-solid fa-clone"></i> Flashcards</a>
+                <a href="playground.html" class="nav-link"><i class="fa-brands fa-python"></i> Playground</a>
+                <a href="calculators.html" class="nav-link"><i class="fa-solid fa-calculator"></i> Calculators</a>
+                <a href="lab.html" class="nav-link"><i class="fa-solid fa-flask"></i> Lab</a>
+                <a href="explorer.html" class="nav-link active"><i class="fa-solid fa-table"></i> Explorer</a>
+                <a href="metrics.html" class="nav-link"><i class="fa-solid fa-bullseye"></i> Metrics</a>
+                <a href="compare.html" class="nav-link"><i class="fa-solid fa-code-compare"></i> Compare</a>
+            </div>
+            <button class="theme-toggle" aria-label="Toggle dark/light theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="explorer-page" id="explorer-app">
+
+        <header class="exp-hero">
+            <div class="exp-hero__badge"><i class="fa-solid fa-table"></i> CSV Dataset Explorer</div>
+            <h1 class="exp-hero__title">Drop a CSV. Explore it instantly.</h1>
+            <p class="exp-hero__subtitle">
+                Drag a CSV file onto the panel below (or click to pick one) and the page renders
+                summary statistics, a correlation matrix, scatter plots and histograms for every
+                numeric column — all in your browser, nothing uploaded anywhere.
+            </p>
+        </header>
+
+        <!-- ───────── Upload zone ───────── -->
+        <section class="exp-upload" id="exp-drop">
+            <input type="file" id="exp-file" accept=".csv,text/csv" hidden>
+            <i class="fa-solid fa-cloud-arrow-up exp-upload__icon"></i>
+            <h2 class="exp-upload__title">Drop a CSV here</h2>
+            <p class="exp-upload__hint">or
+                <button type="button" class="exp-link" id="exp-pick">browse a file</button>,
+                or <button type="button" class="exp-link" id="exp-sample">load a sample dataset</button>
+                (concrete-strength records).
+            </p>
+            <p class="exp-upload__note" id="exp-status">
+                Tip: header row required. Numeric columns drive the analytics; text columns are kept as labels.
+            </p>
+        </section>
+
+        <!-- ───────── Results (hidden until data loaded) ───────── -->
+        <section class="exp-results" id="exp-results" hidden>
+
+            <header class="exp-meta">
+                <div>
+                    <h2 class="exp-meta__title" id="exp-name">dataset.csv</h2>
+                    <p class="exp-meta__sub" id="exp-summary"></p>
+                </div>
+                <div class="exp-meta__actions">
+                    <button class="lab-btn lab-btn--ghost" id="exp-load-other">
+                        <i class="fa-solid fa-rotate"></i> Load another CSV
+                    </button>
+                </div>
+            </header>
+
+            <!-- Column stats -->
+            <section class="exp-block">
+                <h3 class="exp-block__title"><i class="fa-solid fa-list-check"></i> Column statistics</h3>
+                <div class="exp-table-wrap">
+                    <table class="exp-table" id="exp-stats-table"></table>
+                </div>
+            </section>
+
+            <!-- Correlation matrix -->
+            <section class="exp-block">
+                <h3 class="exp-block__title"><i class="fa-solid fa-grip"></i> Correlation matrix (Pearson)</h3>
+                <p class="exp-block__hint">
+                    Red = strong positive · Blue = strong negative · faint = weak / no linear relationship.
+                </p>
+                <div class="exp-corr-wrap">
+                    <canvas id="exp-corr" width="640" height="640" aria-label="Correlation heatmap"></canvas>
+                </div>
+            </section>
+
+            <!-- Scatter -->
+            <section class="exp-block">
+                <h3 class="exp-block__title"><i class="fa-solid fa-braille"></i> Scatter plot</h3>
+                <div class="exp-scatter-controls">
+                    <label>X-axis
+                        <select id="exp-xcol"></select>
+                    </label>
+                    <label>Y-axis
+                        <select id="exp-ycol"></select>
+                    </label>
+                    <label>Colour by
+                        <select id="exp-ccol"><option value="">— none —</option></select>
+                    </label>
+                </div>
+                <canvas id="exp-scatter" width="900" height="500" aria-label="Scatter plot"></canvas>
+                <p class="exp-block__hint" id="exp-scatter-meta"></p>
+            </section>
+
+            <!-- Histograms -->
+            <section class="exp-block">
+                <h3 class="exp-block__title"><i class="fa-solid fa-chart-column"></i> Histograms</h3>
+                <div class="exp-hist-grid" id="exp-hist-grid"></div>
+            </section>
+
+        </section>
+
+    </main>
+
+    <footer class="fc-footer">
+        <p>
+            All parsing &amp; rendering happens locally · your CSV never leaves your device ·
+            <a href="playground.html">Open the same data in Python</a> ·
+            <a href="index.html">Back to home</a>
+        </p>
+    </footer>
+
+    <script src="js/theme.js"></script>
+    <script src="js/explorer.js" defer></script>
+</body>
+</html>

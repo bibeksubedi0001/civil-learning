@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -425,6 +425,25 @@ Site Classification (NEHRP / Eurocode 8):
   Class D  (Stiff soil):     180 &lt; Vs30 &lt;= 360
   Class E  (Soft soil):      Vs30 &lt; 180</code></pre>
                 </div>
+
+                <!-- Live embedded demo: Traditional vs ML on real Kathmandu boreholes -->
+                <figure class="embedded-demo" aria-label="Interactive Traditional vs ML Vs30 comparison">
+                    <figcaption class="embedded-demo__caption">
+                        <span class="embedded-demo__eyebrow"><i class="fa-solid fa-code-compare"></i> Live demo &mdash; right here in the page</span>
+                        <span class="embedded-demo__title">NEHRP formula vs trained ML model on 318 real Kathmandu-valley boreholes</span>
+                        <span class="embedded-demo__hint">Pick any borehole &mdash; the left panel runs the closed-form V<sub>s30</sub> formula above; the right panel runs a linear-regression model trained live in your browser on cheap features only (no shear-wave survey required).</span>
+                    </figcaption>
+                    <div class="embedded-demo__frame-wrap">
+                        <iframe class="embedded-demo__frame"
+                                src="../compare.html?embed=1"
+                                title="Traditional vs ML Vs30 comparison"
+                                loading="lazy"
+                                referrerpolicy="no-referrer"></iframe>
+                    </div>
+                    <a class="embedded-demo__open" href="../compare.html" target="_blank" rel="noopener">
+                        Open full demo in new tab <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </figure>
 
                 <h3>Additional Derived Features</h3>
 
@@ -1492,6 +1511,74 @@ Max residual:         0.72    (worst over-prediction)
         </section>
 
     </main>
+
+    <!-- ============ MINI CASE STUDY (v2 interactive) ============ -->
+    <section class="case-v2" aria-label="Real-world case study">
+        <header class="case-v2__hero">
+            <div class="case-v2__badge"><i class="fa-solid fa-globe"></i> Real-world case study &middot; End-to-end supervised ML in operational site response</div>
+            <h3 class="case-v2__title">USGS ShakeMap v4 &mdash; the global ML pipeline that turns terrain into V<sub>S30</sub> into amplification, ~50,000 times a year</h3>
+            <p class="case-v2__lede">Every felt earthquake on Earth generates a ShakeMap within minutes. Behind it is a stack of <strong>supervised regressions</strong>: terrain &rarr; V<sub>S30</sub>, V<sub>S30</sub> &rarr; period-dependent amplification, rock-motion &rarr; surface shaking. Used by USAID/OFDA, FEMA Hazus, the UN and the Red Cross to mobilise rescue.</p>
+            <ul class="case-v2__meta">
+                <li><i class="fa-solid fa-building"></i> USGS &mdash; Wald, Thompson, Worden et&nbsp;al.</li>
+                <li><i class="fa-solid fa-location-dot"></i> Global (~50,000 maps/yr)</li>
+                <li><i class="fa-solid fa-calendar"></i> v4 since 2018</li>
+                <li><i class="fa-solid fa-database"></i> Vs30 maps + GMPEs + station data</li>
+            </ul>
+        </header>
+        <div class="case-v2__kpis">
+            <div class="case-v2__kpi"><span class="case-v2__kpi-val" data-count-to="50000" data-count-suffix="/yr">0</span><span class="case-v2__kpi-lbl">ShakeMaps published</span></div>
+            <div class="case-v2__kpi case-v2__kpi--cyan"><span class="case-v2__kpi-val" data-count-to="3"  data-count-suffix=" models">0</span><span class="case-v2__kpi-lbl">Stacked supervised regressions</span></div>
+            <div class="case-v2__kpi case-v2__kpi--amber"><span class="case-v2__kpi-val" data-count-to="10" data-count-suffix=" min">0</span><span class="case-v2__kpi-lbl">Time to first map</span></div>
+            <div class="case-v2__kpi case-v2__kpi--purple"><span class="case-v2__kpi-val" data-count-to="100" data-count-suffix="%">0</span><span class="case-v2__kpi-lbl">FEMA Hazus dependence</span></div>
+        </div>
+        <nav class="case-v2__tabs" role="tablist" aria-label="Case study sections">
+            <button class="case-v2__tab is-active" data-tab="problem"  type="button"><i class="fa-solid fa-triangle-exclamation"></i> Problem</button>
+            <button class="case-v2__tab" data-tab="approach" type="button"><i class="fa-solid fa-microchip"></i> Approach</button>
+            <button class="case-v2__tab" data-tab="results"  type="button"><i class="fa-solid fa-trophy"></i> Results</button>
+            <button class="case-v2__tab" data-tab="lessons"  type="button"><i class="fa-solid fa-lightbulb"></i> Lessons</button>
+        </nav>
+        <div class="case-v2__panels">
+            <div class="case-v2__panel is-active" data-panel="problem" role="tabpanel">
+                <p>An M7 ruptures in rural Turkey at 04:17 local. Within minutes, USAID, the Red Cross and a dozen national governments need a map of <em>where</em> the strong shaking actually hit. Most of the affected ground has no seismometer &mdash; you have to <em>predict</em> shaking from the rupture model plus what you know about the soil.</p>
+                <ul>
+                    <li>Soil amplifies seismic waves by factors of 1.5&ndash;4&times; depending on V<sub>S30</sub> (the average shear-wave velocity in the upper 30&nbsp;m).</li>
+                    <li>You can't drill a borehole everywhere &mdash; you need a global V<sub>S30</sub> proxy.</li>
+                    <li>The whole pipeline has to run, end-to-end, in &lt;10 minutes.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="approach" role="tabpanel">
+                <p>ShakeMap v4 stacks three supervised regressions:</p>
+                <ul>
+                    <li><strong>Stage&nbsp;1 &mdash; Terrain &rarr; V<sub>S30</sub>.</strong> Global regression of measured V<sub>S30</sub> against topographic slope (Wald &amp; Allen 2007) plus regional geology overlays. This is exactly the demo that drives our <a href="../compare.html?embed=1" target="_self">Traditional vs ML compare page</a> &mdash; just with global SRTM instead of Kathmandu boreholes.</li>
+                    <li><strong>Stage&nbsp;2 &mdash; V<sub>S30</sub> &rarr; amplification.</strong> Period-dependent regression giving the factor by which 5%-damped spectral acceleration is amplified at each period (Stewart &amp; Seyhan 2014).</li>
+                    <li><strong>Stage&nbsp;3 &mdash; Rock motion &rarr; surface motion.</strong> NGA-West2 GMPEs (see 2.3) give the bedrock prediction, multiplied by the amplification.</li>
+                    <li>All three regressions are calibrated against tens of thousands of strong-motion records.</li>
+                </ul>
+                <p class="case-v2__pull">This is the chapter in one image: three small, interpretable supervised models stacked into a planet-scale operational pipeline.</p>
+            </div>
+            <div class="case-v2__panel" data-panel="results" role="tabpanel">
+                <p>USGS ShakeMap is the global reference for "what was shaken, how hard".</p>
+                <ul>
+                    <li><strong>2023 Turkey&ndash;Syria M7.8:</strong> first ShakeMap online within ~10 minutes; mobilised international USAR teams within the day.</li>
+                    <li>Drives <strong>FEMA Hazus</strong> loss estimates &mdash; the basis for federal disaster declarations.</li>
+                    <li>USAID/OFDA, the Red Cross and the UN all subscribe to ShakeMap's PAGER alerts.</li>
+                    <li>Used by re/insurance industry within minutes to estimate exposure.</li>
+                </ul>
+            </div>
+            <div class="case-v2__panel" data-panel="lessons" role="tabpanel">
+                <ul>
+                    <li><strong>Stack small supervised models.</strong> Three transparent regressions beat one giant black box for operations &mdash; you can debug each stage independently when something goes wrong.</li>
+                    <li><strong>Globalise via proxies.</strong> A model that takes <em>terrain</em> as input scales to the whole planet; a model that takes <em>boreholes</em> does not.</li>
+                    <li><strong>Uncertainty propagates.</strong> Each regression has a residual; ShakeMap propagates them so the final map shows a confidence band, not just a mean.</li>
+                </ul>
+            </div>
+        </div>
+        <footer class="case-v2__footer">
+            <span><i class="fa-solid fa-link"></i> Sources:</span>
+            <a href="https://www.usgs.gov/programs/earthquake-hazards/shakemap" target="_blank" rel="noopener">USGS ShakeMap program <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a href="https://doi.org/10.3133/ofr20181111" target="_blank" rel="noopener">Worden et&nbsp;al. 2018 &mdash; ShakeMap v4 manual (USGS OFR&nbsp;2018&ndash;1111) <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </footer>
+    </section>
 
     <!-- ============ CHAPTER NAV FOOTER ============ -->
     <nav class="chapter-nav-footer">
