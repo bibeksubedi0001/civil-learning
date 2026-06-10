@@ -7,18 +7,16 @@
 window.CE_SEARCH_INDEX = [
     // Chapter 1 — AI vs Machine Learning
     { ch:1, n:0,  href:"chapter1/index.html",  title:"Chapter 1 — AI vs Machine Learning",                   tags:"foundation overview taxonomy" },
-    { ch:1, n:1,  href:"chapter1/sub1.html",   title:"1.1 What is Artificial Intelligence?",                 tags:"AI definition turing agent narrow general" },
-    { ch:1, n:2,  href:"chapter1/sub2.html",   title:"1.2 History of AI",                                    tags:"history AI winter expert systems perceptron" },
-    { ch:1, n:3,  href:"chapter1/sub3.html",   title:"1.3 Traditional Programming vs Machine Learning",      tags:"rules data programming paradigm" },
-    { ch:1, n:4,  href:"chapter1/sub4.html",   title:"1.4 Types of Machine Learning",                        tags:"supervised unsupervised reinforcement" },
-    { ch:1, n:5,  href:"chapter1/sub5.html",   title:"1.5 Data, Features, and Labels",                       tags:"features labels dataset training" },
-    { ch:1, n:6,  href:"chapter1/sub6.html",   title:"1.6 The ML Workflow",                                  tags:"workflow pipeline lifecycle deployment" },
-    { ch:1, n:7,  href:"chapter1/sub7.html",   title:"1.7 Bias, Variance & Generalization",                  tags:"overfitting underfitting bias variance" },
-    { ch:1, n:8,  href:"chapter1/sub8.html",   title:"1.8 Evaluation Metrics",                               tags:"accuracy precision recall RMSE MAE" },
-    { ch:1, n:9,  href:"chapter1/sub9.html",   title:"1.9 Ethics & Responsible AI",                          tags:"ethics fairness bias accountability" },
-    { ch:1, n:10, href:"chapter1/sub10.html",  title:"1.10 AI Tools & Frameworks",                           tags:"python tensorflow pytorch scikit" },
-    { ch:1, n:11, href:"chapter1/sub11.html",  title:"1.11 Case Studies in CE",                              tags:"case study civil engineering" },
-    { ch:1, n:12, href:"chapter1/sub12.html",  title:"1.12 Chapter 1 Summary",                               tags:"summary recap" },
+    { ch:1, n:1,  href:"chapter1/sub1.html",   title:"1.1 What is Artificial Intelligence?",                 tags:"AI definition turing agent narrow general infrastructure" },
+    { ch:1, n:2,  href:"chapter1/sub2.html",   title:"1.2 AI Capabilities — Perception, Reasoning, Learning, Interaction", tags:"perception reasoning learning interaction capabilities radar" },
+    { ch:1, n:3,  href:"chapter1/sub3.html",   title:"1.3 AI Subfields — Computer Vision, NLP, Robotics & More", tags:"computer vision NLP robotics expert systems planning" },
+    { ch:1, n:4,  href:"chapter1/sub4.html",   title:"1.4 What is Machine Learning? — Core Concepts",        tags:"machine learning ML data rules paradigm shift soil" },
+    { ch:1, n:5,  href:"chapter1/sub5.html",   title:"1.5 The ML Pipeline — Data to Deployment",             tags:"pipeline workflow lifecycle data cleaning feature engineering training evaluation deployment" },
+    { ch:1, n:6,  href:"chapter1/sub6.html",   title:"1.6 AI vs ML — The Critical Distinction",              tags:"AI vs ML Venn diagram classification decision rules" },
+    { ch:1, n:7,  href:"chapter1/sub7.html",   title:"1.7 The Dam vs River Analogy — Central Metaphor",      tags:"dam river analogy metaphor safety simulation sensors" },
+    { ch:1, n:8,  href:"chapter1/sub8.html",   title:"1.8 Types of Machine Learning — Supervised, Unsupervised, RL, Semi-supervised", tags:"supervised unsupervised reinforcement semi-supervised clustering anomaly classification" },
+    { ch:1, n:9,  href:"chapter1/sub9.html",   title:"1.9 Introduction to Deep Learning — Neural Networks",  tags:"deep learning neural networks neuron layers backpropagation activation" },
+    { ch:1, n:10, href:"chapter1/sub10.html",  title:"1.10 Bias, Ethics & CE Applications",                  tags:"bias ethics fairness explainability safety civil engineering case studies" },
 
     // Chapter 2 — Supervised Learning
     { ch:2, n:0,  href:"chapter2/index.html",  title:"Chapter 2 — Supervised Learning",                      tags:"supervised prediction regression classification" },
