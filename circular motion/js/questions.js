@@ -1,6 +1,6 @@
 /* ============================================================
-   Circular Motion — Question bank (10 questions)
-   Exam tags limited to 2078, 2079, 2081 (B.S.), randomly assigned.
+   Circular Motion — Question bank (15 questions)
+   Exam tags: 2074, 2077, 2078, 2079, 2081 (B.S.).
    ============================================================ */
 
 const QUESTIONS = [
@@ -123,6 +123,66 @@ const QUESTIONS = [
         ],
         answer: "c",
         explanation: "When the string is cut the centripetal force vanishes and the stone flies off along the tangent (Newton's first law)."
+    },
+    {
+        id: "q11", section: "vertical", year: "2079",
+        text: "A body of mass $2\\,$kg is whirled in a vertical circle of radius $1.6\\,$m. The minimum speed at the highest point to just maintain the circular motion is: $(g=10\\,$m/s$^2)$",
+        options: [
+            { key: "a", text: "$4\\,$m/s" },
+            { key: "b", text: "$8\\,$m/s" },
+            { key: "c", text: "$16\\,$m/s" },
+            { key: "d", text: "$2\\,$m/s" }
+        ],
+        answer: "a",
+        explanation: "At the top, gravity alone supplies the centripetal force at minimum speed: $mg=\\dfrac{mv^2}{r}\\Rightarrow v=\\sqrt{gr}=\\sqrt{10\\times1.6}=\\sqrt{16}=4\\,$m/s. (The mass cancels out.)"
+    },
+    {
+        id: "q12", section: "vertical", year: "2081",
+        text: "A body of mass $0.5\\,$kg tied to a string is revolved in a vertical circle of radius $1\\,$m. If its speed at the lowest point is $5\\,$m/s, the tension in the string there is: $(g=10\\,$m/s$^2)$",
+        options: [
+            { key: "a", text: "$12.5\\,$N" },
+            { key: "b", text: "$5\\,$N" },
+            { key: "c", text: "$17.5\\,$N" },
+            { key: "d", text: "$22.5\\,$N" }
+        ],
+        answer: "c",
+        explanation: "At the lowest point $T-mg=\\dfrac{mv^2}{r}\\Rightarrow T=mg+\\dfrac{mv^2}{r}=0.5(10)+\\dfrac{0.5(5)^2}{1}=5+12.5=17.5\\,$N."
+    },
+    {
+        id: "q13", section: "pendulum", year: "2074",
+        text: "A conical pendulum of string length $1\\,$m has its string making $60^\\circ$ with the vertical. The time period of revolution is: $(g=10\\,$m/s$^2)$",
+        options: [
+            { key: "a", text: "$1.4\\,$s" },
+            { key: "b", text: "$2.0\\,$s" },
+            { key: "c", text: "$0.7\\,$s" },
+            { key: "d", text: "$2.8\\,$s" }
+        ],
+        answer: "a",
+        explanation: "$t=2\\pi\\sqrt{\\dfrac{l\\cos\\theta}{g}}=2\\pi\\sqrt{\\dfrac{1\\times\\cos60^\\circ}{10}}=2\\pi\\sqrt{\\dfrac{0.5}{10}}=2\\pi\\sqrt{0.05}\\approx1.4\\,$s."
+    },
+    {
+        id: "q14", section: "pendulum", year: "2077",
+        text: "The bob of a conical pendulum has mass $0.2\\,$kg and the string makes $60^\\circ$ with the vertical. The tension in the string is: $(g=10\\,$m/s$^2)$",
+        options: [
+            { key: "a", text: "$2\\,$N" },
+            { key: "b", text: "$4\\,$N" },
+            { key: "c", text: "$1\\,$N" },
+            { key: "d", text: "$8\\,$N" }
+        ],
+        answer: "b",
+        explanation: "Vertical balance gives $T\\cos\\theta=mg\\Rightarrow T=\\dfrac{mg}{\\cos\\theta}=\\dfrac{0.2\\times10}{\\cos60^\\circ}=\\dfrac{2}{0.5}=4\\,$N."
+    },
+    {
+        id: "q15", section: "pendulum", year: "2081",
+        text: "A conical pendulum of length $0.5\\,$m revolves with its string at $53^\\circ$ to the vertical. The radius of the horizontal circle traced by the bob is: $(\\sin53^\\circ\\approx0.8)$",
+        options: [
+            { key: "a", text: "$0.3\\,$m" },
+            { key: "b", text: "$0.4\\,$m" },
+            { key: "c", text: "$0.5\\,$m" },
+            { key: "d", text: "$0.25\\,$m" }
+        ],
+        answer: "b",
+        explanation: "The bob lies a horizontal distance $r=l\\sin\\theta$ from the axis: $r=0.5\\times\\sin53^\\circ=0.5\\times0.8=0.4\\,$m."
     }
 ];
 
