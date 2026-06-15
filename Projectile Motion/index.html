@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projectile Motion · Interactive Physics</title>
+    <meta name="description"
+        content="Black & white interactive notes on Motion in a Plane & Projectile Motion with a live launch simulator, dynamic SVG illustrations, full derivations and 22 exam-asked past questions." />
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+
+    <!-- ============ ANIMATED B&W BACKGROUND ============ -->
+    <div class="bg-scene" aria-hidden="true">
+        <svg class="bg-svg" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice">
+            <g class="gray-dash" stroke-width="1">
+                <path d="M -50 520 Q 300 -120 650 520" stroke-dasharray="2 12">
+                    <animateTransform attributeName="transform" type="translate" values="0 0; 0 26; 0 0"
+                        dur="14s" repeatCount="indefinite" />
+                </path>
+                <path d="M -50 560 Q 300 40 650 560" stroke-dasharray="2 14">
+                    <animateTransform attributeName="transform" type="translate" values="0 0; 0 -22; 0 0"
+                        dur="18s" repeatCount="indefinite" />
+                </path>
+                <circle cx="300" cy="300" r="250" stroke-dasharray="2 13">
+                    <animateTransform attributeName="transform" type="rotate" from="360 300 300" to="0 300 300"
+                        dur="150s" repeatCount="indefinite" />
+                </circle>
+            </g>
+            <g class="ink-fill" opacity="0.5">
+                <circle r="3.4">
+                    <animateMotion dur="9s" repeatCount="indefinite" path="M -50 520 Q 300 -120 650 520" />
+                </circle>
+                <circle r="3">
+                    <animateMotion dur="13s" repeatCount="indefinite" path="M -50 560 Q 300 40 650 560" />
+                </circle>
+            </g>
+        </svg>
+        <div class="bg-particles" id="bgParticles"></div>
+    </div>
+
+    <!-- ============ HEADER ============ -->
+    <header class="site-header">
+        <div class="brand">
+            <span class="logo">
+                <i></i>
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M2 21 Q12 1 22 21" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"
+                        fill="none" />
+                    <circle cx="6" cy="13" r="2.4" fill="currentColor" />
+                </svg>
+            </span>
+            <span>Projectile Motion
+                <small>Chapter 8 · Interactive Notes</small>
+            </span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="themeBtn" aria-label="Invert black / white" title="Invert black / white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
+                </svg>
+            </button>
+        </div>
+    </header>
+    <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- ============ MAIN ============ -->
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section id="intro" class="hero">
+            <div class="hero-inner">
+                <div class="hero-copy">
+                    <span class="eyebrow">Chapter 8 · Mechanics</span>
+                    <h1>Projectile <span class="spin-word">Motion</span></h1>
+                    <p>A body thrown into space moving under gravity alone traces a <strong>parabola</strong>. Explore
+                        every concept with live diagrams, full derivations and a hands-on launch simulator — then test
+                        yourself with real exam questions.</p>
+                </div>
+
+                <!-- HERO DYNAMIC SVG: a projectile flying along its parabola -->
+                <svg class="hero-illus" viewBox="0 0 340 300" role="img"
+                    aria-label="Projectile flying along a parabolic path with tangential velocity">
+                    <defs>
+                        <marker id="mkh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <line x1="20" y1="250" x2="320" y2="250" class="gray-dash" stroke-width="1.4"
+                        stroke-dasharray="5 6" />
+                    <path d="M 40 250 Q 170 30 300 250" class="gray-dash" stroke-width="1.6" stroke-dasharray="4 7"
+                        fill="none" />
+                    <circle cx="170" cy="140" r="3.4" class="ink-fill" />
+                    <text x="150" y="130" class="dgm-label sm">apex</text>
+                    <g>
+                        <animateMotion dur="3.4s" repeatCount="indefinite" rotate="auto"
+                            path="M 40 250 Q 170 30 300 250" />
+                        <circle r="9" class="ink-fill" />
+                        <line x1="0" y1="0" x2="34" y2="0" class="ink-stroke" stroke-width="2.4"
+                            marker-end="url(#mkh)" />
+                    </g>
+                </svg>
+            </div>
+
+            <div class="stat-row">
+                <div class="stat">
+                    <div class="big">9</div>
+                    <div class="lbl">Concept sections</div>
+                </div>
+                <div class="stat">
+                    <div class="big">22</div>
+                    <div class="lbl">Exam questions</div>
+                </div>
+                <div class="stat">
+                    <div class="big">5</div>
+                    <div class="lbl">Full derivations</div>
+                </div>
+                <div class="stat">
+                    <div class="big" id="heroProgress">0%</div>
+                    <div class="lbl">Quiz progress</div>
+                </div>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="filter-bar">
+                <span class="lbl">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 4h18l-7 8v6l-4 2v-8z" stroke-linejoin="round" />
+                    </svg>Filter by exam board
+                </span>
+                <button class="filter-pill active" data-year="all">All</button>
+                <button class="filter-pill" data-year="MOE">MOE</button>
+                <button class="filter-pill" data-year="IOM">IOM</button>
+                <button class="filter-pill" data-year="BP">BP</button>
+                <button class="filter-pill" data-year="KU">KU</button>
+                <button class="filter-pill" data-year="IE">IE</button>
+                <button class="filter-pill" data-year="BPKIHS">BPKIHS</button>
+                <span class="spacer"></span>
+                <span class="score-chip" id="scoreChip">Score 0/0</span>
+                <button class="btn" id="resetBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>Reset
+                </button>
+            </div>
+        </section>
+
+        <!-- ===== 1. MOTION IN A PLANE ===== -->
+        <section id="plane" class="section">
+            <div class="section-head">
+                <span class="badge">1</span>
+                <div>
+                    <h2>Motion in a Plane</h2>
+                    <div class="sub">Two-dimensional motion &amp; the shape of the path</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">When a body moves such that its instantaneous position can be described in two
+                    mutually perpendicular directions, the motion is said to be <strong>two-dimensional</strong>
+                    (motion in a plane) — for example a projectile or circular motion.</p>
+                <p>The angle between the initial <strong>velocity</strong> and the <strong>acceleration</strong>
+                    decides the shape of the trajectory:</p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Angle between velocity &amp; acceleration</th>
+                            <th>Path of motion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>$0^\circ$ or $180^\circ$</td>
+                            <td>Straight line (rectilinear)</td>
+                        </tr>
+                        <tr>
+                            <td>$90^\circ$</td>
+                            <td>Circular</td>
+                        </tr>
+                        <tr>
+                            <td>Any other angle</td>
+                            <td>Parabolic (curvilinear)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="callout">A <strong>projectile</strong> is a body thrown into space that moves under the
+                    influence of <em>gravity alone</em> with constant acceleration. Because gravity makes an angle
+                    with the velocity that is neither $0^\circ/180^\circ$ nor a constant $90^\circ$, the path —
+                    with air resistance neglected — is a <strong>parabola</strong>.</div>
+                <ul>
+                    <li>The velocity of a projectile changes in <strong>both magnitude and direction</strong>.</li>
+                    <li>Its motion is the <strong>superposition</strong> of a uniform horizontal motion and a
+                        uniformly accelerated vertical motion.</li>
+                    <li>Acceleration is constant ($=g$, vertically down) throughout the flight.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ===== 2. HORIZONTAL PROJECTION ===== -->
+        <section id="horizontal" class="section">
+            <div class="section-head">
+                <span class="badge">2</span>
+                <div>
+                    <h2>Horizontal Projection from a Height</h2>
+                    <div class="sub">Projected horizontally from height $H$ at speed $u$</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">A particle is projected <strong>horizontally</strong> with speed $u$ from a height
+                    $H$. The horizontal and vertical motions are independent.</p>
+                <span class="formula">$$x = ut, \qquad y = H - \tfrac{1}{2}gt^2$$</span>
+                <span class="formula">$$\text{Trajectory: } y = H - \dfrac{g}{2u^2}\,x^2 \quad(\text{a parabola})$$</span>
+                <div class="chip-list">
+                    <span class="chip">$v_x = u$ (constant)</span>
+                    <span class="chip">$v_y = gt$</span>
+                    <span class="chip">$v = \sqrt{u^2 + g^2t^2}$</span>
+                    <span class="chip">$\alpha = \tan^{-1}\!\dfrac{gt}{u}$</span>
+                </div>
+                <span class="formula">$$T = \sqrt{\dfrac{2H}{g}}\;(T\propto\sqrt{H}), \qquad
+                    R = uT = u\sqrt{\dfrac{2H}{g}}$$</span>
+                <div class="callout tip">Final striking velocity
+                    $v_f=\sqrt{u^2+2gH}$ at angle $\theta=\tan^{-1}\!\dfrac{\sqrt{2gH}}{u}$ below the horizontal.</div>
+            </div>
+
+            <!-- FULL DERIVATION -->
+            <div class="card derivation">
+                <h4>Full derivation — trajectory, time of flight &amp; range</h4>
+                <p class="setup">Take the launch point at the top of a cliff of height $H$, the $x$-axis horizontal
+                    and $y$ measured upward from the ground. The initial velocity is purely horizontal,
+                    $u_x=u,\ u_y=0$, and the only acceleration is $g$ downward.</p>
+
+                <p class="step">Step 1 — Independent motions</p>
+                <p>Horizontally there is no force, so the motion is uniform; vertically the body falls freely from
+                    rest:</p>
+                $$x = ut, \qquad H - y = \tfrac{1}{2}gt^2 \;\Rightarrow\; y = H - \tfrac{1}{2}gt^2$$
+
+                <p class="step">Step 2 — Equation of the path</p>
+                <p>Eliminate $t$ using $t = x/u$:</p>
+                $$y = H - \tfrac{1}{2}g\left(\frac{x}{u}\right)^2 = H - \frac{g}{2u^2}x^2$$
+                <p>$y$ is quadratic in $x$, so the path is a <strong>parabola</strong>.</p>
+
+                <p class="step">Step 3 — Time of flight</p>
+                <p>The body lands when $y=0$, i.e. it has fallen the full height $H$:</p>
+                $$H = \tfrac{1}{2}gT^2 \;\;\Rightarrow\;\; T = \sqrt{\frac{2H}{g}}$$
+
+                <p class="step">Step 4 — Horizontal range</p>
+                <p>The constant horizontal speed carried for time $T$ gives:</p>
+                <div class="deriv-result">$R = uT = u\sqrt{\dfrac{2H}{g}}$</div>
+
+                <p class="step">Step 5 — Velocity on landing</p>
+                $$v = \sqrt{v_x^2+v_y^2} = \sqrt{u^2+g^2t^2}, \qquad
+                \alpha = \tan^{-1}\!\frac{v_y}{v_x} = \tan^{-1}\!\frac{gt}{u}$$
+            </div>
+
+            <!-- DYNAMIC DIAGRAM -->
+            <div class="diagram">
+                <svg viewBox="0 0 380 300" role="img"
+                    aria-label="Ball projected horizontally from a cliff tracing a parabola">
+                    <defs>
+                        <marker id="mkH" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                        <marker id="mkHg" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="gray-fill" /></marker>
+                    </defs>
+                    <!-- ground -->
+                    <line x1="20" y1="250" x2="360" y2="250" class="gray-stroke" stroke-width="1.6" />
+                    <!-- tower / cliff -->
+                    <rect x="42" y="60" width="20" height="190" class="shade-2" />
+                    <rect x="42" y="60" width="20" height="190" class="ink-stroke" stroke-width="1.6" />
+                    <!-- height marker -->
+                    <line x1="30" y1="60" x2="30" y2="250" class="gray-dash" stroke-width="1.3"
+                        stroke-dasharray="4 4" marker-start="url(#mkHg)" marker-end="url(#mkHg)" />
+                    <text x="14" y="158" class="dgm-label sm">H</text>
+                    <!-- launch velocity u -->
+                    <line x1="62" y1="60" x2="120" y2="60" class="ink-stroke" stroke-width="2.4"
+                        marker-end="url(#mkH)" />
+                    <text x="92" y="52" class="dgm-label sm">u</text>
+                    <!-- trajectory -->
+                    <path d="M 62 60 Q 235 70 300 250" class="gray-dash" stroke-width="1.6" stroke-dasharray="4 6"
+                        fill="none" />
+                    <!-- range -->
+                    <line x1="62" y1="266" x2="300" y2="266" class="gray-stroke" stroke-width="1.3"
+                        marker-start="url(#mkHg)" marker-end="url(#mkHg)" />
+                    <text x="172" y="282" class="dgm-label sm">R</text>
+                    <!-- moving ball -->
+                    <g>
+                        <animateMotion dur="2.6s" repeatCount="indefinite" rotate="auto"
+                            path="M 62 60 Q 235 70 300 250" />
+                        <circle r="8" class="ink-fill" />
+                        <line x1="0" y1="0" x2="26" y2="0" class="ink-stroke" stroke-width="2.2"
+                            marker-end="url(#mkH)" />
+                    </g>
+                </svg>
+                <div class="legend">
+                    <span><b>→</b> $u$ stays constant (no horizontal force)</span>
+                    <span>vertical speed grows as $v_y=gt$ → parabolic path</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="horizontal"></div>
+        </section>
+
+        <!-- ===== 3. PROJECTION AT AN ANGLE ===== -->
+        <section id="angular" class="section">
+            <div class="section-head">
+                <span class="badge">3</span>
+                <div>
+                    <h2>Projection at an Angle</h2>
+                    <div class="sub">Launched from the ground at angle $\theta$ with speed $u$</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">A body is projected from the ground at angle $\theta$ to the horizontal with speed
+                    $u$. Resolve into $u_x=u\cos\theta$ (constant) and $u_y=u\sin\theta$ (decelerated by $g$).</p>
+                <span class="formula">$$x = u\cos\theta\,t, \qquad y = u\sin\theta\,t - \tfrac{1}{2}gt^2$$</span>
+                <span class="formula">$$\text{Trajectory: } y = x\tan\theta - \dfrac{g}{2u^2\cos^2\theta}\,x^2$$</span>
+                <div class="chip-list">
+                    <span class="chip">Time of flight $T=\dfrac{2u\sin\theta}{g}$</span>
+                    <span class="chip">Max height $H=\dfrac{u^2\sin^2\theta}{2g}$</span>
+                    <span class="chip">Range $R=\dfrac{u^2\sin2\theta}{g}$</span>
+                    <span class="chip">Time to apex $t'=\dfrac{u\sin\theta}{g}=\dfrac{T}{2}$</span>
+                </div>
+            </div>
+
+            <!-- FULL DERIVATION -->
+            <div class="card derivation">
+                <h4>Full derivation — time of flight, max height &amp; range</h4>
+                <p class="setup">Project a body from the origin at angle $\theta$ with speed $u$. The horizontal
+                    component $u\cos\theta$ is unchanged; the vertical component $u\sin\theta$ is retarded by
+                    gravity $g$.</p>
+
+                <p class="step">Step 1 — Time to reach the highest point</p>
+                <p>At the top the vertical velocity is zero:</p>
+                $$0 = u\sin\theta - g\,t' \;\;\Rightarrow\;\; t' = \frac{u\sin\theta}{g}$$
+
+                <p class="step">Step 2 — Total time of flight</p>
+                <p>By symmetry the up and down journeys take equal time, so:</p>
+                $$T = 2t' = \frac{2u\sin\theta}{g}$$
+
+                <p class="step">Step 3 — Maximum height</p>
+                <p>Using $v^2=u^2-2gH$ on the vertical motion with final vertical velocity $0$:</p>
+                $$H = \frac{(u\sin\theta)^2}{2g} = \frac{u^2\sin^2\theta}{2g}$$
+
+                <p class="step">Step 4 — Horizontal range</p>
+                <p>The horizontal speed acts for the whole flight time $T$:</p>
+                $$R = u\cos\theta \times T = u\cos\theta\cdot\frac{2u\sin\theta}{g}
+                = \frac{u^2(2\sin\theta\cos\theta)}{g}$$
+                <div class="deriv-result">$R = \dfrac{u^2\sin 2\theta}{g}$</div>
+
+                <p class="step">Step 5 — Equation of the trajectory</p>
+                <p>Eliminating $t$ from $x=u\cos\theta\,t$ and $y=u\sin\theta\,t-\tfrac12 gt^2$:</p>
+                $$y = x\tan\theta - \frac{g}{2u^2\cos^2\theta}x^2$$
+                <p>Quadratic in $x$ — confirming the path is a parabola.</p>
+            </div>
+
+            <!-- DYNAMIC DIAGRAM -->
+            <div class="diagram">
+                <svg viewBox="0 0 400 290" role="img"
+                    aria-label="Projectile launched at an angle tracing a parabola with components shown">
+                    <defs>
+                        <marker id="mkA" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                        <marker id="mkAg" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="gray-fill" /></marker>
+                    </defs>
+                    <!-- ground -->
+                    <line x1="20" y1="240" x2="384" y2="240" class="gray-stroke" stroke-width="1.6" />
+                    <!-- trajectory -->
+                    <path d="M 50 240 Q 200 -100 350 240" class="gray-dash" stroke-width="1.6"
+                        stroke-dasharray="4 6" fill="none" />
+                    <!-- launch components -->
+                    <line x1="50" y1="240" x2="112" y2="240" class="gray-stroke" stroke-width="1.6"
+                        stroke-dasharray="4 3" marker-end="url(#mkAg)" />
+                    <text x="78" y="256" class="dgm-label sm">u cosθ</text>
+                    <line x1="50" y1="240" x2="50" y2="180" class="gray-stroke" stroke-width="1.6"
+                        stroke-dasharray="4 3" marker-end="url(#mkAg)" />
+                    <text x="6" y="206" class="dgm-label sm">u sinθ</text>
+                    <!-- resultant u -->
+                    <line x1="50" y1="240" x2="104" y2="180" class="ink-stroke" stroke-width="2.6"
+                        marker-end="url(#mkA)" />
+                    <text x="92" y="176" class="dgm-label">u</text>
+                    <!-- angle arc -->
+                    <path d="M 84 240 A 34 34 0 0 0 78 222" class="gray-stroke" stroke-width="1.4" fill="none" />
+                    <text x="86" y="232" class="dgm-label sm">θ</text>
+                    <!-- apex + height -->
+                    <circle cx="200" cy="70" r="3.6" class="ink-fill" />
+                    <line x1="200" y1="70" x2="200" y2="240" class="gray-dash" stroke-width="1.3"
+                        stroke-dasharray="4 4" />
+                    <text x="206" y="158" class="dgm-label sm">H</text>
+                    <!-- velocity at apex (horizontal) -->
+                    <line x1="200" y1="70" x2="248" y2="70" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mkA)" />
+                    <text x="214" y="62" class="dgm-label sm">u cosθ</text>
+                    <!-- range -->
+                    <line x1="50" y1="258" x2="350" y2="258" class="gray-stroke" stroke-width="1.3"
+                        marker-start="url(#mkAg)" marker-end="url(#mkAg)" />
+                    <text x="194" y="274" class="dgm-label sm">R</text>
+                    <!-- moving ball -->
+                    <g>
+                        <animateMotion dur="3s" repeatCount="indefinite" rotate="auto"
+                            path="M 50 240 Q 200 -100 350 240" />
+                        <circle r="8" class="ink-fill" />
+                    </g>
+                </svg>
+                <div class="legend">
+                    <span>At the apex the velocity is purely horizontal ($v=u\cos\theta$)</span>
+                    <span>Up &amp; down halves are symmetric in time</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="angular"></div>
+        </section>
+
+        <!-- ===== 4. INTERACTIVE SIMULATOR ===== -->
+        <section id="simulator" class="section">
+            <div class="section-head">
+                <span class="badge">4</span>
+                <div>
+                    <h2>Interactive Launch Simulator</h2>
+                    <div class="sub">Drag the sliders — range, height &amp; time update live</div>
+                </div>
+            </div>
+
+            <div class="sim-wrap card">
+                <div class="sim-grid">
+                    <div class="sim-controls">
+                        <div class="sim-field">
+                            <label>Angle of projection <span class="sim-val" id="simAngleVal">45°</span></label>
+                            <input type="range" id="simAngle" min="5" max="85" value="45" step="1" />
+                        </div>
+                        <div class="sim-field">
+                            <label>Launch speed <span class="sim-val" id="simSpeedVal">25 m/s</span></label>
+                            <input type="range" id="simSpeed" min="10" max="45" value="25" step="1" />
+                        </div>
+                        <div class="sim-field">
+                            <label>Gravity $g$</label>
+                            <div class="g-pills">
+                                <button class="g-pill active" data-g="9.8">Earth 9.8</button>
+                                <button class="g-pill" data-g="1.62">Moon 1.6</button>
+                                <button class="g-pill" data-g="24.8">Jupiter 24.8</button>
+                            </div>
+                        </div>
+                        <label class="sim-check">
+                            <input type="checkbox" id="simTwin" /> Show complementary angle (90°−θ)
+                        </label>
+                        <button class="btn sim-launch" id="simLaunch">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 3l14 9-14 9z" fill="currentColor" />
+                            </svg>Launch
+                        </button>
+                        <div class="sim-readouts">
+                            <div class="ro">
+                                <div class="ro-v" id="outR">—</div>
+                                <div class="ro-l">Range $R$ (m)</div>
+                            </div>
+                            <div class="ro">
+                                <div class="ro-v" id="outH">—</div>
+                                <div class="ro-l">Max height $H$ (m)</div>
+                            </div>
+                            <div class="ro">
+                                <div class="ro-v" id="outT">—</div>
+                                <div class="ro-l">Time of flight $T$ (s)</div>
+                            </div>
+                            <div class="ro">
+                                <div class="ro-v" id="outV">—</div>
+                                <div class="ro-l">Horizontal $v$ (m/s)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sim-stage-wrap">
+                        <svg id="simStage" viewBox="0 0 640 360" role="img"
+                            aria-label="Live projectile trajectory plot">
+                            <defs>
+                                <marker id="simMk" markerWidth="10" markerHeight="10" refX="6" refY="3"
+                                    orient="auto">
+                                    <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" />
+                                </marker>
+                                <marker id="simMkS" markerWidth="10" markerHeight="10" refX="3" refY="3"
+                                    orient="auto">
+                                    <path d="M6 0 L0 3 L6 6 Z" class="gray-fill" />
+                                </marker>
+                                <marker id="simMkE" markerWidth="10" markerHeight="10" refX="6" refY="3"
+                                    orient="auto">
+                                    <path d="M0 0 L6 3 L0 6 Z" class="gray-fill" />
+                                </marker>
+                            </defs>
+                            <line id="simGround" class="gray-stroke" stroke-width="1.8" />
+                            <path id="simTwinPath" class="gray-dash" stroke-width="1.6" stroke-dasharray="5 6"
+                                fill="none" />
+                            <line id="simHeight" class="gray-dash" stroke-width="1.3" stroke-dasharray="4 4" />
+                            <text id="simHeightLbl" class="dgm-label sm"></text>
+                            <line id="simRange" class="gray-stroke" stroke-width="1.3" marker-start="url(#simMkS)"
+                                marker-end="url(#simMkE)" />
+                            <text id="simRangeLbl" class="dgm-label sm" text-anchor="middle"></text>
+                            <path id="simPath" class="ink-stroke" stroke-width="2.4" fill="none" />
+                            <line id="simVel" class="ink-stroke" stroke-width="2.8" marker-end="url(#simMk)" />
+                            <text id="simAngleArc" class="dgm-label sm"></text>
+                            <circle id="simApex" r="4" class="ink-fill" />
+                            <circle id="simBall" r="9" class="ink-fill" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="legend">
+                    <span>Solid curve = chosen launch · dashed curve = complementary angle (same range)</span>
+                    <span>Try Moon gravity to see the range stretch dramatically</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== 5. MAX HEIGHT & MAX RANGE ===== -->
+        <section id="maxheight" class="section">
+            <div class="section-head">
+                <span class="badge">5</span>
+                <div>
+                    <h2>Maximum Height &amp; Maximum Range</h2>
+                    <div class="sub">Key conditions &amp; complementary angles</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <ul>
+                    <li>Range is maximum when $\sin2\theta=1$, i.e. at $\theta=45^\circ$:
+                        <span class="formula">$$R_{max} = \dfrac{u^2}{g}$$</span>
+                    </li>
+                    <li>Maximum possible height (thrown straight up, $\theta=90^\circ$):
+                        <span class="formula">$$H_{max} = \dfrac{u^2}{2g} = \dfrac{R_{max}}{2}$$</span>
+                    </li>
+                    <li><strong>Complementary angles</strong> $\theta$ and $(90^\circ-\theta)$ give the
+                        <strong>same range</strong> with the same speed.</li>
+                </ul>
+                <div class="callout">For the least speed needed to attain a given range $R$, the angle should be
+                    $45^\circ$ and the least speed is $u_{min}=\sqrt{gR}$.</div>
+            </div>
+
+            <!-- DERIVATION: MAX RANGE + COMPLEMENTARY -->
+            <div class="card derivation">
+                <h4>Derivation — angle for maximum range &amp; complementary angles</h4>
+                <p class="setup">The range of a ground-to-ground projectile is
+                    $R=\dfrac{u^2\sin2\theta}{g}$ for a fixed launch speed $u$.</p>
+
+                <p class="step">Step 1 — Maximise the range</p>
+                <p>For fixed $u$, $R$ is largest when $\sin2\theta$ is largest. Since $\sin2\theta\le1$:</p>
+                $$\sin2\theta = 1 \;\Rightarrow\; 2\theta = 90^\circ \;\Rightarrow\; \theta = 45^\circ$$
+                <div class="deriv-result">$R_{max} = \dfrac{u^2\sin90^\circ}{g} = \dfrac{u^2}{g}$</div>
+
+                <p class="step">Step 2 — Two angles, one range</p>
+                <p>Replace $\theta$ by its complement $(90^\circ-\theta)$:</p>
+                $$R(90^\circ-\theta) = \frac{u^2\sin\big(2(90^\circ-\theta)\big)}{g}
+                = \frac{u^2\sin(180^\circ-2\theta)}{g} = \frac{u^2\sin2\theta}{g} = R(\theta)$$
+                <p>So, e.g., $15^\circ$ and $75^\circ$ — or $30^\circ$ and $60^\circ$ — share the same range,
+                    while the steeper angle gives the greater height and longer flight time.</p>
+            </div>
+
+            <div class="callout tip">For the same range $R$, if $H_1$ and $H_2$ are the two maximum heights for the
+                complementary angles, then $R = 4\sqrt{H_1 H_2}$ and the heights are in the ratio
+                $H_1:H_2=\tan^2\theta:1$, the flight times in the ratio $T_1:T_2=\tan\theta:1$.</div>
+
+            <div class="questions" data-section="maxheight"></div>
+        </section>
+
+        <!-- ===== 6. ENERGY & QUANTITIES ALONG THE PATH ===== -->
+        <section id="energy" class="section">
+            <div class="section-head">
+                <span class="badge">6</span>
+                <div>
+                    <h2>Energy &amp; Quantities Along the Path</h2>
+                    <div class="sub">At the highest point and over the whole flight</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">A projectile of mass $m$ is thrown at speed $u$ and angle $\theta$ with initial
+                    kinetic energy $E_0=\tfrac12 mu^2$. <strong>At the highest point</strong> only the horizontal
+                    velocity survives:</p>
+                <div class="chip-list">
+                    <span class="chip">$v = u\cos\theta$</span>
+                    <span class="chip">$p = mu\cos\theta$</span>
+                    <span class="chip">$KE = E_0\cos^2\theta$</span>
+                    <span class="chip">$PE\text{ gained} = E_0\sin^2\theta$</span>
+                </div>
+                <ul>
+                    <li>Speed, velocity, momentum &amp; KE <strong>first decrease</strong> to a minimum at the top,
+                        then increase again.</li>
+                    <li>Potential energy <strong>increases</strong> to a maximum at the top, then decreases.</li>
+                    <li><strong>Mechanical energy stays constant</strong> and acceleration ($=g$) is constant
+                        throughout.</li>
+                    <li>The angle between velocity and acceleration decreases gradually from $(90^\circ+\theta)$ to
+                        $(90^\circ-\theta)$; at the top velocity ⟂ acceleration.</li>
+                </ul>
+            </div>
+
+            <div class="illus-row">
+                <div class="card">
+                    <h4 style="margin-top:0">Launch ⟶ Highest point (O to C)</h4>
+                    <ul>
+                        <li>Change in speed $= u(1-\cos\theta)$</li>
+                        <li>Change in velocity $= u\sin\theta$</li>
+                        <li>Change in momentum $= mu\sin\theta$</li>
+                        <li>Decrease in KE $=\tfrac12 mu^2\sin^2\theta = E_0\sin^2\theta$</li>
+                        <li>Increase in PE $=\tfrac12 mu^2\sin^2\theta = E_0\sin^2\theta$</li>
+                        <li>Change in direction $= \theta$</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4 style="margin-top:0">Launch ⟶ Landing (O to B)</h4>
+                    <ul>
+                        <li>Change in speed $= 0$</li>
+                        <li>Change in velocity $= 2u\sin\theta$</li>
+                        <li>Change in momentum $= 2mu\sin\theta$</li>
+                        <li>Change in KE $= 0$</li>
+                        <li>Change in PE $= 0$</li>
+                        <li>Change in direction $= 2\theta$</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="questions" data-section="energy"></div>
+        </section>
+
+        <!-- ===== 7. INCLINED PLANE ===== -->
+        <section id="incline" class="section">
+            <div class="section-head">
+                <span class="badge">7</span>
+                <div>
+                    <h2>Projectile on an Inclined Plane</h2>
+                    <div class="sub">Fired up an incline from its base</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">A projectile is thrown with speed $u$ at angle $\alpha$ to the horizontal, up an
+                    incline of inclination $\beta$ (with $\beta<\alpha$). Resolve <em>along</em> and
+                    <em>perpendicular</em> to the incline.</p>
+                <div class="chip-list">
+                    <span class="chip">Along plane: $u\cos(\alpha-\beta)$</span>
+                    <span class="chip">⟂ plane: $u\sin(\alpha-\beta)$</span>
+                    <span class="chip">Accel ⟂ plane: $g\cos\beta$</span>
+                    <span class="chip">Accel along plane: $g\sin\beta$</span>
+                </div>
+                <span class="formula">$$T = \dfrac{2u\sin(\alpha-\beta)}{g\cos\beta}$$</span>
+                <span class="formula">$$R_{incline} = \dfrac{2u^2\cos\alpha\,\sin(\alpha-\beta)}{g\cos^2\beta}$$</span>
+                <div class="callout">The range up the incline is maximum when
+                    $\alpha = 45^\circ + \dfrac{\beta}{2}$, giving
+                    $R_{max} = \dfrac{u^2}{g(1+\sin\beta)}$.</div>
+            </div>
+
+            <!-- DIAGRAM -->
+            <div class="diagram">
+                <svg viewBox="0 0 420 300" role="img"
+                    aria-label="Projectile fired up an inclined plane from its base">
+                    <defs>
+                        <marker id="mkI" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- horizontal ground -->
+                    <line x1="30" y1="250" x2="400" y2="250" class="gray-dash" stroke-width="1.3"
+                        stroke-dasharray="4 4" />
+                    <!-- incline wedge -->
+                    <path d="M 50 250 L 380 250 L 380 120 Z" class="shade-1" />
+                    <path d="M 50 250 L 380 120" class="ink-stroke" stroke-width="2.2" />
+                    <!-- incline angle β -->
+                    <path d="M 120 250 A 70 70 0 0 0 116 234" class="gray-stroke" stroke-width="1.4" fill="none" />
+                    <text x="130" y="246" class="dgm-label sm">β</text>
+                    <!-- launch point O -->
+                    <circle cx="50" cy="250" r="4" class="ink-fill" />
+                    <text x="34" y="266" class="dgm-label sm">O</text>
+                    <!-- launch velocity u at angle α -->
+                    <line x1="50" y1="250" x2="120" y2="178" class="ink-stroke" stroke-width="2.6"
+                        marker-end="url(#mkI)" />
+                    <text x="118" y="174" class="dgm-label">u</text>
+                    <!-- angle α arc -->
+                    <path d="M 92 250 A 42 42 0 0 0 84 224" class="gray-stroke" stroke-width="1.4" fill="none" />
+                    <text x="92" y="226" class="dgm-label sm">α</text>
+                    <!-- trajectory landing on the incline -->
+                    <path d="M 50 250 Q 175 60 300 175" class="gray-dash" stroke-width="1.6" stroke-dasharray="4 6"
+                        fill="none" />
+                    <!-- landing point -->
+                    <circle cx="300" cy="175" r="4" class="ink-fill" />
+                    <text x="306" y="170" class="dgm-label sm">P</text>
+                    <!-- moving ball -->
+                    <g>
+                        <animateMotion dur="3s" repeatCount="indefinite" rotate="auto"
+                            path="M 50 250 Q 175 60 300 175" />
+                        <circle r="8" class="ink-fill" />
+                    </g>
+                </svg>
+                <div class="legend">
+                    <span>Launch angle $\alpha$ to the horizontal, incline angle $\beta$</span>
+                    <span>Effective gravity along the surface changes the flight</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="incline"></div>
+        </section>
+
+        <!-- ===== 8. AIR RESISTANCE ===== -->
+        <section id="airres" class="section">
+            <div class="section-head">
+                <span class="badge">8</span>
+                <div>
+                    <h2>Effect of Air Resistance</h2>
+                    <div class="sub">What changes in the real world</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">When air resistance is <em>not</em> neglected, the symmetric parabola is broken:</p>
+                <ul>
+                    <li>Maximum height, horizontal range, striking speed, momentum and KE are each
+                        <strong>less</strong> than in the ideal (drag-free) case.</li>
+                    <li>The <strong>time of flight is longer</strong> than without air resistance.</li>
+                    <li>The angle at which the projectile <strong>strikes the ground is greater</strong> than the
+                        angle of projection — the descent is steeper than the ascent.</li>
+                </ul>
+                <div class="callout tip">The trajectory becomes asymmetric: the rising part is longer and flatter,
+                    the falling part shorter and steeper.</div>
+            </div>
+
+            <div class="questions" data-section="airres"></div>
+        </section>
+
+        <!-- ===== 9. HIGH YIELD ===== -->
+        <section id="highyield" class="section">
+            <div class="section-head">
+                <span class="badge">★</span>
+                <div>
+                    <h2>High-Yield Points</h2>
+                    <div class="sub">Quick revision</div>
+                </div>
+            </div>
+
+            <div class="hy-grid">
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Horizontal velocity &amp; acceleration stay <strong>constant</strong>; only the vertical
+                        velocity changes in magnitude and direction.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Range $R=\dfrac{u^2\sin2\theta}{g}=\dfrac{2u_xu_y}{g}=4H\cot\theta$; it is maximum at
+                        $\theta=45^\circ$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>$R=H_{max}$ when $\theta=\tan^{-1}(4)\approx75.96^\circ$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Maximum height $H=\dfrac{u^2\sin^2\theta}{2g}$; greatest range $=2\times$ greatest
+                        height.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Complementary angles $\theta$ and $90^\circ-\theta$ give equal range with the same
+                        speed.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>KE at the highest point $=E_0\cos^2\theta$ (it is never zero unless $\theta=90^\circ$).</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Mechanical energy is conserved throughout the flight; acceleration is constant at
+                        $g$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Two bodies dropped &amp; projected horizontally from the same height land at the
+                        <strong>same time</strong>.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        Projectile Motion · Interactive black &amp; white notes with a live launch simulator, dynamic diagrams and
+        full derivations. 22 exam-asked questions from MOE, IOM, BP, KU, IE &amp; BPKIHS.
+    </footer>
+
+    <button class="to-top" id="toTop" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+    </button>
+
+    <script src="js/questions.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
