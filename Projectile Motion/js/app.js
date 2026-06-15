@@ -29,6 +29,19 @@
         }
     }
 
+    /* lightweight live-formula helpers (instant, no MathJax re-typeset) */
+    function fr(n, d) {
+        return `<span class="frac"><span class="fr-n">${n}</span><span class="fr-d">${d}</span></span>`;
+    }
+    function rad(inner) {
+        return `<span class="sqrt"><span class="rad-sign">\u221a</span><span class="rad-body">${inner}</span></span>`;
+    }
+    function trim2(x) { return +(x).toFixed(2); }
+    function setEqn(id, html) {
+        const e = document.getElementById(id);
+        if (e) e.innerHTML = html;
+    }
+
     /* ---------- build one question card ---------- */
     function buildQuestion(q, displayNo) {
         const card = el("div", "question");
@@ -279,6 +292,13 @@
             out.T.textContent = main.T.toFixed(2);
             out.V.textContent = main.ux.toFixed(1);
 
+            // live formulas (symbolic = substituted = result)
+            setEqn("simEqn",
+                `<span class="eqn">R = ${fr('u\u00b2\u00b7sin2\u03b8', 'g')} = ${fr(u + '\u00b2\u00b7sin' + (2 * ang) + '\u00b0', g)} = <b>${main.R.toFixed(1)} m</b></span>` +
+                `<span class="eqn">H = ${fr('u\u00b2\u00b7sin\u00b2\u03b8', '2g')} = ${fr(u + '\u00b2\u00b7sin\u00b2' + ang + '\u00b0', trim2(2 * g))} = <b>${main.H.toFixed(1)} m</b></span>` +
+                `<span class="eqn">T = ${fr('2u\u00b7sin\u03b8', 'g')} = ${fr('2\u00b7' + u + '\u00b7sin' + ang + '\u00b0', g)} = <b>${main.T.toFixed(2)} s</b></span>`
+            );
+
             cur = { main, scale, S };
             // park the ball at the start
             const s0 = S([0, 0]);
@@ -379,6 +399,10 @@
             hVal.textContent = (+hEl.value).toFixed(1) + " m";
             tOut.textContent = m.T.toFixed(2);
             rOut.textContent = m.R.toFixed(1);
+            setEqn("raceEqn",
+                `<span class="eqn">T = ${rad(fr('2H', 'g'))} = ${rad(fr(2 * m.H, g))} = <b>${m.T.toFixed(2)} s</b></span>` +
+                `<span class="eqn">R = u\u00b7T = ${m.u} \u00b7 ${m.T.toFixed(2)} = <b>${m.R.toFixed(1)} m</b></span>`
+            );
             axis.setAttribute("x1", OX); axis.setAttribute("y1", m.topY);
             axis.setAttribute("x2", OX); axis.setAttribute("y2", GY);
             let d = "M " + OX + " " + m.topY.toFixed(1);
@@ -466,6 +490,10 @@
             lUy.setAttribute("x", (tx + 7).toFixed(1)); lUy.setAttribute("y", ((OY + ty) / 2).toFixed(1));
             uxOut.textContent = (u * Math.cos(r)).toFixed(1);
             uyOut.textContent = (u * Math.sin(r)).toFixed(1);
+            setEqn("decEqn",
+                `<span class="eqn">u<sub>x</sub> = u\u00b7cos\u03b8 = ${u}\u00b7cos${a}\u00b0 = <b>${(u * Math.cos(r)).toFixed(1)} m/s</b></span>` +
+                `<span class="eqn">u<sub>y</sub> = u\u00b7sin\u03b8 = ${u}\u00b7sin${a}\u00b0 = <b>${(u * Math.sin(r)).toFixed(1)} m/s</b></span>`
+            );
         }
         ang.addEventListener("input", draw);
         spd.addEventListener("input", draw);
@@ -512,6 +540,10 @@
             conn.setAttribute("x2", x2.toFixed(1)); conn.setAttribute("y2", y2.toFixed(1));
             rOut.textContent = R.toFixed(1);
             cOut.textContent = comp + "\u00b0";
+            setEqn("raEqn",
+                `<span class="eqn">R = ${fr('u\u00b2', 'g')}\u00b7sin2\u03b8 = ${fr(u + '\u00b2', g)}\u00b7sin${2 * a}\u00b0 = <b>${R.toFixed(1)} m</b></span>` +
+                `<span class="eqn">\u03b8\u2032 = 90\u00b0\u2212\u03b8 = <b>${comp}\u00b0</b> &nbsp;(equal R)</span>`
+            );
         }
         ang.addEventListener("input", draw);
         spd.addEventListener("input", draw);
