@@ -33,7 +33,7 @@
     function buildQuestion(q, displayNo) {
         const card = el("div", "question");
         card.dataset.id = q.id;
-        card.dataset.year = q.board;          // filter key = exam board
+        card.dataset.year = q.year;          // filter key = exam year
 
         const top = el("div", "q-top");
         top.appendChild(el("div", "q-no", displayNo));
@@ -103,7 +103,7 @@
             container.appendChild(head);
 
             qs.forEach((q, i) => container.appendChild(buildQuestion(q, i + 1)));
-            container.appendChild(el("div", "no-result", "No questions match the selected exam board."));
+            container.appendChild(el("div", "no-result", "No questions match the selected exam year."));
         });
         typeset();
         updateProgress();
@@ -341,6 +341,183 @@
         io.observe(stage);
     }
 
+    /* ============================================================
+       DROP vs LAUNCH RACE — vertical motion is independent of x
+       ============================================================ */
+    function setupRace() {
+        const stage = document.getElementById("raceStage");
+        if (!stage) return;
+        const spd = document.getElementById("raceSpeed");
+        const hEl = document.getElementById("raceH");
+        const spdVal = document.getElementById("raceSpeedVal");
+        const hVal = document.getElementById("raceHVal");
+        const btn = document.getElementById("raceBtn");
+        const ballA = document.getElementById("raceBallA");
+        const ballB = document.getElementById("raceBallB");
+        const guide = document.getElementById("raceGuide");
+        const arc = document.getElementById("raceArc");
+        const axis = document.getElementById("raceAxis");
+        const tOut = document.getElementById("raceT");
+        const rOut = document.getElementById("raceR");
+        const g = 9.8, OX = 64, GY = 244, TOPMIN = 40;
+        const SX = 320 / (32 * Math.sqrt(2 * 5 / g));   // px per metre so max range fits
+        let raf = null, startTs = null;
+
+        function geom() {
+            const H = +hEl.value, u = +spd.value;
+            const T = Math.sqrt(2 * H / g);
+            const R = u * T;
+            const pxDrop = (H / 5) * (GY - TOPMIN);
+            const topY = GY - pxDrop;
+            const endX = OX + R * SX;
+            return { H, u, T, R, pxDrop, topY, endX };
+        }
+
+        function drawStatic() {
+            const m = geom();
+            spdVal.textContent = (+spd.value) + " m/s";
+            hVal.textContent = (+hEl.value).toFixed(1) + " m";
+            tOut.textContent = m.T.toFixed(2);
+            rOut.textContent = m.R.toFixed(1);
+            axis.setAttribute("x1", OX); axis.setAttribute("y1", m.topY);
+            axis.setAttribute("x2", OX); axis.setAttribute("y2", GY);
+            let d = "M " + OX + " " + m.topY.toFixed(1);
+            for (let i = 1; i <= 32; i++) {
+                const p = i / 32;
+                d += " L " + (OX + (m.endX - OX) * p).toFixed(1) + " " + (m.topY + m.pxDrop * p * p).toFixed(1);
+            }
+            arc.setAttribute("d", d);
+            ballA.setAttribute("cx", OX); ballA.setAttribute("cy", m.topY);
+            ballB.setAttribute("cx", OX); ballB.setAttribute("cy", m.topY);
+            guide.setAttribute("x1", OX); guide.setAttribute("y1", m.topY);
+            guide.setAttribute("x2", OX); guide.setAttribute("y2", m.topY);
+            return m;
+        }
+
+        function run() {
+            const m = drawStatic();
+            cancelAnimationFrame(raf);
+            const dur = Math.max(850, Math.min(1900, m.T * 650));
+            startTs = null;
+            function step(ts) {
+                if (!startTs) startTs = ts;
+                const p = Math.min(1, (ts - startTs) / dur);
+                const y = m.topY + m.pxDrop * p * p;
+                const xB = OX + (m.endX - OX) * p;
+                ballA.setAttribute("cy", y);
+                ballB.setAttribute("cx", xB); ballB.setAttribute("cy", y);
+                guide.setAttribute("x1", OX); guide.setAttribute("y1", y);
+                guide.setAttribute("x2", xB); guide.setAttribute("y2", y);
+                if (p < 1) raf = requestAnimationFrame(step);
+            }
+            raf = requestAnimationFrame(step);
+        }
+
+        spd.addEventListener("input", drawStatic);
+        hEl.addEventListener("input", drawStatic);
+        spd.addEventListener("change", run);
+        hEl.addEventListener("change", run);
+        btn.addEventListener("click", run);
+        drawStatic();
+        const io = new IntersectionObserver((e) => {
+            e.forEach(en => { if (en.isIntersecting) { run(); io.disconnect(); } });
+        }, { threshold: 0.4 });
+        io.observe(stage);
+    }
+
+    /* ============================================================
+       VELOCITY RESOLVER — u into u cosθ and u sinθ
+       ============================================================ */
+    function setupDecomposer() {
+        const stage = document.getElementById("decStage");
+        if (!stage) return;
+        const ang = document.getElementById("decAng");
+        const spd = document.getElementById("decSpd");
+        const angVal = document.getElementById("decAngVal");
+        const spdVal = document.getElementById("decSpdVal");
+        const uxOut = document.getElementById("decUx");
+        const uyOut = document.getElementById("decUy");
+        const vU = document.getElementById("decU");
+        const vUx = document.getElementById("decUxLine");
+        const vUy = document.getElementById("decUyLine");
+        const arc = document.getElementById("decArc");
+        const lU = document.getElementById("decULbl");
+        const lUx = document.getElementById("decUxLbl");
+        const lUy = document.getElementById("decUyLbl");
+        const OX = 70, OY = 208;
+
+        function draw() {
+            const a = +ang.value, u = +spd.value;
+            const r = a * Math.PI / 180;
+            angVal.textContent = a + "\u00b0";
+            spdVal.textContent = u + " m/s";
+            const L = u * 3.6;
+            const tx = OX + L * Math.cos(r), ty = OY - L * Math.sin(r);
+            vU.setAttribute("x1", OX); vU.setAttribute("y1", OY);
+            vU.setAttribute("x2", tx.toFixed(1)); vU.setAttribute("y2", ty.toFixed(1));
+            vUx.setAttribute("x1", OX); vUx.setAttribute("y1", OY);
+            vUx.setAttribute("x2", tx.toFixed(1)); vUx.setAttribute("y2", OY);
+            vUy.setAttribute("x1", tx.toFixed(1)); vUy.setAttribute("y1", OY);
+            vUy.setAttribute("x2", tx.toFixed(1)); vUy.setAttribute("y2", ty.toFixed(1));
+            const ar = 30;
+            arc.setAttribute("d", `M ${OX + ar} ${OY} A ${ar} ${ar} 0 0 1 ${(OX + ar * Math.cos(r)).toFixed(1)} ${(OY - ar * Math.sin(r)).toFixed(1)}`);
+            lU.setAttribute("x", (tx + 8).toFixed(1)); lU.setAttribute("y", (ty - 2).toFixed(1));
+            lUx.setAttribute("x", ((OX + tx) / 2 - 16).toFixed(1)); lUx.setAttribute("y", OY + 18);
+            lUy.setAttribute("x", (tx + 7).toFixed(1)); lUy.setAttribute("y", ((OY + ty) / 2).toFixed(1));
+            uxOut.textContent = (u * Math.cos(r)).toFixed(1);
+            uyOut.textContent = (u * Math.sin(r)).toFixed(1);
+        }
+        ang.addEventListener("input", draw);
+        spd.addEventListener("input", draw);
+        draw();
+    }
+
+    /* ============================================================
+       RANGE vs ANGLE EXPLORER — R = (u²/g) sin2θ
+       ============================================================ */
+    function setupRangeAngle() {
+        const stage = document.getElementById("raStage");
+        if (!stage) return;
+        const ang = document.getElementById("raAng");
+        const spd = document.getElementById("raSpd");
+        const angVal = document.getElementById("raAngVal");
+        const spdVal = document.getElementById("raSpdVal");
+        const rOut = document.getElementById("raR");
+        const cOut = document.getElementById("raComp");
+        const curve = document.getElementById("raCurve");
+        const dot = document.getElementById("raDot");
+        const dot2 = document.getElementById("raDot2");
+        const drop = document.getElementById("raDrop");
+        const conn = document.getElementById("raConn");
+        const g = 9.8, xL = 54, xR = 432, yB = 250, yT = 48;
+        const mapX = d => xL + (d / 90) * (xR - xL);
+
+        function draw() {
+            const a = +ang.value, u = +spd.value;
+            angVal.textContent = a + "\u00b0";
+            spdVal.textContent = u + " m/s";
+            const Rmax = u * u / g;
+            const mapY = R => yB - (R / Rmax) * (yB - yT);
+            const Rof = d => Rmax * Math.sin(2 * d * Math.PI / 180);
+            let dp = "M " + mapX(0).toFixed(1) + " " + mapY(Rof(0)).toFixed(1);
+            for (let d = 1; d <= 90; d++) dp += " L " + mapX(d).toFixed(1) + " " + mapY(Rof(d)).toFixed(1);
+            curve.setAttribute("d", dp);
+            const R = Rof(a), comp = 90 - a;
+            const x1 = mapX(a), y1 = mapY(R), x2 = mapX(comp), y2 = mapY(Rof(comp));
+            dot.setAttribute("cx", x1.toFixed(1)); dot.setAttribute("cy", y1.toFixed(1));
+            dot2.setAttribute("cx", x2.toFixed(1)); dot2.setAttribute("cy", y2.toFixed(1));
+            drop.setAttribute("x1", x1.toFixed(1)); drop.setAttribute("y1", y1.toFixed(1));
+            drop.setAttribute("x2", x1.toFixed(1)); drop.setAttribute("y2", yB);
+            conn.setAttribute("x1", x1.toFixed(1)); conn.setAttribute("y1", y1.toFixed(1));
+            conn.setAttribute("x2", x2.toFixed(1)); conn.setAttribute("y2", y2.toFixed(1));
+            rOut.textContent = R.toFixed(1);
+            cOut.textContent = comp + "\u00b0";
+        }
+        ang.addEventListener("input", draw);
+        spd.addEventListener("input", draw);
+        draw();
+    }
+
     /* ---------- theme toggle (white ⇄ inverted, both B&W) ---------- */
     function setupTheme() {
         const btn = document.getElementById("themeBtn");
@@ -407,6 +584,9 @@
     document.addEventListener("DOMContentLoaded", () => {
         render();
         setupSimulator();
+        setupRace();
+        setupDecomposer();
+        setupRangeAngle();
         setupBackground();
         revealOnScroll();
         setupTheme();
