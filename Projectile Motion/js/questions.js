@@ -1,5 +1,5 @@
 /* ============================================================
-   Projectile Motion — IOE exam question bank (22 past questions)
+   Projectile Motion — IOE exam question bank (20 past questions)
    Exam: IOE (Institute of Engineering) · Years 2076–2082
    Sections: horizontal, angular, maxheight, energy, airres, incline
    ============================================================ */
@@ -234,18 +234,6 @@ const QUESTIONS = [
         explanation: "The bullet's horizontal component must match the plane's speed: $600\\sin\\phi=300\\Rightarrow\\sin\\phi=\\tfrac12\\Rightarrow\\phi=30^\\circ$ from the vertical."
     },
     {
-        id: "q20", section: "horizontal", year: "2081", exam: "IOE 2081",
-        text: "A man in a train moving with constant velocity drops a ball. The path of the ball as seen by an observer standing on the platform is:",
-        options: [
-            { key: "a", text: "Straight line" },
-            { key: "b", text: "A circle" },
-            { key: "c", text: "A parabola" },
-            { key: "d", text: "Helix" }
-        ],
-        answer: "c",
-        explanation: "To the ground observer the ball keeps the train's horizontal velocity while falling under gravity — uniform horizontal motion plus vertical acceleration traces a parabola."
-    },
-    {
         id: "q21", section: "angular", year: "2082", exam: "IOE 2082",
         text: "The range of a projectile fired at $15^\\circ$ is $50\\,$m. Fired with the same speed at $45^\\circ$, the range becomes:",
         options: [
@@ -256,18 +244,6 @@ const QUESTIONS = [
         ],
         answer: "a",
         explanation: "$R_{15}=\\dfrac{u^2\\sin30^\\circ}{g}=\\dfrac{u^2}{2g}=50\\Rightarrow\\dfrac{u^2}{g}=100$. At $45^\\circ$, $R=\\dfrac{u^2\\sin90^\\circ}{g}=\\dfrac{u^2}{g}=100\\,$m."
-    },
-    {
-        id: "q22", section: "horizontal", year: "2076", exam: "IOE 2076",
-        text: "A stone is released from rest at the top of a tower while a steady high-speed wind exerts a constant horizontal force on it. The path it follows is:",
-        options: [
-            { key: "a", text: "Parabolic" },
-            { key: "b", text: "Straight" },
-            { key: "c", text: "Hyperbolic" },
-            { key: "d", text: "Circular" }
-        ],
-        answer: "b",
-        explanation: "Starting from rest under two constant forces (gravity + wind), the net force and hence the acceleration is fixed in direction, so the stone moves along a straight line."
     }
 ];
 
