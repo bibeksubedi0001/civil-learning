@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gravitation · Interactive Physics</title>
+    <meta name="description"
+        content="Black & white interactive notes on Gravitation — Newton's law, gravitational field & potential, variation of g, Kepler's laws, satellites, escape velocity and GPS — with live simulators, dynamic SVG diagrams, full derivations and 22 IOE exam-asked questions (2076–2082)." />
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+
+    <!-- ============ ANIMATED B&W BACKGROUND ============ -->
+    <div class="bg-scene" aria-hidden="true">
+        <svg class="bg-svg" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice">
+            <g class="gray-dash" stroke-width="1">
+                <ellipse cx="300" cy="300" rx="250" ry="150" stroke-dasharray="2 12">
+                    <animateTransform attributeName="transform" type="rotate" from="0 300 300" to="360 300 300"
+                        dur="120s" repeatCount="indefinite" />
+                </ellipse>
+                <ellipse cx="300" cy="300" rx="160" ry="250" stroke-dasharray="2 14">
+                    <animateTransform attributeName="transform" type="rotate" from="360 300 300" to="0 300 300"
+                        dur="160s" repeatCount="indefinite" />
+                </ellipse>
+            </g>
+            <g class="ink-fill" opacity="0.5">
+                <g><animateTransform attributeName="transform" type="rotate" from="0 300 300" to="360 300 300"
+                        dur="120s" repeatCount="indefinite" />
+                    <circle cx="550" cy="300" r="4" /></g>
+                <g><animateTransform attributeName="transform" type="rotate" from="360 300 300" to="0 300 300"
+                        dur="160s" repeatCount="indefinite" />
+                    <circle cx="300" cy="550" r="3.4" /></g>
+            </g>
+        </svg>
+        <div class="bg-particles" id="bgParticles"></div>
+    </div>
+
+    <!-- ============ HEADER ============ -->
+    <header class="site-header">
+        <div class="brand">
+            <span class="logo">
+                <i></i>
+                <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="4.5" fill="currentColor" />
+                    <ellipse cx="12" cy="12" rx="10" ry="5" stroke="currentColor" stroke-width="1.6"
+                        transform="rotate(-25 12 12)" />
+                    <circle cx="21" cy="8" r="1.8" fill="currentColor" />
+                </svg>
+            </span>
+            <span>Gravitation
+                <small>Chapter 9 · Interactive Notes</small>
+            </span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="themeBtn" aria-label="Invert black / white" title="Invert black / white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
+                </svg>
+            </button>
+        </div>
+    </header>
+    <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- ============ MAIN ============ -->
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section id="intro" class="hero">
+            <div class="hero-inner">
+                <div class="hero-copy">
+                    <span class="eyebrow">Chapter 9 · Mechanics</span>
+                    <h1>Gravi<span class="spin-word">tation</span></h1>
+                    <p>Every mass attracts every other mass. From a falling apple to orbiting satellites and the
+                        dance of the planets — explore the universal force with live simulators, full derivations
+                        and real exam questions.</p>
+                </div>
+
+                <!-- HERO DYNAMIC SVG: a planet orbiting a central mass on an ellipse -->
+                <svg class="hero-illus" viewBox="0 0 340 320" role="img"
+                    aria-label="A planet orbiting a central mass with an inward gravitational pull">
+                    <defs>
+                        <marker id="mkh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <ellipse cx="170" cy="160" rx="130" ry="92" class="gray-dash" stroke-width="1.5"
+                        stroke-dasharray="4 7" />
+                    <circle cx="170" cy="160" r="22" class="ink-fill" />
+                    <circle cx="170" cy="160" r="10" class="paper-fill" />
+                    <g>
+                        <animateMotion dur="9s" repeatCount="indefinite"
+                            path="M 40 160 a 130 92 0 1 0 260 0 a 130 92 0 1 0 -260 0" />
+                        <circle r="10" class="ink-fill" />
+                        <line x1="0" y1="0" x2="-30" y2="0" class="ink-stroke" stroke-width="2.2"
+                            marker-end="url(#mkh)" />
+                    </g>
+                </svg>
+            </div>
+
+            <div class="stat-row">
+                <div class="stat">
+                    <div class="big">8</div>
+                    <div class="lbl">Core topics</div>
+                </div>
+                <div class="stat">
+                    <div class="big">22</div>
+                    <div class="lbl">IOE questions</div>
+                </div>
+                <div class="stat">
+                    <div class="big">4</div>
+                    <div class="lbl">Interactive tools</div>
+                </div>
+                <div class="stat">
+                    <div class="big" id="heroProgress">0%</div>
+                    <div class="lbl">Quiz progress</div>
+                </div>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="filter-bar">
+                <span class="lbl">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 4h18l-7 8v6l-4 2v-8z" stroke-linejoin="round" />
+                    </svg>Filter by IOE year
+                </span>
+                <button class="filter-pill active" data-year="all">All</button>
+                <button class="filter-pill" data-year="2076">2076</button>
+                <button class="filter-pill" data-year="2077">2077</button>
+                <button class="filter-pill" data-year="2078">2078</button>
+                <button class="filter-pill" data-year="2079">2079</button>
+                <button class="filter-pill" data-year="2080">2080</button>
+                <button class="filter-pill" data-year="2081">2081</button>
+                <button class="filter-pill" data-year="2082">2082</button>
+                <span class="spacer"></span>
+                <span class="score-chip" id="scoreChip">Score 0/0</span>
+                <button class="btn" id="resetBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>Reset
+                </button>
+            </div>
+        </section>
+
+        <!-- ===== 1. NEWTON'S LAW ===== -->
+        <section id="gravlaw" class="section">
+            <div class="section-head">
+                <span class="badge">1</span>
+                <div>
+                    <h2>Newton's Law of Universal Gravitation</h2>
+                    <div class="sub">Every mass attracts every other mass</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">Two point masses $m_1$ and $m_2$ separated by a distance $r$ attract each other along
+                    the line joining them with a force:</p>
+                <span class="formula">$$F = \dfrac{G\,m_1 m_2}{r^2}$$</span>
+                <p>where $G = 6.674\times10^{-11}\,\text{N m}^2\text{kg}^{-2}$ is the universal gravitational
+                    constant.</p>
+                <ul>
+                    <li>The force is always <strong>attractive</strong> and acts along the line joining the
+                        centres.</li>
+                    <li>It obeys Newton's third law — the two forces are <strong>equal and opposite</strong>.</li>
+                    <li>It is a <strong>central</strong> force and <strong>independent of the medium</strong> between
+                        the masses.</li>
+                    <li>It follows an <strong>inverse-square law</strong>: $F\propto\dfrac{1}{r^2}$.</li>
+                </ul>
+                <div class="callout">In vector form $\vec{F}_{12} = -\dfrac{Gm_1m_2}{r^2}\,\hat{r}_{12}$, the minus
+                    sign showing the pull is directed opposite to the separation vector (i.e. attractive).</div>
+            </div>
+
+            <!-- DIAGRAM: two masses + forces -->
+            <div class="diagram">
+                <svg viewBox="0 0 440 180" role="img" aria-label="Two masses attracting each other">
+                    <defs>
+                        <marker id="mk1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <circle cx="110" cy="90" r="26" class="shade-2" />
+                    <circle cx="110" cy="90" r="26" class="ink-stroke" stroke-width="2" />
+                    <text x="110" y="95" text-anchor="middle" class="dgm-label">m₁</text>
+                    <circle cx="340" cy="90" r="18" class="shade-2" />
+                    <circle cx="340" cy="90" r="18" class="ink-stroke" stroke-width="2" />
+                    <text x="340" y="95" text-anchor="middle" class="dgm-label">m₂</text>
+                    <!-- forces toward each other -->
+                    <line x1="142" y1="90" x2="196" y2="90" class="ink-stroke" stroke-width="2.6"
+                        marker-end="url(#mk1)" />
+                    <text x="156" y="80" class="dgm-label sm">F</text>
+                    <line x1="316" y1="90" x2="262" y2="90" class="ink-stroke" stroke-width="2.6"
+                        marker-end="url(#mk1)" />
+                    <text x="286" y="80" class="dgm-label sm">F</text>
+                    <!-- separation r -->
+                    <line x1="110" y1="140" x2="340" y2="140" class="gray-dash" stroke-width="1.3"
+                        stroke-dasharray="4 4" />
+                    <text x="225" y="156" text-anchor="middle" class="dgm-label sm">r</text>
+                </svg>
+                <div class="legend">
+                    <span>Equal &amp; opposite pulls along the line joining the masses (inverse-square in $r$)</span>
+                </div>
+            </div>
+
+            <!-- INTERACTIVE: inverse-square force explorer -->
+            <div class="sim-wrap card interactive-panel">
+                <div class="ip-head">
+                    <span class="ip-tag">Interactive</span>
+                    <h4>Inverse-square law explorer</h4>
+                </div>
+                <p class="ip-desc">Change the masses and their separation and watch the gravitational force respond.
+                    Double the distance and the force drops to a quarter — the hallmark of the inverse-square law.</p>
+                <div class="sim-grid">
+                    <div class="sim-controls">
+                        <div class="sim-field">
+                            <label>Mass m₁ <span class="sim-val" id="forceM1Val">60 kg</span></label>
+                            <input type="range" id="forceM1" min="10" max="100" value="60" step="1" />
+                        </div>
+                        <div class="sim-field">
+                            <label>Mass m₂ <span class="sim-val" id="forceM2Val">60 kg</span></label>
+                            <input type="range" id="forceM2" min="10" max="100" value="60" step="1" />
+                        </div>
+                        <div class="sim-field">
+                            <label>Separation r <span class="sim-val" id="forceRVal">4 m</span></label>
+                            <input type="range" id="forceR" min="1" max="10" value="4" step="1" />
+                        </div>
+                        <div class="sim-readouts">
+                            <div class="ro">
+                                <div class="ro-v" id="forceOut">—</div>
+                                <div class="ro-l">Gravitational force $F$</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sim-stage-wrap">
+                        <svg id="forceStage" viewBox="0 0 440 168" role="img"
+                            aria-label="Two masses with the gravitational force between them">
+                            <defs>
+                                <marker id="fMk" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                                    <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" />
+                                </marker>
+                            </defs>
+                            <circle id="forceMassA" class="shade-3 ink-stroke" stroke-width="2" />
+                            <circle id="forceMassB" class="shade-3 ink-stroke" stroke-width="2" />
+                            <line id="forceArrowA" class="ink-stroke" stroke-width="2.6" marker-end="url(#fMk)" />
+                            <line id="forceArrowB" class="ink-stroke" stroke-width="2.6" marker-end="url(#fMk)" />
+                            <line id="forceRLine" class="gray-dash" stroke-width="1.3" stroke-dasharray="4 4" />
+                            <text id="forceRLbl" class="dgm-label sm" text-anchor="middle"></text>
+                        </svg>
+                    </div>
+                </div>
+                <div class="sim-eqn" id="forceEqn"></div>
+            </div>
+
+            <div class="questions" data-section="gravlaw"></div>
+        </section>
+
+        <!-- ===== 2. FIELD STRENGTH ===== -->
+        <section id="field" class="section">
+            <div class="section-head">
+                <span class="badge">2</span>
+                <div>
+                    <h2>Gravitational Field Strength</h2>
+                    <div class="sub">Force per unit mass &amp; acceleration due to gravity</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">The gravitational field strength (intensity) at a point is the force experienced by
+                    a unit mass placed there:</p>
+                <span class="formula">$$E = \dfrac{F}{m} = \dfrac{GM}{r^2}$$</span>
+                <p>At the surface of the Earth (mass $M$, radius $R$) this field strength equals the acceleration
+                    due to gravity:</p>
+                <span class="formula">$$g = \dfrac{GM}{R^2} \quad\Rightarrow\quad GM = gR^2$$</span>
+                <div class="callout tip">$g$ is the same for all bodies — a feather and a stone fall with identical
+                    acceleration in vacuum, because $g=\dfrac{GM}{R^2}$ does not contain the falling body's mass.</div>
+            </div>
+
+            <!-- DIAGRAM: radial field lines -->
+            <div class="diagram">
+                <svg viewBox="0 0 320 260" role="img" aria-label="Radial gravitational field around a mass">
+                    <defs>
+                        <marker id="mk2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="gray-fill" /></marker>
+                    </defs>
+                    <circle cx="160" cy="130" r="30" class="shade-2" />
+                    <circle cx="160" cy="130" r="30" class="ink-stroke" stroke-width="2" />
+                    <text x="160" y="135" text-anchor="middle" class="dgm-label">M</text>
+                    <!-- inward field arrows -->
+                    <g class="gray-stroke" stroke-width="1.5">
+                        <line x1="160" y1="20" x2="160" y2="92" marker-end="url(#mk2)" />
+                        <line x1="160" y1="240" x2="160" y2="168" marker-end="url(#mk2)" />
+                        <line x1="30" y1="130" x2="122" y2="130" marker-end="url(#mk2)" />
+                        <line x1="290" y1="130" x2="198" y2="130" marker-end="url(#mk2)" />
+                        <line x1="58" y1="40" x2="132" y2="104" marker-end="url(#mk2)" />
+                        <line x1="262" y1="40" x2="188" y2="104" marker-end="url(#mk2)" />
+                        <line x1="58" y1="220" x2="132" y2="156" marker-end="url(#mk2)" />
+                        <line x1="262" y1="220" x2="188" y2="156" marker-end="url(#mk2)" />
+                    </g>
+                    <text x="160" y="254" text-anchor="middle" class="dgm-label sm">field points radially inward
+                        ($\,E=GM/r^2$)</text>
+                </svg>
+                <div class="legend">
+                    <span>The field of a point mass is radial and inward, weakening as $1/r^2$</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="field"></div>
+        </section>
+
+        <!-- ===== 3. VARIATION OF g ===== -->
+        <section id="variation" class="section">
+            <div class="section-head">
+                <span class="badge">3</span>
+                <div>
+                    <h2>Variation of $g$</h2>
+                    <div class="sub">With altitude, depth &amp; rotation</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="chip-list">
+                    <span class="chip">Height: $g_h = \dfrac{gR^2}{(R+h)^2}\approx g\!\left(1-\dfrac{2h}{R}\right)$</span>
+                    <span class="chip">Depth: $g_d = g\!\left(1-\dfrac{d}{R}\right)$</span>
+                    <span class="chip">Latitude: $g' = g-\omega^2R\cos^2\lambda$</span>
+                </div>
+                <p>$g$ is <strong>maximum at the surface</strong>. It falls off as the inverse square with altitude,
+                    but decreases <strong>linearly</strong> with depth, reaching <strong>zero at the centre</strong>
+                    of the Earth.</p>
+            </div>
+
+            <!-- DERIVATION -->
+            <div class="card derivation">
+                <h4>Derivation — variation with height &amp; depth</h4>
+                <p class="setup">Let $g=\dfrac{GM}{R^2}$ be the surface value for an Earth of mass $M$, radius $R$
+                    and (assumed uniform) density $\rho$.</p>
+
+                <p class="step">Step 1 — At height $h$ above the surface</p>
+                <p>The distance from the centre is $R+h$, so:</p>
+                $$g_h = \frac{GM}{(R+h)^2} = g\left(\frac{R}{R+h}\right)^2
+                = g\left(1+\frac{h}{R}\right)^{-2}$$
+                <p>For $h\ll R$, expanding to first order:</p>
+                <div class="deriv-result">$g_h \approx g\left(1-\dfrac{2h}{R}\right)$</div>
+
+                <p class="step">Step 2 — At depth $d$ below the surface</p>
+                <p>Only the sphere of radius $(R-d)$ beneath contributes. With uniform density,
+                    $M' = M\dfrac{(R-d)^3}{R^3}$, so:</p>
+                $$g_d = \frac{GM'}{(R-d)^2} = \frac{GM(R-d)}{R^3} = g\,\frac{R-d}{R}$$
+                <div class="deriv-result">$g_d = g\left(1-\dfrac{d}{R}\right)$</div>
+                <p>At the centre $d=R$, giving $g=0$; the decrease with depth is linear.</p>
+            </div>
+
+            <!-- INTERACTIVE: variation of g -->
+            <div class="sim-wrap card interactive-panel">
+                <div class="ip-head">
+                    <span class="ip-tag">Interactive</span>
+                    <h4>How $g$ changes from the centre outward</h4>
+                </div>
+                <p class="ip-desc">Slide a point from the Earth's centre out into space. Inside the Earth $g$ rises
+                    linearly to its surface peak; outside it falls away as the inverse square.</p>
+                <div class="sim-grid">
+                    <div class="sim-controls">
+                        <div class="sim-field">
+                            <label>Position <span class="sim-val" id="gvarPosVal">surface</span></label>
+                            <input type="range" id="gvarPos" min="5" max="300" value="100" step="1" />
+                        </div>
+                        <div class="sim-readouts">
+                            <div class="ro">
+                                <div class="ro-v" id="gvarG">—</div>
+                                <div class="ro-l">$g$ (m/s²)</div>
+                            </div>
+                            <div class="ro">
+                                <div class="ro-v" id="gvarMode" style="font-size:1rem">—</div>
+                                <div class="ro-l">Region</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sim-stage-wrap">
+                        <svg id="gvarStage" viewBox="0 0 460 300" role="img"
+                            aria-label="Graph of g against distance from the Earth's centre">
+                            <defs>
+                                <marker id="gMk" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto">
+                                    <path d="M0 0 L6 3 L0 6 Z" class="gray-fill" /></marker>
+                            </defs>
+                            <line x1="56" y1="250" x2="442" y2="250" class="gray-stroke" stroke-width="1.6"
+                                marker-end="url(#gMk)" />
+                            <line x1="56" y1="250" x2="56" y2="40" class="gray-stroke" stroke-width="1.6"
+                                marker-end="url(#gMk)" />
+                            <text x="432" y="268" class="dgm-label sm">r</text>
+                            <text x="30" y="48" class="dgm-label sm">g</text>
+                            <!-- surface marker at r=R -->
+                            <line x1="181" y1="250" x2="181" y2="46" class="gray-dash" stroke-width="1.3"
+                                stroke-dasharray="4 4" />
+                            <text x="168" y="38" class="dgm-label sm">surface (R)</text>
+                            <text x="50" y="266" class="dgm-label sm">0</text>
+                            <text x="176" y="266" class="dgm-label sm">R</text>
+                            <text x="300" y="266" class="dgm-label sm">2R</text>
+                            <text x="426" y="266" class="dgm-label sm">3R</text>
+                            <text x="30" y="50" class="dgm-label sm">gₛ</text>
+                            <path id="gvarCurve" class="ink-stroke" stroke-width="2.4" fill="none" />
+                            <line id="gvarDropX" class="gray-dash" stroke-width="1.3" stroke-dasharray="4 4" />
+                            <line id="gvarDropY" class="gray-dash" stroke-width="1.3" stroke-dasharray="4 4" />
+                            <circle id="gvarDot" r="6" class="ink-fill" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="sim-eqn" id="gvarEqn"></div>
+            </div>
+
+            <div class="questions" data-section="variation"></div>
+        </section>
+
+        <!-- ===== 4. POTENTIAL ===== -->
+        <section id="potential" class="section">
+            <div class="section-head">
+                <span class="badge">4</span>
+                <div>
+                    <h2>Gravitational Potential &amp; Energy</h2>
+                    <div class="sub">The energy of the field</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <span class="formula">$$V = -\dfrac{GM}{r}, \qquad U = -\dfrac{GMm}{r}$$</span>
+                <ul>
+                    <li><strong>Gravitational potential</strong> $V$ is the work done per unit mass in bringing a
+                        small mass from infinity to that point.</li>
+                    <li><strong>Potential energy</strong> $U = mV$; both are <strong>negative</strong> because the
+                        field is attractive (bound system).</li>
+                    <li>Field and potential are linked by $E = -\dfrac{dV}{dr}$.</li>
+                </ul>
+            </div>
+
+            <!-- DERIVATION -->
+            <div class="card derivation">
+                <h4>Derivation — potential &amp; potential energy</h4>
+                <p class="setup">Bring a unit mass from infinity to a point P a distance $r$ from a mass $M$, moving
+                    against the gravitational pull.</p>
+
+                <p class="step">Step 1 — Work done by the field</p>
+                <p>At distance $x$ the field is $\dfrac{GM}{x^2}$. The potential is the work done by the field on a
+                    unit mass coming from infinity to $r$:</p>
+                $$V = -\int_{\infty}^{r}\frac{GM}{x^2}\,dx = -GM\left[-\frac{1}{x}\right]_{\infty}^{r}$$
+
+                <p class="step">Step 2 — Evaluate</p>
+                $$V = -GM\left(\frac{1}{r}-0\right)$$
+                <div class="deriv-result">$V = -\dfrac{GM}{r}, \qquad U = mV = -\dfrac{GMm}{r}$</div>
+                <p>The work needed to remove the mass $m$ entirely (to infinity) is therefore $+\dfrac{GMm}{r}$.</p>
+            </div>
+
+            <div class="questions" data-section="potential"></div>
+        </section>
+
+        <!-- ===== 5. KEPLER'S LAWS ===== -->
+        <section id="kepler" class="section">
+            <div class="section-head">
+                <span class="badge">5</span>
+                <div>
+                    <h2>Kepler's Laws of Planetary Motion</h2>
+                    <div class="sub">Orbits, areas &amp; periods</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <ul>
+                    <li><strong>1. Law of orbits:</strong> every planet moves in an <strong>ellipse</strong> with the
+                        Sun at one focus.</li>
+                    <li><strong>2. Law of areas:</strong> the line joining a planet to the Sun sweeps out
+                        <strong>equal areas in equal times</strong> — so a planet moves fastest at perihelion and
+                        slowest at aphelion. This is a statement of <strong>conservation of angular
+                            momentum</strong>.</li>
+                    <li><strong>3. Law of periods:</strong> the square of the period is proportional to the cube of
+                        the semi-major axis: <span class="formula">$$T^2 \propto a^3$$</span></li>
+                </ul>
+                <div class="callout">Areal velocity $\dfrac{dA}{dt}=\dfrac{L}{2m}=\text{constant}$, since gravity is a
+                    central force exerting no torque about the Sun.</div>
+            </div>
+
+            <!-- DIAGRAM: ellipse with equal areas -->
+            <div class="diagram">
+                <svg viewBox="0 0 420 300" role="img"
+                    aria-label="Elliptical orbit with the Sun at a focus and two equal swept areas">
+                    <ellipse cx="210" cy="150" rx="150" ry="100" class="gray-dash" stroke-width="1.6"
+                        stroke-dasharray="4 6" />
+                    <!-- Sun at left focus -->
+                    <circle cx="98" cy="150" r="13" class="ink-fill" />
+                    <text x="98" y="178" text-anchor="middle" class="dgm-label sm">Sun</text>
+                    <!-- equal areas: fat near perihelion (left), thin near aphelion (right) -->
+                    <path d="M 98 150 L 80 200 A 150 100 0 0 1 60 150 A 150 100 0 0 1 80 100 Z" class="shade-2" />
+                    <path d="M 98 150 L 355 176 A 150 100 0 0 0 360 150 A 150 100 0 0 0 355 124 Z"
+                        class="shade-2" />
+                    <text x="70" y="150" text-anchor="middle" class="dgm-label sm">A₁</text>
+                    <text x="330" y="150" text-anchor="middle" class="dgm-label sm">A₂</text>
+                    <!-- planet animating along the ellipse -->
+                    <g>
+                        <animateMotion dur="11s" repeatCount="indefinite"
+                            path="M 60 150 a 150 100 0 1 0 300 0 a 150 100 0 1 0 -300 0" />
+                        <circle r="8" class="ink-fill" />
+                    </g>
+                </svg>
+                <div class="legend">
+                    <span>Equal areas $A_1 = A_2$ are swept in equal times — fast near the Sun, slow far away</span>
+                </div>
+            </div>
+
+            <!-- DERIVATION: 3rd law -->
+            <div class="card derivation">
+                <h4>Derivation — Kepler's third law (circular orbit)</h4>
+                <p class="setup">For a planet of mass $m$ in a circular orbit of radius $r$ about the Sun (mass $M$),
+                    gravity supplies the centripetal force.</p>
+
+                <p class="step">Step 1 — Balance the forces</p>
+                $$\frac{GMm}{r^2} = m\omega^2 r = m\left(\frac{2\pi}{T}\right)^2 r$$
+
+                <p class="step">Step 2 — Solve for $T^2$</p>
+                $$\frac{GM}{r^2} = \frac{4\pi^2 r}{T^2}
+                \;\;\Rightarrow\;\; T^2 = \frac{4\pi^2}{GM}\,r^3$$
+                <div class="deriv-result">$T^2 = \dfrac{4\pi^2}{GM}\,r^3 \;\Rightarrow\; T^2 \propto r^3$</div>
+            </div>
+
+            <div class="questions" data-section="kepler"></div>
+        </section>
+
+        <!-- ===== 6. SATELLITE DYNAMICS ===== -->
+        <section id="satellite" class="section">
+            <div class="section-head">
+                <span class="badge">6</span>
+                <div>
+                    <h2>Satellite Dynamics</h2>
+                    <div class="sub">Orbital velocity, period &amp; geostationary orbits</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <span class="formula">$$v_o = \sqrt{\dfrac{GM}{r}} = \sqrt{\dfrac{gR^2}{R+h}}, \qquad
+                    T = 2\pi\sqrt{\dfrac{r^3}{GM}}$$</span>
+                <ul>
+                    <li>Close to the surface ($h\approx0$): $v_o=\sqrt{gR}\approx7.9\,$km/s, $T\approx84\,$min.</li>
+                    <li>Orbital velocity is <strong>independent of the satellite's mass</strong>.</li>
+                    <li>Total energy $E = -\dfrac{GMm}{2r}$ (negative → bound).</li>
+                </ul>
+                <div class="callout"><strong>Geostationary satellite:</strong> period $=24\,$h, orbiting
+                    <strong>west → east</strong> in the <strong>equatorial plane</strong> at a height of about
+                    $35{,}786\,$km, so it appears fixed in the sky — ideal for communication.</div>
+            </div>
+
+            <!-- DERIVATION: orbital velocity -->
+            <div class="card derivation">
+                <h4>Derivation — orbital velocity &amp; period</h4>
+                <p class="setup">A satellite of mass $m$ moves in a circular orbit of radius $r=R+h$; gravity
+                    provides the centripetal force.</p>
+                <p class="step">Step 1 — Centripetal balance</p>
+                $$\frac{GMm}{r^2} = \frac{mv_o^2}{r} \;\;\Rightarrow\;\; v_o = \sqrt{\frac{GM}{r}}$$
+                <p class="step">Step 2 — Using $GM=gR^2$</p>
+                <div class="deriv-result">$v_o = \sqrt{\dfrac{gR^2}{R+h}}\;\xrightarrow{h\to0}\;\sqrt{gR}$</div>
+                <p class="step">Step 3 — Period</p>
+                $$T = \frac{2\pi r}{v_o} = 2\pi\sqrt{\frac{r^3}{GM}}$$
+            </div>
+
+            <!-- INTERACTIVE: satellite orbit -->
+            <div class="sim-wrap card interactive-panel">
+                <div class="ip-head">
+                    <span class="ip-tag">Interactive</span>
+                    <h4>Satellite orbit simulator</h4>
+                </div>
+                <p class="ip-desc">Raise the orbit and watch the satellite slow down and take longer to circle the
+                    Earth. Find the special altitude (~35,786 km) where the period hits 24 hours — a geostationary
+                    orbit.</p>
+                <div class="sim-grid">
+                    <div class="sim-controls">
+                        <div class="sim-field">
+                            <label>Altitude <span class="sim-val" id="orbitAltVal">500 km</span></label>
+                            <input type="range" id="orbitAlt" min="200" max="40000" value="500" step="100" />
+                        </div>
+                        <div class="sim-readouts">
+                            <div class="ro">
+                                <div class="ro-v" id="orbitV">—</div>
+                                <div class="ro-l">Orbital velocity (km/s)</div>
+                            </div>
+                            <div class="ro">
+                                <div class="ro-v" id="orbitT" style="font-size:1.25rem">—</div>
+                                <div class="ro-l">Period $T$</div>
+                            </div>
+                        </div>
+                        <div class="orbit-status" id="orbitStatus"></div>
+                    </div>
+                    <div class="sim-stage-wrap">
+                        <svg id="orbitStage" viewBox="0 0 460 360" role="img"
+                            aria-label="A satellite orbiting the Earth">
+                            <circle id="orbitGeo" cx="230" cy="180" class="gray-dash" stroke-width="1.2"
+                                stroke-dasharray="2 7" fill="none" />
+                            <circle id="orbitPath" cx="230" cy="180" r="120" class="gray-dash" stroke-width="1.5"
+                                stroke-dasharray="4 6" fill="none" />
+                            <circle cx="230" cy="180" r="46" class="shade-2" />
+                            <circle cx="230" cy="180" r="46" class="ink-stroke" stroke-width="2" />
+                            <ellipse cx="230" cy="180" rx="46" ry="16" class="gray-stroke" stroke-width="1.2"
+                                fill="none" />
+                            <text x="230" y="184" text-anchor="middle" class="dgm-label">Earth</text>
+                            <circle id="satellite" cx="350" cy="180" r="7" class="ink-fill" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="sim-eqn" id="orbitEqn"></div>
+            </div>
+
+            <div class="questions" data-section="satellite"></div>
+        </section>
+
+        <!-- ===== 7. ESCAPE VELOCITY ===== -->
+        <section id="escape" class="section">
+            <div class="section-head">
+                <span class="badge">7</span>
+                <div>
+                    <h2>Escape Velocity</h2>
+                    <div class="sub">The speed to break free of gravity</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <span class="formula">$$v_e = \sqrt{\dfrac{2GM}{R}} = \sqrt{2gR} = \sqrt{2}\,v_o$$</span>
+                <ul>
+                    <li>For Earth, $v_e\approx11.2\,$km/s — about $\sqrt2$ times the surface orbital speed.</li>
+                    <li>Escape velocity is <strong>independent of the mass</strong> and direction of projection of
+                        the body.</li>
+                    <li>It depends only on the planet's mass $M$ and radius $R$.</li>
+                </ul>
+            </div>
+
+            <!-- DERIVATION: escape velocity -->
+            <div class="card derivation">
+                <h4>Derivation — escape velocity</h4>
+                <p class="setup">A body of mass $m$ is thrown up from the surface so that it just reaches infinity
+                    with zero speed. Use conservation of energy.</p>
+                <p class="step">Step 1 — Energy at the surface = energy at infinity</p>
+                <p>Total energy at launch must be zero (it just escapes, arriving at infinity with $v=0$, $U=0$):</p>
+                $$\frac{1}{2}mv_e^2 + \left(-\frac{GMm}{R}\right) = 0$$
+                <p class="step">Step 2 — Solve for $v_e$</p>
+                $$\frac{1}{2}mv_e^2 = \frac{GMm}{R} \;\;\Rightarrow\;\; v_e = \sqrt{\frac{2GM}{R}}$$
+                <p class="step">Step 3 — In terms of $g$ and $v_o$</p>
+                <div class="deriv-result">$v_e = \sqrt{2gR} = \sqrt{2}\,v_o$</div>
+            </div>
+
+            <!-- INTERACTIVE: escape velocity -->
+            <div class="sim-wrap card interactive-panel">
+                <div class="ip-head">
+                    <span class="ip-tag">Interactive</span>
+                    <h4>Escape velocity across the Solar System</h4>
+                </div>
+                <p class="ip-desc">Pick a world and see how fast you must launch to break free. A tiny Moon needs
+                    just 2.4 km/s, while the mighty Sun demands over 600 km/s.</p>
+                <div class="sim-grid">
+                    <div class="sim-controls">
+                        <div class="sim-field">
+                            <label>Choose a body</label>
+                            <div class="g-pills">
+                                <button class="g-pill planet-pill active" data-planet="Earth">Earth</button>
+                                <button class="g-pill planet-pill" data-planet="Moon">Moon</button>
+                                <button class="g-pill planet-pill" data-planet="Mars">Mars</button>
+                                <button class="g-pill planet-pill" data-planet="Jupiter">Jupiter</button>
+                                <button class="g-pill planet-pill" data-planet="Sun">Sun</button>
+                            </div>
+                        </div>
+                        <div class="sim-readouts">
+                            <div class="ro">
+                                <div class="ro-v" id="escVe">—</div>
+                                <div class="ro-l">Escape velocity (km/s)</div>
+                            </div>
+                            <div class="ro">
+                                <div class="ro-v" id="escVo">—</div>
+                                <div class="ro-l">Orbital velocity (km/s)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sim-stage-wrap">
+                        <svg id="escStage" viewBox="0 0 460 300" role="img"
+                            aria-label="A body launching to escape a planet, with an escape-velocity gauge">
+                            <defs>
+                                <marker id="eMk" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                                    <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                            </defs>
+                            <!-- gauge -->
+                            <text x="160" y="56" class="dgm-label sm">escape-velocity scale (Sun ≈ 620 km/s)</text>
+                            <rect x="160" y="66" width="250" height="18" rx="9" class="shade-2" />
+                            <rect id="escBar" x="160" y="66" width="40" height="18" rx="9" class="ink-fill" />
+                            <!-- planet + launching body -->
+                            <circle id="escPlanet" cx="110" cy="250" r="40" class="shade-2" />
+                            <circle cx="110" cy="250" r="40" class="ink-stroke" stroke-width="2" />
+                            <line x1="110" y1="210" x2="110" y2="150" class="gray-dash" stroke-width="1.3"
+                                stroke-dasharray="4 4" marker-end="url(#eMk)" />
+                            <circle id="escBall" cx="110" cy="250" r="7" class="ink-fill" />
+                            <text x="120" y="150" class="dgm-label sm">vₑ</text>
+                        </svg>
+                    </div>
+                </div>
+                <div class="sim-eqn" id="escEqn"></div>
+            </div>
+
+            <div class="questions" data-section="escape"></div>
+        </section>
+
+        <!-- ===== 8. GPS ===== -->
+        <section id="gps" class="section">
+            <div class="section-head">
+                <span class="badge">8</span>
+                <div>
+                    <h2>Practical Application — GPS</h2>
+                    <div class="sub">Gravitation &amp; satellites at work</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">The <strong>Global Positioning System</strong> is a constellation of about 24–31
+                    satellites in ~20,200 km orbits (period ≈ 12 h), each carrying an atomic clock and broadcasting
+                    its position and time.</p>
+                <ul>
+                    <li>A receiver measures the <strong>travel time</strong> of each signal to find its
+                        <strong>distance</strong> from that satellite ($d = c\times t$).</li>
+                    <li>Distances from <strong>three</strong> satellites fix the position by
+                        <strong>trilateration</strong>; a <strong>fourth</strong> corrects the receiver's clock.</li>
+                    <li>The satellites' orbits obey exactly the gravitation laws of this chapter — and
+                        <strong>relativistic corrections</strong> (special + general) are applied to keep the clocks
+                        accurate to nanoseconds.</li>
+                </ul>
+                <div class="callout tip">Without relativistic clock corrections, GPS positions would drift by
+                    several kilometres per day — a direct everyday consequence of gravity affecting time.</div>
+            </div>
+
+            <!-- DIAGRAM: trilateration -->
+            <div class="diagram">
+                <svg viewBox="0 0 420 280" role="img"
+                    aria-label="GPS trilateration from three satellites to a receiver">
+                    <!-- receiver -->
+                    <circle cx="210" cy="200" r="5" class="ink-fill" />
+                    <text x="210" y="222" text-anchor="middle" class="dgm-label sm">receiver</text>
+                    <!-- three satellites + range circles -->
+                    <g class="gray-dash" stroke-width="1.4" fill="none">
+                        <circle cx="90" cy="70" r="150" stroke-dasharray="4 6">
+                            <animate attributeName="r" values="150;156;150" dur="3s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="330" cy="80" r="150" stroke-dasharray="4 6">
+                            <animate attributeName="r" values="150;156;150" dur="3s" begin="1s"
+                                repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="240" cy="300" r="120" stroke-dasharray="4 6">
+                            <animate attributeName="r" values="120;126;120" dur="3s" begin="2s"
+                                repeatCount="indefinite" />
+                        </circle>
+                    </g>
+                    <g class="ink-fill">
+                        <rect x="80" y="60" width="20" height="20" rx="3" />
+                        <rect x="320" y="70" width="20" height="20" rx="3" />
+                        <rect x="230" y="290" width="20" height="20" rx="3" />
+                    </g>
+                    <text x="74" y="52" class="dgm-label sm">S₁</text>
+                    <text x="344" y="64" class="dgm-label sm">S₂</text>
+                    <text x="256" y="300" class="dgm-label sm">S₃</text>
+                </svg>
+                <div class="legend">
+                    <span>Three ranging spheres intersect at the receiver; a fourth satellite fixes the clock</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="gps"></div>
+        </section>
+
+        <!-- ===== HIGH YIELD ===== -->
+        <section id="highyield" class="section">
+            <div class="section-head">
+                <span class="badge">★</span>
+                <div>
+                    <h2>High-Yield Points</h2>
+                    <div class="sub">Quick revision</div>
+                </div>
+            </div>
+
+            <div class="hy-grid">
+                <div class="hy-item"><span class="dot"></span>
+                    <div>$F=\dfrac{Gm_1m_2}{r^2}$, with $G=6.67\times10^{-11}$ and dimensions
+                        $[M^{-1}L^3T^{-2}]$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>$g=\dfrac{GM}{R^2}$ and $GM=gR^2$; $g$ is independent of the falling body's mass.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>With height $g_h\approx g(1-\tfrac{2h}{R})$; with depth $g_d=g(1-\tfrac{d}{R})$; zero at the
+                        centre.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Potential $V=-\dfrac{GM}{r}$, energy $U=-\dfrac{GMm}{r}$ — both negative (bound).</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Kepler: ellipse · equal areas (angular momentum) · $T^2\propto r^3$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Orbital velocity $v_o=\sqrt{\dfrac{GM}{r}}$, near surface $\approx7.9\,$km/s; total energy
+                        $-\dfrac{GMm}{2r}$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Geostationary: $T=24\,$h, equatorial, west→east, height $\approx35{,}786\,$km.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Escape velocity $v_e=\sqrt{2gR}=\sqrt2\,v_o\approx11.2\,$km/s — independent of body
+                        mass.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        Gravitation · Interactive black &amp; white notes with live simulators (inverse-square force, variation of
+        g, satellite orbits, escape velocity), dynamic diagrams and full derivations. 22 IOE exam-asked questions
+        spanning 2076–2082.
+    </footer>
+
+    <button class="to-top" id="toTop" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+    </button>
+
+    <script src="js/questions.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
