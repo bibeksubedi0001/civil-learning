@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elasticity · Interactive Physics</title>
+    <meta name="description"
+        content="Black & white interactive notes on Elasticity — stress, strain, Hooke's law, the stress–strain curve, Young's / bulk / rigidity moduli, elastic potential energy and Poisson's ratio — with dynamic SVG diagrams, full derivations and 22 exam-style past questions (2074–2082) plus 5 higher-order challenge questions." />
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+
+    <!-- ============ HEADER ============ -->
+    <header class="site-header">
+        <div class="brand">
+            <span class="logo">
+                <i></i>
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M2 12h2.5l2-5 3 10 3-10 3 10 2-5H21" stroke="currentColor" stroke-width="2"
+                        stroke-linejoin="round" stroke-linecap="round" />
+                </svg>
+            </span>
+            <span>Elasticity
+                <small>Chapter 12 · Interactive Notes</small>
+            </span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="themeBtn" aria-label="Invert black / white" title="Invert black / white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
+                </svg>
+            </button>
+        </div>
+    </header>
+    <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- ============ MAIN ============ -->
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section id="intro" class="hero">
+            <div class="hero-inner">
+                <div class="hero-copy">
+                    <span class="eyebrow">Chapter 12 · Mechanics</span>
+                    <h1><span class="spin-word">Elasticity</span></h1>
+                    <p>The property by which a body regains its original shape and size after the deforming force
+                        is removed. Explore stress, strain, Hooke's law and the elastic moduli with live diagrams
+                        and full derivations, then test yourself with past questions.</p>
+                </div>
+
+                <!-- HERO DYNAMIC SVG: a wire fixed at the top, stretched by a hanging load -->
+                <svg class="hero-illus" viewBox="0 0 340 340" role="img"
+                    aria-label="A wire fixed at the top and stretched by a hanging load">
+                    <defs>
+                        <marker id="mkh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- rigid ceiling + hatching -->
+                    <line x1="60" y1="66" x2="280" y2="66" class="ink-stroke" stroke-width="5"
+                        stroke-linecap="round" />
+                    <g class="gray-stroke" stroke-width="1.6">
+                        <line x1="72" y1="66" x2="62" y2="55" />
+                        <line x1="96" y1="66" x2="86" y2="55" />
+                        <line x1="120" y1="66" x2="110" y2="55" />
+                        <line x1="144" y1="66" x2="134" y2="55" />
+                        <line x1="168" y1="66" x2="158" y2="55" />
+                        <line x1="192" y1="66" x2="182" y2="55" />
+                        <line x1="216" y1="66" x2="206" y2="55" />
+                        <line x1="240" y1="66" x2="230" y2="55" />
+                        <line x1="264" y1="66" x2="254" y2="55" />
+                    </g>
+                    <!-- original length guide -->
+                    <line x1="112" y1="66" x2="112" y2="196" class="gray-dash" stroke-width="1.3"
+                        stroke-dasharray="4 4" />
+                    <text x="92" y="136" class="dgm-label sm">l</text>
+                    <!-- wire (stretches) -->
+                    <line x1="170" y1="66" x2="170" y2="196" class="ink-stroke" stroke-width="2.4">
+                        <animate attributeName="y2" values="196;220;196" dur="3.4s" repeatCount="indefinite" />
+                    </line>
+                    <!-- hanging load -->
+                    <rect x="146" y="196" width="48" height="44" rx="4" class="ink-fill">
+                        <animate attributeName="y" values="196;220;196" dur="3.4s" repeatCount="indefinite" />
+                    </rect>
+                    <!-- weight force -->
+                    <line x1="170" y1="250" x2="170" y2="298" class="ink-stroke" stroke-width="2.4"
+                        marker-end="url(#mkh)">
+                        <animate attributeName="y1" values="250;274;250" dur="3.4s" repeatCount="indefinite" />
+                        <animate attributeName="y2" values="298;322;298" dur="3.4s" repeatCount="indefinite" />
+                    </line>
+                    <text x="180" y="284" class="dgm-label">F</text>
+                    <!-- extension marker -->
+                    <text x="214" y="214" class="dgm-label sm">Δl</text>
+                </svg>
+            </div>
+        </section>
+
+        <!-- ===== 1. ELASTICITY & PLASTICITY ===== -->
+        <section id="basics" class="section">
+            <div class="section-head">
+                <span class="badge">1</span>
+                <div>
+                    <h2>Elasticity &amp; Plasticity</h2>
+                    <div class="sub">Elastic bodies, plastic bodies &amp; rigid bodies</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead"><strong>Elasticity</strong> is the property of a body by virtue of which it
+                    regains its original configuration (shape and size) after the removal of the deforming force.
+                    It arises due to the <em>cohesive force</em> between molecules.</p>
+                <ul>
+                    <li>Bodies that show elasticity are <strong>elastic bodies</strong>. Quartz and phosphor
+                        bronze are nearly perfect elastic bodies.</li>
+                    <li><strong>Plasticity</strong> is the property by which a body does <em>not</em> regain its
+                        original configuration on removal of the deforming force. Putty, mud and paraffin wax are
+                        nearly perfect <strong>plastic bodies</strong>.</li>
+                    <li>A <strong>rigid body</strong> is one in which the distance between any two particles always
+                        remains the same — no external force can deform it. Diamond is the most rigid body.</li>
+                </ul>
+                <div class="callout">The <strong>elastic after effect</strong> is the delay in regaining the
+                    original configuration after the deforming force is removed. Glass has the maximum, while
+                    quartz and phosphor bronze have the minimum elastic after effect.</div>
+            </div>
+
+            <!-- ELASTIC vs PLASTIC comparison -->
+            <div class="diagram">
+                <svg viewBox="0 0 480 240" role="img"
+                    aria-label="An elastic body regains its shape while a plastic body stays deformed after the force is removed">
+                    <defs>
+                        <marker id="mk1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+
+                    <!-- divider -->
+                    <line x1="240" y1="26" x2="240" y2="214" class="gray-dash" stroke-width="1.2"
+                        stroke-dasharray="4 5" />
+
+                    <!-- ===== ELASTIC (left) ===== -->
+                    <text x="120" y="34" text-anchor="middle" class="dgm-label">ELASTIC</text>
+                    <!-- original shape (dashed reference) -->
+                    <circle cx="120" cy="150" r="33" class="gray-dash" stroke-width="1.4"
+                        stroke-dasharray="4 4" />
+                    <!-- deforming ball: squashes under the force and springs back -->
+                    <ellipse cx="120" cy="150" rx="33" ry="33" class="shade-2 ink-stroke" stroke-width="2">
+                        <animate attributeName="ry" values="33;20;33" dur="3s" repeatCount="indefinite" />
+                        <animate attributeName="cy" values="150;163;150" dur="3s" repeatCount="indefinite" />
+                        <animate attributeName="rx" values="33;41;33" dur="3s" repeatCount="indefinite" />
+                    </ellipse>
+                    <!-- force pressing down (fades in while the ball is squashed) -->
+                    <line x1="120" y1="90" x2="120" y2="114" class="ink-stroke" stroke-width="2.4"
+                        marker-end="url(#mk1)">
+                        <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite" />
+                    </line>
+                    <text x="131" y="104" class="dgm-label sm">F</text>
+                    <!-- ground -->
+                    <line x1="48" y1="184" x2="192" y2="184" class="ink-stroke" stroke-width="2.4" />
+                    <g class="gray-stroke" stroke-width="1.3">
+                        <line x1="60" y1="192" x2="52" y2="184" />
+                        <line x1="84" y1="192" x2="76" y2="184" />
+                        <line x1="108" y1="192" x2="100" y2="184" />
+                        <line x1="132" y1="192" x2="124" y2="184" />
+                        <line x1="156" y1="192" x2="148" y2="184" />
+                        <line x1="180" y1="192" x2="172" y2="184" />
+                    </g>
+                    <text x="120" y="210" text-anchor="middle" class="dgm-label sm">regains its shape ✓</text>
+
+                    <!-- ===== PLASTIC (right) ===== -->
+                    <text x="360" y="34" text-anchor="middle" class="dgm-label">PLASTIC</text>
+                    <!-- original shape (dashed reference) -->
+                    <circle cx="360" cy="150" r="33" class="gray-dash" stroke-width="1.4"
+                        stroke-dasharray="4 4" />
+                    <!-- permanently flattened lump (does not return) -->
+                    <path d="M 316 184 C 316 166 330 157 360 157 C 392 157 404 168 404 184 Z"
+                        class="shade-3 ink-stroke" stroke-width="2" />
+                    <!-- ground -->
+                    <line x1="288" y1="184" x2="432" y2="184" class="ink-stroke" stroke-width="2.4" />
+                    <g class="gray-stroke" stroke-width="1.3">
+                        <line x1="300" y1="192" x2="292" y2="184" />
+                        <line x1="324" y1="192" x2="316" y2="184" />
+                        <line x1="348" y1="192" x2="340" y2="184" />
+                        <line x1="372" y1="192" x2="364" y2="184" />
+                        <line x1="396" y1="192" x2="388" y2="184" />
+                        <line x1="420" y1="192" x2="412" y2="184" />
+                    </g>
+                    <text x="360" y="210" text-anchor="middle" class="dgm-label sm">stays deformed ✗</text>
+                </svg>
+                <div class="legend">
+                    <span>Dashed outline = original shape · solid = body after the force is removed</span>
+                    <span>An <b>elastic</b> body springs back; a <b>plastic</b> body keeps the new shape</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="basics"></div>
+        </section>
+
+        <!-- ===== 2. STRESS ===== -->
+        <section id="stress" class="section">
+            <div class="section-head">
+                <span class="badge">2</span>
+                <div>
+                    <h2>Stress</h2>
+                    <div class="sub">Restoring force per unit area</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">When a body is deformed by an external force, a <strong>restoring force</strong>
+                    develops inside it. The restoring force per unit area is called <strong>stress</strong>. As
+                    the restoring force is equal and opposite to the deforming force:</p>
+                <span class="formula">$$\text{Stress}=\dfrac{\text{Restoring force}}{\text{Cross-sectional area}}
+                    =\dfrac{\text{Deforming force}}{\text{Cross-sectional area}}$$</span>
+                <p>Its SI unit is $\text{N m}^{-2}$ (pascal) and its dimensional formula is $[ML^{-1}T^{-2}]$.
+                    There are three types of stress:</p>
+                <div class="chip-list">
+                    <span class="chip">Normal stress $=\dfrac{F_{\text{normal}}}{A}$</span>
+                    <span class="chip">Shear stress $=\dfrac{F_{\parallel}}{A}$</span>
+                    <span class="chip">Volumetric stress $=\dfrac{F_{\perp}}{A}$</span>
+                </div>
+                <ul>
+                    <li><strong>Normal stress</strong> — deforming force acts normally (perpendicular) to the
+                        surface. It is of two kinds: <em>tensile</em> (stretching) and <em>compressive</em>.</li>
+                    <li><strong>Tangential (shear) stress</strong> — deforming force acts parallel to the surface,
+                        changing the shape without changing the volume.</li>
+                    <li><strong>Volumetric stress</strong> — force acts perpendicular to every point of the
+                        surface, changing the volume without changing the shape.</li>
+                </ul>
+            </div>
+
+            <!-- THREE TYPES OF STRESS -->
+            <div class="diagram">
+                <svg viewBox="0 0 480 190" role="img" aria-label="Tensile, shear and volumetric stress">
+                    <defs>
+                        <marker id="mk2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- (a) tensile -->
+                    <rect x="55" y="70" width="50" height="46" class="shade-1 ink-stroke" stroke-width="1.6" />
+                    <line x1="55" y1="93" x2="14" y2="93" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk2)" />
+                    <line x1="105" y1="93" x2="146" y2="93" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk2)" />
+                    <text x="60" y="150" class="dgm-label sm">(a) tensile</text>
+
+                    <!-- (b) shear -->
+                    <rect x="205" y="70" width="52" height="46" class="shade-1 ink-stroke" stroke-width="1.6" />
+                    <line x1="205" y1="70" x2="265" y2="70" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk2)" />
+                    <line x1="257" y1="116" x2="197" y2="116" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk2)" />
+                    <text x="210" y="150" class="dgm-label sm">(b) shear</text>
+
+                    <!-- (c) volumetric -->
+                    <rect x="370" y="70" width="46" height="46" class="shade-1 ink-stroke" stroke-width="1.6" />
+                    <line x1="393" y1="40" x2="393" y2="66" class="ink-stroke" stroke-width="2" marker-end="url(#mk2)" />
+                    <line x1="393" y1="146" x2="393" y2="120" class="ink-stroke" stroke-width="2" marker-end="url(#mk2)" />
+                    <line x1="336" y1="93" x2="366" y2="93" class="ink-stroke" stroke-width="2" marker-end="url(#mk2)" />
+                    <line x1="450" y1="93" x2="420" y2="93" class="ink-stroke" stroke-width="2" marker-end="url(#mk2)" />
+                    <text x="360" y="150" class="dgm-label sm">(c) volumetric</text>
+                </svg>
+                <div class="legend">
+                    <span><b>(a)</b> forces normal &amp; outward — stretch</span>
+                    <span><b>(b)</b> forces parallel — change of shape</span>
+                    <span><b>(c)</b> forces inward on all faces — change of volume</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="stress"></div>
+        </section>
+
+        <!-- ===== 3. STRAIN ===== -->
+        <section id="strain" class="section">
+            <div class="section-head">
+                <span class="badge">3</span>
+                <div>
+                    <h2>Strain</h2>
+                    <div class="sub">The measure of deformation</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead"><strong>Strain</strong> is the ratio of the change in configuration to the
+                    initial configuration. Being a ratio of like quantities, it is <em>dimensionless</em> and has
+                    no unit.</p>
+                <span class="formula">$$\text{Strain}=\dfrac{\text{Change in configuration}}
+                    {\text{Initial configuration}}$$</span>
+                <p>There are three types of strain:</p>
+                <ul>
+                    <li><strong>Longitudinal strain</strong> — change in length per unit original length:
+                        <span class="formula">$$\text{Longitudinal strain}=\dfrac{\Delta l}{l}$$</span>
+                    </li>
+                    <li><strong>Volumetric strain</strong> — change in volume per unit original volume:
+                        <span class="formula">$$\text{Volumetric strain}=\dfrac{\Delta V}{V}$$</span>
+                    </li>
+                    <li><strong>Shearing strain</strong> — the angular measure $\phi$ of how much a body is
+                        distorted by a shear force:
+                        <span class="formula">$$\text{Shearing strain}=\phi=\dfrac{\Delta l}{l}$$</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- SHEARING STRAIN -->
+            <div class="diagram">
+                <svg viewBox="0 0 320 240" role="img" aria-label="Shearing strain of a block">
+                    <defs>
+                        <marker id="mk3" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- fixed base + hatching -->
+                    <line x1="60" y1="200" x2="230" y2="200" class="ink-stroke" stroke-width="3" />
+                    <g class="gray-stroke" stroke-width="1.4">
+                        <line x1="70" y1="212" x2="60" y2="200" />
+                        <line x1="94" y1="212" x2="84" y2="200" />
+                        <line x1="118" y1="212" x2="108" y2="200" />
+                        <line x1="142" y1="212" x2="132" y2="200" />
+                        <line x1="166" y1="212" x2="156" y2="200" />
+                        <line x1="190" y1="212" x2="180" y2="200" />
+                        <line x1="214" y1="212" x2="204" y2="200" />
+                    </g>
+                    <!-- original block (dashed) -->
+                    <rect x="80" y="80" width="140" height="120" class="gray-dash" stroke-width="1.3"
+                        stroke-dasharray="4 4" />
+                    <!-- sheared block (solid parallelogram) -->
+                    <polygon points="80,200 220,200 250,80 110,80" class="shade-1 ink-stroke" stroke-width="2" />
+                    <!-- tangential force at top -->
+                    <line x1="150" y1="70" x2="230" y2="70" class="ink-stroke" stroke-width="2.4"
+                        marker-end="url(#mk3)" />
+                    <text x="236" y="74" class="dgm-label">F</text>
+                    <!-- Δl at top -->
+                    <line x1="80" y1="80" x2="110" y2="80" class="gray-stroke" stroke-width="1.4"
+                        stroke-dasharray="3 3" />
+                    <text x="84" y="70" class="dgm-label sm">Δl</text>
+                    <!-- length l on left -->
+                    <text x="60" y="145" class="dgm-label sm">l</text>
+                    <!-- shear angle φ at base-left -->
+                    <path d="M 80 200 A 40 40 0 0 0 96 172" class="gray-stroke" stroke-width="1.4" fill="none" />
+                    <text x="96" y="188" class="dgm-label">φ</text>
+                </svg>
+                <div class="legend">
+                    <span>A tangential force tilts the block through the shearing angle
+                        $\phi=\dfrac{\Delta l}{l}$</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="strain"></div>
+        </section>
+
+        <!-- ===== 4. HOOKE'S LAW & STRESS–STRAIN CURVE ===== -->
+        <section id="hooke" class="section">
+            <div class="section-head">
+                <span class="badge">4</span>
+                <div>
+                    <h2>Hooke's Law &amp; Stress–Strain Curve</h2>
+                    <div class="sub">Proportionality, elastic limit &amp; fracture</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead"><strong>Hooke's law:</strong> within a certain limit, stress is directly
+                    proportional to strain.</p>
+                <span class="formula">$$\text{Stress}\propto\text{Strain}\;\Rightarrow\;
+                    \text{Stress}=E\times\text{Strain}\;\Rightarrow\;E=\dfrac{\text{Stress}}{\text{Strain}}$$</span>
+                <p>where $E$ is the proportionality constant called the <strong>modulus of elasticity</strong>.</p>
+                <ul>
+                    <li>Point <strong>a</strong> — <em>proportionality limit</em>: the region $oa$ is a straight
+                        line and follows Hooke's law.</li>
+                    <li>Point <strong>b</strong> — <em>elastic limit</em>: up to here the wire regains its
+                        original length. Beyond it, plastic behaviour is seen and the wire does not return.</li>
+                    <li>Point <strong>d</strong> — <em>fracture (breaking) point</em>: the wire breaks here.</li>
+                </ul>
+                <div class="callout tip"><strong>Brittle</strong> substances (glass, cast-iron) have a short
+                    plastic range and break near the elastic limit. <strong>Ductile</strong> substances (iron,
+                    copper, aluminium, silver) have a large plastic range and are used to make wires.</div>
+            </div>
+
+            <!-- STRESS–STRAIN CURVE -->
+            <div class="diagram">
+                <svg viewBox="0 0 380 300" role="img" aria-label="Stress versus strain curve">
+                    <defs>
+                        <marker id="mk4" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- axes -->
+                    <line x1="60" y1="255" x2="60" y2="35" class="ink-stroke" stroke-width="2"
+                        marker-end="url(#mk4)" />
+                    <line x1="60" y1="255" x2="350" y2="255" class="ink-stroke" stroke-width="2"
+                        marker-end="url(#mk4)" />
+                    <text x="18" y="60" class="dgm-label sm">Stress</text>
+                    <text x="300" y="278" class="dgm-label sm">Strain</text>
+                    <text x="48" y="270" class="dgm-label sm">O</text>
+                    <!-- the curve -->
+                    <path d="M60 255 L165 105 L200 88 C232 74 268 92 320 60" class="ink-stroke" stroke-width="2.6"
+                        fill="none" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100">
+                        <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2.6s" fill="freeze" />
+                    </path>
+                    <!-- proportional / elastic dashed guides -->
+                    <line x1="165" y1="105" x2="165" y2="255" class="gray-dash" stroke-width="1.1"
+                        stroke-dasharray="3 4" />
+                    <!-- key points -->
+                    <circle cx="165" cy="105" r="4" class="ink-fill" />
+                    <text x="150" y="98" class="dgm-label">a</text>
+                    <circle cx="200" cy="88" r="4" class="ink-fill" />
+                    <text x="196" y="80" class="dgm-label">b</text>
+                    <circle cx="320" cy="60" r="4.5" class="ink-fill" />
+                    <text x="326" y="58" class="dgm-label">d</text>
+                    <!-- region labels -->
+                    <text x="86" y="200" class="dgm-label sm">Elastic</text>
+                    <text x="232" y="140" class="dgm-label sm">Plastic</text>
+                </svg>
+                <div class="legend">
+                    <span><b>oa</b> obeys Hooke's law</span>
+                    <span><b>b</b> elastic limit</span>
+                    <span><b>d</b> fracture point</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="hooke"></div>
+        </section>
+
+        <!-- ===== 5. MODULI OF ELASTICITY ===== -->
+        <section id="moduli" class="section">
+            <div class="section-head">
+                <span class="badge">5</span>
+                <div>
+                    <h2>Moduli of Elasticity</h2>
+                    <div class="sub">Young's, bulk &amp; rigidity</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">The modulus of elasticity $E=\dfrac{\text{stress}}{\text{strain}}$ takes three
+                    forms depending on the kind of deformation:</p>
+                <ul>
+                    <li><strong>Young's modulus</strong> — normal stress to longitudinal strain:
+                        <span class="formula">$$Y=\dfrac{\text{Normal stress}}{\text{Longitudinal strain}}
+                            =\dfrac{F/A}{\Delta l/l}=\dfrac{Fl}{A\,\Delta l}$$</span>
+                    </li>
+                    <li><strong>Bulk modulus</strong> — normal stress to volumetric strain:
+                        <span class="formula">$$K=\dfrac{\text{Normal stress}}{\text{Volumetric strain}}
+                            =\dfrac{F/A}{\Delta V/V}$$</span>
+                    </li>
+                    <li><strong>Modulus of rigidity</strong> — tangential stress to shearing strain:
+                        <span class="formula">$$\eta=\dfrac{\text{Tangential stress}}{\text{Shearing strain}}
+                            =\dfrac{F/A}{\phi}$$</span>
+                    </li>
+                </ul>
+                <div class="callout">For a gas the bulk modulus has two values: <strong>isothermal</strong>
+                    $K_{\text{iso}}=P$ and <strong>adiabatic</strong> $K_{\text{adi}}=\gamma P$, where
+                    $\gamma=\dfrac{C_p}{C_v}$. The reciprocal of bulk modulus is the
+                    <strong>compressibility</strong> $C=\dfrac{1}{K}$.</div>
+            </div>
+
+            <!-- FULL DERIVATION 1 -->
+            <div class="card derivation">
+                <h4>Full derivation — Young's modulus &amp; force constant</h4>
+                <p class="setup">A wire of natural length $l$ and uniform cross-sectional area $A$ is fixed at one
+                    end. A stretching force $F$ applied at the other end produces an extension $\Delta l$, staying
+                    within the elastic limit.</p>
+
+                <p class="step">Step 1 — Write the stress and the strain</p>
+                <p>The force acts normally over the cross-section, and the wire lengthens along its own axis:</p>
+                $$\text{Normal stress}=\frac{F}{A}, \qquad
+                \text{Longitudinal strain}=\frac{\Delta l}{l}$$
+
+                <p class="step">Step 2 — Apply Hooke's law</p>
+                <p>Within the elastic limit the ratio of stress to strain is the constant $Y$:</p>
+                $$Y=\frac{\text{Normal stress}}{\text{Longitudinal strain}}
+                =\frac{F/A}{\Delta l/l}$$
+                <div class="deriv-result">$Y=\dfrac{Fl}{A\,\Delta l}$</div>
+
+                <p class="step">Step 3 — Force (spring) constant of the wire</p>
+                <p>Rearranging for the force in terms of the extension:</p>
+                $$F=\left(\frac{YA}{l}\right)\Delta l = k\,\Delta l$$
+                <p>so the wire behaves like a spring of <strong>force constant</strong>
+                    $k=\dfrac{YA}{l}$ — the force needed per unit extension.</p>
+            </div>
+
+            <!-- BULK MODULUS: cube squeezed from all sides -->
+            <div class="diagram">
+                <svg viewBox="0 0 300 260" role="img" aria-label="A cube compressed equally from all sides">
+                    <defs>
+                        <marker id="mk5" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- 3D cube -->
+                    <polygon points="105,115 105,205 185,205 185,115" class="shade-1 ink-stroke" stroke-width="1.8" />
+                    <polygon points="105,115 135,88 215,88 185,115" class="shade-2 ink-stroke" stroke-width="1.8" />
+                    <polygon points="185,115 215,88 215,178 185,205" class="shade-3 ink-stroke" stroke-width="1.8" />
+                    <text x="132" y="165" class="dgm-label sm">ΔV</text>
+                    <!-- inward force arrows -->
+                    <line x1="145" y1="40" x2="145" y2="82" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk5)" />
+                    <line x1="145" y1="250" x2="145" y2="212" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk5)" />
+                    <line x1="46" y1="160" x2="99" y2="160" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk5)" />
+                    <line x1="270" y1="132" x2="221" y2="132" class="ink-stroke" stroke-width="2.2"
+                        marker-end="url(#mk5)" />
+                    <text x="150" y="38" class="dgm-label sm">F</text>
+                    <text x="150" y="262" class="dgm-label sm">F</text>
+                    <text x="30" y="164" class="dgm-label sm">F</text>
+                    <text x="274" y="128" class="dgm-label sm">F</text>
+                </svg>
+                <div class="legend">
+                    <span>Equal inward force on every face changes the volume by $\Delta V$ →
+                        $K=\dfrac{F/A}{\Delta V/V}$</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="moduli"></div>
+        </section>
+
+        <!-- ===== 6. ELASTIC POTENTIAL ENERGY ===== -->
+        <section id="energy" class="section">
+            <div class="section-head">
+                <span class="badge">6</span>
+                <div>
+                    <h2>Elastic Potential Energy</h2>
+                    <div class="sub">Work stored in a stretched body</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead">The work done by the deforming force in stretching a body is stored as
+                    <strong>elastic potential energy</strong>:</p>
+                <div class="chip-list">
+                    <span class="chip">$U=\dfrac{1}{2}kx^2$</span>
+                    <span class="chip">$U=\dfrac{1}{2}\times\text{Force}\times\text{extension}$</span>
+                    <span class="chip">$U=\dfrac{1}{2}\times\text{Stress}\times\text{Strain}\times\text{Volume}$</span>
+                </div>
+                <p>The elastic potential energy stored per unit volume is the <strong>energy density</strong>:</p>
+                <span class="formula">$$u=\dfrac{\text{Elastic P.E.}}{\text{Volume}}
+                    =\dfrac{1}{2}\times\dfrac{(\text{stress})^2}{Y}
+                    =\dfrac{1}{2}\times(\text{strain})^2\times Y$$</span>
+            </div>
+
+            <!-- FULL DERIVATION 2 -->
+            <div class="card derivation">
+                <h4>Full derivation — energy stored in a stretched wire</h4>
+                <p class="setup">A wire of length $l$, area $A$ and Young's modulus $Y$ is stretched slowly to a
+                    final extension $e$. When the extension is $x$, the restoring force (from
+                    $F=\tfrac{YA}{l}x$) balances the applied load.</p>
+
+                <p class="step">Step 1 — Work for a further small stretch</p>
+                <p>To increase the extension by $dx$ against the force $F(x)=\dfrac{YA}{l}x$:</p>
+                $$dW=F(x)\,dx=\frac{YA}{l}\,x\,dx$$
+
+                <p class="step">Step 2 — Integrate up to the final extension $e$</p>
+                $$W=\int_0^{e}\frac{YA}{l}\,x\,dx=\frac{YA}{l}\cdot\frac{e^2}{2}
+                =\frac{1}{2}\left(\frac{YAe}{l}\right)e$$
+                <p>But $\dfrac{YAe}{l}=F$, the final stretching force, so:</p>
+                <div class="deriv-result">$W=U=\dfrac{1}{2}\,F\,e
+                    =\dfrac{1}{2}\times\text{force}\times\text{extension}$</div>
+
+                <p class="step">Step 3 — In terms of stress &amp; strain</p>
+                <p>Writing $F=\text{stress}\times A$ and $e=\text{strain}\times l$:</p>
+                $$U=\frac{1}{2}(\text{stress}\times A)(\text{strain}\times l)
+                =\frac{1}{2}\times\text{stress}\times\text{strain}\times\underbrace{(Al)}_{\text{volume}}$$
+
+                <p class="step">Step 4 — Energy density</p>
+                $$u=\frac{U}{V}=\frac{1}{2}\times\text{stress}\times\text{strain}
+                =\frac{1}{2}\frac{(\text{stress})^2}{Y}=\frac{1}{2}Y(\text{strain})^2$$
+            </div>
+
+            <!-- FORCE–EXTENSION GRAPH: area = energy -->
+            <div class="diagram">
+                <svg viewBox="0 0 340 260" role="img" aria-label="Force versus extension graph, area equals energy">
+                    <defs>
+                        <marker id="mk6" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- axes -->
+                    <line x1="60" y1="220" x2="60" y2="30" class="ink-stroke" stroke-width="2"
+                        marker-end="url(#mk6)" />
+                    <line x1="60" y1="220" x2="320" y2="220" class="ink-stroke" stroke-width="2"
+                        marker-end="url(#mk6)" />
+                    <text x="24" y="52" class="dgm-label sm">Force</text>
+                    <text x="250" y="243" class="dgm-label sm">Extension</text>
+                    <text x="48" y="235" class="dgm-label sm">O</text>
+                    <!-- shaded triangle (work done) -->
+                    <polygon points="60,220 260,220 260,70" class="shade-2" />
+                    <!-- the F–x line -->
+                    <line x1="60" y1="220" x2="260" y2="70" class="ink-stroke" stroke-width="2.6" />
+                    <!-- guides -->
+                    <line x1="260" y1="70" x2="260" y2="220" class="gray-dash" stroke-width="1.1"
+                        stroke-dasharray="3 4" />
+                    <line x1="260" y1="70" x2="60" y2="70" class="gray-dash" stroke-width="1.1"
+                        stroke-dasharray="3 4" />
+                    <text x="40" y="74" class="dgm-label sm">F</text>
+                    <text x="256" y="236" class="dgm-label sm">e</text>
+                    <text x="120" y="190" class="dgm-label">U = ½ F e</text>
+                </svg>
+                <div class="legend">
+                    <span>The shaded area under the force–extension line equals the stored elastic energy
+                        $\tfrac{1}{2}Fe$</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="energy"></div>
+        </section>
+
+        <!-- ===== 7. POISSON'S RATIO & RELATIONS ===== -->
+        <section id="poisson" class="section">
+            <div class="section-head">
+                <span class="badge">7</span>
+                <div>
+                    <h2>Poisson's Ratio &amp; Elastic Relations</h2>
+                    <div class="sub">Lateral strain &amp; the links between $Y,K,\eta,\sigma$</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="lead"><strong>Poisson's ratio</strong> is the ratio of lateral strain to longitudinal
+                    strain:</p>
+                <span class="formula">$$\sigma=-\dfrac{\text{Lateral strain}}{\text{Longitudinal strain}}
+                    =-\dfrac{\Delta r/r}{\Delta l/l}$$</span>
+                <ul>
+                    <li>If $\sigma$ is positive, the radius <em>decreases</em> as the wire elongates.</li>
+                    <li>Theoretically $-1\le\sigma\le\dfrac{1}{2}$; in practice its value lies between $0$ and
+                        $0.5$.</li>
+                </ul>
+                <p>The four elastic constants are connected by the relations:</p>
+                <span class="formula">$$Y=3K(1-2\sigma), \qquad Y=2\eta(1+\sigma)$$</span>
+                <span class="formula">$$Y=\dfrac{9K\eta}{3K+\eta}, \qquad
+                    \sigma=\dfrac{3K-2\eta}{6K+2\eta}$$</span>
+            </div>
+
+            <!-- FULL DERIVATION 3 -->
+            <div class="card derivation">
+                <h4>Full derivation — shearing angle &amp; angle of twist</h4>
+                <p class="setup">A solid cylinder (wire) of radius $R$ and length $l$ is clamped at the top. The
+                    lower face is twisted through an angle $\theta$ (the <em>angle of twist</em>). A straight line
+                    drawn on the surface, originally parallel to the axis, tilts through the shearing angle
+                    $\phi$.</p>
+
+                <p class="step">Step 1 — Displacement of a rim point</p>
+                <p>As the lower face turns through $\theta$, a point on the circumference of radius $R$ moves along
+                    an arc of length:</p>
+                $$s = R\theta$$
+
+                <p class="step">Step 2 — Same displacement as a shear</p>
+                <p>That surface line tilts by the small shearing angle $\phi$ over the length $l$, so the bottom
+                    end is displaced by:</p>
+                $$s = l\,\phi$$
+
+                <p class="step">Step 3 — Equate the two expressions</p>
+                $$l\,\phi = R\theta$$
+                <div class="deriv-result">$\phi=\dfrac{R\theta}{l}$</div>
+                <p>The shearing angle grows with the radius and the twist, and falls off with the length of the
+                    wire.</p>
+            </div>
+
+            <!-- POISSON: cylinder elongates and thins -->
+            <div class="diagram">
+                <svg viewBox="0 0 260 320" role="img"
+                    aria-label="A cylinder elongating and contracting laterally under a load">
+                    <defs>
+                        <marker id="mk7" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                            <path d="M0 0 L6 3 L0 6 Z" class="ink-fill" /></marker>
+                    </defs>
+                    <!-- fixed support -->
+                    <line x1="70" y1="40" x2="190" y2="40" class="ink-stroke" stroke-width="4" />
+                    <g class="gray-stroke" stroke-width="1.5">
+                        <line x1="82" y1="40" x2="72" y2="30" />
+                        <line x1="106" y1="40" x2="96" y2="30" />
+                        <line x1="130" y1="40" x2="120" y2="30" />
+                        <line x1="154" y1="40" x2="144" y2="30" />
+                        <line x1="178" y1="40" x2="168" y2="30" />
+                    </g>
+                    <!-- cylinder body -->
+                    <path d="M95 50 L95 250 A35 10 0 0 0 165 250 L165 50" class="shade-1 ink-stroke"
+                        stroke-width="1.8" />
+                    <ellipse cx="130" cy="50" rx="35" ry="10" class="paper-fill ink-stroke" stroke-width="1.8" />
+                    <!-- length l -->
+                    <line x1="205" y1="50" x2="205" y2="250" class="gray-dash" stroke-width="1.2"
+                        stroke-dasharray="4 4" />
+                    <text x="212" y="155" class="dgm-label sm">l</text>
+                    <!-- radius r + Δr -->
+                    <line x1="130" y1="150" x2="165" y2="150" class="gray-stroke" stroke-width="1.3" />
+                    <text x="142" y="143" class="dgm-label sm">r</text>
+                    <line x1="165" y1="176" x2="150" y2="176" class="ink-stroke" stroke-width="1.8"
+                        marker-end="url(#mk7)" />
+                    <text x="168" y="180" class="dgm-label sm">Δr</text>
+                    <!-- load + elongation -->
+                    <line x1="130" y1="262" x2="130" y2="304" class="ink-stroke" stroke-width="2.4"
+                        marker-end="url(#mk7)" />
+                    <text x="138" y="290" class="dgm-label">F</text>
+                    <text x="150" y="268" class="dgm-label sm">Δl</text>
+                </svg>
+                <div class="legend">
+                    <span>Stretching by $\Delta l$ thins the radius by $\Delta r$ →
+                        $\sigma=-\dfrac{\Delta r/r}{\Delta l/l}$</span>
+                </div>
+            </div>
+
+            <div class="questions" data-section="poisson"></div>
+        </section>
+
+        <!-- ===== HIGH YIELD ===== -->
+        <section id="highyield" class="section">
+            <div class="section-head">
+                <span class="badge">★</span>
+                <div>
+                    <h2>High-Yield Points</h2>
+                    <div class="sub">Quick revision</div>
+                </div>
+            </div>
+
+            <div class="hy-grid">
+                <div class="hy-item"><span class="dot"></span>
+                    <div><strong>Breaking stress</strong> depends only on the nature of the material and is
+                        <em>independent of dimensions</em>.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div><strong>Breaking force</strong> $=$ breaking stress $\times$ area $=\pi r^2\times$
+                        breaking stress, so it <em>does</em> depend on dimensions
+                        $\left(\propto r^2\right)$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>The greater the Young's modulus $Y$, the <strong>more elastic</strong> the body. For a
+                        highly elastic or perfectly rigid body, $Y=\infty$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>On <strong>hammering</strong> or cold-working, $Y$ <em>increases</em>; on
+                        <strong>annealing</strong>, $Y$ <em>decreases</em>.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>On <strong>raising the temperature</strong>, the Young's modulus of a body
+                        <em>decreases</em>.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Adding <strong>more elastic</strong> impurities <em>increases</em> $Y$; adding
+                        <strong>less elastic</strong> impurities <em>decreases</em> $Y$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Compressibility $C=\dfrac{1}{K}$, with $K_{\text{solid}}>K_{\text{liquid}}>K_{\text{gas}}$
+                        and $C_{\text{gas}}>C_{\text{liquid}}>C_{\text{solid}}$.</div>
+                </div>
+                <div class="hy-item"><span class="dot"></span>
+                    <div>Isothermal bulk modulus of a gas $K_{\text{iso}}=P$; adiabatic
+                        $K_{\text{adi}}=\gamma P$.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CHALLENGE QUESTIONS ===== -->
+        <section id="challenge" class="section">
+            <div class="section-head">
+                <span class="badge">★</span>
+                <div>
+                    <h2>Challenge Questions</h2>
+                    <div class="sub">Slightly harder problems from the chapter</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p>These higher-order questions go a step beyond the past-paper set — combining Young's modulus,
+                    elastic energy, Poisson's ratio and breaking-stress ideas. Try each one before revealing the
+                    answer.</p>
+            </div>
+
+            <div class="questions" data-section="challenge"></div>
+        </section>
+
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        Elasticity · Interactive black &amp; white notes with live diagrams and full derivations. 22 exam-style
+        past questions (2074–2082) plus 5 higher-order challenge questions.
+    </footer>
+
+    <button class="to-top" id="toTop" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+    </button>
+
+    <script src="js/questions.js"></script>
+    <script src="js/app.js"></script>
+    <script src="../../common.js"></script>
+</body>
+
+</html>
