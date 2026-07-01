@@ -1,6 +1,6 @@
 /* ============================================================
    Circular Motion — Interactive logic (B&W glass build)
-   - Renders 10 quiz questions into their sections
+   - Renders the quiz questions into their sections
    - Answering, scoring, explanations, year filter
    - Animated particles, scroll-reveal, theme, progress
    ============================================================ */
@@ -39,10 +39,12 @@
         top.appendChild(el("p", "q-text", q.text));
         card.appendChild(top);
 
-        const tags = el("div", "q-tags");
-        tags.appendChild(el("span", "tag year",
-            `<svg viewBox="0 0 24 24">${ICONS.calendar}</svg>${q.year}`));
-        card.appendChild(tags);
+        if (/^\d{4}$/.test(String(q.year))) {
+            const tags = el("div", "q-tags");
+            tags.appendChild(el("span", "tag year",
+                `<svg viewBox="0 0 24 24">${ICONS.calendar}</svg>${q.year}`));
+            card.appendChild(tags);
+        }
 
         const opts = el("div", "options");
         q.options.forEach(opt => {

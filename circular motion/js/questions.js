@@ -1,6 +1,7 @@
 /* ============================================================
-   Circular Motion — Question bank (15 questions)
-   Exam tags: 2074, 2077, 2078, 2079, 2081 (B.S.).
+   Circular Motion — Question bank (14 past + 4 challenge = 18).
+   Past-paper tags: 2074, 2077, 2078, 2079, 2081 (B.S.).
+   Challenge questions are higher-order (no exam tag).
    ============================================================ */
 
 const QUESTIONS = [
@@ -63,18 +64,6 @@ const QUESTIONS = [
         ],
         answer: "b",
         explanation: "$\\tan\\theta=\\dfrac{v^2}{rg}$, so the overturning tendency $\\propto v^2$. Doubling the speed makes it $4\\times$."
-    },
-    {
-        id: "q6", section: "banked", year: "2079",
-        text: "A road of radius $50\\,$m is banked at the correct angle for a given speed. If the speed is doubled keeping the same banking angle, the radius should be changed to:",
-        options: [
-            { key: "a", text: "$25\\,$m" },
-            { key: "b", text: "$100\\,$m" },
-            { key: "c", text: "$150\\,$m" },
-            { key: "d", text: "$200\\,$m" }
-        ],
-        answer: "d",
-        explanation: "$\\tan\\theta=\\dfrac{v^2}{rg}$. For a constant banking angle, $r\\propto v^2$, so $r_2=4\\times50=200\\,$m."
     },
     {
         id: "q7", section: "vertical", year: "2081",
@@ -183,6 +172,54 @@ const QUESTIONS = [
         ],
         answer: "b",
         explanation: "The bob lies a horizontal distance $r=l\\sin\\theta$ from the axis: $r=0.5\\times\\sin53^\\circ=0.5\\times0.8=0.4\\,$m."
+    },
+    {
+        id: "c1", section: "challenge", year: "",
+        text: "A stone is whirled in a vertical circle of radius $r$ at the minimum speed needed to just complete the loop. When the string is momentarily horizontal (level with the centre), the tension in it is:",
+        options: [
+            { key: "a", text: "$2mg$" },
+            { key: "b", text: "$3mg$" },
+            { key: "c", text: "$5mg$" },
+            { key: "d", text: "$6mg$" }
+        ],
+        answer: "b",
+        explanation: "Minimum top speed gives $v_t^2=gr$. Energy conservation down to the side (a height $r$ lower): $v_s^2=gr+2gr=3gr$. There the string is horizontal, so it alone supplies the centripetal force (gravity is tangential): $T=\\dfrac{mv_s^2}{r}=\\dfrac{m(3gr)}{r}=3mg$."
+    },
+    {
+        id: "c3", section: "challenge", year: "",
+        text: "A particle moves in a circle of radius $r$ with constant speed $v$. The magnitude of the change in its centripetal acceleration as it travels through one quarter of the circle is:",
+        options: [
+            { key: "a", text: "$\\dfrac{v^2}{r}$" },
+            { key: "b", text: "$\\sqrt{2}\\,\\dfrac{v^2}{r}$" },
+            { key: "c", text: "$\\dfrac{2v^2}{r}$" },
+            { key: "d", text: "Zero" }
+        ],
+        answer: "b",
+        explanation: "The centripetal acceleration keeps magnitude $a=\\dfrac{v^2}{r}$ but its direction turns through $90^\\circ$. $|\\Delta\\vec a|=2a\\sin45^\\circ=2\\cdot\\dfrac{v^2}{r}\\cdot\\dfrac{1}{\\sqrt2}=\\sqrt2\\,\\dfrac{v^2}{r}$."
+    },
+    {
+        id: "c4", section: "challenge", year: "",
+        text: "A stone tied to a string is projected from the lowest point of a vertical circle of radius $r$ with speed $\\sqrt{3gr}$. The string goes slack at a height above the lowest point equal to:",
+        options: [
+            { key: "a", text: "$\\dfrac{2r}{3}$" },
+            { key: "b", text: "$r$" },
+            { key: "c", text: "$\\dfrac{4r}{3}$" },
+            { key: "d", text: "$\\dfrac{5r}{3}$" }
+        ],
+        answer: "c",
+        explanation: "At angle $\\theta$ from the bottom, energy gives $v^2=gr(1+2\\cos\\theta)$ and the radial equation gives $T=\\dfrac{mv^2}{r}+mg\\cos\\theta$. Setting $T=0$ yields $\\cos\\theta=-\\dfrac13$, so the height $=r(1-\\cos\\theta)=r\\left(1+\\dfrac13\\right)=\\dfrac{4r}{3}$."
+    },
+    {
+        id: "c5", section: "challenge", year: "",
+        text: "In a rotor (a cylindrical drum of radius $2\\,$m), a person stands against the inner wall and the floor is then removed. If the coefficient of friction between the person and the wall is $0.2$, the minimum angular speed that prevents the person from sliding down is: $(g=10\\,$m/s$^2)$",
+        options: [
+            { key: "a", text: "$2.5\\,$rad/s" },
+            { key: "b", text: "$5\\,$rad/s" },
+            { key: "c", text: "$\\sqrt{50}\\,$rad/s" },
+            { key: "d", text: "$10\\,$rad/s" }
+        ],
+        answer: "b",
+        explanation: "The wall's normal reaction provides the centripetal force $N=m\\omega^2 R$, and friction $\\mu N$ must support the weight: $\\mu m\\omega^2 R\\ge mg\\Rightarrow\\omega_{min}=\\sqrt{\\dfrac{g}{\\mu R}}=\\sqrt{\\dfrac{10}{0.2\\times2}}=\\sqrt{25}=5\\,$rad/s."
     }
 ];
 
