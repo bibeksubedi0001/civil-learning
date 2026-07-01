@@ -1,7 +1,7 @@
 /* ============================================================
-   Elasticity — Question bank (22 past + 5 challenge = 27).
+   Elasticity — Question bank (22 past + 10 harder + 5 challenge = 37).
    Past-paper tags: 2074, 2077, 2078, 2079, 2081, 2082 (B.S.).
-   Challenge questions are higher-order (no exam tag).
+   Harder and challenge questions are higher-order (no exam tag).
    ============================================================ */
 
 const QUESTIONS = [
@@ -23,12 +23,36 @@ const QUESTIONS = [
         text: "Which of the following is nearly a perfect plastic body?",
         options: [
             { key: "a", text: "Quartz" },
-            { key: "b", text: "Putty" },
+            { key: "b", text: "Wet mud" },
             { key: "c", text: "Phosphor bronze" },
             { key: "d", text: "Steel" }
         ],
         answer: "b",
-        explanation: "Plastic bodies do not regain their original configuration once the deforming force is removed. Putty, mud and paraffin wax are nearly perfect plastic bodies, while quartz and phosphor bronze are nearly perfect elastic bodies."
+        explanation: "Plastic bodies do not regain their original configuration once the deforming force is removed. Wet mud and paraffin wax are nearly perfect plastic bodies, while quartz and phosphor bronze are nearly perfect elastic bodies."
+    },
+    {
+        id: "q23", section: "basics", year: "",
+        text: "Two wires, one of steel and one of copper, are identical in length and cross-section. Steel has a larger Young's modulus than copper. When both are stretched by the same force within the elastic limit:",
+        options: [
+            { key: "a", text: "the steel wire stretches more, because it is more elastic" },
+            { key: "b", text: "the copper wire stretches more" },
+            { key: "c", text: "both stretch by exactly the same amount" },
+            { key: "d", text: "the steel wire does not stretch at all" }
+        ],
+        answer: "b",
+        explanation: "Extension $\\Delta l=\\dfrac{FL}{AY}\\propto\\dfrac{1}{Y}$ for the same force, length and area. Copper has the smaller $Y$, so it stretches more. A more elastic material (larger $Y$) resists deformation better and therefore stretches less. This is a common trap."
+    },
+    {
+        id: "q24", section: "basics", year: "",
+        text: "The temporary delay with which a body regains its original configuration after the deforming force is removed (the elastic after-effect) is largest and smallest, respectively, for:",
+        options: [
+            { key: "a", text: "quartz; glass" },
+            { key: "b", text: "glass; quartz and phosphor bronze" },
+            { key: "c", text: "steel; rubber" },
+            { key: "d", text: "rubber; steel" }
+        ],
+        answer: "b",
+        explanation: "Glass shows the maximum elastic after-effect (it takes a very long time to return), while quartz and phosphor bronze show the minimum (they return almost at once). That is why quartz and phosphor bronze fibres are used in sensitive suspension instruments."
     },
 
     /* ---------------- 2. STRESS ---------------- */
@@ -68,6 +92,30 @@ const QUESTIONS = [
         answer: "b",
         explanation: "Shear stress $=\\dfrac{F_{\\parallel}}{A}=\\dfrac{50}{2\\times10^{-3}}=2.5\\times10^{4}\\,\\text{N m}^{-2}$."
     },
+    {
+        id: "q25", section: "stress", year: "",
+        text: "Two wires of the same material, of radii $r$ and $2r$, hang vertically and each supports the same load. The ratio of the tensile stress in the thinner wire to that in the thicker wire is:",
+        options: [
+            { key: "a", text: "$1:1$" },
+            { key: "b", text: "$2:1$" },
+            { key: "c", text: "$4:1$" },
+            { key: "d", text: "$1:4$" }
+        ],
+        answer: "c",
+        explanation: "Stress $=\\dfrac{F}{A}=\\dfrac{F}{\\pi r^2}\\propto\\dfrac{1}{r^2}$ for the same load. Thinner : thicker $=\\dfrac{1}{r^2}:\\dfrac{1}{(2r)^2}=1:\\dfrac{1}{4}=4:1$, so the thinner wire carries four times the stress."
+    },
+    {
+        id: "q26", section: "stress", year: "",
+        text: "A uniform metal wire of length $L$ and density $\\rho$ hangs vertically from a rigid support. The longitudinal stress at its topmost cross-section, due only to its own weight, is:",
+        options: [
+            { key: "a", text: "$\\rho g L$" },
+            { key: "b", text: "$2\\rho g L$" },
+            { key: "c", text: "$\\dfrac{\\rho g L}{2}$" },
+            { key: "d", text: "$\\rho g L^{2}$" }
+        ],
+        answer: "a",
+        explanation: "The top section carries the whole weight $W=mg=(\\rho A L)g$. Stress $=\\dfrac{W}{A}=\\dfrac{\\rho A L g}{A}=\\rho g L$; the area cancels, so the self-weight stress does not depend on the cross-section."
+    },
 
     /* ---------------- 3. STRAIN ---------------- */
     {
@@ -93,6 +141,30 @@ const QUESTIONS = [
         ],
         answer: "a",
         explanation: "Longitudinal strain $=\\dfrac{\\Delta l}{l}=\\dfrac{0.5\\times10^{-3}}{2.5}=2\\times10^{-4}$ (dimensionless)."
+    },
+    {
+        id: "q27", section: "strain", year: "",
+        text: "A wire whose material has Poisson's ratio $\\sigma=0.5$ is stretched so that its length increases by $0.1\\%$. The approximate percentage change in its volume is:",
+        options: [
+            { key: "a", text: "$0\\%$ (volume nearly unchanged)" },
+            { key: "b", text: "$0.1\\%$" },
+            { key: "c", text: "$0.2\\%$" },
+            { key: "d", text: "$0.3\\%$" }
+        ],
+        answer: "a",
+        explanation: "For a longitudinal stretch, volumetric strain $=\\epsilon(1-2\\sigma)$. With $\\sigma=0.5$, $1-2\\sigma=0$, so the volume stays essentially constant; a material with $\\sigma=0.5$ is incompressible."
+    },
+    {
+        id: "q28", section: "strain", year: "",
+        text: "The top face of a block of height $5\\,$cm is displaced horizontally by $0.5\\,$mm relative to its fixed base by a tangential force. The shearing strain produced is:",
+        options: [
+            { key: "a", text: "$0.01\\,$rad" },
+            { key: "b", text: "$0.1\\,$rad" },
+            { key: "c", text: "$0.001\\,$rad" },
+            { key: "d", text: "$1\\,$rad" }
+        ],
+        answer: "a",
+        explanation: "Shearing strain $\\phi=\\dfrac{\\text{lateral displacement}}{\\text{height}}=\\dfrac{0.5\\times10^{-3}}{5\\times10^{-2}}=0.01\\,$rad."
     },
 
     /* ---------------- 4. HOOKE'S LAW & CURVE ---------------- */
@@ -122,15 +194,39 @@ const QUESTIONS = [
     },
     {
         id: "q11", section: "hooke", year: "2077",
-        text: "Within the elastic limit, a stress of $2\\times10^{8}\\,$N m$^{-2}$ produces a strain of $10^{-3}$ in a wire. The modulus of elasticity of its material is:",
+        text: "Within the elastic limit the stress-strain graphs of two wires $P$ and $Q$ of identical dimensions are straight lines, with $P$'s line inclined at a greater angle to the strain-axis than $Q$'s. Which statement is correct?",
         options: [
-            { key: "a", text: "$2\\times10^{5}\\,\\text{N m}^{-2}$" },
-            { key: "b", text: "$2\\times10^{8}\\,\\text{N m}^{-2}$" },
-            { key: "c", text: "$2\\times10^{11}\\,\\text{N m}^{-2}$" },
-            { key: "d", text: "$2\\times10^{14}\\,\\text{N m}^{-2}$" }
+            { key: "a", text: "$Q$ has the greater Young's modulus and is more elastic" },
+            { key: "b", text: "$P$ has the greater Young's modulus and is more elastic" },
+            { key: "c", text: "$P$ has the greater Young's modulus but $Q$ is more elastic" },
+            { key: "d", text: "both wires have the same Young's modulus" }
+        ],
+        answer: "b",
+        explanation: "The slope of a stress-strain line is Young's modulus, $Y=\\dfrac{\\text{stress}}{\\text{strain}}$. A steeper line (a greater angle with the strain-axis) has a larger slope, so $P$ has the greater $Y$. The larger the Young's modulus, the more a material resists deformation, so $P$ is also the more elastic."
+    },
+    {
+        id: "q29", section: "hooke", year: "",
+        text: "Two wires $A$ and $B$ of the same material and length are stretched by equal forces within the elastic limit. If the diameter of $A$ is twice that of $B$, the ratio of the longitudinal strain in $A$ to that in $B$ is:",
+        options: [
+            { key: "a", text: "$1:1$" },
+            { key: "b", text: "$1:2$" },
+            { key: "c", text: "$1:4$" },
+            { key: "d", text: "$4:1$" }
         ],
         answer: "c",
-        explanation: "By Hooke's law $E=\\dfrac{\\text{stress}}{\\text{strain}}=\\dfrac{2\\times10^{8}}{10^{-3}}=2\\times10^{11}\\,\\text{N m}^{-2}$."
+        explanation: "Strain $=\\dfrac{\\text{stress}}{Y}=\\dfrac{F}{\\pi r^2 Y}\\propto\\dfrac{1}{r^2}$ for the same force, material and length. With $r_A=2r_B$, strain$_A$ : strain$_B=\\dfrac{1}{4}:1=1:4$."
+    },
+    {
+        id: "q30", section: "hooke", year: "",
+        text: "A wire is loaded just beyond its limit of proportionality but still below its elastic limit. Then the wire:",
+        options: [
+            { key: "a", text: "obeys Hooke's law and returns to its original length" },
+            { key: "b", text: "does not obey Hooke's law but still returns to its original length" },
+            { key: "c", text: "neither obeys Hooke's law nor returns to its original length" },
+            { key: "d", text: "breaks at once" }
+        ],
+        answer: "b",
+        explanation: "Between the proportionality limit and the elastic limit, stress is no longer strictly proportional to strain (Hooke's law fails), yet the deformation is still fully recoverable: the wire regains its original length once unloaded. Permanent set begins only beyond the elastic limit."
     },
 
     /* ---------------- 5. MODULI OF ELASTICITY ---------------- */
@@ -148,15 +244,15 @@ const QUESTIONS = [
     },
     {
         id: "q12", section: "moduli", year: "2078",
-        text: "A wire of length $L$ and cross-sectional area $A$ is stretched by $l$ under a force $F$. Its Young's modulus is:",
+        text: "A wire of length $L$ and cross-sectional area $A$ stretches by $l$ under a load $F$. It is replaced by another wire of the same material but of half the length and half the cross-sectional area. Under the same load $F$, the new extension is:",
         options: [
-            { key: "a", text: "$\\dfrac{FL}{Al}$" },
-            { key: "b", text: "$\\dfrac{FA}{Ll}$" },
-            { key: "c", text: "$\\dfrac{Fl}{AL}$" },
-            { key: "d", text: "$\\dfrac{FLl}{A}$" }
+            { key: "a", text: "$\\dfrac{l}{2}$" },
+            { key: "b", text: "$l$" },
+            { key: "c", text: "$2l$" },
+            { key: "d", text: "$4l$" }
         ],
-        answer: "a",
-        explanation: "$Y=\\dfrac{\\text{normal stress}}{\\text{longitudinal strain}}=\\dfrac{F/A}{l/L}=\\dfrac{FL}{Al}$."
+        answer: "b",
+        explanation: "Extension $\\Delta L=\\dfrac{FL}{AY}$. Halving both $L$ and $A$: $\\Delta L'=\\dfrac{F(L/2)}{(A/2)Y}=\\dfrac{FL}{AY}=l$. The two changes cancel, so the extension is unchanged."
     },
     {
         id: "q13", section: "moduli", year: "2082",
@@ -205,6 +301,30 @@ const QUESTIONS = [
         ],
         answer: "b",
         explanation: "$Y=\\dfrac{FL}{Al}=\\dfrac{100\\times2}{10^{-6}\\times10^{-3}}=\\dfrac{200}{10^{-9}}=2\\times10^{11}\\,\\text{N m}^{-2}$."
+    },
+    {
+        id: "q31", section: "moduli", year: "",
+        text: "A wire behaves like a spring of force constant $k=\\dfrac{YA}{L}$. It is cut into two equal halves, and the two halves are joined side by side (in parallel) to support a load. The effective force constant of the combination is:",
+        options: [
+            { key: "a", text: "$\\dfrac{k}{4}$" },
+            { key: "b", text: "$k$" },
+            { key: "c", text: "$2k$" },
+            { key: "d", text: "$4k$" }
+        ],
+        answer: "d",
+        explanation: "Force constant $k\\propto\\dfrac{1}{L}$, so halving the length doubles it: each half has stiffness $2k$. Two springs in parallel add: $2k+2k=4k$."
+    },
+    {
+        id: "q32", section: "moduli", year: "",
+        text: "The bulk modulus of water is $2.2\\times10^{9}\\,$N m$^{-2}$. The pressure needed to compress a sample of water by $0.1\\%$ of its volume is:",
+        options: [
+            { key: "a", text: "$2.2\\times10^{6}\\,\\text{Pa}$" },
+            { key: "b", text: "$2.2\\times10^{9}\\,\\text{Pa}$" },
+            { key: "c", text: "$2.2\\times10^{12}\\,\\text{Pa}$" },
+            { key: "d", text: "$2.2\\times10^{3}\\,\\text{Pa}$" }
+        ],
+        answer: "a",
+        explanation: "$K=\\dfrac{P}{\\Delta V/V}\\Rightarrow P=K\\dfrac{\\Delta V}{V}=2.2\\times10^{9}\\times\\dfrac{0.1}{100}=2.2\\times10^{9}\\times10^{-3}=2.2\\times10^{6}\\,\\text{Pa}$."
     },
 
     /* ---------------- 6. ELASTIC POTENTIAL ENERGY ---------------- */
