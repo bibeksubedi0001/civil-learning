@@ -31,18 +31,6 @@ const QUESTIONS = [
         explanation: "Plastic bodies do not regain their original configuration once the deforming force is removed. Wet mud and paraffin wax are nearly perfect plastic bodies, while quartz and phosphor bronze are nearly perfect elastic bodies."
     },
     {
-        id: "q23", section: "basics", year: "",
-        text: "Two wires, one of steel and one of copper, are identical in length and cross-section. Steel has a larger Young's modulus than copper. When both are stretched by the same force within the elastic limit:",
-        options: [
-            { key: "a", text: "the steel wire stretches more, because it is more elastic" },
-            { key: "b", text: "the copper wire stretches more" },
-            { key: "c", text: "both stretch by exactly the same amount" },
-            { key: "d", text: "the steel wire does not stretch at all" }
-        ],
-        answer: "b",
-        explanation: "Extension $\\Delta l=\\dfrac{FL}{AY}\\propto\\dfrac{1}{Y}$ for the same force, length and area. Copper has the smaller $Y$, so it stretches more. A more elastic material (larger $Y$) resists deformation better and therefore stretches less. This is a common trap."
-    },
-    {
         id: "q24", section: "basics", year: "",
         text: "The temporary delay with which a body regains its original configuration after the deforming force is removed (the elastic after-effect) is largest and smallest, respectively, for:",
         options: [
@@ -143,18 +131,6 @@ const QUESTIONS = [
         explanation: "Longitudinal strain $=\\dfrac{\\Delta l}{l}=\\dfrac{0.5\\times10^{-3}}{2.5}=2\\times10^{-4}$ (dimensionless)."
     },
     {
-        id: "q27", section: "strain", year: "",
-        text: "A wire whose material has Poisson's ratio $\\sigma=0.5$ is stretched so that its length increases by $0.1\\%$. The approximate percentage change in its volume is:",
-        options: [
-            { key: "a", text: "$0\\%$ (volume nearly unchanged)" },
-            { key: "b", text: "$0.1\\%$" },
-            { key: "c", text: "$0.2\\%$" },
-            { key: "d", text: "$0.3\\%$" }
-        ],
-        answer: "a",
-        explanation: "For a longitudinal stretch, volumetric strain $=\\epsilon(1-2\\sigma)$. With $\\sigma=0.5$, $1-2\\sigma=0$, so the volume stays essentially constant; a material with $\\sigma=0.5$ is incompressible."
-    },
-    {
         id: "q28", section: "strain", year: "",
         text: "The top face of a block of height $5\\,$cm is displaced horizontally by $0.5\\,$mm relative to its fixed base by a tangential force. The shearing strain produced is:",
         options: [
@@ -193,30 +169,6 @@ const QUESTIONS = [
         explanation: "The straight portion 'oa' of the curve obeys Hooke's law; the point 'a' up to which stress $\\propto$ strain is the proportionality limit. The elastic limit 'b' lies slightly beyond it."
     },
     {
-        id: "q11", section: "hooke", year: "2077",
-        text: "Within the elastic limit the stress-strain graphs of two wires $P$ and $Q$ of identical dimensions are straight lines, with $P$'s line inclined at a greater angle to the strain-axis than $Q$'s. Which statement is correct?",
-        options: [
-            { key: "a", text: "$Q$ has the greater Young's modulus and is more elastic" },
-            { key: "b", text: "$P$ has the greater Young's modulus and is more elastic" },
-            { key: "c", text: "$P$ has the greater Young's modulus but $Q$ is more elastic" },
-            { key: "d", text: "both wires have the same Young's modulus" }
-        ],
-        answer: "b",
-        explanation: "The slope of a stress-strain line is Young's modulus, $Y=\\dfrac{\\text{stress}}{\\text{strain}}$. A steeper line (a greater angle with the strain-axis) has a larger slope, so $P$ has the greater $Y$. The larger the Young's modulus, the more a material resists deformation, so $P$ is also the more elastic."
-    },
-    {
-        id: "q29", section: "hooke", year: "",
-        text: "Two wires $A$ and $B$ of the same material and length are stretched by equal forces within the elastic limit. If the diameter of $A$ is twice that of $B$, the ratio of the longitudinal strain in $A$ to that in $B$ is:",
-        options: [
-            { key: "a", text: "$1:1$" },
-            { key: "b", text: "$1:2$" },
-            { key: "c", text: "$1:4$" },
-            { key: "d", text: "$4:1$" }
-        ],
-        answer: "c",
-        explanation: "Strain $=\\dfrac{\\text{stress}}{Y}=\\dfrac{F}{\\pi r^2 Y}\\propto\\dfrac{1}{r^2}$ for the same force, material and length. With $r_A=2r_B$, strain$_A$ : strain$_B=\\dfrac{1}{4}:1=1:4$."
-    },
-    {
         id: "q30", section: "hooke", year: "",
         text: "A wire is loaded just beyond its limit of proportionality but still below its elastic limit. Then the wire:",
         options: [
@@ -241,6 +193,42 @@ const QUESTIONS = [
         ],
         answer: "c",
         explanation: "A perfectly rigid body produces no strain for any stress, so $Y=\\dfrac{\\text{stress}}{\\text{strain}}\\to\\infty$. Young's modulus of a highly elastic or rigid body is taken as infinite."
+    },
+    {
+        id: "q23", section: "moduli", year: "",
+        text: "Two wires, one of steel and one of copper, are identical in length and cross-section. Steel has a larger Young's modulus than copper. When both are stretched by the same force within the elastic limit:",
+        options: [
+            { key: "a", text: "the steel wire stretches more, because it is more elastic" },
+            { key: "b", text: "the copper wire stretches more" },
+            { key: "c", text: "both stretch by exactly the same amount" },
+            { key: "d", text: "the steel wire does not stretch at all" }
+        ],
+        answer: "b",
+        explanation: "Extension $\\Delta l=\\dfrac{FL}{AY}\\propto\\dfrac{1}{Y}$ for the same force, length and area. Copper has the smaller $Y$, so it stretches more. A more elastic material (larger $Y$) resists deformation better and therefore stretches less. This is a common trap."
+    },
+    {
+        id: "q11", section: "moduli", year: "2077",
+        text: "Within the elastic limit the stress-strain graphs of two wires $P$ and $Q$ of identical dimensions are straight lines, with $P$'s line inclined at a greater angle to the strain-axis than $Q$'s. Which statement is correct?",
+        options: [
+            { key: "a", text: "$Q$ has the greater Young's modulus and is more elastic" },
+            { key: "b", text: "$P$ has the greater Young's modulus and is more elastic" },
+            { key: "c", text: "$P$ has the greater Young's modulus but $Q$ is more elastic" },
+            { key: "d", text: "both wires have the same Young's modulus" }
+        ],
+        answer: "b",
+        explanation: "The slope of a stress-strain line is Young's modulus, $Y=\\dfrac{\\text{stress}}{\\text{strain}}$. A steeper line (a greater angle with the strain-axis) has a larger slope, so $P$ has the greater $Y$. The larger the Young's modulus, the more a material resists deformation, so $P$ is also the more elastic."
+    },
+    {
+        id: "q29", section: "moduli", year: "",
+        text: "Two wires $A$ and $B$ of the same material and length are stretched by equal forces within the elastic limit. If the diameter of $A$ is twice that of $B$, the ratio of the longitudinal strain in $A$ to that in $B$ is:",
+        options: [
+            { key: "a", text: "$1:1$" },
+            { key: "b", text: "$1:2$" },
+            { key: "c", text: "$1:4$" },
+            { key: "d", text: "$4:1$" }
+        ],
+        answer: "c",
+        explanation: "Strain $=\\dfrac{\\text{stress}}{Y}=\\dfrac{F}{\\pi r^2 Y}\\propto\\dfrac{1}{r^2}$ for the same force, material and length. With $r_A=2r_B$, strain$_A$ : strain$_B=\\dfrac{1}{4}:1=1:4$."
     },
     {
         id: "q12", section: "moduli", year: "2078",
@@ -401,6 +389,18 @@ const QUESTIONS = [
         ],
         answer: "a",
         explanation: "The elastic constants are related by $Y=2\\eta(1+\\sigma)$ and $Y=3K(1-2\\sigma)$, from which $Y=\\dfrac{9K\\eta}{3K+\\eta}$."
+    },
+    {
+        id: "q27", section: "poisson", year: "",
+        text: "A wire whose material has Poisson's ratio $\\sigma=0.5$ is stretched so that its length increases by $0.1\\%$. The approximate percentage change in its volume is:",
+        options: [
+            { key: "a", text: "$0\\%$ (volume nearly unchanged)" },
+            { key: "b", text: "$0.1\\%$" },
+            { key: "c", text: "$0.2\\%$" },
+            { key: "d", text: "$0.3\\%$" }
+        ],
+        answer: "a",
+        explanation: "For a longitudinal stretch, volumetric strain $=\\epsilon(1-2\\sigma)$. With $\\sigma=0.5$, $1-2\\sigma=0$, so the volume stays essentially constant; a material with $\\sigma=0.5$ is incompressible."
     },
 
     /* ---------------- CHALLENGE ---------------- */
