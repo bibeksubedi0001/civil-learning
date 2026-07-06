@@ -1,5 +1,5 @@
 /* ============================================================
-   Elasticity — Question bank (22 past + 10 harder + 5 challenge = 37).
+   Elasticity — Question bank (22 past + 20 harder + 5 challenge = 47).
    Past-paper tags: 2074, 2077, 2078, 2079, 2081, 2082 (B.S.).
    Harder and challenge questions are higher-order (no exam tag).
    ============================================================ */
@@ -463,6 +463,128 @@ const QUESTIONS = [
         ],
         answer: "b",
         explanation: "Breaking force $=$ breaking stress $\\times A=$ breaking stress $\\times\\pi r^2$. Since breaking stress is fixed, breaking force $\\propto r^2$; doubling $r$ makes it $4$ times."
+    },
+
+    /* ---------------- MORE HARD QUESTIONS ---------------- */
+    {
+        id: "q33", section: "hard", year: "",
+        text: "Two wires $A$ and $B$ of the same length and cross-section but of Young's moduli $Y$ and $2Y$ are joined end to end (in series) and stretched by a force $F$. The ratio of the elongation of $A$ to that of $B$ is:",
+        options: [
+            { key: "a", text: "$1:2$" },
+            { key: "b", text: "$2:1$" },
+            { key: "c", text: "$1:1$" },
+            { key: "d", text: "$4:1$" }
+        ],
+        answer: "b",
+        explanation: "In series the same force $F$ acts on both wires. Elongation $\\Delta l=\\dfrac{FL}{AY}\\propto\\dfrac{1}{Y}$ (same $F,L,A$). So $\\Delta l_A:\\Delta l_B=\\dfrac{1}{Y}:\\dfrac{1}{2Y}=2:1$; the wire with the smaller modulus stretches more."
+    },
+    {
+        id: "q34", section: "hard", year: "",
+        text: "A metal rod of Young's modulus $Y$ and linear-expansion coefficient $\\alpha$ is held rigidly between two fixed walls. If its temperature is raised by $\\Delta T$, the compressive (thermal) stress developed in it is:",
+        options: [
+            { key: "a", text: "$Y\\alpha\\Delta T$" },
+            { key: "b", text: "$\\dfrac{\\alpha\\Delta T}{Y}$" },
+            { key: "c", text: "$\\dfrac{Y\\Delta T}{\\alpha}$" },
+            { key: "d", text: "$Y\\alpha$" }
+        ],
+        answer: "a",
+        explanation: "If free, the rod would expand by a strain $\\alpha\\Delta T$. The rigid walls prevent this, producing an equal compressive strain $\\alpha\\Delta T$. Thermal stress $=Y\\times\\text{strain}=Y\\alpha\\Delta T$, independent of the length and area."
+    },
+    {
+        id: "q35", section: "hard", year: "",
+        text: "A rigid horizontal bar hangs from two vertical wires of the same material and length but of cross-sectional areas $A$ and $2A$. As the bar stays horizontal, both wires stretch equally. The ratio of the tension in the thinner wire to that in the thicker wire is:",
+        options: [
+            { key: "a", text: "$1:2$" },
+            { key: "b", text: "$2:1$" },
+            { key: "c", text: "$1:1$" },
+            { key: "d", text: "$1:4$" }
+        ],
+        answer: "a",
+        explanation: "Equal extension $\\Delta l$ and equal length give tension $T=\\dfrac{YA}{L}\\Delta l\\propto A$. So $T_1:T_2=A:2A=1:2$; the thicker wire carries twice the load."
+    },
+    {
+        id: "q36", section: "hard", year: "",
+        text: "A wire made of a material of breaking stress $\\sigma_b$ and density $\\rho$ hangs vertically. The greatest length it can have before snapping under its own weight is:",
+        options: [
+            { key: "a", text: "$\\dfrac{\\sigma_b}{\\rho g}$" },
+            { key: "b", text: "$\\dfrac{\\rho g}{\\sigma_b}$" },
+            { key: "c", text: "$\\sigma_b\\rho g$" },
+            { key: "d", text: "$\\dfrac{\\sigma_b}{2\\rho g}$" }
+        ],
+        answer: "a",
+        explanation: "The self-weight stress at the top is $\\rho g L$. The wire just breaks when $\\rho g L=\\sigma_b$, giving $L_{\\max}=\\dfrac{\\sigma_b}{\\rho g}$, independent of the cross-section."
+    },
+    {
+        id: "q37", section: "hard", year: "",
+        text: "A wire of Young's modulus $Y$, length $L$ and cross-sectional area $A$ is slowly stretched by an amount $l$ within the elastic limit. The work done on the wire is:",
+        options: [
+            { key: "a", text: "$\\dfrac{YAl^{2}}{2L}$" },
+            { key: "b", text: "$\\dfrac{YAl^{2}}{L}$" },
+            { key: "c", text: "$\\dfrac{YAl}{2L}$" },
+            { key: "d", text: "$\\dfrac{YAl^{2}}{2L^{2}}$" }
+        ],
+        answer: "a",
+        explanation: "The restoring force grows linearly to $F=\\dfrac{YA}{L}l$, so $W=\\dfrac{1}{2}Fl=\\dfrac{1}{2}\\left(\\dfrac{YA}{L}l\\right)l=\\dfrac{YAl^{2}}{2L}$."
+    },
+    {
+        id: "q38", section: "hard", year: "",
+        text: "A wire whose material has Poisson's ratio $0.2$ is stretched so that its length increases by $0.3\\%$. The approximate percentage increase in its volume is:",
+        options: [
+            { key: "a", text: "$0.18\\%$" },
+            { key: "b", text: "$0.30\\%$" },
+            { key: "c", text: "$0.12\\%$" },
+            { key: "d", text: "$0.06\\%$" }
+        ],
+        answer: "a",
+        explanation: "Volumetric strain $=\\epsilon(1-2\\sigma)=0.3\\%\\times(1-2\\times0.2)=0.3\\%\\times0.6=0.18\\%$."
+    },
+    {
+        id: "q39", section: "hard", year: "",
+        text: "A uniform wire of length $L$, density $\\rho$ and Young's modulus $Y$ hangs vertically from a support. The extension produced in it by its own weight is:",
+        options: [
+            { key: "a", text: "$\\dfrac{\\rho g L^{2}}{2Y}$" },
+            { key: "b", text: "$\\dfrac{\\rho g L^{2}}{Y}$" },
+            { key: "c", text: "$\\dfrac{\\rho g L}{2Y}$" },
+            { key: "d", text: "$\\dfrac{2\\rho g L^{2}}{Y}$" }
+        ],
+        answer: "a",
+        explanation: "Each element carries the weight of the wire below it; integrating gives $\\Delta L=\\dfrac{\\rho g L^{2}}{2Y}$. This equals the whole weight acting at the mid-point of the wire."
+    },
+    {
+        id: "q40", section: "hard", year: "",
+        text: "The bulk modulus of water is $2\\times10^{9}\\,$N m$^{-2}$. When water is taken to a depth where the excess pressure is $2\\times10^{7}\\,$N m$^{-2}$, the approximate percentage increase in its density is:",
+        options: [
+            { key: "a", text: "$1\\%$" },
+            { key: "b", text: "$0.1\\%$" },
+            { key: "c", text: "$10\\%$" },
+            { key: "d", text: "$0.01\\%$" }
+        ],
+        answer: "a",
+        explanation: "Volumetric strain $=\\dfrac{P}{K}=\\dfrac{2\\times10^{7}}{2\\times10^{9}}=0.01$. As the mass is fixed, $\\dfrac{\\Delta\\rho}{\\rho}=\\dfrac{\\Delta V}{V}=0.01=1\\%$."
+    },
+    {
+        id: "q41", section: "hard", year: "",
+        text: "A cube of side $L$ and modulus of rigidity $\\eta$ has its top face displaced by $x$ relative to the fixed bottom face by a tangential force $F$ applied to the top face. The displacement $x$ is:",
+        options: [
+            { key: "a", text: "$\\dfrac{F}{L\\eta}$" },
+            { key: "b", text: "$\\dfrac{FL}{\\eta}$" },
+            { key: "c", text: "$\\dfrac{F}{L^{2}\\eta}$" },
+            { key: "d", text: "$\\dfrac{F\\eta}{L}$" }
+        ],
+        answer: "a",
+        explanation: "Shear stress $=\\dfrac{F}{L^{2}}$ and shear strain $=\\dfrac{x}{L}$, so $\\eta=\\dfrac{F/L^{2}}{x/L}=\\dfrac{F}{Lx}$, giving $x=\\dfrac{F}{L\\eta}$."
+    },
+    {
+        id: "q42", section: "hard", year: "",
+        text: "A wire of length $2\\,$m and cross-sectional area $1\\,$mm$^2$ (Young's modulus $2\\times10^{11}\\,$N m$^{-2}$) is stretched by $2\\,$mm within its elastic limit. The elastic potential energy stored is:",
+        options: [
+            { key: "a", text: "$0.2\\,$J" },
+            { key: "b", text: "$0.4\\,$J" },
+            { key: "c", text: "$0.1\\,$J" },
+            { key: "d", text: "$0.8\\,$J" }
+        ],
+        answer: "a",
+        explanation: "Force constant $k=\\dfrac{YA}{L}=\\dfrac{2\\times10^{11}\\times10^{-6}}{2}=10^{5}\\,$N m$^{-1}$. Energy $U=\\dfrac{1}{2}kx^{2}=\\dfrac{1}{2}\\times10^{5}\\times(2\\times10^{-3})^{2}=0.2\\,$J."
     }
 ];
 
