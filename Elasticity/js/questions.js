@@ -1,5 +1,5 @@
 /* ============================================================
-   Elasticity — Question bank (22 past + 20 harder + 5 challenge = 47).
+   Elasticity — Question bank (22 past + 18 harder + 5 challenge = 45).
    Past-paper tags: 2074, 2077, 2078, 2079, 2081, 2082 (B.S.).
    Harder and challenge questions are higher-order (no exam tag).
    ============================================================ */
@@ -491,18 +491,6 @@ const QUESTIONS = [
         explanation: "If free, the rod would expand by a strain $\\alpha\\Delta T$. The rigid walls prevent this, producing an equal compressive strain $\\alpha\\Delta T$. Thermal stress $=Y\\times\\text{strain}=Y\\alpha\\Delta T$, independent of the length and area."
     },
     {
-        id: "q35", section: "hard", year: "",
-        text: "A rigid horizontal bar hangs from two vertical wires of the same material and length but of cross-sectional areas $A$ and $2A$. As the bar stays horizontal, both wires stretch equally. The ratio of the tension in the thinner wire to that in the thicker wire is:",
-        options: [
-            { key: "a", text: "$1:2$" },
-            { key: "b", text: "$2:1$" },
-            { key: "c", text: "$1:1$" },
-            { key: "d", text: "$1:4$" }
-        ],
-        answer: "a",
-        explanation: "Equal extension $\\Delta l$ and equal length give tension $T=\\dfrac{YA}{L}\\Delta l\\propto A$. So $T_1:T_2=A:2A=1:2$; the thicker wire carries twice the load."
-    },
-    {
         id: "q36", section: "hard", year: "",
         text: "A wire made of a material of breaking stress $\\sigma_b$ and density $\\rho$ hangs vertically. The greatest length it can have before snapping under its own weight is:",
         options: [
@@ -537,18 +525,6 @@ const QUESTIONS = [
         ],
         answer: "a",
         explanation: "Volumetric strain $=\\epsilon(1-2\\sigma)=0.3\\%\\times(1-2\\times0.2)=0.3\\%\\times0.6=0.18\\%$."
-    },
-    {
-        id: "q39", section: "hard", year: "",
-        text: "A uniform wire of length $L$, density $\\rho$ and Young's modulus $Y$ hangs vertically from a support. The extension produced in it by its own weight is:",
-        options: [
-            { key: "a", text: "$\\dfrac{\\rho g L^{2}}{2Y}$" },
-            { key: "b", text: "$\\dfrac{\\rho g L^{2}}{Y}$" },
-            { key: "c", text: "$\\dfrac{\\rho g L}{2Y}$" },
-            { key: "d", text: "$\\dfrac{2\\rho g L^{2}}{Y}$" }
-        ],
-        answer: "a",
-        explanation: "Each element carries the weight of the wire below it; integrating gives $\\Delta L=\\dfrac{\\rho g L^{2}}{2Y}$. This equals the whole weight acting at the mid-point of the wire."
     },
     {
         id: "q40", section: "hard", year: "",
