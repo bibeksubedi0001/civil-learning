@@ -482,36 +482,36 @@ const QUESTIONS = [
         id: "q34", section: "hard", year: "",
         text: "A metal rod of Young's modulus $Y$ and linear-expansion coefficient $\\alpha$ is held rigidly between two fixed walls. If its temperature is raised by $\\Delta T$, the compressive (thermal) stress developed in it is:",
         options: [
-            { key: "a", text: "$Y\\alpha\\Delta T$" },
+            { key: "a", text: "$\\dfrac{Y\\Delta T}{\\alpha}$" },
             { key: "b", text: "$\\dfrac{\\alpha\\Delta T}{Y}$" },
-            { key: "c", text: "$\\dfrac{Y\\Delta T}{\\alpha}$" },
+            { key: "c", text: "$Y\\alpha\\Delta T$" },
             { key: "d", text: "$Y\\alpha$" }
         ],
-        answer: "a",
+        answer: "c",
         explanation: "If free, the rod would expand by a strain $\\alpha\\Delta T$. The rigid walls prevent this, producing an equal compressive strain $\\alpha\\Delta T$. Thermal stress $=Y\\times\\text{strain}=Y\\alpha\\Delta T$, independent of the length and area."
     },
     {
         id: "q36", section: "hard", year: "",
         text: "A wire made of a material of breaking stress $\\sigma_b$ and density $\\rho$ hangs vertically. The greatest length it can have before snapping under its own weight is:",
         options: [
-            { key: "a", text: "$\\dfrac{\\sigma_b}{\\rho g}$" },
+            { key: "a", text: "$\\dfrac{\\sigma_b}{2\\rho g}$" },
             { key: "b", text: "$\\dfrac{\\rho g}{\\sigma_b}$" },
             { key: "c", text: "$\\sigma_b\\rho g$" },
-            { key: "d", text: "$\\dfrac{\\sigma_b}{2\\rho g}$" }
+            { key: "d", text: "$\\dfrac{\\sigma_b}{\\rho g}$" }
         ],
-        answer: "a",
+        answer: "d",
         explanation: "The self-weight stress at the top is $\\rho g L$. The wire just breaks when $\\rho g L=\\sigma_b$, giving $L_{\\max}=\\dfrac{\\sigma_b}{\\rho g}$, independent of the cross-section."
     },
     {
         id: "q37", section: "hard", year: "",
         text: "A wire of Young's modulus $Y$, length $L$ and cross-sectional area $A$ is slowly stretched by an amount $l$ within the elastic limit. The work done on the wire is:",
         options: [
-            { key: "a", text: "$\\dfrac{YAl^{2}}{2L}$" },
-            { key: "b", text: "$\\dfrac{YAl^{2}}{L}$" },
+            { key: "a", text: "$\\dfrac{YAl^{2}}{L}$" },
+            { key: "b", text: "$\\dfrac{YAl^{2}}{2L}$" },
             { key: "c", text: "$\\dfrac{YAl}{2L}$" },
             { key: "d", text: "$\\dfrac{YAl^{2}}{2L^{2}}$" }
         ],
-        answer: "a",
+        answer: "b",
         explanation: "The restoring force grows linearly to $F=\\dfrac{YA}{L}l$, so $W=\\dfrac{1}{2}Fl=\\dfrac{1}{2}\\left(\\dfrac{YA}{L}l\\right)l=\\dfrac{YAl^{2}}{2L}$."
     },
     {
@@ -530,24 +530,24 @@ const QUESTIONS = [
         id: "q40", section: "hard", year: "",
         text: "The bulk modulus of water is $2\\times10^{9}\\,$N m$^{-2}$. When water is taken to a depth where the excess pressure is $2\\times10^{7}\\,$N m$^{-2}$, the approximate percentage increase in its density is:",
         options: [
-            { key: "a", text: "$1\\%$" },
+            { key: "a", text: "$10\\%$" },
             { key: "b", text: "$0.1\\%$" },
-            { key: "c", text: "$10\\%$" },
+            { key: "c", text: "$1\\%$" },
             { key: "d", text: "$0.01\\%$" }
         ],
-        answer: "a",
+        answer: "c",
         explanation: "Volumetric strain $=\\dfrac{P}{K}=\\dfrac{2\\times10^{7}}{2\\times10^{9}}=0.01$. As the mass is fixed, $\\dfrac{\\Delta\\rho}{\\rho}=\\dfrac{\\Delta V}{V}=0.01=1\\%$."
     },
     {
         id: "q41", section: "hard", year: "",
         text: "A cube of side $L$ and modulus of rigidity $\\eta$ has its top face displaced by $x$ relative to the fixed bottom face by a tangential force $F$ applied to the top face. The displacement $x$ is:",
         options: [
-            { key: "a", text: "$\\dfrac{F}{L\\eta}$" },
+            { key: "a", text: "$\\dfrac{F\\eta}{L}$" },
             { key: "b", text: "$\\dfrac{FL}{\\eta}$" },
             { key: "c", text: "$\\dfrac{F}{L^{2}\\eta}$" },
-            { key: "d", text: "$\\dfrac{F\\eta}{L}$" }
+            { key: "d", text: "$\\dfrac{F}{L\\eta}$" }
         ],
-        answer: "a",
+        answer: "d",
         explanation: "Shear stress $=\\dfrac{F}{L^{2}}$ and shear strain $=\\dfrac{x}{L}$, so $\\eta=\\dfrac{F/L^{2}}{x/L}=\\dfrac{F}{Lx}$, giving $x=\\dfrac{F}{L\\eta}$."
     },
     {
